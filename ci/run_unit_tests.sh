@@ -4,7 +4,7 @@
 # контейнере (см. Containerfile рядом) — на хосте, где эта штука реально
 # нужна (CI), нет ни нужного JDK17 (Gradle 7.5 не собирает build-скрипты на
 # JDK21 — см. Containerfile), ни Android SDK. Тот же приём, что у
-# servers/wallet-api/tests_integration/run_local.sh: не Jenkinsfile
+# wallet-api/tests_integration/run_local.sh: не Jenkinsfile
 # переизобретает команды, а он зовёт этот скрипт — тестовый контур остаётся
 # здесь, в проекте, а не в BuildPlatform (см. BuildPlatform/jobs/
 # android-unit-tests/Jenkinsfile).
@@ -19,7 +19,7 @@ ANDROID_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 IMAGE=wallettransactions-android-ci
 
 # Движок контейнеров — podman (изначальная разработка) или docker (эта
-# машина) — тот же приём, что servers/wallet-api/loadtest/mint_tokens.sh.
+# машина) — тот же приём, что wallet-api/loadtest/mint_tokens.sh.
 if command -v podman >/dev/null 2>&1; then
     ENGINE=podman
 elif command -v docker >/dev/null 2>&1; then

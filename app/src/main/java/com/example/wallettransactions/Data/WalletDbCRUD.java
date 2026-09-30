@@ -118,7 +118,7 @@ public class WalletDbCRUD {
      * трогает. Раньше строки {@code operation_link} уходили сами через
      * {@code ON DELETE CASCADE} — теперь, раз операция физически остаётся,
      * они тоже остаются (то же самое поведение, что и на сервере: внешние
-     * ключи остаются целыми, см. README schema/server, "Побочная выгода").
+     * ключи остаются целыми, см. README wallet-api/schema, "Побочная выгода").
      */
     public static int DeleteOperation(SQLiteDatabase db, int operationId) {
         ContentValues cv = new ContentValues();
@@ -368,7 +368,7 @@ public class WalletDbCRUD {
             cvOp.put(WalletContract.AccountOperatingEntry._ID, newId);
             cvOp.put(WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID, currencyId);
             // uuid — ТОТ ЖЕ, что у только что вставленного account, не свежий
-            // случайный (см. schema/server/table/account_operating.sql:
+            // случайный (см. wallet-api/schema/table/account_operating.sql:
             // "uuid здесь всегда равен account.uuid" — общий первичный ключ на
             // уровне синка; иначе push такого кошелька упал бы FK-ошибкой
             // fk_account_operating_account на сервере).

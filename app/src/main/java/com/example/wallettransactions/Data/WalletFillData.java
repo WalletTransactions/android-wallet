@@ -270,7 +270,7 @@ public class WalletFillData {
         }
 
         // DateToDateStr (не DateToStr) — курс это величина на день, время в
-        // колонке не несёт смысла (см. schema/server/table/currency_pair_rate.sql,
+        // колонке не несёт смысла (см. wallet-api/schema/table/currency_pair_rate.sql,
         // тот же довод на сервере). Раньше здесь был DateToStr ("yyyy-MM-dd
         // HH:mm") — тот самый источник локальных дублей одной даты с разным
         // временем, из-за которого push бился об uq_currency_pair_rate_ledger
@@ -482,7 +482,7 @@ public class WalletFillData {
                     long curId = GetCurrencyIdByIso(db, currencyIso);
                     if (curId > 0) {
                         // uuid — тот же, что у только что вставленного account (не свежий
-                        // случайный DEFAULT): server/schema/server/table/account_operating.sql
+                        // случайный DEFAULT): server/wallet-api/schema/table/account_operating.sql
                         // требует account_operating.uuid = account.uuid того же счёта (общий
                         // первичный ключ на уровне синка, не только локального _id), иначе
                         // push такого кошелька упал бы FK-ошибкой (fk_account_operating_account).

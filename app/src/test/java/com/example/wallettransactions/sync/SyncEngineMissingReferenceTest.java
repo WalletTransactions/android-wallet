@@ -15,7 +15,7 @@ import org.junit.Test;
  * {@code currency} (uuid {@code 1c21da38-...}), которую сервер не получил,
  * потому что на клиенте она была {@code dirty=0} (уже считалась
  * отправленной), хотя ЭТОТ сервер её никогда не видел. Сервер теперь (см.
- * servers/wallet-api/src/sync_repo.cpp, {@code parse_missing_reference})
+ * wallet-api/src/sync_repo.cpp, {@code parse_missing_reference})
  * достаёт из PG_DIAG_MESSAGE_DETAIL и присылает обратно {@code table}/
  * {@code uuid} строки, которой не хватило — этот тест проверяет, что клиент
  * умеет прочесть именно такое тело (и НЕ пытается самовосстановиться на

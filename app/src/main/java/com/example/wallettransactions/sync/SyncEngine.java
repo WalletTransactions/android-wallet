@@ -512,7 +512,7 @@ final class SyncEngine {
                     // DateUtils.DateToDateStr/WalletFillData.InsertCurrencyPairRate),
                     // но на старых строках (до этой правки) время могло сохраниться.
                     // Сервер хранит "date" без времени вообще (см.
-                    // schema/server/table/currency_pair_rate.sql) — обрезаем здесь
+                    // wallet-api/schema/table/currency_pair_rate.sql) — обрезаем здесь
                     // тоже, а не только полагаемся на неявный CAST на стороне
                     // Postgres: два локальных дубля одного дня с разным временем
                     // иначе бьются об uq_currency_pair_rate_ledger при push.
@@ -541,7 +541,7 @@ final class SyncEngine {
         putOrdered(byTable, "account", collect(db,
                 // system_kind/kind — v75/v76 (см. WalletContract.AccountEntry) — добавлены в серверный
                 // TableSpec/схему коммитом "wallet share step1" вместе с этим SELECT'ом; сервер читает
-                // каждую колонку spec.columns через json::at() без дефолта (servers/wallet-api/src/
+                // каждую колонку spec.columns через json::at() без дефолта (wallet-api/src/
                 // sync_repo.cpp), поэтому отсутствие ключа здесь — не "0 по умолчанию", а падение
                 // "key 'system_kind' not found" на push.
                 "SELECT uuid, name, comment, icon_id, is_archived, system_kind, kind, deleted_at FROM account WHERE dirty=1",
@@ -580,7 +580,7 @@ final class SyncEngine {
                     row.put("acc_to_uuid", uuidById(db, "account", c.getLong(3)));
                     // getString, не getDouble — текстовое представление
                     // SQLite (сохраняет то, что реально лежит в колонке),
-                    // а не Double.toString (см. README schema/server,
+                    // а не Double.toString (см. README wallet-api/schema,
                     // "Деньги — numeric" — суммы протокол несёт строками).
                     row.put("amount", c.getString(4));
                     row.put("comment", c.getString(5));
@@ -1002,7 +1002,7 @@ final class SyncEngine {
         Long iconId = findIdByUuid(db, "icon", row.getString("icon_uuid"));
         if (iconId == null) {
             Log.w(TAG, "account " + uuid + ": icon_uuid ещё не известен локально (push иконок не "
-                    + "реализован, см. servers/wallet-api/README.md) — строка пропущена");
+                    + "реализован, см. wallet-api/README.md) — строка пропущена");
             return;
         }
         ContentValues cv = new ContentValues();
@@ -1029,7 +1029,7 @@ final class SyncEngine {
      * {@code WalletDbHelper.backfillAccountOperatingUuid}) — поэтому
      * родительский счёт ищем ПО ТОМУ ЖЕ uuid, что пришёл в этой строке, а не
      * по отдельному полю ссылки (его в протоколе и нет, см.
-     * schema/server/table/account_operating.sql).
+     * wallet-api/schema/table/account_operating.sql).
      */
     private static void applyAccountOperating(SQLiteDatabase db, JSONObject row) throws JSONException {
         String uuid = row.getString("uuid");
@@ -1171,7 +1171,7 @@ final class SyncEngine {
 
     /**
      * {@code operation.date} на сервере — {@code timestamp} БЕЗ часового
-     * пояса (см. schema/server/table/operation.sql), {@code to_jsonb}
+     * пояса (см. wallet-api/schema/table/operation.sql), {@code to_jsonb}
      * сериализует его как {@code "2026-01-15T10:00:00"} — переводим в
      * {@code "yyyy-MM-dd HH:mm"}, формат, которого ждёт остальной код
      * приложения ({@link com.example.wallettransactions.DateUtils#formatDB}).

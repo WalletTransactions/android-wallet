@@ -142,7 +142,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
      * Частичные уникальные индексы взамен обычного column-level UNIQUE,
      * снятого с v72 (см. rebuildTableWithoutInlineUnique) — уникальность
      * только среди живых (deleted_at IS NULL) строк, тот же приём, что и на
-     * сервере (uq_account_name и т.п., см. schema/server/table/account.sql).
+     * сервере (uq_account_name и т.п., см. wallet-api/schema/table/account.sql).
      * IF NOT EXISTS — вызывается и из onCreate (для новых установок, где
      * column-level UNIQUE никогда не было), и из шага v72 (для апгрейженных,
      * после пересборки таблиц).
@@ -363,7 +363,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
      * Бэкфилл uuid для {@code account_operating} на апгрейде — НЕ случайный (в
      * отличие от {@link #backfillUuid}), а всегда равный uuid соответствующего
      * {@code account} (тот же {@code _id}). Инвариант с сервера
-     * (schema/server/table/account_operating.sql: "uuid здесь всегда равен
+     * (wallet-api/schema/table/account_operating.sql: "uuid здесь всегда равен
      * account.uuid" — общий первичный ключ на уровне синка, а не только
      * локального {@code _id}) — иначе push уже существующих на апгрейженной базе
      * кошельков падал бы FK-ошибкой {@code fk_account_operating_account} на
@@ -461,7 +461,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
      * {@code WalletDbCRUD.InsertOperatingAccount} нарушали инвариант
      * "{@code account_operating.uuid} = {@code account.uuid} того же счёта"
      * (см. javadoc {@link #backfillAccountOperatingUuid}, откуда взят сам
-     * инвариант, и {@code schema/server/table/account_operating.sql} — там это
+     * инвариант, и {@code wallet-api/schema/table/account_operating.sql} — там это
      * общий первичный ключ синка, часть внешнего ключа на {@code account}, а
      * не просто колонка для галочки).
      * <p>
@@ -566,10 +566,10 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         // получили фильтр deleted_at IS NULL — мягко удалённая строка не должна
         // быть видна как живая, но должна дожить до синка как обычное изменение
         // (см. SYNC_COLUMNS_DDL выше). Зеркально серверным вьюхам
-        // (schema/server/view/*.sql) с одним отличием, тоже зеркальным: v_operation
+        // (wallet-api/schema/view/*.sql) с одним отличием, тоже зеркальным: v_operation
         // НЕ фильтрует сами account/account_operating по deleted_at — операция на
         // мягко удалённый счёт обязана остаться видимой в истории (см. комментарий
-        // в schema/server/view/v_operation.sql), фильтруется только сама операция.
+        // в wallet-api/schema/view/v_operation.sql), фильтруется только сама операция.
 
         db.execSQL("DROP view IF EXISTS v_account_expanse");
         db.execSQL("CREATE VIEW v_account_expanse\n"
@@ -712,7 +712,7 @@ CONSTRAINT fk_currencies_id FOREIGN KEY (currency_id) REFERENCES currencies (_id
         values.put(WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID, curId);
         values.put(WalletContract.AccountOperatingEntry._ID, accId);
         // uuid = account.uuid того же счёта — см. javadoc backfillAccountOperatingUuid ниже,
-        // тот же инвариант (schema/server/table/account_operating.sql).
+        // тот же инвариант (wallet-api/schema/table/account_operating.sql).
         Cursor c = db.rawQuery("SELECT uuid FROM " + WalletContract.AccountEntry.TABLE_NAME
                 + " WHERE " + WalletContract.AccountEntry._ID + "=?", new String[]{String.valueOf(accId)});
         try {
@@ -900,7 +900,7 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             if (oldVersion < 76) {
                 // v76: явный признак «кошелёк или категория» вместо вычисления через
                 // JOIN на account_operating — см. javadoc AccountItem.Kind и
-                // schema/server/table/account.sql (обсуждение 2026-09-09). Бэкфилл
+                // wallet-api/schema/table/account.sql (обсуждение 2026-09-09). Бэкфилл
                 // здесь — по наличию ЖИВОЙ строки в account_operating: ровно то же
                 // правило, что уже применяет WalletDbLoader.LoadAccounts (curId != 0)
                 // и v_account_operating, так что результат для уже существующих

@@ -1,7 +1,7 @@
 -- v72 (org/docs/TODO_mobile_sync.md, Фаза 3): o.deleted_at IS NULL — мягко удалённая
 -- операция не должна быть видна. Счета (acf/act) НЕ фильтруются по deleted_at —
 -- операция на мягко удалённый счёт обязана остаться видимой в истории, иначе
--- лента молча теряла бы строки (зеркально schema/server/view/v_operation.sql).
+-- лента молча теряла бы строки (зеркально wallet-api/schema/view/v_operation.sql).
 -- account_operating (aof/aot) фильтруется своим deleted_at — снятая
 -- "операционность" счёта не должна больше считаться его валютой.
 create view v_operation

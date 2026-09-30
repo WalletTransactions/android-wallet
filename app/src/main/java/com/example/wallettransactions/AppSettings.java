@@ -41,7 +41,7 @@ public final class AppSettings {
     public static final int DEFAULT_AUTO_CONNECT_INTERVAL_MINUTES = 60;
 
     /**
-     * Гейтвей (servers/wallet-gateway) по умолчанию — LAN-only на этом этапе
+     * Гейтвей (wallet-gateway) по умолчанию — LAN-only на этом этапе
      * (org/docs/TODO_mobile_sync.md, п. 1.4): нет ни TLS, ни обнаружения
      * сервера в сети, адрес вводится вручную. {@code localhost} годится,
      * только когда сервер и устройство физически одно и то же (эмулятор

@@ -226,7 +226,7 @@ public class WalletImportData {
                 added = WalletFillData.GetAffectedRowsCount(db) > 0;
 
             // uuid — a.uuid (ТОТ ЖЕ, что у самого account), не свежий случайный:
-            // schema/server/table/account_operating.sql требует
+            // wallet-api/schema/table/account_operating.sql требует
             // account_operating.uuid = account.uuid того же счёта (общий
             // первичный ключ на уровне синка) — иначе push такого кошелька
             // упал бы FK-ошибкой fk_account_operating_account на сервере.

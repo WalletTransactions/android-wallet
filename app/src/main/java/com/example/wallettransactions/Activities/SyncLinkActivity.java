@@ -53,13 +53,13 @@ import okhttp3.Response;
  * Адрес сервера — {@link AppSettings#getServerBaseUrl}, настраивается там
  * же (по умолчанию {@code http://localhost:8090/} — LAN-only на этом
  * этапе, план п. 1.4). Web client ID — тот же, что уже использует
- * {@code servers/google-auth} (см. {@code cred/webclient.json}).
+ * {@code google-auth} (см. {@code cred/webclient.json}).
  */
 public class SyncLinkActivity extends AppCompatActivity {
 
     private static final String TAG = "SyncLinkActivity";
 
-    // servers/google-auth/cred/webclient.json → "client_id". Аудитория
+    // google-auth/cred/webclient.json → "client_id". Аудитория
     // токенов, которые уже проверяет google-auth (Web, не Android) — см.
     // README google-auth, "1. Получить Client ID".
     private static final String WEB_CLIENT_ID =
