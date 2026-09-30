@@ -2,7 +2,7 @@
 
 Синхронизировано с `WalletDbHelper.CreateViews`, `DATABASE_VERSION = 72`. Приёмы,
 общие для нескольких вьюх (раскрытие пары в оба направления, шаблон «курс на дату»),
-разобраны в `docs/ARCHITECTURE.md` (пока в серверном репозитории WalletTransactions), раздел «Схема базы» →
+разобраны в [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md), раздел «Схема базы» →
 «Представления».
 
 **v72** (servers/TODO_mobile_sync.md, Фаза 3): каждая вьюха ниже получила фильтр
