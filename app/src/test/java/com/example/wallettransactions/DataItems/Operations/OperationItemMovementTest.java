@@ -12,7 +12,7 @@ import org.junit.Test;
 
 /**
  * Юнит-тесты {@link OperationItem#getMovementAmountEq()} — «во что обошёлся» разновалютный
- * перевод через мост «Transfer» (см. Android/TODO_transfers.md, п.3 и обсуждение
+ * перевод через мост «Transfer» (см. docs/TODO_transfers.md, п.3 и обсуждение
  * 2026-09-09). Чистая Java-логика, без БД/Android-фреймворка: главная проводка, её
  * {@link OperationItem#LinkedLeg} и {@link OperationItem#LinkedCommission} собираются
  * руками — так, как их собрал бы {@code WalletDbLoader.AttachLinksTo}.
