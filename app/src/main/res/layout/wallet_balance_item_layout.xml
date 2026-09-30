@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Строка кошелька в отчёте «Кошельки».
+
+  Главная цифра строки — остаток на конец: он стоит в одну линию с названием
+  кошелька (в его валюте, следом мелким эквивалент) и подписи не имеет — её
+  заменяет сам кошелёк. Ниже — «на начало» и приход за период.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_card_row"
+    android:padding="14dp"
+    android:layout_marginBottom="10dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="10dp">
+
+        <FrameLayout android:layout_width="40dp" android:layout_height="40dp" android:background="@drawable/bg_icon_circle">
+            <!-- Иконка счёта уже обрезана в круг (IconCropActivity), поэтому кладём её почти
+                 во всю подложку: от круга остаётся тонкий кант, а не широкое поле. -->
+            <ImageView android:id="@+id/walletIcon" android:layout_width="36dp" android:layout_height="36dp"
+                android:layout_gravity="center" app:srcCompat="@mipmap/ic_launcher"
+                xmlns:app="http://schemas.android.com/apk/res-auto"/>
+            <ImageView android:id="@+id/walletFlag" android:layout_width="16dp" android:layout_height="16dp"
+                android:layout_gravity="bottom|end"/>
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/walletName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:paddingStart="12dp"
+            android:paddingEnd="8dp"
+            android:text="Кошелёк"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorTextPrimary"/>
+
+        <TextView
+            android:id="@+id/walletCloseNative"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="8 400 ₽"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorTextPrimary"/>
+
+        <!-- Пусто, когда валюта кошелька и есть валюта эквивалента: повторять ту же цифру незачем. -->
+        <TextView
+            android:id="@+id/walletCloseEq"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="6dp"
+            android:text=""
+            android:textSize="11sp"
+            android:textColor="@color/colorTextSecondary"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView style="@style/SettingsGroupLabel" android:layout_marginBottom="1dp" android:text="НА НАЧАЛО"/>
+            <TextView android:id="@+id/walletOpenNative" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="8 400 ₽" android:textSize="13.5sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
+            <TextView android:id="@+id/walletOpenEq" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="" android:textSize="11sp" android:textColor="@color/colorTextSecondary"/>
+        </LinearLayout>
+
+        <View android:layout_width="1dp" android:layout_height="match_parent" android:background="@color/colorDivider"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="end"
+            android:paddingStart="10dp">
+
+            <TextView style="@style/SettingsGroupLabel" android:layout_marginBottom="1dp" android:text="ПРИХОД"/>
+            <TextView android:id="@+id/walletNet" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="+156 940 ₽" android:textSize="13.5sp" android:textStyle="bold" android:textColor="@color/colorprofit"/>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

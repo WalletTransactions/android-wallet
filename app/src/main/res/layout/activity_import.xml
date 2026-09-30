@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  «Импорт из файла». Плоская шапка вместо ActionBar, два блока карточками —
+  CSV (счета/операции/курсы, три под-секции одной карточкой) и JSON (одна
+  секция, умеет то, чего не может CSV: переводы и комиссию, а теперь и
+  счета/пары/курсы одним файлом — см. ImportActivity.ImportOperationJsonClick).
+  Подписи по-русски (в макете язык интерфейса только русский).
+  Типы вью сохранены: btnImport* — Button (их гасит setEnabled),
+  error — EditText; id фрагментов и обработчики прежние.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    android:orientation="vertical"
+    tools:context=".Activities.ImportActivity">
+
+    <include layout="@layout/view_screen_header"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView style="@style/SettingsGroupLabel" android:text="CSV"
+                android:textSize="16sp" android:textStyle="bold"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView style="@style/SettingsGroupLabel" android:text="Счета"/>
+
+                <fragment
+                    android:id="@+id/fragmentCSVFileAccount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:name="com.example.wallettransactions.Activities.Fragments.FilePickerFragment"
+                    tools:layout="@layout/fragment_file_picker"/>
+
+                <Button
+                    android:id="@+id/btnImportAccount"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bg_pill_primary_state"
+                    android:onClick="ImportAccountClick"
+                    android:stateListAnimator="@null"
+                    android:text="Импортировать счета"
+                    android:textAllCaps="false"
+                    android:textColor="@color/colorSurface"
+                    android:textSize="14sp"
+                    android:textStyle="bold"/>
+
+                <TextView style="@style/SettingsGroupLabel" android:text="Операции"/>
+
+                <fragment
+                    android:id="@+id/fragmentCSVFileOperation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:name="com.example.wallettransactions.Activities.Fragments.FilePickerFragment"
+                    tools:layout="@layout/fragment_file_picker"/>
+
+                <Button
+                    android:id="@+id/btnImportOperation"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bg_pill_primary_state"
+                    android:onClick="ImportOperationClick"
+                    android:stateListAnimator="@null"
+                    android:text="Импортировать операции"
+                    android:textAllCaps="false"
+                    android:textColor="@color/colorSurface"
+                    android:textSize="14sp"
+                    android:textStyle="bold"/>
+
+                <TextView style="@style/SettingsGroupLabel" android:text="Курсы валютных пар"/>
+
+                <fragment
+                    android:id="@+id/fragmentCSVFileCurrencyPairRate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:name="com.example.wallettransactions.Activities.Fragments.FilePickerFragment"
+                    tools:layout="@layout/fragment_file_picker"/>
+
+                <Button
+                    android:id="@+id/btnImportRate"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_pill_primary_state"
+                    android:onClick="ImportCurrencyPairRateClick"
+                    android:stateListAnimator="@null"
+                    android:text="Импортировать курсы"
+                    android:textAllCaps="false"
+                    android:textColor="@color/colorSurface"
+                    android:textSize="14sp"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="JSON"
+                android:textSize="16sp" android:textStyle="bold"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="18dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView style="@style/SettingsGroupLabel"
+                    android:text="Операции (с переводами и комиссией), а также счета, валютные пары и курсы — одним файлом"/>
+
+                <fragment
+                    android:id="@+id/fragmentJSONFileOperation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:name="com.example.wallettransactions.Activities.Fragments.FilePickerFragment"
+                    tools:layout="@layout/fragment_file_picker"/>
+
+                <Button
+                    android:id="@+id/btnImportOperationJson"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_pill_primary_state"
+                    android:onClick="ImportOperationJsonClick"
+                    android:stateListAnimator="@null"
+                    android:text="Импортировать из JSON"
+                    android:textAllCaps="false"
+                    android:textColor="@color/colorSurface"
+                    android:textSize="14sp"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/importProgressBar"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:indeterminate="true"
+                android:visibility="gone"/>
+
+            <EditText
+                android:id="@+id/error"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:inputType="none"
+                android:scrollbars="vertical"
+                android:text=""
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="13sp"/>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

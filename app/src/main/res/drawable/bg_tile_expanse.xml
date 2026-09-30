@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Плитка «Расход» на экране отчёта: радиус 22, светло-оранжевая заливка. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/colorExpanseBg"/>
+    <corners android:radius="22dp"/>
+</shape>

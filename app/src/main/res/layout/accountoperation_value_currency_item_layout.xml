@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <ImageView
+        android:id="@+id/imageAccountView"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_below="@id/textName"
+        app:srcCompat="@drawable/flag_eur"
+        android:layout_toRightOf="@id/imageView" />
+    <TextView
+    android:id="@+id/textAmount"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="123.23"
+    android:layout_below="@id/textName"
+    android:padding="3dp"
+    android:textSize="10sp"
+    android:layout_toRightOf="@id/imageAccountView"/>
+    <TextView
+        android:id="@+id/textCurr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Eur"
+        android:layout_below="@id/textName"
+        android:padding="3dp"
+        android:textSize="10dp"
+        android:layout_toRightOf="@id/textAmount"/>
+</LinearLayout>

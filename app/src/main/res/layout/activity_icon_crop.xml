@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  «Обрезка иконки» — экран «вглубь» из диалога иконки: шапка, круглое окно
+  обрезки, Отмена/Готово. Нижнюю панель не подключаем.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    android:orientation="vertical">
+
+    <include layout="@layout/view_screen_header"/>
+
+    <com.example.wallettransactions.Views.CircleCropView
+        android:id="@+id/cropView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="6dp"
+        android:background="@color/colorSurfaceAlt"/>
+
+    <TextView
+        android:id="@+id/cropHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
+        android:text="Двигайте изображение пальцем, щипком меняйте масштаб. Всё, что за кругом, станет прозрачным."
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="13sp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginBottom="18dp"
+        android:orientation="horizontal"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp">
+
+        <TextView
+            android:id="@+id/btnCancel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="9dp"
+            android:background="@drawable/bg_pill_outline"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="Отмена"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:id="@+id/btnApply"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_primary"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="Готово"
+            android:textColor="@color/colorSurface"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:onClick="onApplyCrop"/>
+    </LinearLayout>
+</LinearLayout>

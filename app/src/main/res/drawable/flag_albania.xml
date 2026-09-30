@@ -1,0 +1,25 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+  <!-- Red circle background -->
+  <path android:fillColor="#CC0000"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z"/>
+  <!-- White border ring -->
+  <path android:fillColor="#FFFFFF" android:fillAlpha="0.25"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z
+                        M5,32 A27,27 0 1 1 59,32 A27,27 0 1 1 5,32Z"/>
+  <!-- Eagle body -->
+  <path android:fillColor="#000000"
+      android:pathData="M32,16 L29,21 L22,19 L25,25 L18,28 L25,29 L22,37 L28,34 L28,42 L32,39 L36,42 L36,34 L42,37 L39,29 L46,28 L39,25 L42,19 L35,21Z"/>
+  <!-- Left head -->
+  <path android:fillColor="#000000"
+      android:pathData="M26,15 A4,4 0 1 0 26,23 A4,4 0 1 0 26,15Z"/>
+  <!-- Right head -->
+  <path android:fillColor="#000000"
+      android:pathData="M38,15 A4,4 0 1 0 38,23 A4,4 0 1 0 38,15Z"/>
+  <!-- Highlight -->
+  <path android:fillColor="#FFFFFF" android:fillAlpha="0.15"
+      android:pathData="M14,14 A22,22 0 0 1 50,14 A28,28 0 0 0 14,14Z"/>
+</vector>

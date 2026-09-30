@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  «Экспорт базы». Плоская шапка вместо ActionBar, кнопки-пилюли.
+  Id и обработчики сохранены: btnExportDb/ExportDatabaseClick,
+  btnShare/ShareDatabaseClick, progressExport, tvExportStatus.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    android:orientation="vertical"
+    tools:context=".Activities.ExportActivity">
+
+    <include layout="@layout/view_screen_header"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="18dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_card"
+            android:padding="16dp"
+            android:text="«Экспортировать БД» скопирует файл wallet.db в папку Downloads — можно открыть на компьютере в DB Browser for SQLite.\n\n«Экспортировать в JSON» выгрузит счета (с валютой), валютные пары, курсы и операции читаемым файлом того же формата, что принимает импорт JSON — с ним можно перенести данные на другое устройство."
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="14sp"/>
+
+        <!-- Все три кнопки гасятся setEnabled на время экспорта, поэтому это Button
+             (так их и читает ExportActivity) и фон с неактивным состоянием. -->
+        <Button
+            android:id="@+id/btnExportDb"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginBottom="9dp"
+            android:background="@drawable/bg_pill_primary_state"
+            android:onClick="ExportDatabaseClick"
+            android:stateListAnimator="@null"
+            android:text="Экспортировать БД"
+            android:textAllCaps="false"
+            android:textColor="@color/colorSurface"
+            android:textSize="15sp"
+            android:textStyle="bold"/>
+
+        <Button
+            android:id="@+id/btnExportJson"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginBottom="9dp"
+            android:background="@drawable/bg_pill_outline_state"
+            android:onClick="ExportJsonClick"
+            android:stateListAnimator="@null"
+            android:text="Экспортировать в JSON"
+            android:textAllCaps="false"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="15sp"
+            android:textStyle="bold"/>
+
+        <Button
+            android:id="@+id/btnShare"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_pill_outline_state"
+            android:onClick="ShareDatabaseClick"
+            android:stateListAnimator="@null"
+            android:text="Поделиться"
+            android:textAllCaps="false"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="15sp"
+            android:textStyle="bold"/>
+
+        <ProgressBar
+            android:id="@+id/progressExport"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"/>
+
+        <TextView
+            android:id="@+id/tvExportStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="@color/colorTextSecondary"
+            android:textIsSelectable="true"
+            android:textSize="13sp"/>
+    </LinearLayout>
+</LinearLayout>

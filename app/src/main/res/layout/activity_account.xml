@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран «Кошельки» — таб нижней панели (navWallets).
+
+  Шапка — те же общие блоки, что на «Операциях» и «Отчётах»: view_tab_title +
+  своя кнопка «добавить счёт» + view_tab_actions (фильтр, валюта) и
+  view_period_summary (период, состояние денег, активный фильтр). Ниже — список
+  кошельков за тот же период (wallet_balance_item_layout.xml).
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    tools:context=".Activities.AccountActivity">
+
+    <LinearLayout
+        android:id="@+id/headerRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="12dp">
+
+        <include layout="@layout/view_tab_title"/>
+
+        <ImageButton
+            android:id="@+id/btnAddAccount"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:contentDescription="Добавить счёт"
+            android:src="@android:drawable/ic_input_add"
+            android:onClick="onAddAccount"/>
+
+        <include layout="@layout/view_tab_actions"/>
+    </LinearLayout>
+
+    <include
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/headerRow"
+        layout="@layout/view_period_summary"/>
+
+    <ListView
+        android:id="@+id/listWallets"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/periodSummary"
+        android:layout_above="@id/bottomNav"
+        android:layout_marginTop="6dp"
+        android:clipToPadding="false"
+        android:divider="@null"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"/>
+
+    <include android:id="@+id/bottomNav" layout="@layout/view_bottom_nav"/>
+</RelativeLayout>

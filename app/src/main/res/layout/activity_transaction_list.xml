@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран «Операции» — таб нижней панели (navOps).
+
+  Шапка собрана из общих блоков, тех же, что на «Кошельках» и «Отчётах»:
+  view_tab_title (заголовок) + своя кнопка группировки + view_tab_actions
+  (фильтр, валюта) и view_period_summary (период, состояние денег, активный фильтр).
+  Оживляет их BaseTabActivity, поэтому период и фильтр не сбрасываются при
+  переходе на другой таб.
+
+  Toolbar и боковой drawer убраны: currencyEq переехал в общую пилюлю шапки,
+  группировка — в кнопку рядом с ней, а пункты drawer'а давно дублирует «Ещё».
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    tools:context=".Activities.MainActivity">
+
+    <LinearLayout
+        android:id="@+id/headerRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="12dp">
+
+        <include layout="@layout/view_tab_title"/>
+
+        <!-- Группировка ленты: раньше подменю Toolbar, теперь попап у кнопки. -->
+        <TextView
+            android:id="@+id/btnGroupBy"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="12.5sp"
+            android:textStyle="bold"
+            android:onClick="onPickGrouping"
+            tools:text="По дате"/>
+
+        <include layout="@layout/view_tab_actions"/>
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/scrollable"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/headerRow"
+        android:layout_above="@+id/bottomNav"
+        android:clipToPadding="false"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="24dp">
+
+            <include layout="@layout/view_period_summary"/>
+
+            <ListView
+                android:id="@+id/listView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:divider="@null"
+                android:dividerHeight="0dp"
+                android:scrollbars="none"/>
+        </LinearLayout>
+    </ScrollView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btnUp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/bottomNav"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="12dp"
+        android:layout_marginRight="18dp"
+        android:onClick="btnUp"
+        app:backgroundTint="@color/colorSurfaceAlt"
+        app:fabCustomSize="36dp"
+        app:tint="@null"
+        app:srcCompat="@drawable/stm_up"/>
+
+    <include layout="@layout/view_bottom_nav"/>
+
+</RelativeLayout>

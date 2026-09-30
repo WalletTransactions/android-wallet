@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Строка операции. Все id сохранены — TransactionArrayAdapter менять не нужно.
+  Сумма красится по знаку: расход @color/colorexpanse, доход @color/colorprofit.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingLeft="18dp"
+    android:paddingRight="18dp">
+
+    <include layout="@layout/view_transaction_day_header"/>
+
+    <!-- Карточка операции -->
+    <RelativeLayout
+        android:id="@+id/firstLine"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_card_row"
+        android:elevation="1dp"
+        android:paddingLeft="15dp"
+        android:paddingRight="15dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
+
+        <FrameLayout
+            android:id="@+id/iconFrame"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
+            android:background="@drawable/bg_icon_circle">
+
+            <ImageView
+                android:id="@+id/imageAccountView"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_gravity="center"
+                app:srcCompat="@mipmap/ic_launcher"/>
+
+            <ImageView
+                android:id="@+id/imageFromView"
+                android:layout_width="17dp"
+                android:layout_height="17dp"
+                android:layout_gravity="bottom|end"
+                android:translationZ="1dp"/>
+
+            <ImageView
+                android:id="@+id/imageToView"
+                android:layout_width="17dp"
+                android:layout_height="17dp"
+                android:layout_gravity="top|start"
+                android:visibility="gone"
+                android:translationZ="1dp"/>
+        </FrameLayout>
+
+        <!--
+          Столбик сумм. У валютного перевода их две: списание в валюте источника и
+          зачисление в валюте получателя (зелёным) — вторая приходит из связанной
+          проводки. Ниже, если была, — комиссия. Всё в одной карточке, отдельной
+          строкой в ленте связанные проводки не показываются.
+        -->
+        <LinearLayout
+            android:id="@+id/amountBlock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:orientation="vertical"
+            android:gravity="end"
+            android:paddingLeft="8dp">
+
+            <TextView
+                android:id="@+id/amount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="−2 340 ₽"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorexpanse"/>
+
+            <TextView
+                android:id="@+id/amountTo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorprofit"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/commission"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="11.5sp"
+                android:textColor="@color/colorTextSecondary"
+                android:visibility="gone"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toRightOf="@id/iconFrame"
+            android:layout_toLeftOf="@id/amountBlock"
+            android:orientation="vertical"
+            android:paddingLeft="13dp">
+
+            <TextView
+                android:id="@+id/accountToName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Продукты"
+                android:textSize="14.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorTextPrimary"
+                android:maxLines="1"
+                android:ellipsize="end"/>
+
+            <TextView
+                android:id="@+id/comment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Пятёрочка"
+                android:textSize="12sp"
+                android:textColor="@color/colorTextSecondary"
+                android:maxLines="1"
+                android:ellipsize="end"/>
+        </LinearLayout>
+    </RelativeLayout>
+</LinearLayout>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Строка списка валют — используется в activity_currency_picker.xml.
+  В прототипе символ валюты нарисован буквой в кружке, но в приложении у валюты
+  есть настоящая иконка-флаг, поэтому показываем её, а символ ставим рядом с кодом.
+  blocksDescendants — чтобы ✎ не перехватывал выделение всей строки.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:descendantFocusability="blocksDescendants"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingLeft="15dp"
+    android:paddingRight="8dp"
+    android:paddingTop="9dp"
+    android:paddingBottom="9dp">
+
+    <FrameLayout
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:background="@drawable/bg_radio_dot">
+        <View
+            android:id="@+id/selectMark"
+            android:layout_width="11dp"
+            android:layout_height="11dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_radio_dot_filled"
+            android:visibility="gone"/>
+    </FrameLayout>
+
+    <ImageView
+        android:id="@+id/currencyIcon"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginStart="12dp"
+        android:contentDescription="@null"/>
+
+    <TextView
+        android:id="@+id/currencyCode"
+        android:layout_width="44dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:text="USD"
+        android:textSize="13.5sp"
+        android:textStyle="bold"
+        android:textColor="@color/colorTextPrimary"/>
+
+    <TextView
+        android:id="@+id/currencyName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="Доллар США"
+        android:textSize="13.5sp"
+        android:textColor="@color/colorTextSecondary"/>
+
+    <TextView
+        android:id="@+id/currencySymbol"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:minWidth="20dp"
+        android:gravity="center"
+        android:text="$"
+        android:textColor="@color/colorTextHint"
+        android:textSize="13sp"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/btnEditCurrency"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/bg_icon_circle"
+        android:clickable="true"
+        android:focusable="false"
+        android:gravity="center"
+        android:text="✎"
+        android:textColor="@color/colorexpanse"
+        android:textSize="14sp"/>
+</LinearLayout>

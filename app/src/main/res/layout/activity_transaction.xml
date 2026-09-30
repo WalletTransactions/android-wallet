@@ -1,0 +1,731 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран «Новая операция» (прототип 2a, блок isAdd).
+  Плоская шапка вместо Toolbar, чипы типа операции, крупная сумма Caprasimo,
+  две строки счетов, цифровая клавиатура и пилюля «Сохранить».
+  Дата/время и комментарий макетом не предусмотрены, но нужны данным —
+  добавлены в той же системе: пилюля под чипами и поле над клавиатурой.
+
+  Строки счетов названы по позиции, а не по From/To: верхняя (slotTop) —
+  «другая сторона» операции (статья расхода / дохода, для перевода «Откуда»),
+  нижняя (slotBottom) — кошелёк. Какая из них уходит в From, а какая в To,
+  решает TransactionActivity по выбранному типу операции.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/colorBackground">
+
+    <!-- Шапка -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="6dp">
+
+        <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:contentDescription="Назад"
+            android:padding="11dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_nav_back"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:id="@+id/screenTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:fontFamily="@font/caprasimo"
+            android:text="Новая операция"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="20sp"/>
+
+        <!-- Только для правки существующей операции — см. TransactionActivity.onCreate. -->
+        <ImageButton
+            android:id="@+id/btnDelete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:contentDescription="Удалить операцию"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_delete_forever_black_24dp"
+            android:tint="@color/colorexpanse"
+            android:visibility="gone"
+            android:onClick="btnDeleteClick"/>
+    </LinearLayout>
+
+    <!-- Тип операции -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingTop="8dp">
+
+        <!-- Иконка и подпись — разные вьюхи, иначе иконку прижимает к краю чипа;
+             порядок важен, по нему их и красит TransactionActivity.paintChip. -->
+        <LinearLayout
+            android:id="@+id/kindExpense"
+            style="@style/FilterChipIcon"
+            android:background="@drawable/bg_chip_selected"
+            android:clickable="true"
+            android:focusable="true"
+            android:onClick="onKindClick">
+
+            <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_expense" android:tint="@color/colorSurface"/>
+            <TextView style="@style/FilterChipIconLabel" android:text="Расход" android:textColor="@color/colorSurface"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/kindIncome"
+            style="@style/FilterChipIcon"
+            android:clickable="true"
+            android:focusable="true"
+            android:onClick="onKindClick">
+
+            <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_income" android:tint="@color/colorTextSecondary"/>
+            <TextView style="@style/FilterChipIconLabel" android:text="Доход"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/kindTransfer"
+            style="@style/FilterChipIcon"
+            android:layout_marginEnd="0dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:onClick="onKindClick">
+
+            <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_transfer" android:tint="@color/colorTextSecondary"/>
+            <TextView style="@style/FilterChipIconLabel" android:text="Перевод"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Дата и время -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginLeft="18dp"
+        android:layout_marginRight="18dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_pill_secondary"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:contentDescription="@null"
+            android:src="@drawable/calendar"/>
+
+        <EditText
+            android:id="@+id/editDate"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@null"
+            android:clickable="true"
+            android:gravity="center"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13.5sp"
+            android:textStyle="bold"
+            android:onClick="btnDateClick"/>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="20dp"
+            android:background="@color/colorDivider"/>
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="12dp"
+            android:contentDescription="@null"
+            android:src="@drawable/clock"/>
+
+        <EditText
+            android:id="@+id/editTime"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@null"
+            android:clickable="true"
+            android:gravity="center"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13.5sp"
+            android:textStyle="bold"
+            android:onClick="btnTimeClick"/>
+    </LinearLayout>
+
+    <!-- Сумма, счета, комментарий -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/rowAmount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:paddingTop="20dp">
+
+                <!-- Знак расхода. Отдельным полем, а не в тексте суммы: в editAmount
+                     лежит выражение без знака (цифры и + - * /) — его разбирает
+                     сохранение и фильтр точности, и по нему же бьёт клавиатура. -->
+                <TextView
+                    android:id="@+id/tvAmountSign"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/caprasimo"
+                    android:text="-"
+                    android:textColor="@color/colorexpanse"
+                    android:textSize="40sp"
+                    android:visibility="gone"/>
+
+                <EditText
+                    android:id="@+id/editAmount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@null"
+                    android:cursorVisible="false"
+                    android:focusable="false"
+                    android:fontFamily="@font/caprasimo"
+                    android:gravity="center"
+                    android:hint="0.00"
+                    android:minWidth="80dp"
+                    android:textColor="@color/colorexpanse"
+                    android:textColorHint="@color/colorTextHint"
+                    android:textSize="40sp"/>
+
+                <TextView
+                    android:id="@+id/tvCurrencySymbol"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="20sp"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/amountHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:text="Сколько потратили"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="12sp"
+                android:textStyle="bold"/>
+
+            <!-- Перевод между счетами в разных валютах: сумма в валюте счета-получателя,
+                 подставляется по курсу на дату операции, пока пользователь не введёт свою. -->
+            <LinearLayout
+                android:id="@+id/rowAmountTo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="18dp"
+                android:layout_marginRight="18dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_card_row"
+                android:orientation="vertical"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/labelAmountTo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Сумма в валюте получателя"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <EditText
+                        android:id="@+id/editAmountTo"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:textColor="@color/colortransfer"
+                        android:textColorHint="@color/colorTextHint"
+                        android:textSize="20sp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:id="@+id/tvCurrencySymbolTo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:textColor="@color/colorTextSecondary"
+                        android:textSize="14sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvRateInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/colorTextHint"
+                    android:textSize="11sp"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="16dp"/>
+
+            <!-- Верхний слот: статья расхода / дохода, для перевода — «Откуда» -->
+            <LinearLayout
+                android:id="@+id/rowSlotTop"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="18dp"
+                android:layout_marginRight="18dp"
+                android:background="@drawable/bg_card_row"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:paddingTop="11dp"
+                android:paddingBottom="11dp"
+                android:onClick="onPickTop">
+
+                <ImageView
+                    android:id="@+id/imgSlotTop"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:contentDescription="@null"/>
+
+                <EditText
+                    android:id="@+id/editSlotTop"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:background="@null"
+                    android:clickable="true"
+                    android:hint="Статья расхода"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textColorHint="@color/colorTextHint"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:onClick="onPickTop"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="›"
+                    android:textColor="@color/colorPrimaryDark"
+                    android:textSize="15sp"/>
+            </LinearLayout>
+
+            <!-- Нижний слот: кошелёк, для перевода — «Куда» -->
+            <LinearLayout
+                android:id="@+id/rowSlotBottom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="18dp"
+                android:layout_marginRight="18dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_card_row"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:paddingTop="11dp"
+                android:paddingBottom="11dp"
+                android:onClick="onPickBottom">
+
+                <ImageView
+                    android:id="@+id/imgSlotBottom"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:contentDescription="@null"/>
+
+                <EditText
+                    android:id="@+id/editSlotBottom"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:background="@null"
+                    android:clickable="true"
+                    android:hint="Кошелёк"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textColorHint="@color/colorTextHint"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:onClick="onPickBottom"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="›"
+                    android:textColor="@color/colorPrimaryDark"
+                    android:textSize="15sp"/>
+            </LinearLayout>
+
+            <!-- Комиссия за перевод: показывается только для типа «Перевод». Пока не
+                 сохраняется в базу — см. TODO_transfers.md. -->
+            <LinearLayout
+                android:id="@+id/rowCommissionToggle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="18dp"
+                android:layout_marginRight="18dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_card_row"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:paddingTop="11dp"
+                android:paddingBottom="11dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Комиссия за перевод"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"/>
+
+                <FrameLayout
+                    android:id="@+id/switchCommission"
+                    android:layout_width="46dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/bg_switch_off"
+                    android:onClick="onToggleCommission">
+
+                    <View
+                        android:id="@+id/switchCommissionThumb"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_margin="2dp"
+                        android:background="@drawable/bg_switch_thumb"/>
+                </FrameLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/groupCommissionDetails"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/rowCommissionAccount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="18dp"
+                    android:layout_marginRight="18dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_card_row"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingLeft="14dp"
+                    android:paddingRight="14dp"
+                    android:paddingTop="11dp"
+                    android:paddingBottom="11dp"
+                    android:onClick="onPickCommissionAccount">
+
+                    <ImageView
+                        android:id="@+id/imgCommissionAccount"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:contentDescription="@null"/>
+
+                    <EditText
+                        android:id="@+id/editCommissionAccount"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:background="@null"
+                        android:clickable="false"
+                        android:focusable="false"
+                        android:hint="Счёт списания комиссии"
+                        android:textColor="@color/colorTextPrimary"
+                        android:textColorHint="@color/colorTextHint"
+                        android:textSize="14sp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textColor="@color/colorPrimaryDark"
+                        android:textSize="15sp"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="18dp"
+                    android:layout_marginRight="18dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_card_row"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingLeft="14dp"
+                    android:paddingRight="14dp"
+                    android:paddingTop="11dp"
+                    android:paddingBottom="11dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Размер комиссии"
+                        android:textColor="@color/colorTextSecondary"
+                        android:textSize="13sp"/>
+
+                    <EditText
+                        android:id="@+id/editCommissionAmount"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:background="@null"
+                        android:gravity="end"
+                        android:hint="0.00"
+                        android:textColor="@color/colorTextPrimary"
+                        android:textColorHint="@color/colorTextHint"
+                        android:textSize="14sp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:id="@+id/tvCurrencySymbolCommission"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:textColor="@color/colorTextSecondary"
+                        android:textSize="14sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="18dp"
+                    android:layout_marginRight="18dp"
+                    android:layout_marginTop="8dp"
+                    android:text="Комиссия списывается со счёта"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold"/>
+
+                <RadioGroup
+                    android:id="@+id/radioGroupCommissionSide"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="18dp"
+                    android:layout_marginRight="18dp"
+                    android:layout_marginTop="6dp"
+                    android:orientation="vertical">
+
+                    <RadioButton
+                        android:id="@+id/radioCommissionFromSource"
+                        style="@style/PillRadioRow"
+                        android:checked="true"
+                        android:text="Со счёта отправителя (откуда)"
+                        android:onClick="onCommissionSideChanged"/>
+
+                    <RadioButton
+                        android:id="@+id/radioCommissionFromDest"
+                        style="@style/PillRadioRow"
+                        android:text="Со счёта получателя (куда)"
+                        android:onClick="onCommissionSideChanged"/>
+                </RadioGroup>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="18dp"
+                    android:layout_marginRight="18dp"
+                    android:text="Комиссия пока не сохраняется в базу — см. план работ."
+                    android:textColor="@color/colorTextHint"
+                    android:textSize="11sp"/>
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/editComment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:layout_marginLeft="18dp"
+                android:layout_marginRight="18dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_input_pill"
+                android:hint="Комментарий"
+                android:inputType="textCapSentences|textMultiLine"
+                android:maxLines="3"
+                android:minHeight="46dp"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:textColor="@color/colorTextPrimary"
+                android:textColorHint="@color/colorTextHint"
+                android:textSize="14sp"/>
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Клавиатура. Раскладка калькуляторная, а не телефонная: 789 сверху, 123 снизу,
+         служебный ряд (C ÷ × ⌫) наверху.
+
+         Собрана из двух блоков, а не из рядов: «Сохранить» занимает в правой колонке
+         две клетки, а ряд такое не выражает. Ширины колонок сходятся за счёт полей по
+         3dp у каждой клавиши — см. стиль KeypadKey; отступы клавиатуры на эти 3dp
+         уменьшены, чтобы край экрана остался прежним.
+
+         Подпись на клавише действия — знак покрасивее (× ÷ −), а в tag лежит
+         ASCII-оператор: именно он попадает в поле, и его же считает parseAmount.
+         Шрифт суммы (caprasimo) юникодных знаков может не знать — в поле только ASCII. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="11dp"
+        android:paddingRight="11dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="11dp">
+
+        <!-- Три левые колонки: цифры и то, что набирается вместе с ними. -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView style="@style/KeypadKeyClear" android:tag="clear" android:text="C" android:onClick="onKeypadKey"/>
+                <TextView style="@style/KeypadKeyOperator" android:tag="/" android:text="÷" android:onClick="onKeypadKey"/>
+                <TextView style="@style/KeypadKeyOperator" android:tag="*" android:text="×" android:onClick="onKeypadKey"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView style="@style/KeypadKey" android:tag="7" android:text="7" android:onClick="onKeypadKey"/>
+                <TextView style="@style/KeypadKey" android:tag="8" android:text="8" android:onClick="onKeypadKey"/>
+                <TextView style="@style/KeypadKey" android:tag="9" android:text="9" android:onClick="onKeypadKey"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView style="@style/KeypadKey" android:tag="4" android:text="4" android:onClick="onKeypadKey"/>
+                <TextView style="@style/KeypadKey" android:tag="5" android:text="5" android:onClick="onKeypadKey"/>
+                <TextView style="@style/KeypadKey" android:tag="6" android:text="6" android:onClick="onKeypadKey"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView style="@style/KeypadKey" android:tag="1" android:text="1" android:onClick="onKeypadKey"/>
+                <TextView style="@style/KeypadKey" android:tag="2" android:text="2" android:onClick="onKeypadKey"/>
+                <TextView style="@style/KeypadKey" android:tag="3" android:text="3" android:onClick="onKeypadKey"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView style="@style/KeypadKey" android:tag="0" android:text="0" android:onClick="onKeypadKey"/>
+                <TextView style="@style/KeypadKey" android:tag="000" android:text="000" android:textSize="18sp" android:onClick="onKeypadKey"/>
+                <TextView style="@style/KeypadKey" android:tag="." android:text="." android:onClick="onKeypadKey"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Правая колонка. Клавиши в ней стоят друг под другом, поэтому ширину и вес
+             из стиля (он рассчитан на ряд) переопределяем на месте. -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/keypadDel"
+                style="@style/KeypadKeyIcon"
+                android:layout_width="match_parent"
+                android:layout_weight="0"
+                android:contentDescription="Стереть"
+                android:src="@drawable/ic_backspace"
+                android:tag="del"
+                android:onClick="onKeypadKey"/>
+
+            <TextView style="@style/KeypadKeyOperator" android:layout_width="match_parent" android:layout_weight="0" android:tag="-" android:text="−" android:onClick="onKeypadKey"/>
+            <TextView style="@style/KeypadKeyOperator" android:layout_width="match_parent" android:layout_weight="0" android:tag="+" android:text="+" android:onClick="onKeypadKey"/>
+
+            <!-- Две клетки в высоту: 48 + зазор 6 + 48. Заметно крупнее клавиши,
+                 но экрана занимает меньше, чем отдельная строка под кнопку.
+
+                 Значок, а не подпись: в колонку шириной с клавишу «Сохранить» не влезает
+                 (см. ic_save.xml). Слово осталось в contentDescription — для TalkBack.
+                 Отступ задаёт размер дискеты: fitCenter вписывает её в остаток. -->
+            <ImageButton
+                android:id="@+id/buttonSave"
+                android:layout_width="match_parent"
+                android:layout_height="102dp"
+                android:layout_margin="3dp"
+                android:background="@drawable/bg_key_primary"
+                android:contentDescription="@string/caption_btn_save"
+                android:padding="22dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_save"
+                android:stateListAnimator="@null"
+                android:onClick="SaveClick"/>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

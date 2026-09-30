@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Связка с сервером через Google (servers/TODO_mobile_sync.md, Фаза 1) —
+  открывается с экрана «Настройки» → «Синхронизация» → «Связать с сервером».
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/colorBackground"
+        android:padding="24dp">
+
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Связать с сервером"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/caprasimo"
+            android:textColor="@color/colorTextPrimary"
+            android:paddingBottom="8dp"/>
+
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Войдите тем же Google-аккаунтом, под которым сервер уже знает ваши данные."
+            android:textSize="13sp"
+            android:textColor="@color/colorTextSecondary"
+            android:paddingBottom="20dp"/>
+
+    <Button
+            android:id="@+id/buttonSignIn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Войти через Google"/>
+
+    <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingTop="16dp">
+
+        <TextView
+                android:id="@+id/textResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textIsSelectable="true"
+                android:textColor="@color/colorTextSecondary"
+                android:fontFamily="monospace"/>
+
+    </ScrollView>
+
+</LinearLayout>

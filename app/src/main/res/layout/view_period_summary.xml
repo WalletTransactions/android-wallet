@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Общая часть шапки корневых экранов: период, карточка состояния денег и строка
+  активного фильтра. Один и тот же блок на «Операциях», «Кошельках» и «Отчётах» —
+  подключается через <include layout="@layout/view_period_summary"/>, поэтому
+  вёрстку и цифры больше не приходится копировать по экранам.
+
+  Кто это оживляет: BaseTabActivity — период берёт из PeriodFilterState, цифры
+  считает одним методом refreshSummaryCard(). Плитки «Доход» и «Расход» — не только
+  цифры: тап уводит на «Операции», оставив в ленте операции только этого вида.
+
+  Id сохранены прежние: fragmentDataPeriod, balanceState, openingBalance,
+  endingBalance, incomeSum, expenseSum, totalProfitBalance, filterSummary.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/periodSummary"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingLeft="18dp"
+    android:paddingRight="18dp">
+
+    <!-- Период: пилюля со стрелками -->
+    <FrameLayout
+        android:id="@+id/periodPill"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_pill_secondary"
+        android:padding="5dp">
+
+        <fragment
+            android:id="@+id/fragmentDataPeriod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:name="com.example.wallettransactions.Activities.Fragments.ChooseDatePeriodFragment"
+            tools:layout="@layout/fragment_choose_date_period"/>
+    </FrameLayout>
+
+    <!-- Состояние денег: На начало / На конец / Доход · Расход · Итог -->
+    <LinearLayout
+        android:id="@+id/balanceState"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_card"
+        android:elevation="3dp"
+        android:orientation="vertical"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="13dp"
+        android:paddingBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="true"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:letterSpacing="0.07"
+                android:text="На начало"
+                android:textAllCaps="true"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="10.5sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/openingBalance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="435 854 ₽"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:baselineAligned="true"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:letterSpacing="0.07"
+                android:text="На конец"
+                android:textAllCaps="true"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="10.5sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/endingBalance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/caprasimo"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="26sp"
+                tools:text="592 794 ₽"/>
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="9dp"
+            android:background="@color/colorDivider"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/tileIncome"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackground"
+                android:orientation="vertical"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:onClick="onFilterIncome">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.06"
+                    android:text="Доход"
+                    android:textAllCaps="true"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/incomeSum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorprofit"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    tools:text="185 000 ₽"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="12dp"
+                android:layout_marginRight="12dp"
+                android:background="@color/colorDivider"/>
+
+            <LinearLayout
+                android:id="@+id/tileExpense"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackground"
+                android:orientation="vertical"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:onClick="onFilterExpense">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.06"
+                    android:text="Расход"
+                    android:textAllCaps="true"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/expenseSum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorexpanse"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    tools:text="−28 060 ₽"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="12dp"
+                android:layout_marginRight="12dp"
+                android:background="@color/colorDivider"/>
+
+            <!-- Итог не кликается: своей ленты у него нет — но отступы те же, иначе
+                 его цифра встала бы выше «Дохода» и «Расхода». -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.06"
+                    android:text="Итог"
+                    android:textAllCaps="true"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/totalProfitBalance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorprofit"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    tools:text="156 940 ₽"/>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Активный фильтр: виден, когда фильтр задан (BaseTabActivity.refreshFilterBanner) -->
+    <LinearLayout
+        android:id="@+id/filterBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/filterSummary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/colorexpanse"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            tools:text="Фильтр · Продукты, Аренда"/>
+
+        <TextView
+            android:id="@+id/btnClearFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_pill_secondary"
+            android:paddingLeft="13dp"
+            android:paddingRight="13dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:text="Сбросить"
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:onClick="onClearFilter"/>
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  «Ещё» → «Повторяющиеся операции»: список правил. Тап по строке — правка,
+  переключатель справа — включить/выключить повтор, строка-«+» под списком — новое
+  правило (та же, что у кошельков: activity_account_picker.xml/btnAddAccountRow).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    android:orientation="vertical">
+
+    <include layout="@layout/view_screen_header"/>
+
+    <TextView
+        android:id="@+id/emptyRecurring"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="32dp"
+        android:gravity="center"
+        android:text="Повторяющихся операций пока нет."
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="14sp"
+        android:visibility="gone"/>
+
+    <ListView
+        android:id="@+id/listRecurring"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingTop="8dp"
+        android:clipToPadding="false"
+        android:divider="@null"
+        android:dividerHeight="0dp"/>
+
+    <LinearLayout
+        android:id="@+id/btnAddRecurringRow"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_margin="18dp"
+        android:background="@drawable/bg_pill_dashed"
+        android:gravity="center"
+        android:onClick="onAddRecurring">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+ Добавить повторяющуюся операцию"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorexpanse"/>
+    </LinearLayout>
+</LinearLayout>

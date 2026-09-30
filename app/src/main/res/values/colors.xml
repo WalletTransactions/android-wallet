@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Дизайн-система «Кошелёк». Имена ролей сохранены, значения заменены.
+
+  Светлая тема. Тёмная — values-night/colors.xml: там ровно те же имена с другими
+  значениями, поэтому весь остальной ресурс (drawable, layout, styles) и код
+  ссылаются только на роли отсюда и переключаются вместе с темой сами. Заводя новую
+  роль, добавляй её в оба файла — иначе тёмная тема унаследует светлое значение.
+-->
+<resources>
+    <color name="colorPrimary">#C67139</color>
+    <color name="colorPrimaryDark">#B2622D</color>
+    <color name="colorPrimaryLight">#F6A06B</color>
+    <color name="colorAccent">#C67139</color>
+
+    <color name="colorBackground">#F5EAD8</color>
+    <color name="colorSurface">#FFF8EC</color>
+    <color name="colorSurfaceAlt">#EBDDC5</color>
+    <color name="colorIconCircle">#F0E6D4</color>
+
+    <color name="colorTextPrimary">#201E1D</color>
+    <color name="colorTextSecondary">#82796A</color>
+    <color name="colorTextHint">#A19786</color>
+    <color name="colorDivider">#1A201E1D</color>
+    <color name="colorInputBg">#EBDDC5</color>
+    <color name="colorCardBorder">#1A201E1D</color>
+
+    <!-- Обводка «жирнее» рамки карточки: пунктирные и обводные пилюли. -->
+    <color name="colorOutlineStrong">#40201E1D</color>
+    <!-- Рябь на прозрачных подложках (обводные пилюли): своей заливки у них нет. -->
+    <color name="colorRipplePrimary">#26C67139</color>
+    <color name="colorRippleExpanse">#268C491A</color>
+    <!-- Пилюля комиссии в строке перевода: подпись на ней — colorexpanse, поэтому
+         заливка того же тона с низкой прозрачностью, а не сплошная. -->
+    <color name="colorFeePillBg">#1A8C491A</color>
+
+    <!-- Статус-бар. Отдельная роль, а не colorPrimaryDark: в тёмной теме тот уходит
+         в светлый (им же красятся шевроны «›»), а полоса статуса — нет. -->
+    <color name="colorStatusBar">#B2622D</color>
+
+    <color name="graylight">#F9F4ED</color>
+    <color name="gray">#A19786</color>
+
+    <color name="colorprofit">#56633F</color>
+    <color name="colorexpanse">#8C491A</color>
+    <color name="colortransfer">#82796A</color>
+
+    <!-- Плитки «Доход»/«Расход» на экране отчёта: заливка и крупная сумма на ней. -->
+    <color name="colorProfitBg">#E1EECC</color>
+    <color name="colorProfitDeep">#3D472B</color>
+    <color name="colorExpanseBg">#FFE1D0</color>
+    <color name="colorExpanseDeep">#643312</color>
+
+    <color name="startBackGroud">#C67139</color>
+    <color name="endBackGroud">#7A8A5E</color>
+
+    <color name="ic_launcher_background">#7A8A5E</color>
+</resources>

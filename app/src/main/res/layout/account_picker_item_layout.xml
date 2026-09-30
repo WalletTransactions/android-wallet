@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Строка экрана выбора счёта. Это строка кошелька из отчёта «Кошельки»
+  (wallet_balance_item_layout.xml), у которой убраны колонка «на начало» и
+  изменение за период: при вводе операции важно только, что на счёте сейчас.
+  У категории трат баланса нет — правая колонка у неё пустая.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/bg_card_row"
+    android:padding="12dp"
+    android:layout_marginBottom="8dp">
+
+    <FrameLayout
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_icon_circle">
+
+        <!-- Тот же размер, что в строке отчёта «Кошельки»: иконка круглая и занимает
+             подложку почти целиком. -->
+        <ImageView
+            android:id="@+id/pickerIcon"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"/>
+
+        <ImageView
+            android:id="@+id/pickerFlag"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_gravity="bottom|end"
+            android:contentDescription="@null"/>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/pickerName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:paddingStart="12dp"
+        android:paddingEnd="8dp"
+        android:text="Кошелёк"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:textColor="@color/colorTextPrimary"/>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="end">
+
+        <TextView
+            android:id="@+id/pickerBalance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="13.5sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorTextPrimary"/>
+
+        <TextView
+            android:id="@+id/pickerBalanceEq"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="@color/colorTextSecondary"/>
+    </LinearLayout>
+</LinearLayout>

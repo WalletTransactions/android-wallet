@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Заголовок корневого экрана. Вставляется через <include layout="@layout/view_tab_title"/>
+  первым элементом горизонтального headerRow, текст ставит
+  BaseTabActivity.initTabScreen(...) — по одному месту на все табы.
+
+  Между заголовком и общими действиями (view_tab_actions) экран может положить свои
+  кнопки: «+ кошелёк» на «Кошельках», группировка на «Операциях».
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <TextView
+        android:id="@+id/screenTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:fontFamily="@font/caprasimo"
+        android:maxLines="1"
+        android:textColor="@color/colorTextPrimary"
+        android:textSize="25sp"
+        tools:text="Операции"/>
+</merge>

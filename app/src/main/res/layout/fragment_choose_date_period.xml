@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Период внутри пилюли: круглые стрелки на светлой подложке. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:context=".Activities.Fragments.ChooseDatePeriodFragment">
+
+    <LinearLayout
+        android:id="@+id/datesFilter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical">
+
+        <ImageButton
+            android:id="@+id/btnPrev"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_pill_light"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_prev"/>
+
+        <fragment
+            android:id="@+id/fragmentDataFrom"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:name="com.example.wallettransactions.Activities.Fragments.ChooseDateFragment"
+            tools:layout="@layout/fragment_choose_date"/>
+
+        <fragment
+            android:id="@+id/fragmentDataTo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:name="com.example.wallettransactions.Activities.Fragments.ChooseDateFragment"
+            tools:layout="@layout/fragment_choose_date"/>
+
+        <ImageButton
+            android:id="@+id/btnNext"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_pill_light"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_next"/>
+    </LinearLayout>
+</FrameLayout>

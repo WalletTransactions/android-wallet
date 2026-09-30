@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Общие действия шапки: фильтр и валюта эквивалента. Одни и те же на «Операциях»,
+  «Кошельках» и «Отчётах» — вставляются через <include layout="@layout/view_tab_actions"/>
+  последними в горизонтальном headerRow, поэтому прижаты к правому краю одинаково
+  на всех табах.
+
+  Обработчики — в BaseTabActivity: btnChangeFilter открывает activity_filter.xml,
+  onPickCurrencyEq — попап со списком валют. Оба пишут в PeriodFilterState, то есть
+  выбор сохраняется при переходе на другой таб.
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <ImageButton
+        android:id="@+id/btnFilter"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_pill_secondary"
+        android:contentDescription="Фильтр"
+        android:src="@drawable/ic_filter"
+        android:onClick="btnChangeFilter"/>
+
+    <TextView
+        android:id="@+id/btnCurrencyEq"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_pill_secondary"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:minWidth="58dp"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
+        android:textColor="@color/colorexpanse"
+        android:textSize="12.5sp"
+        android:textStyle="bold"
+        android:onClick="onPickCurrencyEq"
+        tools:text="EUR"/>
+</merge>

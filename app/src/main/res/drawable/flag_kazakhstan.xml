@@ -1,0 +1,35 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+  <!-- Sky-blue circle background -->
+  <path android:fillColor="#00AFCA"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z"/>
+  <!-- White border ring -->
+  <path android:fillColor="#FFFFFF" android:fillAlpha="0.2"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z
+                        M5,32 A27,27 0 1 1 59,32 A27,27 0 1 1 5,32Z"/>
+  <!-- Yellow vertical ornament strip on left -->
+  <path android:fillColor="#FFD700"
+      android:pathData="M10,10 Q12,14 10,18 Q12,22 10,26 Q12,30 10,34 Q12,38 10,42 Q12,46 10,50 Q12,54 10,54 L13,54 Q11,50 13,46 Q11,42 13,38 Q11,34 13,30 Q11,26 13,22 Q11,18 13,14 Q11,10 13,10Z"/>
+  <!-- Sun circle -->
+  <path android:fillColor="#FFD700"
+      android:pathData="M36,25 A8,8 0 1 0 36,41 A8,8 0 1 0 36,25Z"/>
+  <!-- Sun rays -->
+  <path android:fillColor="#FFD700"
+      android:pathData="M36,14 L37.5,22 L36,20 L34.5,22Z
+                        M36,42 L37.5,50 L36,48 L34.5,50Z
+                        M25,33 L19,34.5 L21,33 L19,31.5Z
+                        M47,33 L53,34.5 L51,33 L53,31.5Z
+                        M28,20 L30,27 L28,25 L26,27Z
+                        M44,20 L46,27 L44,25 L42,27Z
+                        M28,46 L30,39 L28,41 L26,39Z
+                        M44,46 L46,39 L44,41 L42,39Z"/>
+  <!-- Eagle silhouette above sun -->
+  <path android:fillColor="#FFD700"
+      android:pathData="M36,17 C33,17 29,15 27,17 C29,19 33,18 36,20 C39,18 43,19 45,17 C43,15 39,17 36,17Z"/>
+  <!-- Highlight -->
+  <path android:fillColor="#FFFFFF" android:fillAlpha="0.15"
+      android:pathData="M14,14 A22,22 0 0 1 50,14 A28,28 0 0 0 14,14Z"/>
+</vector>

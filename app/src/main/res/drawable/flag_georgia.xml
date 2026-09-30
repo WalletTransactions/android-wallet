@@ -1,0 +1,38 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+  <!-- White circle background -->
+  <path android:fillColor="#FFFFFF"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z"/>
+  <!-- White border ring -->
+  <path android:fillColor="#CCCCCC" android:fillAlpha="0.4"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z
+                        M4,32 A28,28 0 1 1 60,32 A28,28 0 1 1 4,32Z"/>
+  <!-- Large red cross — horizontal bar -->
+  <path android:fillColor="#FF0000"
+      android:pathData="M6,28 H29 V36 H6Z"/>
+  <path android:fillColor="#FF0000"
+      android:pathData="M35,28 H58 V36 H35Z"/>
+  <!-- Large red cross — vertical bar -->
+  <path android:fillColor="#FF0000"
+      android:pathData="M28,6 H36 V29 H28Z"/>
+  <path android:fillColor="#FF0000"
+      android:pathData="M28,35 H36 V58 H28Z"/>
+  <!-- Small cross top-left -->
+  <path android:fillColor="#FF0000"
+      android:pathData="M13,11 H17 V19 H13Z M10,14 H20 V16 H10Z"/>
+  <!-- Small cross top-right -->
+  <path android:fillColor="#FF0000"
+      android:pathData="M47,11 H51 V19 H47Z M44,14 H54 V16 H44Z"/>
+  <!-- Small cross bottom-left -->
+  <path android:fillColor="#FF0000"
+      android:pathData="M13,45 H17 V53 H13Z M10,48 H20 V50 H10Z"/>
+  <!-- Small cross bottom-right -->
+  <path android:fillColor="#FF0000"
+      android:pathData="M47,45 H51 V53 H47Z M44,48 H54 V50 H44Z"/>
+  <!-- Highlight -->
+  <path android:fillColor="#FFFFFF" android:fillAlpha="0.2"
+      android:pathData="M14,14 A22,22 0 0 1 50,14 A28,28 0 0 0 14,14Z"/>
+</vector>

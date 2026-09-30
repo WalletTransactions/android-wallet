@@ -1,0 +1,47 @@
+# Одноразовый образ для гонки Android unit-тестов (`./gradlew :app:testDebugUnitTest`)
+# вне Android Studio — сам Jenkins (BuildPlatform) тулчейна не несёт, каждый
+# job вызывает СВОИ инструменты вложенными `docker run` (см.
+# BuildPlatform/jenkins/README.md, "Зачем контейнеру Jenkins доступ к сокету
+# Docker хоста"), этот Containerfile — ровно такой инструмент для Android.
+#
+# JDK17, не 21 (какой может стоять на хосте) — Gradle 7.5 (см. ../gradle/
+# wrapper/gradle-wrapper.properties) не собирает build-скрипты на JDK21
+# ("Unsupported class file major version 65", проверено вживую 2026-09-13);
+# 17 — версия, которую реально гоняет Android Gradle Plugin 7.4.2 (см.
+# ../build.gradle, classpath) в этом проекте.
+#
+# Версии cmdline-tools/platform/build-tools — те, что реально завелись и
+# собрали проект вживую (2026-09-13, тот же день, что и правка SyncEngine —
+# см. servers/TODO_mobile_sync.md про missing_reference): build-tools у
+# ../app/build.gradle указан 29.0.3, но AGP 7.4.2 требует не ниже 30.0.3 и
+# сам подставляет её вместо заявленной (см. ворнинг в выводе gradlew) — тут
+# ставим сразу то, что реально используется, не то, что написано в
+# build.gradle.
+FROM eclipse-temurin:17-jdk
+
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV ANDROID_HOME=/opt/android-sdk
+
+RUN apt-get update -qq \
+    && apt-get install -y --no-install-recommends -qq curl unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# commandlinetools — источник sdkmanager, которым ставятся сами
+# platform/build-tools ниже; версия ("11076708") — просто актуальная на
+# момент подготовки образа, не что-то, от чего зависит поведение теста.
+RUN mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools" \
+    && curl -fsSL -o /tmp/cmdline-tools.zip \
+       https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
+    && unzip -q /tmp/cmdline-tools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools" \
+    && mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest" \
+    && rm /tmp/cmdline-tools.zip
+
+ENV PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:${PATH}"
+
+# platform-tools тут не для adb (тестам эмулятор не нужен — testDebugUnitTest
+# гоняет чистую JVM, см. ../app/build.gradle, testImplementation) — тянется
+# просто как часть обычного набора sdkmanager, отдельно убирать не стали.
+RUN yes | sdkmanager --licenses >/dev/null 2>&1 || true \
+    && sdkmanager "platforms;android-34" "build-tools;30.0.3" "platform-tools"
+
+WORKDIR /repo/Android

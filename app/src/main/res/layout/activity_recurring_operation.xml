@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Правило повторяющейся операции: новое или правка (RecurringOperationActivity).
+  Тип операции и счета — как на экране операции (activity_transaction.xml): чипы
+  Расход / Доход / Перевод, верхняя строка — «другая сторона», нижняя — кошелёк.
+  Ниже — расписание: частота (выпадающий список), для еженедельного — дни недели
+  и шаг в неделях, даты начала/окончания («всегда» — без окончания), «активна».
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/colorBackground">
+
+    <!-- Шапка: как view_screen_header, плюс «Удалить» при правке. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="6dp">
+
+        <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:contentDescription="Назад"
+            android:padding="11dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_nav_back"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:id="@+id/screenTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/caprasimo"
+            android:maxLines="1"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="20sp"/>
+
+        <ImageButton
+            android:id="@+id/btnDelete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:contentDescription="Удалить"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_delete_forever_black_24dp"
+            android:tint="@color/colorexpanse"
+            android:visibility="gone"
+            android:onClick="onDeleteClick"/>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <!-- Тип операции: порядок вьюх в чипе важен — см. paintChip. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/kindExpense"
+                    style="@style/FilterChipIcon"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:onClick="onKindClick">
+                    <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_expense"/>
+                    <TextView style="@style/FilterChipIconLabel" android:text="Расход"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/kindIncome"
+                    style="@style/FilterChipIcon"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:onClick="onKindClick">
+                    <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_income"/>
+                    <TextView style="@style/FilterChipIconLabel" android:text="Доход"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/kindTransfer"
+                    style="@style/FilterChipIcon"
+                    android:layout_marginEnd="0dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:onClick="onKindClick">
+                    <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_transfer"/>
+                    <TextView style="@style/FilterChipIconLabel" android:text="Перевод"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView android:id="@+id/labelSlotTop" style="@style/SettingsGroupLabel" android:text="Статья расхода"/>
+            <LinearLayout
+                android:id="@+id/rowSlotTop"
+                style="@style/RecurringPickerRow"
+                android:onClick="onPickTop">
+                <ImageView android:id="@+id/imgSlotTop" style="@style/RecurringPickerIcon"/>
+                <TextView android:id="@+id/tvSlotTop" style="@style/RecurringPickerValue"/>
+                <ImageView style="@style/MoreRowChevron"/>
+            </LinearLayout>
+
+            <TextView android:id="@+id/labelSlotBottom" style="@style/SettingsGroupLabel" android:text="Кошелёк"/>
+            <LinearLayout
+                android:id="@+id/rowSlotBottom"
+                style="@style/RecurringPickerRow"
+                android:onClick="onPickBottom">
+                <ImageView android:id="@+id/imgSlotBottom" style="@style/RecurringPickerIcon"/>
+                <TextView android:id="@+id/tvSlotBottom" style="@style/RecurringPickerValue"/>
+                <ImageView style="@style/MoreRowChevron"/>
+            </LinearLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="Сумма"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_input_pill"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp">
+
+                <EditText
+                    android:id="@+id/editAmount"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:hint="0.00"
+                    android:inputType="numberDecimal"
+                    android:singleLine="true"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textColorHint="@color/colorTextHint"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/tvCurrencySymbol"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="15sp"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="Комментарий"/>
+            <EditText
+                android:id="@+id/editComment"
+                style="@style/FormInputPill"
+                android:hint="Необязательно"
+                android:inputType="textCapSentences"/>
+
+            <!-- ── Расписание ── -->
+            <TextView style="@style/SettingsGroupLabel" android:text="Повторять"/>
+            <LinearLayout
+                android:id="@+id/rowFrequency"
+                style="@style/RecurringPickerRow"
+                android:onClick="onPickFrequency">
+                <TextView android:id="@+id/tvFrequency" style="@style/RecurringPickerValue"
+                    android:paddingStart="0dp" android:text="Ежемесячно"/>
+                <ImageView style="@style/MoreRowChevron"/>
+            </LinearLayout>
+
+            <!-- Только для еженедельного повтора. -->
+            <LinearLayout
+                android:id="@+id/groupWeekly"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView style="@style/SettingsGroupLabel" android:text="Дни недели"/>
+                <LinearLayout
+                    android:id="@+id/weekDays"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:orientation="horizontal">
+                    <TextView style="@style/RecurringDayChip" android:tag="1" android:text="Пн"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="2" android:text="Вт"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="3" android:text="Ср"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="4" android:text="Чт"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="5" android:text="Пт"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="6" android:text="Сб"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="7" android:text="Вс"
+                        android:layout_marginEnd="0dp"/>
+                </LinearLayout>
+
+                <TextView style="@style/SettingsGroupLabel" android:text="Через сколько недель"/>
+                <LinearLayout
+                    android:id="@+id/rowInterval"
+                    style="@style/RecurringPickerRow"
+                    android:onClick="onPickInterval">
+                    <TextView android:id="@+id/tvInterval" style="@style/RecurringPickerValue"
+                        android:paddingStart="0dp" android:text="Каждую неделю"/>
+                    <ImageView style="@style/MoreRowChevron"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="С какой даты"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_card_row"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/calendar"/>
+
+                <TextView
+                    android:id="@+id/tvStartDate"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:onClick="onPickStartDate"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"/>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="20dp"
+                    android:background="@color/colorDivider"/>
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="12dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/clock"/>
+
+                <TextView
+                    android:id="@+id/tvStartTime"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:onClick="onPickStartTime"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="До какой даты"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:onClick="onToggleForever">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Всегда"
+                        android:textColor="@color/colorTextPrimary"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"/>
+
+                    <FrameLayout
+                        android:id="@+id/switchForever"
+                        android:layout_width="46dp"
+                        android:layout_height="26dp"
+                        android:background="@drawable/bg_switch_on"
+                        android:onClick="onToggleForever">
+                        <View
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_margin="2dp"
+                            android:background="@drawable/bg_switch_thumb"/>
+                    </FrameLayout>
+                </LinearLayout>
+
+                <View android:id="@+id/dividerEndDate" style="@style/MoreRowDivider" android:visibility="gone"/>
+
+                <LinearLayout
+                    android:id="@+id/rowEndDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:visibility="gone"
+                    android:onClick="onPickEndDate">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="10dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/calendar"/>
+
+                    <TextView
+                        android:id="@+id/tvEndDate"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@color/colorTextPrimary"
+                        android:textSize="14sp"
+                        android:textStyle="bold"/>
+
+                    <ImageView style="@style/MoreRowChevron"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:onClick="onToggleActive">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Повтор включён"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textSize="14.5sp"
+                    android:textStyle="bold"/>
+
+                <FrameLayout
+                    android:id="@+id/switchActive"
+                    android:layout_width="46dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/bg_switch_on"
+                    android:onClick="onToggleActive">
+                    <View
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_margin="2dp"
+                        android:background="@drawable/bg_switch_thumb"/>
+                </FrameLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvNextOccurrence"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="18dp"
+                android:paddingLeft="4dp"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="12.5sp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_pill_primary"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:onClick="onSaveClick"
+                android:text="Сохранить"
+                android:textColor="@color/colorSurface"
+                android:textSize="15sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

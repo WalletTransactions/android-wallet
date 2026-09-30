@@ -1,0 +1,48 @@
+<resources>
+    <string name="app_name">Посчитай и сбереги</string>
+    <string name="caption_btn_add">добавить</string>
+    <string name="caption_add_transaction">Добавить расход</string>
+    <string name="caption_btn_save">Сохранить</string>
+
+    <string name="category_product">Продукты</string>
+    <string name="category_restoryan">Ресторан</string>
+    <string name="category_car">Машина</string>
+
+    <string-array name="array_category">
+        <item>@string/category_product</item>
+        <item>@string/category_restoryan</item>
+        <item>@string/category_car</item>
+    </string-array>
+    <string name="title_activity_category">CategoryActivity</string>
+    <string name="caption_clear_transaction">Удалить все</string>
+    <string name="action_charged_list" type="id">Счета затрат</string>
+    <string name="caption_choose_any_account">Счета</string>
+    <string name="caption_choose_operating_account">Счета затрат</string>
+    <string name="caption_choose_charged_account">Счета зачисления</string>
+    <string name="title_activity_report">ReportActivity</string>
+    <string name="title_activity_main2">MainActivity2</string>
+    <string name="navigation_drawer_open">Открыть</string>
+    <string name="navigation_drawer_close">Закрыть</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_home">Home</string>
+    <string name="menu_gallery">Gallery</string>
+    <string name="menu_slideshow">Slideshow</string>
+    <string name="menu_tools">Tools</string>
+    <string name="menu_share">Share</string>
+    <string name="menu_send">Send</string>
+    <string name="title_activity_main">MainActivity</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_account">AccountActivity</string>
+    <string name="tab_account_expanse">Затраты</string>
+    <string name="tab_account_operating">Счета</string>
+    <string name="tab_account_income">Доходы</string>
+    <string name="title_currencypair_list">CurrencyPairRates</string>
+    <string name="title_currencypair_detail">CurrencyPair Detail</string>
+    <string name="title_activity_filter">ScrollingActivity</string>
+
+</resources>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран «Курсы валют». Открывается из «Ещё». Панель нижней навигации не подключена.
+  Список пар — pair_item_layout.xml. Клик по паре открывает activity_currency_pair.xml
+  (карточка пары + история курса, не входит в этот архив, экран уже есть в редизайне 2a).
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="10dp">
+
+        <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:src="@drawable/ic_nav_back"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="Курсы валют"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/caprasimo"
+            android:textColor="@color/colorTextPrimary"/>
+    </LinearLayout>
+
+    <!-- Поиск валюты — единственный фильтр экрана и виден всегда: раскрывающаяся панель
+         с чипами валют прятала фильтр за лишним тапом, а набрать «EUR» всё равно быстрее,
+         чем искать нужную валюту глазами в списке. Фильтрует сами пары. -->
+    <EditText
+        android:id="@+id/currencyFilterSearch"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_below="@id/toolbar"
+        android:layout_marginStart="18dp"
+        android:layout_marginEnd="18dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/bg_input_pill"
+        android:hint="Поиск валюты"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:textSize="13sp"
+        android:singleLine="true"/>
+
+    <ListView
+        android:id="@+id/listPairs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/currencyFilterSearch"
+        android:layout_above="@id/btnAddPair"
+        android:divider="@null"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:clipToPadding="false"/>
+
+    <LinearLayout
+        android:id="@+id/btnAddPair"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="18dp"
+        android:background="@drawable/bg_pill_dashed"
+        android:gravity="center"
+        android:onClick="onAddPair">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+ Добавить валютную пару"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorexpanse"/>
+    </LinearLayout>
+</RelativeLayout>

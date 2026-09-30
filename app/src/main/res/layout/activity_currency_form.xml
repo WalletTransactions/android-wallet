@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Форма валюты (прототип 2a, блок curFormOpen): иконка, название, ISO-код,
+  символ, точность. Открывается из «Списка валют» — по ✎ в строке
+  (правка) или по «+ Создать валюту».
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="6dp">
+
+        <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:contentDescription="Назад"
+            android:padding="11dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_nav_back"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:id="@+id/formTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:fontFamily="@font/caprasimo"
+            android:text="Новая валюта"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="20sp"/>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="14dp"
+            android:paddingBottom="20dp">
+
+            <TextView style="@style/SettingsGroupLabel" android:text="Иконка"/>
+
+            <ImageView
+                android:id="@+id/imgCurrencyIcon"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_marginBottom="18dp"
+                android:background="@drawable/bg_icon_circle"
+                android:clickable="true"
+                android:contentDescription="Иконка валюты"
+                android:focusable="true"
+                android:padding="14dp"
+                android:onClick="onPickIcon"/>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="Название"/>
+
+            <EditText
+                android:id="@+id/editCurrencyName"
+                style="@style/FormInputPill"
+                android:hint="Например, Доллар США"
+                android:inputType="textCapSentences"/>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="ISO-код"/>
+
+            <EditText
+                android:id="@+id/editCurrencyIso"
+                style="@style/FormInputPill"
+                android:hint="USD"
+                android:inputType="textCapCharacters"
+                android:maxLength="8"/>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="Символ"/>
+
+            <EditText
+                android:id="@+id/editCurrencySymbol"
+                style="@style/FormInputPill"
+                android:hint="$"
+                android:maxLength="8"/>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="Точность (знаков после запятой)"/>
+
+            <EditText
+                android:id="@+id/editCurrencyPrecision"
+                style="@style/FormInputPill"
+                android:hint="2"
+                android:inputType="number"
+                android:maxLength="1"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/btnDelete"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="9dp"
+                    android:background="@drawable/bg_pill_outline_expanse"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Удалить"
+                    android:textColor="@color/colorexpanse"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    android:onClick="onDelete"/>
+
+                <TextView
+                    android:id="@+id/btnCancel"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="9dp"
+                    android:background="@drawable/bg_pill_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Отмена"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:onClick="btnUp"/>
+
+                <TextView
+                    android:id="@+id/btnSave"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_pill_primary"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="Сохранить"
+                    android:textColor="@color/colorSurface"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:onClick="onSave"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

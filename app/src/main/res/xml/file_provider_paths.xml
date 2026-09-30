@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- App-specific external files directory (API 29+) -->
+    <external-files-path
+        name="external_files"
+        path="Download/"/>
+
+    <!-- Public Downloads directory (API < 29) -->
+    <external-path
+        name="external_downloads"
+        path="Download/"/>
+
+    <!-- Temp files for icon cropping -->
+    <cache-path
+        name="cache"
+        path="."/>
+</paths>

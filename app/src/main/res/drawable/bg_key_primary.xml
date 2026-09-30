@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  «Сохранить» на цифровой клавиатуре: та же клавиша, что и bg_key, но залитая акцентом.
+  Радиус 18 — как у остальных клавиш: кнопка и так выделяется цветом и высотой в две
+  клетки, а пилюля (bg_pill_primary, радиус 999) на такой высоте лезла бы капсулой.
+-->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/colorPrimaryDark">
+    <item>
+        <shape>
+            <solid android:color="@color/colorPrimary"/>
+            <corners android:radius="18dp"/>
+        </shape>
+    </item>
+</ripple>

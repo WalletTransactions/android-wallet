@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Нижняя навигационная панель: Операции · Кошельки · «+» · Отчёты · Ещё.
+  Подключается через <include layout="@layout/view_bottom_nav"/> в любом экране,
+  где панель нужна (см. android-apply/readme.md).
+  Активный таб подсвечивается из кода: setActiveTab(R.id.navOps) и т.п.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/bottomNav"
+    android:layout_width="match_parent"
+    android:layout_height="76dp"
+    android:layout_alignParentBottom="true"
+    android:layout_gravity="bottom"
+    android:background="@drawable/bg_bottom_nav"
+    android:elevation="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:paddingLeft="2dp"
+        android:paddingRight="2dp">
+
+        <LinearLayout
+            android:id="@+id/navOps"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_nav_tab"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:onClick="navOperations">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_nav_ops"
+                android:tint="@color/colorPrimary"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Операции"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorPrimary"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navWallets"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_nav_tab"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:onClick="navWallets">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_nav_wallets"
+                android:tint="@color/colorTextHint"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Кошельки"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorTextHint"/>
+        </LinearLayout>
+
+        <!-- место под центральную кнопку «+» -->
+        <View
+            android:layout_width="76dp"
+            android:layout_height="match_parent"/>
+
+        <LinearLayout
+            android:id="@+id/navReport"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_nav_tab"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:onClick="navReport">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_nav_report"
+                android:tint="@color/colorTextHint"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Отчёты"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorTextHint"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navMore"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_nav_tab"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:onClick="navMore">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_nav_more"
+                android:tint="@color/colorTextHint"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Ещё"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorTextHint"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Центральная кнопка добавления операции. id и обработчик — как у старой FAB. -->
+    <ImageButton
+        android:id="@+id/btnAddTran"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:layout_gravity="center_horizontal|bottom"
+        android:layout_marginBottom="11dp"
+        android:background="@drawable/bg_nav_add"
+        android:contentDescription="Добавить операцию"
+        android:elevation="3dp"
+        android:padding="14dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_nav_add"
+        android:tint="@color/colorSurface"
+        android:onClick="btnOperationAdd"/>
+
+</FrameLayout>

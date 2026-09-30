@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Пилюля комиссии в строке перевода. Заливка — colorexpanse с низкой прозрачностью:
+  подпись на ней тоже colorexpanse, поэтому сплошной фон её бы съел.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/colorFeePillBg"/>
+    <corners android:radius="999dp"/>
+</shape>

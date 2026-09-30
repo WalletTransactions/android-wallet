@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical">
+
+    <!-- Overlapping flag icons — same pattern as currencypair_list_content.xml -->
+    <FrameLayout
+        android:layout_width="52dp"
+        android:layout_height="34dp"
+        android:layout_marginEnd="10dp">
+
+        <ImageView
+            android:id="@+id/imgBaseCurrency"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_gravity="start"
+            android:translationZ="2dp"/>
+
+        <ImageView
+            android:id="@+id/imgQuoteCurrency"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_gravity="end"
+            android:translationZ="1dp"/>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/tvPairSymbol"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/caprasimo"
+        android:textColor="@color/colorTextPrimary"/>
+
+</LinearLayout>

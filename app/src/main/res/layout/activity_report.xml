@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран «Отчёты» — таб нижней панели (navReport).
+
+  Шапка — те же общие блоки, что на «Операциях» и «Кошельках»: view_tab_title +
+  view_tab_actions (фильтр, валюта) и view_period_summary (период, состояние
+  денег, активный фильтр). Своих плиток «Доход/Расход» здесь больше нет — те же
+  суммы за период считает общая карточка, одним кодом на все табы.
+
+  Id сохранены: fragmentDataPeriod, listIncomeView, listExpanseView.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    tools:context=".Activities.ReportActivity">
+
+    <LinearLayout
+        android:id="@+id/headerRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="12dp">
+
+        <include layout="@layout/view_tab_title"/>
+
+        <include layout="@layout/view_tab_actions"/>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/headerRow"
+        android:layout_above="@+id/bottomNav"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="18dp">
+
+            <include layout="@layout/view_period_summary"/>
+
+            <!-- Расходы по категориям -->
+            <TextView
+                android:id="@+id/captionExpanses"
+                style="@style/SettingsGroupLabel"
+                android:layout_marginLeft="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="20dp"
+                android:text="Расходы"/>
+
+            <LinearLayout
+                android:id="@+id/cardExpanses"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="18dp"
+                android:layout_marginRight="18dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:paddingTop="9dp"
+                android:paddingBottom="9dp">
+
+                <ListView
+                    android:id="@+id/listExpanseView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:divider="@null"
+                    android:dividerHeight="0dp"/>
+            </LinearLayout>
+
+            <!-- Доходы по категориям -->
+            <TextView
+                android:id="@+id/captionIncomes"
+                style="@style/SettingsGroupLabel"
+                android:layout_marginLeft="24dp"
+                android:layout_marginRight="24dp"
+                android:layout_marginTop="20dp"
+                android:text="Доходы"/>
+
+            <LinearLayout
+                android:id="@+id/cardIncomes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="18dp"
+                android:layout_marginRight="18dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:paddingTop="9dp"
+                android:paddingBottom="9dp">
+
+                <ListView
+                    android:id="@+id/listIncomeView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:divider="@null"
+                    android:dividerHeight="0dp"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <include android:id="@+id/bottomNav" layout="@layout/view_bottom_nav"/>
+</RelativeLayout>

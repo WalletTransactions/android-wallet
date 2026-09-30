@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Заголовок дня (или недели/месяца) над первой операцией группы с итогом за период.
+  Подключается обеими строками ленты — обычной и переводом, — чтобы заголовок не
+  зависел от того, какая операция оказалась первой в группе.
+  Показом управляет TransactionArrayAdapter: у не-первых строк LayoutDate скрыт.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/LayoutDate"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingLeft="6dp"
+    android:paddingRight="6dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/textDate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="24 июля"
+        android:textAllCaps="true"
+        android:textSize="11.5sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.08"
+        android:textColor="@color/colorTextSecondary"/>
+
+    <TextView
+        android:id="@+id/textAmountEq"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="−3 340 ₽"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/colorTextSecondary"/>
+</LinearLayout>

@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран «Настройки». Открывается с экрана «Ещё» (пункт «Настройки»).
+  Панель нижней навигации не подключена — это экран «вглубь».
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="6dp">
+
+        <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:src="@drawable/ic_nav_back"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="Настройки"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/caprasimo"
+            android:textColor="@color/colorTextPrimary"/>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/toolbar"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingTop="14dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!--
+              Тема оформления. Три чипа, а не тумблер: вариантов три, и «Как в системе»
+              тумблером не выражается. Подсветку выбранного расставляет код
+              (SettingsActivity.applyThemeChips) — здесь все три нарисованы неактивными.
+            -->
+            <TextView style="@style/SettingsGroupLabel" android:text="ОФОРМЛЕНИЕ"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="22dp">
+
+                <TextView
+                    android:id="@+id/chipThemeLight"
+                    style="@style/FilterChip"
+                    android:text="Светлая"
+                    android:onClick="onPickTheme"/>
+
+                <TextView
+                    android:id="@+id/chipThemeDark"
+                    style="@style/FilterChip"
+                    android:text="Тёмная"
+                    android:onClick="onPickTheme"/>
+
+                <TextView
+                    android:id="@+id/chipThemeSystem"
+                    style="@style/FilterChip"
+                    android:layout_marginEnd="0dp"
+                    android:text="Как в системе"
+                    android:onClick="onPickTheme"/>
+            </LinearLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="ВАЛЮТА"/>
+            <LinearLayout
+                android:id="@+id/rowMainCurrency"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_card"
+                android:padding="16dp"
+                android:layout_marginBottom="22dp"
+                android:onClick="onPickMainCurrency">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Валюта эквивалента"
+                    android:textSize="14.5sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorTextPrimary"/>
+
+                <TextView
+                    android:id="@+id/mainCurrencyValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₽ Российский рубль"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorexpanse"
+                    android:layout_marginEnd="6dp"/>
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_chevron_right"/>
+            </LinearLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="БЕЗОПАСНОСТЬ"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:layout_marginBottom="22dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Код доступа"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextPrimary"/>
+
+                    <FrameLayout
+                        android:id="@+id/switchAccessCode"
+                        android:layout_width="46dp"
+                        android:layout_height="26dp"
+                        android:background="@drawable/bg_switch_off"
+                        android:onClick="onToggleAccessCode">
+                        <View
+                            android:id="@+id/switchAccessCodeThumb"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_margin="2dp"
+                            android:background="@drawable/bg_switch_thumb"/>
+                    </FrameLayout>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/colorDivider"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/labelBiometric"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Вход по отпечатку"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextHint"/>
+
+                    <FrameLayout
+                        android:id="@+id/switchBiometric"
+                        android:layout_width="46dp"
+                        android:layout_height="26dp"
+                        android:background="@drawable/bg_switch_off"
+                        android:onClick="onToggleBiometric">
+                        <View
+                            android:id="@+id/switchBiometricThumb"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_margin="2dp"
+                            android:background="@drawable/bg_switch_thumb"/>
+                    </FrameLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="УВЕДОМЛЕНИЯ"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_card"
+                android:padding="16dp"
+                android:layout_marginBottom="22dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Напоминание вносить операции"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextPrimary"/>
+
+                    <TextView
+                        android:id="@+id/rowRemindTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="каждый день в 20:00"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorexpanse"
+                        android:onClick="onPickRemindTime"/>
+                </LinearLayout>
+
+                <FrameLayout
+                    android:id="@+id/switchRemind"
+                    android:layout_width="46dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/bg_switch_on"
+                    android:onClick="onToggleRemind">
+                    <View
+                        android:id="@+id/switchRemindThumb"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_margin="2dp"
+                        android:layout_gravity="end"
+                        android:background="@drawable/bg_switch_thumb"/>
+                </FrameLayout>
+            </LinearLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="ДАННЫЕ"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:layout_marginBottom="22dp">
+
+                <!-- Импорт — на уровень выше, в «Ещё» (activity_more.xml, rowImport):
+                     сюда доходят только через «Ещё» → «Настройки», а импорт нужен сразу. -->
+                <LinearLayout
+                    android:id="@+id/rowExport"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp"
+                    android:onClick="onExportDatabase">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Экспорт базы"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextPrimary"/>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="О ПРИЛОЖЕНИИ"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:layout_marginBottom="24dp">
+
+                <LinearLayout
+                    android:id="@+id/rowRateApp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp"
+                    android:onClick="onRateApp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Оценить приложение"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextPrimary"/>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/colorDivider"/>
+
+                <LinearLayout
+                    android:id="@+id/rowVersion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp"
+                    android:onClick="onVersionTap">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Версия"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextPrimary"/>
+
+                    <TextView
+                        android:id="@+id/versionValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2.4.1"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextSecondary"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/colorDivider"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Дата сборки"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextPrimary"/>
+
+                    <TextView
+                        android:id="@+id/buildDateValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextSecondary"/>
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</RelativeLayout>

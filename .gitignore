@@ -1,0 +1,29 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+/app/release/
+.externalNativeBuild
+
+# Перенесено из .gitignore WalletTransactions при выделении Android
+# в отдельный репозиторий (2026-09-30).
+*.db
+*.db-shm
+*.db-wal
+/AndroidSqlEditorDatabases/
+.env
+*.lnk
+NUL
+*.csv
+*.txt
+*.log
+/.claude/scheduled_tasks.lock
+/.claude/worktrees/

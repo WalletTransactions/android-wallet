@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Пикер иконки (прототип 2a, блок iconPickOpen) — сетка из 5 колонок.
+  Показывает иконки одного типа из IconList; тип приходит в extra.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="10dp">
+
+        <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:contentDescription="Назад"
+            android:padding="11dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_nav_back"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:id="@+id/pickerTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:fontFamily="@font/caprasimo"
+            android:text="Иконка валюты"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="20sp"/>
+    </LinearLayout>
+
+    <GridView
+        android:id="@+id/gridIcons"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:horizontalSpacing="10dp"
+        android:numColumns="5"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingBottom="14dp"
+        android:scrollbars="none"
+        android:verticalSpacing="10dp"/>
+
+    <!-- Пунктирная пилюля «+ …», как «+ Добавить валютную пару» на курсах:
+         своей картинки в сетке ещё нет — заводим её не выходя из выбора. -->
+    <TextView
+        android:id="@+id/btnNewIcon"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginLeft="18dp"
+        android:layout_marginRight="18dp"
+        android:layout_marginBottom="18dp"
+        android:background="@drawable/bg_pill_dashed"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="+ Новая иконка"
+        android:textColor="@color/colorTextPrimary"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:onClick="onNewIcon"/>
+</LinearLayout>

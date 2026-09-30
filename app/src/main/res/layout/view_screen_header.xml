@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Плоская шапка экрана «вглубь»: круглая кнопка назад + заголовок Caprasimo.
+  Заменяет Toolbar/ActionBar. Подключается через <include layout="@layout/view_screen_header"/>;
+  текст ставится из кода — findViewById(R.id.screenTitle).setText(...).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingLeft="14dp"
+    android:paddingRight="14dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="6dp">
+
+    <ImageButton
+        android:id="@+id/btnUp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_pill_secondary"
+        android:contentDescription="Назад"
+        android:padding="11dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_nav_back"
+        android:onClick="btnUp"/>
+
+    <TextView
+        android:id="@+id/screenTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:ellipsize="end"
+        android:fontFamily="@font/caprasimo"
+        android:maxLines="1"
+        android:textColor="@color/colorTextPrimary"
+        android:textSize="20sp"/>
+</LinearLayout>

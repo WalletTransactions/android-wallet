@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  «Добавить/Редактировать иконку» — один лист на оба режима, как dialog_edit_rate.xml:
+  dialogTitle и подпись btnSelectIcon меняются из кода, btnDelete скрывается
+  (visibility="gone") для новой иконки.
+
+  Превью — круг 104dp на bg_icon_circle без padding: обрезка круглая, поэтому
+  иконка ложится ровно в подложку и видно ровно то, что попадёт в базу.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_dialog_card"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/dialogTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:fontFamily="@font/caprasimo"
+        android:text="Добавить иконку"
+        android:textColor="@color/colorTextPrimary"
+        android:textSize="21sp"
+        android:textStyle="bold"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/imgIconPreview"
+                android:layout_width="104dp"
+                android:layout_height="104dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="14dp"
+                android:background="@drawable/bg_icon_circle"
+                android:clickable="true"
+                android:contentDescription="Изображение иконки"
+                android:focusable="true"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_nav_add"
+                android:padding="34dp"
+                android:tint="@color/colorTextHint"/>
+
+            <TextView
+                android:id="@+id/btnSelectIcon"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginBottom="18dp"
+                android:background="@drawable/bg_pill_outline"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="Выбрать изображение"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="14sp"
+                android:textStyle="bold"/>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="НАЗВАНИЕ"/>
+
+            <EditText
+                android:id="@+id/edtIconName"
+                style="@style/FormInputPill"
+                android:hint="Например, Продукты"
+                android:inputType="textCapSentences"/>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="ТИП"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/chipCategory"
+                    style="@style/FilterChip"
+                    android:text="Категория"/>
+
+                <TextView
+                    android:id="@+id/chipFlag"
+                    style="@style/FilterChip"
+                    android:layout_marginEnd="0dp"
+                    android:text="Флаг"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btnDelete"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="9dp"
+            android:background="@drawable/bg_pill_outline_expanse"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="Удалить"
+            android:textColor="@color/colorexpanse"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone"/>
+
+        <TextView
+            android:id="@+id/btnCancel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="9dp"
+            android:background="@drawable/bg_pill_outline"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="Отмена"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="14sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/btnSave"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_primary"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="Сохранить"
+            android:textColor="@color/colorSurface"
+            android:textSize="14sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+</LinearLayout>

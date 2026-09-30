@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <item  android:id="@+id/action_change_currency_eq"
+           android:title="Валюта отображения"
+    >
+        <menu>
+            <group android:checkableBehavior="single" android:id="@+id/checkgroup">
+                <item
+                        android:id="@+id/subitem1"
+                        android:title="Sub Item 1" />
+                <item
+                        android:id="@+id/subitem2"
+                        android:title="Sub Item 2" />
+            </group>
+        </menu>
+    </item>
+
+</menu>

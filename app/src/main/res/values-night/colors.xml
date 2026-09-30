@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Тёмная тема. Роли те же, что в values/colors.xml, — файл только переопределяет
+  значения; ни один layout/drawable/класс о существовании тёмной темы не знает.
+
+  Тон сохранён тёплым (тот же терракотовый акцент на коричнево-угольных фонах), а не
+  переведён в нейтральный серый: иначе от узнаваемости светлой темы ничего не остаётся.
+
+  Единственная роль, которой здесь нет намеренно, — ic_launcher_background: иконка
+  запуска не должна менять цвет вместе с темой внутри приложения.
+-->
+<resources>
+    <!-- Акцент оставлен исходным: на тёмном фоне он даёт 5.2:1, а белое на нём — 3.6:1,
+         чего хватает для заливок (кнопки, чипы, «+») с крупной подписью. -->
+    <color name="colorPrimary">#C67139</color>
+    <!-- В светлой теме это «глубже акцента» (рябь нажатия, шевроны «›»); на тёмном фоне
+         глубже — значит незаметнее, поэтому роль зеркалится в «светлее акцента». -->
+    <color name="colorPrimaryDark">#E39158</color>
+    <color name="colorPrimaryLight">#A96434</color>
+    <color name="colorAccent">#C67139</color>
+
+    <color name="colorBackground">#15120F</color>
+    <color name="colorSurface">#211C17</color>
+    <color name="colorSurfaceAlt">#2E2720</color>
+    <color name="colorIconCircle">#2A231C</color>
+
+    <color name="colorTextPrimary">#F2EADC</color>
+    <color name="colorTextSecondary">#B0A392</color>
+    <color name="colorTextHint">#857A6C</color>
+    <!-- Разделители и рамки — прозрачный белый: на любой из трёх поверхностей
+         (фон/карточка/альтернативная) они дают одинаково слабую линию. -->
+    <color name="colorDivider">#24FFFFFF</color>
+    <color name="colorInputBg">#2E2720</color>
+    <color name="colorCardBorder">#24FFFFFF</color>
+
+    <color name="colorOutlineStrong">#4DFFFFFF</color>
+    <color name="colorRipplePrimary">#40C67139</color>
+    <color name="colorRippleExpanse">#40E8965C</color>
+    <color name="colorFeePillBg">#33E8965C</color>
+
+    <color name="colorStatusBar">#15120F</color>
+
+    <color name="graylight">#2A231C</color>
+    <color name="gray">#857A6C</color>
+
+    <!-- Цвета сумм: те же оттенки, что в светлой теме, поднятые до читаемых на тёмном. -->
+    <color name="colorprofit">#A8C47A</color>
+    <color name="colorexpanse">#E8965C</color>
+    <color name="colortransfer">#B0A392</color>
+
+    <!-- Плитки «Доход»/«Расход» на экране отчёта: светлая пара «заливка/сумма»
+         переворачивается — приглушённая заливка и светлая сумма на ней. -->
+    <color name="colorProfitBg">#26321C</color>
+    <color name="colorProfitDeep">#CFE3A8</color>
+    <color name="colorExpanseBg">#3A2317</color>
+    <color name="colorExpanseDeep">#F5B98A</color>
+
+    <color name="startBackGroud">#8A4E27</color>
+    <color name="endBackGroud">#55613F</color>
+</resources>

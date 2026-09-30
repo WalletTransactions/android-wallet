@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  «Новая категория». Плоская шапка вместо ActionBar, поля и кнопки — как на
+  остальных экранах редизайна. Id и обработчики сохранены:
+  iconPickerContainer/imgIconPreview/iconPickerHint, editCategoryName,
+  editCategoryComment; pickIconClick, btnSaveClick.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground"
+    android:orientation="vertical">
+
+    <include layout="@layout/view_screen_header"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView style="@style/SettingsGroupLabel" android:text="Иконка"/>
+
+            <FrameLayout
+                android:id="@+id/iconPickerContainer"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:onClick="pickIconClick">
+
+                <ImageView
+                    android:id="@+id/imgIconPreview"
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:scaleType="centerInside"
+                    android:visibility="gone"/>
+
+                <LinearLayout
+                    android:id="@+id/iconPickerHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:alpha="0.35"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_add_box_black_24dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Нажмите для выбора иконки"
+                        android:textColor="@color/colorTextSecondary"
+                        android:textSize="12sp"/>
+                </LinearLayout>
+            </FrameLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="Название"/>
+
+            <EditText
+                android:id="@+id/editCategoryName"
+                style="@style/FormInputPill"
+                android:hint="Например, Продукты"
+                android:inputType="textCapSentences"/>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="Комментарий"/>
+
+            <EditText
+                android:id="@+id/editCategoryComment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:background="@drawable/bg_input_pill"
+                android:hint="Необязательно"
+                android:inputType="textMultiLine"
+                android:minHeight="64dp"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:textColor="@color/colorTextPrimary"
+                android:textColorHint="@color/colorTextHint"
+                android:textSize="14sp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_pill_primary"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:onClick="btnSaveClick"
+                android:text="Сохранить"
+                android:textColor="@color/colorSurface"
+                android:textSize="15sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Альтернатива статичным строкам activity_more.xml — используйте, если пункты
+     «Ещё» задаются списком (ListView/RecyclerView) вместо фиксированной верстки. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/MoreRow">
+
+    <TextView android:id="@+id/moreGlyph" style="@style/MoreRowGlyph" android:text="⇅"/>
+    <TextView android:id="@+id/moreLabel" style="@style/MoreRowLabel" android:text="Курсы валют"/>
+    <ImageView style="@style/MoreRowChevron"/>
+</LinearLayout>

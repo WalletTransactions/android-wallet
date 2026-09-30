@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Чип типа операции в фильтре: активный получает bg_chip_selected и белый текст кодом. -->
+    <style name="FilterChip">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:background">@drawable/bg_chip_unselected</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingTop">9dp</item>
+        <item name="android:paddingBottom">9dp</item>
+        <item name="android:textSize">12.5sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorTextSecondary</item>
+    </style>
+
+    <!--
+      Чип с иконкой — контейнер из иконки и подписи, а не TextView с drawableStart.
+      Compound drawable рисуется у левого края поля, а подпись центруется в остатке,
+      поэтому между ними зияет дыра тем шире, чем шире чип: на трёх чипах в ряд это
+      было 16dp. Отдельной вьюхой иконка встаёт вплотную к подписи, и центруется
+      уже вся группа. Используется и в фильтре, и на экране операции.
+    -->
+    <style name="FilterChipIcon">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginEnd">6dp</item>
+        <item name="android:background">@drawable/bg_chip_unselected</item>
+        <item name="android:gravity">center</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingTop">9dp</item>
+        <item name="android:paddingBottom">9dp</item>
+    </style>
+
+    <!-- Иконка такого чипа: размер задаёт сам вектор (16dp), цвет — тинт по состоянию.
+         Подпись рядом её же и называет, поэтому для TalkBack иконка не нужна. -->
+    <style name="FilterChipIconImage">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+
+    <!-- Подпись такого чипа: текстовые свойства FilterChip плюс зазор до иконки
+         (бывший drawablePadding). -->
+    <style name="FilterChipIconLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:textSize">12.5sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorTextSecondary</item>
+    </style>
+</resources>

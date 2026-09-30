@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Строка перевода со счёта на счёт. Одна строка на всю операцию: две наложенные
+  иконки кошельков со стрелкой, маршрут, две суммы столбиком, пилюля комиссии.
+  Курс не показываем.
+
+  Вторая сумма (transferIn) видна только у перевода между разными валютами — там
+  она приходит со связанной проводки и отличается от списания. У перевода в одной
+  валюте адаптер её прячет: дублировать то же число незачем. Пилюля комиссии
+  скрыта, когда комиссии не было.
+
+  Шапка дня — общий кусок с обычной строкой (view_transaction_day_header).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingLeft="18dp"
+    android:paddingRight="18dp">
+
+    <include layout="@layout/view_transaction_day_header"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="top"
+        android:background="@drawable/bg_card_row"
+        android:elevation="1dp"
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+
+        <!-- Иконки кошельков: источник сверху-слева, получатель снизу-справа, стрелка сверху -->
+        <RelativeLayout
+            android:layout_width="46dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="10dp">
+
+            <ImageView
+                android:id="@+id/transferFromIcon"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_alignParentStart="true"
+                android:layout_marginTop="2dp"
+                android:padding="5dp"
+                android:background="@drawable/bg_icon_circle"
+                android:contentDescription="@null"/>
+
+            <ImageView
+                android:id="@+id/transferToIcon"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentBottom="true"
+                android:padding="5dp"
+                android:background="@drawable/bg_icon_circle"
+                android:contentDescription="@null"/>
+
+            <ImageView
+                android:id="@+id/transferBadge"
+                android:layout_width="17dp"
+                android:layout_height="17dp"
+                android:layout_marginStart="12dp"
+                android:padding="3.5dp"
+                android:background="@drawable/bg_icon_circle"
+                android:src="@drawable/ic_kind_transfer"
+                android:tint="@color/colortransfer"
+                android:contentDescription="@null"/>
+        </RelativeLayout>
+
+        <!-- Маршрут и комиссия -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <!-- Комиссия стоит в строке маршрута, а не под ним: своей строки она не
+                 стоит, а карточка от неё становилась на треть выше. Маршрут ужимается
+                 многоточием, пилюля — нет: она короткая и терять её нельзя. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/transferRoute"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Mastercard → Тинькофф"
+                    android:textSize="13.5sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorTextPrimary"
+                    android:singleLine="true"
+                    android:ellipsize="end"/>
+
+                <TextView
+                    android:id="@+id/transferFee"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_pill_fee"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorexpanse"
+                    android:visibility="gone"/>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/transferComment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@color/colorTextSecondary"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:visibility="gone"/>
+        </LinearLayout>
+
+        <!-- Две суммы столбиком: списано в валюте источника, зачислено в валюте получателя -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:id="@+id/transferOut"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorexpanse"
+                android:singleLine="true"/>
+
+            <TextView
+                android:id="@+id/transferIn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorprofit"
+                android:singleLine="true"
+                android:visibility="gone"/>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

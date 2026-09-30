@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Заполнение полосы категории в отчёте. Цвет задаётся из адаптера через
+  backgroundTintList: доход — colorprofit, расход — colorexpanse.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/colorPrimary"/>
+    <corners android:radius="999dp"/>
+</shape>

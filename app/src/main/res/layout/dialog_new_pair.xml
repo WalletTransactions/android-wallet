@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Нижний лист «Новая валютная пара». Клик на строки Базовой/Котируемой валюты
+     открывает activity_currency_picker.xml, результат возвращается через onActivityResult. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_sheet_top"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Новая валютная пара"
+        android:textSize="21sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/caprasimo"
+        android:textColor="@color/colorTextPrimary"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView style="@style/SettingsGroupLabel" android:text="БАЗОВАЯ ВАЛЮТА"/>
+    <LinearLayout
+        android:id="@+id/rowBase"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_input_pill"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:layout_marginBottom="16dp"
+        android:onClick="onPickBase">
+
+        <TextView android:id="@+id/baseValue" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="USD" android:textSize="14.5sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
+        <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
+    </LinearLayout>
+
+    <TextView style="@style/SettingsGroupLabel" android:text="КОТИРУЕМАЯ ВАЛЮТА"/>
+    <LinearLayout
+        android:id="@+id/rowQuote"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_input_pill"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:layout_marginBottom="16dp"
+        android:onClick="onPickQuote">
+
+        <TextView android:id="@+id/quoteValue" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="RUB" android:textSize="14.5sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
+        <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
+    </LinearLayout>
+
+    <TextView style="@style/SettingsGroupLabel" android:text="ТОЧНОСТЬ (ЗНАКОВ ПОСЛЕ ЗАПЯТОЙ)"/>
+    <EditText
+        android:id="@+id/inputPrecision"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:background="@drawable/bg_input_pill"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:text="5"
+        android:inputType="number"
+        android:maxLength="1"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btnCancel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="9dp"
+            android:background="@drawable/bg_pill_outline"
+            android:gravity="center"
+            android:text="Отмена"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorTextPrimary"
+            android:onClick="onCancelNewPair"/>
+
+        <TextView
+            android:id="@+id/btnCreate"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_primary"
+            android:gravity="center"
+            android:text="Создать"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorSurface"
+            android:onClick="onCreatePair"/>
+    </LinearLayout>
+</LinearLayout>
