@@ -228,7 +228,7 @@ public abstract class WalletDbLoader {
      * Net движение через мост «Transfer» за период, в валюте эквивалента: credit-нога
      * (Transfer → кошелёк) минус debit-нога (кошелёк → Transfer) одного и того же
      * валютного перевода. Обе ноги гасят друг друга — остаётся курсовая разница
-     * (обычно она и есть весь «net»), см. п.3 TODO_transfers.md.
+     * (обычно она и есть весь «net»), см. п.3 docs/TODO_transfers.md.
      *
      * Привязка через {@code operation_link.type = 0} (нога, см. {@code OperationItem.LinkType}),
      * а не по совпадению счёта с системной категорией «Transfer» — иначе сюда попал бы
@@ -277,7 +277,7 @@ public abstract class WalletDbLoader {
                 + reportFilterSql(dataFilter)
                 // Credit-нога валютного перевода (Transfer → кошелёк) исключена: она не
                 // самостоятельный доход, а половина перевода, см. GetTransferNetEq выше и
-                // п.3 TODO_transfers.md.
+                // п.3 docs/TODO_transfers.md.
                 +"and not exists (select 1 from operation_link ol where ol.link_id = o._id and ol.type = 0 and ol.deleted_at is null)\n"
                 +"group by o.acc_fr_id, o.currency_id" ;
 
@@ -332,7 +332,7 @@ public abstract class WalletDbLoader {
                 reportFilterSql(dataFilter) +
                 // Debit-нога валютного перевода (кошелёк → Transfer) исключена: она не
                 // самостоятельный расход, а половина перевода, см. GetTransferNetEq выше и
-                // п.3 TODO_transfers.md.
+                // п.3 docs/TODO_transfers.md.
                 "and not exists (select 1 from operation_link ol where ol.main_id = o._id and ol.type = 0 and ol.deleted_at is null)\n" +
                 "group by o.acc_to_id,  o.currency_id";
 

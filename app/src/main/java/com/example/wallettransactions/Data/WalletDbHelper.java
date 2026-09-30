@@ -927,7 +927,7 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             if (oldVersion < 77) {
                 // v77: явная роль связки operation_link (нога валютного перевода / комиссия)
                 // вместо вывода по system_kind счёта-источника (обсуждение — план "Б" по
-                // TODO_transfers.md, дальше появятся другие виды связок, которые в окне
+                // docs/TODO_transfers.md, дальше появятся другие виды связок, которые в окне
                 // операции нужно будет отображать иначе, а угадывать по счетам их будет
                 // уже не с чем сравнивать).
                 if (!columnExists(db, WalletContract.OperationLinkEntry.TABLE_NAME,

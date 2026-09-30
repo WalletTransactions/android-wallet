@@ -193,7 +193,7 @@
 → `OperationItem.LinkedLeg`/`LinkedCommission`), экран правки раскладывает
 обратно (`TransactionActivity.loadLinkedParts`). Импортёр
 (`tools/moneylover/db.py`) таблицу создаёт, но не заполняет — у операций,
-приехавших импортом, связей нет, см. [`TODO_transfers.md`](../../TODO_transfers.md).
+приехавших импортом, связей нет, см. [`docs/TODO_transfers.md`](../../docs/TODO_transfers.md).
 
 ---
 

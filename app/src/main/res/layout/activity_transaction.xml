@@ -403,7 +403,7 @@
             </LinearLayout>
 
             <!-- Комиссия за перевод: показывается только для типа «Перевод». Пока не
-                 сохраняется в базу — см. TODO_transfers.md. -->
+                 сохраняется в базу — см. docs/TODO_transfers.md. -->
             <LinearLayout
                 android:id="@+id/rowCommissionToggle"
                 android:layout_width="match_parent"

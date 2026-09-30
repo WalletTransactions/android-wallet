@@ -397,7 +397,7 @@ public class WalletImportData {
         }
     }
 
-    // ── Импорт из JSON — план "Б" по Android/TODO_transfers.md, п.2 ───────────────
+    // ── Импорт из JSON — план "Б" по docs/TODO_transfers.md, п.2 ───────────────
     //
     // Плоский CSV операций (см. FillOperationDataFromFile выше) не может выразить,
     // что несколько его строк — части одной пользовательской операции: у операции

@@ -64,7 +64,7 @@
 выразить «эта проводка — часть той группы»: одна строка = одна проводка. JSON
 выражает связь структурно, без промежуточного ключа для матчинга:
 
-- `Android/app/src/main/java/.../Data/WalletImportData.java`:
+- `app/src/main/java/.../Data/WalletImportData.java`:
   `FillOperationDataFromJson` — один элемент массива = одна пользовательская
   операция, с опциональными `leg`/`commission`; пишет теми же примитивами
   (`InsertOperation`+`LinkOperations`), что и `TransactionActivity.saveTransfer()`,
