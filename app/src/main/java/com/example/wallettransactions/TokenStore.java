@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 /**
- * Access/refresh-токены синка (servers/TODO_mobile_sync.md, Фаза 1/3) —
+ * Access/refresh-токены синка (org/docs/TODO_mobile_sync.md, Фаза 1/3) —
  * секреты, поэтому отдельно от {@link AppSettings} (обычные, не
  * зашифрованные SharedPreferences) и в своём файле prefs под ключом
  * из Android Keystore (EncryptedSharedPreferences), а не как есть.

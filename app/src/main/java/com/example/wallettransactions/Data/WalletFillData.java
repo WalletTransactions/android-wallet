@@ -246,7 +246,7 @@ public class WalletFillData {
     }
 
     /**
-     * v72 (servers/TODO_mobile_sync.md, Фаза 3): раньше — голый {@code INSERT OR
+     * v72 (org/docs/TODO_mobile_sync.md, Фаза 3): раньше — голый {@code INSERT OR
      * REPLACE}, для SQLite это "удалить старую строку целиком и вставить новую" —
      * заново сгенерированный uuid на повторную загрузку того же курса раздувал бы
      * поток синка дублями. Тот же приём, что {@link WalletDbCRUD#InsertOrReplaceRate}:
@@ -274,7 +274,7 @@ public class WalletFillData {
         // тот же довод на сервере). Раньше здесь был DateToStr ("yyyy-MM-dd
         // HH:mm") — тот самый источник локальных дублей одной даты с разным
         // временем, из-за которого push бился об uq_currency_pair_rate_ledger
-        // (см. servers/TODO_mobile_sync.md).
+        // (см. org/docs/TODO_mobile_sync.md).
         String dateStr = DateUtils.DateToDateStr(date);
         ContentValues cv = new ContentValues();
         cv.put(WalletContract.CurrencyPairRateEntry.COLUMN_RATE, rate);

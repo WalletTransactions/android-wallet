@@ -1,4 +1,4 @@
--- v72 (servers/TODO_mobile_sync.md, Фаза 3): o.deleted_at IS NULL — мягко удалённая
+-- v72 (org/docs/TODO_mobile_sync.md, Фаза 3): o.deleted_at IS NULL — мягко удалённая
 -- операция не должна быть видна. Счета (acf/act) НЕ фильтруются по deleted_at —
 -- операция на мягко удалённый счёт обязана остаться видимой в истории, иначе
 -- лента молча теряла бы строки (зеркально schema/server/view/v_operation.sql).

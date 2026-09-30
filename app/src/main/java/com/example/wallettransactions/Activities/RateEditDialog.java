@@ -125,7 +125,7 @@ public class RateEditDialog {
             SQLiteDatabase db = new WalletDbHelper(context).getWritableDatabase();
             try {
                 if (isNew) {
-                    // v72 (servers/TODO_mobile_sync.md, Фаза 3): раньше — CONFLICT_REPLACE,
+                    // v72 (org/docs/TODO_mobile_sync.md, Фаза 3): раньше — CONFLICT_REPLACE,
                     // а для SQLite это "удалить старую строку целиком и вставить новую" —
                     // при случайном совпадении дат уже существующий uuid терялся бы и в
                     // потоке синка появлялся бы дубль вместо одного обновления. Тот же

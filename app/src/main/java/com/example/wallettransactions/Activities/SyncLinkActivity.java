@@ -39,7 +39,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
- * Связка приложения с сервером через Google (servers/TODO_mobile_sync.md,
+ * Связка приложения с сервером через Google (org/docs/TODO_mobile_sync.md,
  * Фаза 1) — {@code POST /auth/nonce} → Credential Manager →
  * {@code POST /auth/google/mobile} → токены в {@link TokenStore}. Тот же
  * путь обслуживает и первую связку, и повторную (например, после того как
@@ -223,7 +223,7 @@ public class SyncLinkActivity extends AppCompatActivity {
      * назад с небольшой паузой, чтобы результат успел мелькнуть на экране.
      * <p>
      * Если связанный email изменился — другой Google-аккаунт почти
-     * наверняка ведёт на другой леджер сервера (servers/TODO_mobile_sync.md,
+     * наверняка ведёт на другой леджер сервера (org/docs/TODO_mobile_sync.md,
      * Фаза 3, п. 1.3) — сбрасываем курсоры синка: старая позиция в потоках
      * чужого леджера не подходит (см. {@code AppSettings.resetSyncCursors}).
      * Тот же email (обычное продление после истёкшего refresh-токена) курсоры

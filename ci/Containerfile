@@ -12,7 +12,7 @@
 #
 # Версии cmdline-tools/platform/build-tools — те, что реально завелись и
 # собрали проект вживую (2026-09-13, тот же день, что и правка SyncEngine —
-# см. servers/TODO_mobile_sync.md про missing_reference): build-tools у
+# см. org/docs/TODO_mobile_sync.md про missing_reference): build-tools у
 # ../app/build.gradle указан 29.0.3, но AGP 7.4.2 требует не ниже 30.0.3 и
 # сам подставляет её вместо заявленной (см. ворнинг в выводе gradlew) — тут
 # ставим сразу то, что реально используется, не то, что написано в

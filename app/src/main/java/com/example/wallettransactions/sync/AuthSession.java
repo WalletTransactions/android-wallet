@@ -31,7 +31,7 @@ import okhttp3.Response;
  * {@link SyncWorker} (раньше жила прямо в {@code ConnectWorker}, до того как
  * появились {@code /sync/push}/{@code /sync/pull} и понадобилось звать
  * refresh не самим по себе, а перед реальной синхронизацией, см.
- * servers/TODO_mobile_sync.md, Фаза 3, п. 4).
+ * org/docs/TODO_mobile_sync.md, Фаза 3, п. 4).
  * <p>
  * Если сервер ответил 401 — refresh-токен истёк, отозван или уже был
  * использован (см. README google-auth, "Обновление сессии") — тихо повторить

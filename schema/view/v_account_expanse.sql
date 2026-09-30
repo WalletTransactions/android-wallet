@@ -6,7 +6,7 @@
 -- и др.) её не использует — экраны фильтруют категории через AccountList на
 -- стороне Java, а не через эту вьюху.
 --
--- v72 (servers/TODO_mobile_sync.md, Фаза 3): deleted_at IS NULL — мягко
+-- v72 (org/docs/TODO_mobile_sync.md, Фаза 3): deleted_at IS NULL — мягко
 -- удалённый счёт не должен выглядеть живой категорией; join на account_operating
 -- вдобавок игнорирует её собственный tombstone (ao.deleted_at is null), иначе
 -- мягко удалённая строка account_operating выглядела бы так, будто счёт снова

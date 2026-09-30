@@ -18,7 +18,7 @@
 | `select/` | Именованные отчётные запросы с параметрами (баланс, доход, расход за период) |
 | `triggers/` | `trg_sync_dirty` — настоящие триггеры (v72, см. [triggers/README.md](triggers/README.md)); `trg_operation` — черновик, в приложении не создаётся |
 
-## v72 — синхронизация с сервером (servers/TODO_mobile_sync.md, Фаза 3)
+## v72 — синхронизация с сервером (org/docs/TODO_mobile_sync.md, Фаза 3)
 
 9 синхронизируемых таблиц получили одинаковый набор из 4 колонок (`uuid`,
 `dirty`, `deleted_at`, `updated_by_device`) — описаны один раз в

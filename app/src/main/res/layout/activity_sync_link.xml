@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Связка с сервером через Google (servers/TODO_mobile_sync.md, Фаза 1) —
+  Связка с сервером через Google (org/docs/TODO_mobile_sync.md, Фаза 1) —
   открывается с экрана «Настройки» → «Синхронизация» → «Связать с сервером».
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"

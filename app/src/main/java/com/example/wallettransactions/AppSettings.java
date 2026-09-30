@@ -42,7 +42,7 @@ public final class AppSettings {
 
     /**
      * Гейтвей (servers/wallet-gateway) по умолчанию — LAN-only на этом этапе
-     * (servers/TODO_mobile_sync.md, п. 1.4): нет ни TLS, ни обнаружения
+     * (org/docs/TODO_mobile_sync.md, п. 1.4): нет ни TLS, ни обнаружения
      * сервера в сети, адрес вводится вручную. {@code localhost} годится,
      * только когда сервер и устройство физически одно и то же (эмулятор
      * при пробросе {@code adb reverse tcp:8090 tcp:8090}, либо запуск
@@ -160,7 +160,7 @@ public final class AppSettings {
 
     // ── Синхронизация с сервером ───────────────────────────────────────────────
     //
-    // servers/TODO_mobile_sync.md, Фаза 3: адрес wallet-gateway на LAN, ввод
+    // org/docs/TODO_mobile_sync.md, Фаза 3: адрес wallet-gateway на LAN, ввод
     // вручную (обнаружение сервера в сети — отдельная задача). device_id и
     // токены сюда не попадают — это секреты, им место в EncryptedSharedPreferences,
     // не в этом файле (см. план, п. 5.1).
@@ -239,7 +239,7 @@ public final class AppSettings {
     }
 
     /**
-     * Курсоры для {@code GET /sync/pull} (servers/TODO_mobile_sync.md, Фаза 3,
+     * Курсоры для {@code GET /sync/pull} (org/docs/TODO_mobile_sync.md, Фаза 3,
      * п. 1) — позиция в каждом из двух независимых потоков изменений (см.
      * README wallet-api, "Синхронизация": {@code ledger} — личные данные
      * пользователя, {@code reference} — общие справочники). {@code 0} — синк

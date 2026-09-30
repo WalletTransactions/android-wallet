@@ -913,7 +913,7 @@ public class TransactionActivity extends AppCompatActivity {
             newRowId = saveTransfer(db, dateStr, comment, amount);
 
         } else {
-            // uuid — v72 (servers/TODO_mobile_sync.md, Фаза 3): единственный прямой
+            // uuid — v72 (org/docs/TODO_mobile_sync.md, Фаза 3): единственный прямой
             // db.insert на operation в этом файле, остальные пути (saveTransfer/
             // saveEdit) уже идут через WalletDbCRUD.InsertOperation.
             values.put(WalletContract.OperationEntry.COLUMN_UUID, java.util.UUID.randomUUID().toString());

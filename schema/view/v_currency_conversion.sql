@@ -3,7 +3,7 @@
 -- с флагом is_reverse), затем левым джойном подмешивает переопределение из
 -- currency_conversion (которая в текущей версии всегда пуста, см. ../table/README.md).
 --
--- v72 (servers/TODO_mobile_sync.md, Фаза 3): deleted_at IS NULL на каждой из
+-- v72 (org/docs/TODO_mobile_sync.md, Фаза 3): deleted_at IS NULL на каждой из
 -- четырёх участвующих таблиц — мягко удалённая пара/валюта/переопределение не
 -- должны участвовать в маршруте пересчёта.
 CREATE VIEW v_currency_conversion

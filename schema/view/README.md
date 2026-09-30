@@ -5,7 +5,7 @@
 разобраны в [`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md), раздел «Схема базы» →
 «Представления».
 
-**v72** (servers/TODO_mobile_sync.md, Фаза 3): каждая вьюха ниже получила фильтр
+**v72** (org/docs/TODO_mobile_sync.md, Фаза 3): каждая вьюха ниже получила фильтр
 `deleted_at IS NULL` на участвующих таблицах — мягко удалённая строка (см.
 `../table/README.md`, колонка `deleted_at`) не должна выглядеть живой. Исключение
 одно, тоже зеркальное серверной вьюхе `schema/server/view/v_operation.sql`:

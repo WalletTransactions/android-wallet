@@ -9,7 +9,7 @@ import androidx.work.WorkerParameters;
 
 /**
  * Периодическая синхронизация (экран «Настройки» → «Синхронизация» →
- * «Автоматическое подключение», servers/TODO_mobile_sync.md, Фаза 3, п. 4) —
+ * «Автоматическое подключение», org/docs/TODO_mobile_sync.md, Фаза 3, п. 4) —
  * планируется {@link SyncScheduler}. Сама последовательность (refresh → push
  * → pull) — в {@link SyncRunner#runOnce}, общем и с кнопкой
  * «Синхронизировать сейчас» (экран «Настройки», по требованию пользователя) —

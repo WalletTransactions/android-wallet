@@ -109,7 +109,7 @@ public class WalletDbCRUD {
     }
 
     /**
-     * "Удаляет" проводку — мягко, с v72 (servers/TODO_mobile_sync.md, Фаза 3):
+     * "Удаляет" проводку — мягко, с v72 (org/docs/TODO_mobile_sync.md, Фаза 3):
      * {@code deleted_at} вместо настоящего {@code DELETE}, иначе удаление
      * никогда не долетело бы до сервера и других устройств — сообщать об
      * исчезнувшей строке через push было бы нечем. {@code dirty=1} тут не
@@ -379,7 +379,7 @@ public class WalletDbCRUD {
     }
 
     /**
-     * v72 (servers/TODO_mobile_sync.md, Фаза 3): раньше — голый {@code INSERT OR
+     * v72 (org/docs/TODO_mobile_sync.md, Фаза 3): раньше — голый {@code INSERT OR
      * REPLACE}, а для SQLite это "удалить старую строку целиком и вставить новую"
      * — заново сгенерированный {@code uuid} на каждую перезагрузку одного и того же
      * курса раздувал бы поток синка дублями вместо одного обновления. Теперь:

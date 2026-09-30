@@ -6,7 +6,7 @@
 -- v_operation.currency_id). Именно поэтому это не «список кошельков»,
 -- см. также v_account_expanse (обратный фильтр).
 --
--- v72 (servers/TODO_mobile_sync.md, Фаза 3): deleted_at IS NULL на обеих
+-- v72 (org/docs/TODO_mobile_sync.md, Фаза 3): deleted_at IS NULL на обеих
 -- таблицах — мягко удалённый счёт не должен появляться здесь живым.
 CREATE VIEW v_account_operating
 as

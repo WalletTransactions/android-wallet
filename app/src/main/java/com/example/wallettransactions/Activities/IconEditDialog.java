@@ -254,7 +254,7 @@ public class IconEditDialog {
             values.put(WalletContract.IconEntry.COLUMN_NAME, name);
             values.put(WalletContract.IconEntry.COLUMN_IMAGE, encodeIcon(selectedBitmap));
             values.put(WalletContract.IconEntry.COLUMN_ICON_TYPE, selectedType.getValue());
-            // uuid — v72 (servers/TODO_mobile_sync.md, Фаза 3): нужен для pull (icon
+            // uuid — v72 (org/docs/TODO_mobile_sync.md, Фаза 3): нужен для pull (icon
             // приходит от сервера по uuid), хотя push иконок пока не реализован.
             values.put(WalletContract.IconEntry.COLUMN_UUID, java.util.UUID.randomUUID().toString());
 

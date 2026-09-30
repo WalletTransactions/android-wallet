@@ -9,7 +9,7 @@
 Все 9 таблиц ниже (`icon`, `account`, `account_operating`, `currency`,
 `currency_pair`, `currency_pair_rate`, `currency_conversion`, `operation`,
 `operation_link`) получили одинаковый набор из четырёх колонок
-(servers/TODO_mobile_sync.md, Фаза 3) — не повторяется в каждой из
+(org/docs/TODO_mobile_sync.md, Фаза 3) — не повторяется в каждой из
 табличек ниже отдельно, чтобы не разъезжаться при правках:
 
 | Поле | Тип | Описание |

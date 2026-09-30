@@ -11,7 +11,7 @@
          (см. MoreActivity.onToggleAutoConnect). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
-    <!-- LAN-only на этом этапе, без TLS (servers/TODO_mobile_sync.md, п. 1.4
+    <!-- LAN-only на этом этапе, без TLS (org/docs/TODO_mobile_sync.md, п. 1.4
          и "Открытые вопросы") — адрес сервера вводится вручную (экран
          «Ещё») и может быть любым LAN IP, поэтому точечный
          network-security-config под конкретный хост не подходит: адрес
@@ -150,7 +150,7 @@
                 android:windowSoftInputMode="adjustResize"
                 android:exported="false"/>
 
-        <!-- Вход/связка с сервером (servers/TODO_mobile_sync.md, Фаза 1) —
+        <!-- Вход/связка с сервером (org/docs/TODO_mobile_sync.md, Фаза 1) —
              открывается с экрана «Настройки» → «Синхронизация», см. класс. -->
         <activity android:name=".Activities.SyncLinkActivity"
                 android:theme="@style/AppTheme.NoActionBar"

@@ -325,7 +325,7 @@ round(vccr.rate * (coalesce(opt.amount_to, 0) - coalesce(opf.amount_fr, 0)), 2) 
 (69 добавила `currency.precision`, 70 — `currency_pair.precision`, 71 — таблицу
 `operation_link`, 72 — четыре колонки синка на все 9 синхронизируемых таблиц плюс
 первые настоящие триггеры схемы, см. [`schema/README.md`](../schema/README.md), раздел «v72 —
-синхронизация с сервером», и `servers/TODO_mobile_sync.md`, Фаза 3). Для более
+синхронизация с сервером», и `org/docs/TODO_mobile_sync.md`, Фаза 3). Для более
 старых баз — полное пересоздание: `DROP` всех представлений и таблиц в порядке
 зависимостей, затем `onCreate`. Данные при этом теряются.
 

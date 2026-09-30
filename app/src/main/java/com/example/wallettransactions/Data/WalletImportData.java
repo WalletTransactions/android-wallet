@@ -106,7 +106,7 @@ public class WalletImportData {
 
     private static int InsertOperationRecord(SQLiteDatabase db, Date date, String accFrom, String accTo, double amount,  String comment)
     {
-        // uuid — v72 (servers/TODO_mobile_sync.md, Фаза 3): эта вставка работает на
+        // uuid — v72 (org/docs/TODO_mobile_sync.md, Фаза 3): эта вставка работает на
         // уже существующей (возможно, апгрейженной) базе, где у колонки uuid нет
         // DEFAULT-выражения (SQLite не разрешает его в ALTER TABLE ADD COLUMN) —
         // значение обязано прийти явно.

@@ -6,7 +6,7 @@ buildscript {
         jcenter()
         // jcenter выключен с 2024 года и новых пакетов не отдаёт (старые ещё
         // резолвятся из кэша) — googleid (Credential Manager, Фаза 0
-        // servers/TODO_mobile_sync.md) не публикуется в google(), берётся
+        // org/docs/TODO_mobile_sync.md) не публикуется в google(), берётся
         // отсюда.
         mavenCentral()
     }

@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Движок push/pull (servers/TODO_mobile_sync.md, Фаза 3, п. 4) — переливает
+ * Движок push/pull (org/docs/TODO_mobile_sync.md, Фаза 3, п. 4) — переливает
  * dirty-строки локальной SQLite в {@code POST /sync/push} и применяет
  * {@code GET /sync/pull} обратно. Протокол — README wallet-api,
  * "Синхронизация"; вызывается из {@link SyncWorker}, транспорт — в
@@ -58,7 +58,7 @@ import java.util.UUID;
  * сервере (sync_repo.cpp) — обязателен по той же причине: строка-ссылка не
  * должна уйти в порции РАНЬШЕ строки, на которую ссылается.
  *
- * <h3>Иконки — метаданные и содержимое раздельно (servers/TODO_mobile_sync.md, "Иконки")</h3>
+ * <h3>Иконки — метаданные и содержимое раздельно (org/docs/TODO_mobile_sync.md, "Иконки")</h3>
  * {@code icon} синхронизируется как обычная таблица (метаданные —
  * name/icon_type/content_sha256), но САМИ БАЙТЫ изображения через
  * push/pull не идут — отдельные {@code POST}/{@code GET /sync/blobs}
@@ -83,7 +83,7 @@ import java.util.UUID;
  * защиту от удаления ИСПОЛЬЗУЕМОЙ иконки (сейчас — обычный FK
  * {@code ON DELETE RESTRICT}, при soft-delete внешний ключ перестаёт
  * видеть конфликт), это смена пользовательской гарантии, не механическая
- * правка — решение за пользователем (см. servers/TODO_mobile_sync.md,
+ * правка — решение за пользователем (см. org/docs/TODO_mobile_sync.md,
  * "Открытые вопросы").
  *
  * <h3>Что ещё сознательно не решено в этом заходе</h3>
@@ -96,7 +96,7 @@ import java.util.UUID;
  *   просто пропускает строку с предупреждением в лог (см.
  *   {@link #upsertByUuid}), не пытаясь слить дубли — тот же класс проблемы,
  *   что и с account, но без протокола разрешения (см.
- *   servers/TODO_mobile_sync.md, "Открытые вопросы").</li>
+ *   org/docs/TODO_mobile_sync.md, "Открытые вопросы").</li>
  * </ul>
  */
 final class SyncEngine {
@@ -676,7 +676,7 @@ final class SyncEngine {
      * 409 duplicate_name (см. README wallet-api, "Конфликт имени счёта") —
      * переклеивает identity локального счёта на выжившую строку.
      * Единственный сценарий переписывания локальных ссылок
-     * (servers/TODO_mobile_sync.md, Фаза 3, п. 5): локальный {@code _id} и
+     * (org/docs/TODO_mobile_sync.md, Фаза 3, п. 5): локальный {@code _id} и
      * всё, что на него ссылается ({@code operation.acc_fr_id/acc_to_id} и
      * т.п.), не трогаем — они и так указывают на верную строку, меняется
      * только то, каким {@code uuid} она назовётся при следующей отправке.

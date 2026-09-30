@@ -70,7 +70,7 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-    // Миграция на AndroidX (servers/TODO_mobile_sync.md, Фаза 0) — 1:1 замена
+    // Миграция на AndroidX (org/docs/TODO_mobile_sync.md, Фаза 0) — 1:1 замена
     // прежних com.android.support:*:28.0.0 / android.arch.lifecycle:extensions,
     // без смены минимальной функциональности.
     implementation 'androidx.appcompat:appcompat:1.6.1'
@@ -86,7 +86,7 @@ dependencies {
     implementation 'androidx.credentials:credentials-play-services-auth:1.3.0'
     implementation 'com.google.android.libraries.identity.googleid:googleid:1.1.1'
 
-    // Фаза 1 (servers/TODO_mobile_sync.md) — вызов POST /auth/nonce и
+    // Фаза 1 (org/docs/TODO_mobile_sync.md) — вызов POST /auth/nonce и
     // POST /auth/google/mobile. Остальной код проекта до сих пор обходился
     // голым HttpURLConnection (см. CurrencyPairRateListActivity) — здесь
     // взят OkHttp: асинхронные вызовы с JSON-телом на HttpURLConnection

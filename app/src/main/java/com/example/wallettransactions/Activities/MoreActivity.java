@@ -113,7 +113,7 @@ public class MoreActivity extends BaseTabActivity {
     // ── Синхронизация ───────────────────────────────────────────────────────
 
     /**
-     * Адрес wallet-gateway (servers/TODO_mobile_sync.md, п. 1.4 — LAN-only,
+     * Адрес wallet-gateway (org/docs/TODO_mobile_sync.md, п. 1.4 — LAN-only,
      * ввод вручную). Без валидации схемы/хоста: неверный адрес просто не
      * ответит при следующей синхронизации, это не хуже, чем полагаться на
      * regex, который всё равно не проверит, слушает ли там что-то живое.
@@ -138,7 +138,7 @@ public class MoreActivity extends BaseTabActivity {
                 .show();
     }
 
-    /** Открывает вход через Google (servers/TODO_mobile_sync.md, Фаза 1) —
+    /** Открывает вход через Google (org/docs/TODO_mobile_sync.md, Фаза 1) —
      *  тот же экран обслуживает и первую связку, и повторную после того, как
      *  {@code SyncWorker} пометил сессию истёкшей. */
     public void onLinkServer(View view) {

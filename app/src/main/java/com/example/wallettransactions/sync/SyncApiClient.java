@@ -17,7 +17,7 @@ import okhttp3.Response;
 
 /**
  * Тонкая обёртка над {@code POST /sync/push}/{@code GET /sync/pull} и
- * {@code POST}/{@code GET /sync/blobs} (servers/TODO_mobile_sync.md, Фаза 3,
+ * {@code POST}/{@code GET /sync/blobs} (org/docs/TODO_mobile_sync.md, Фаза 3,
  * п. 4, "Иконки"; протокол — README wallet-api, "Синхронизация"/"Иконки —
  * content-addressable blob") — только транспорт (HTTP + заголовок Bearer).
  * Вся бизнес-логика (что отправлять, как применять входящее) — в

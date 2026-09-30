@@ -21,7 +21,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
 
     private static final int DATABASE_VERSION = 79;
 
-    // v72 (servers/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
+    // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
     // сервере — генерируется здесь же по умолчанию, СВЕЖИЕ CREATE TABLE могут
     // использовать DEFAULT-выражение; апгрейд существующей базы (см. onUpgrade)
@@ -167,7 +167,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
 
     /**
      * Индекс на uuid для каждой из 9 синхронизируемых таблиц — понадобится
-     * движку синка (servers/TODO_mobile_sync.md, Фаза 3, п. 4, ещё не
+     * движку синка (org/docs/TODO_mobile_sync.md, Фаза 3, п. 4, ещё не
      * реализован): применяя входящую pull-строку, он первым делом ищет "есть
      * ли уже локальная строка с этим uuid" — без индекса это полный скан
      * таблицы на каждую входящую строку. IF NOT EXISTS — как и
@@ -245,7 +245,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * Триггеры "не забыл ли код-путь проставить dirty=1" (servers/TODO_mobile_sync.md,
+     * Триггеры "не забыл ли код-путь проставить dirty=1" (org/docs/TODO_mobile_sync.md,
      * Фаза 3 — решено использовать триггеры, а не патчить каждое место записи:
      * единого узкого CRUD-слоя на самом деле нет, минимум 4 места пишут в обход
      * WalletDbCRUD напрямую — TransactionActivity/IconEditDialog/RateEditDialog/
@@ -562,7 +562,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
 
     private void CreateViews(SQLiteDatabase db) {
 
-        // v72 (servers/TODO_mobile_sync.md, Фаза 3, п.1): все представления ниже
+        // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1): все представления ниже
         // получили фильтр deleted_at IS NULL — мягко удалённая строка не должна
         // быть видна как живая, но должна дожить до синка как обычное изменение
         // (см. SYNC_COLUMNS_DDL выше). Зеркально серверным вьюхам
@@ -769,7 +769,7 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
                 CreateOperationLink(db);
             }
             if (oldVersion < 72) {
-                // servers/TODO_mobile_sync.md, Фаза 3, п.1 — см. javadoc
+                // org/docs/TODO_mobile_sync.md, Фаза 3, п.1 — см. javadoc
                 // addSyncColumns/backfillUuid/createSyncTriggers выше, почему это
                 // несколько шагов на таблицу, а не единый ALTER.
                 addSyncColumns(db, WalletContract.AccountEntry.TABLE_NAME);
@@ -853,7 +853,7 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
                 createSyncTriggers(db);
             }
             if (oldVersion < 73) {
-                // servers/TODO_mobile_sync.md — легаси-дубли currency_pair_rate,
+                // org/docs/TODO_mobile_sync.md — легаси-дубли currency_pair_rate,
                 // см. dedupeCurrencyPairRateDuplicates(): на v72 backfillUuid ещё
                 // не различал их от настоящих отдельных строк (natural key был
                 // full timestamp, не календарная дата), так что каждая такая

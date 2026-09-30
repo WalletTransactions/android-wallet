@@ -17,7 +17,7 @@ CREATE TABLE icon
 	image BLOB NOT NULL, -- само изображение (WEBP 256x256)
 	icon_type INT NOT NULL, -- код типа иконки (0=категория/1=флаг у Icon.IconType; встречаются и другие значения)
 	uuid TEXT NOT NULL DEFAULT (lower(hex(randomblob(16)))), -- идентификатор строки для синка с сервером
-	dirty INTEGER NOT NULL DEFAULT 1, -- 1 — строка ещё не отправлена на сервер (push иконок пока не реализован сервером, см. servers/TODO_mobile_sync.md — колонка заведена для единообразия)
+	dirty INTEGER NOT NULL DEFAULT 1, -- 1 — строка ещё не отправлена на сервер (push иконок пока не реализован сервером, см. org/docs/TODO_mobile_sync.md — колонка заведена для единообразия)
 	deleted_at INTEGER, -- момент мягкого удаления (epoch millis); NULL — строка активна
 	updated_by_device TEXT -- диагностика: устройство, применившее последнее изменение
 );

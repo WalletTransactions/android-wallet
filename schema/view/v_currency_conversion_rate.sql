@@ -5,7 +5,7 @@
 -- в SELECT нужна только для не вошедшей в схему v_currency_conversion_max_date_rate
 -- (см. соответствующий файл) и в приложении не создаётся.
 --
--- v72 (servers/TODO_mobile_sync.md, Фаза 3): deleted_at IS NULL на currency_pair_rate/
+-- v72 (org/docs/TODO_mobile_sync.md, Фаза 3): deleted_at IS NULL на currency_pair_rate/
 -- currency_pair/currency — мягко удалённый курс/пара/валюта не должны попасть
 -- в пересчёт эквивалента.
 CREATE VIEW v_currency_conversion_rate
