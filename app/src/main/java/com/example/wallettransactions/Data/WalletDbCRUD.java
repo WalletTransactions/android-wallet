@@ -114,7 +114,7 @@ public class WalletDbCRUD {
      * никогда не долетело бы до сервера и других устройств — сообщать об
      * исчезнувшей строке через push было бы нечем. {@code dirty=1} тут не
      * нужен явно — форсит триггер {@code trg_operation_dirty}
-     * (schema/client/triggers/trg_sync_dirty.sql), раз этот UPDATE его не
+     * (schema/triggers/trg_sync_dirty.sql), раз этот UPDATE его не
      * трогает. Раньше строки {@code operation_link} уходили сами через
      * {@code ON DELETE CASCADE} — теперь, раз операция физически остаётся,
      * они тоже остаются (то же самое поведение, что и на сервере: внешние

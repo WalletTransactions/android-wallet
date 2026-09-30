@@ -54,7 +54,7 @@ public class IconList {
     /**
      * Как {@link #getIconById}, но никогда не возвращает {@code null} — реальная находка
      * на устройстве (2026-09-11): {@code account.icon_id}/{@code currency.icon_id} — {@code
-     * NOT NULL} FK (см. schema/client/table/account.sql, currency.sql), по всей базе кода
+     * NOT NULL} FK (см. schema/table/account.sql, currency.sql), по всей базе кода
      * читается как инвариант "у счёта/валюты всегда есть живая иконка". Ссылка иногда всё
      * же оказывается испорченной (старый баг {@code WalletFillData.ResetIcons}, см. её
      * javadoc и {@code WalletDbHelper.onUpgrade}, v78, который чинит уже испорченное на

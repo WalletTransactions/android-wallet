@@ -49,6 +49,8 @@ app/src/main/java/com/example/wallettransactions/
   sync/          синхронизация с сервером: AuthSession, SyncApiClient, SyncEngine, SyncWorker
   Views/         свои view: график курса, кадрирование иконки
 datepickupview/  модуль выбора даты
+schema/          читаемое зеркало DDL локальной SQLite (таблицы, вью, триггеры, отчётные запросы);
+                 источник истины — WalletDbHelper, зеркало обновляется вручную
 ci/              unit-тесты в контейнере (JDK17 + Android SDK)
 ```
 

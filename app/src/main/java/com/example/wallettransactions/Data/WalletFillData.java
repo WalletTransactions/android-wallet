@@ -597,7 +597,7 @@ public class WalletFillData {
      * до сервера и других устройств push'ем (строки просто исчезли бы локально, серверу
      * сообщать об этом нечем), а следующий же pull притащил бы их обратно с сервера, как
      * будто их и не удаляли. {@code dirty} явно не ставим — форсит триггер {@code trg_*_dirty}
-     * (schema/client/triggers/trg_sync_dirty.sql), раз эти UPDATE его не трогают.
+     * (schema/triggers/trg_sync_dirty.sql), раз эти UPDATE его не трогают.
      * {@code operation_link} НЕ трогаем — то же самое, за тем же доводом, что и в
      * {@code DeleteOperation}: раньше уходил через {@code ON DELETE CASCADE}, при мягком
      * удалении операция физически остаётся, и он остаётся тоже (безвредно: невидим, пока
@@ -639,7 +639,7 @@ public class WalletFillData {
      * иконки категорий, см. {@link #SeedDefaultCurrencyFlagIcons}/{@link #SeedDefaultCategoryIcons}).
      * <p>
      * {@code account.icon_id}/{@code currency.icon_id} — {@code NOT NULL} FK на {@code icon._id}
-     * (см. schema/client/table/account.sql, currency.sql): по всему приложению это читается как
+     * (см. schema/table/account.sql, currency.sql): по всему приложению это читается как
      * инвариант "у счёта/валюты всегда есть живая иконка", и рендер нигде не проверяет
      * {@code getIcon()} на null (кроме одного места). Жёсткий {@code DELETE} упёрся бы в этот FK
      * (см. icon.sql), но здесь удаление мягкое ({@code UPDATE ... deleted_at}, тот же довод, что
