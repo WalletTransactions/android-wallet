@@ -95,7 +95,7 @@ public class WalletImportData {
     private static Integer FindAccountIdByName(SQLiteDatabase db, String name) {
         Cursor c = db.rawQuery("select " + WalletContract.AccountEntry._ID
                 + " from " + WalletContract.AccountEntry.TABLE_NAME
-                + " where " + WalletContract.AccountEntry.COLUMN_NAME + " = ?"
+                + " where " + AccountNames.sameSql(WalletContract.AccountEntry.COLUMN_NAME)
                 + " and " + WalletContract.AccountEntry.COLUMN_DELETED_AT + " is null", new String[]{name});
         try {
             return c.moveToFirst() ? c.getInt(0) : null;
@@ -111,7 +111,8 @@ public class WalletImportData {
         // DEFAULT-выражения (SQLite не разрешает его в ALTER TABLE ADD COLUMN) —
         // значение обязано прийти явно.
         String sql = "insert into operation(date, acc_fr_id, acc_to_id, amount,  comment, uuid)	select dt, af._id , act._id , amount, t.comment, t.uuid from (" +
-                "select	'"+ DateUtils.DateToStr(date)+"' dt, ? acc_fr, ? acc_to, ? amount,  ? comment, ? uuid	) t join account af on af.name  = acc_fr join account act on act.name  = acc_to";
+                "select	'"+ DateUtils.DateToStr(date)+"' dt, ? acc_fr, ? acc_to, ? amount,  ? comment, ? uuid	) t join account af on " + AccountNames.keySql("af.name") + " = " + AccountNames.keySql("acc_fr") + " and af.deleted_at is null"
+                + " join account act on " + AccountNames.keySql("act.name") + " = " + AccountNames.keySql("acc_to") + " and act.deleted_at is null";
 
 
         db.execSQL(sql, new String[]{accFrom, accTo, Double.toString(amount), comment, UUID.randomUUID().toString() });
@@ -251,7 +252,7 @@ public class WalletImportData {
             ContentValues cvKind = new ContentValues();
             cvKind.put(WalletContract.AccountEntry.COLUMN_KIND, AccountItem.Kind.WALLET.getValue());
             db.update(WalletContract.AccountEntry.TABLE_NAME, cvKind,
-                    WalletContract.AccountEntry.COLUMN_NAME + " = ? COLLATE NOCASE", new String[]{accName});
+                    AccountNames.sameSql(WalletContract.AccountEntry.COLUMN_NAME), new String[]{accName});
         }
 
         return added?1:0;

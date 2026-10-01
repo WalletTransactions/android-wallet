@@ -534,7 +534,7 @@ public class WalletFillData {
 
     private static long GetAccountIdByName(SQLiteDatabase db, String accName) {
         Cursor c = db.rawQuery("SELECT _id FROM " + WalletContract.AccountEntry.TABLE_NAME
-                + " WHERE " + WalletContract.AccountEntry.COLUMN_NAME + " = ? AND "
+                + " WHERE " + AccountNames.sameSql(WalletContract.AccountEntry.COLUMN_NAME) + " AND "
                 + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL", new String[]{accName});
         long id = -1;
         if (c.moveToFirst()) id = c.getLong(0);

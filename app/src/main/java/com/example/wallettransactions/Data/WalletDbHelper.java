@@ -8,6 +8,10 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.text.TextUtils;
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
@@ -19,7 +23,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 79;
+    private static final int DATABASE_VERSION = 80;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -148,9 +152,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
      * после пересборки таблиц).
      */
     private void createPartialUniqueIndexes(SQLiteDatabase db) {
-        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS uq_account_name ON "
-                + WalletContract.AccountEntry.TABLE_NAME + " (" + WalletContract.AccountEntry.COLUMN_NAME
-                + ") WHERE " + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL");
+        createAccountNameIndex(db);
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS uq_currency_name ON "
                 + WalletContract.CurrencyEntry.TABLE_NAME + " (" + WalletContract.CurrencyEntry.COLUMN_NAME
                 + ") WHERE " + WalletContract.CurrencyEntry.COLUMN_DELETED_AT + " IS NULL");
@@ -163,6 +165,61 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS uq_icon_name ON "
                 + WalletContract.IconEntry.TABLE_NAME + " (" + WalletContract.IconEntry.COLUMN_NAME
                 + ") WHERE " + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL");
+    }
+
+    /**
+     * v80: имя счёта уникально по {@link AccountNames} (без учёта регистра, «ё» = «е»),
+     * а не побайтово — то же правило, что у сервера. Индекс по выражению, а не по колонке.
+     */
+    private static void createAccountNameIndex(SQLiteDatabase db) {
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS uq_account_name ON "
+                + WalletContract.AccountEntry.TABLE_NAME + " ("
+                + AccountNames.keySql(WalletContract.AccountEntry.COLUMN_NAME)
+                + ") WHERE " + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL");
+    }
+
+    /**
+     * Шаг v80: старый индекс сравнивал имена побайтово, так что «Кафе» и «кафе» могли
+     * жить рядом. Перед новым индексом такие дубли переименовываются: первый по _id
+     * остаётся, остальные получают « (2)», « (3)»… Триггер dirty пометит их к отправке.
+     */
+    static void migrateAccountNameIndex(SQLiteDatabase db) {
+        db.execSQL("DROP INDEX IF EXISTS uq_account_name");
+        // Сначала все живые ключи, потом дубли — новое имя « (2)» не должно совпасть
+        // ни с одним существующим, даже с тем, что идёт в списке позже.
+        Set<String> taken = new HashSet<>();
+        List<Long> dupIds = new ArrayList<>();
+        List<String> dupNames = new ArrayList<>();
+        // Ключ — тем же SQL-выражением, что у индекса: иначе дубль, который увидит
+        // CREATE UNIQUE INDEX, мог бы остаться нераспознанным и уронить апгрейд.
+        Cursor c = db.rawQuery("SELECT " + WalletContract.AccountEntry._ID + ", "
+                + WalletContract.AccountEntry.COLUMN_NAME + ", "
+                + AccountNames.keySql(WalletContract.AccountEntry.COLUMN_NAME)
+                + " FROM " + WalletContract.AccountEntry.TABLE_NAME
+                + " WHERE " + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL"
+                + " ORDER BY " + WalletContract.AccountEntry._ID, null);
+        try {
+            while (c.moveToNext()) {
+                if (!taken.add(c.getString(2))) {
+                    dupIds.add(c.getLong(0));
+                    dupNames.add(c.getString(1));
+                }
+            }
+        } finally {
+            c.close();
+        }
+        for (int i = 0; i < dupIds.size(); i++) {
+            String candidate;
+            int n = 2;
+            do {
+                candidate = dupNames.get(i) + " (" + n++ + ")";
+            } while (!taken.add(AccountNames.key(db, candidate)));
+            ContentValues cv = new ContentValues();
+            cv.put(WalletContract.AccountEntry.COLUMN_NAME, candidate);
+            db.update(WalletContract.AccountEntry.TABLE_NAME, cv,
+                    WalletContract.AccountEntry._ID + "=?", new String[]{String.valueOf(dupIds.get(i))});
+        }
+        createAccountNameIndex(db);
     }
 
     /**
@@ -971,6 +1028,10 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             if (oldVersion < 79) {
                 // v79: правила повторяющихся операций — новая таблица, существующие не трогаем.
                 CreateRecurringOperation(db);
+            }
+            if (oldVersion < 80) {
+                // v80: имя счёта уникально без учёта регистра, «ё» = «е» (AccountNames).
+                migrateAccountNameIndex(db);
             }
             return;
         }

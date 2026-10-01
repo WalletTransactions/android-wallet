@@ -198,6 +198,10 @@ public class AccountItemActivity extends AppCompatActivity {
         if (account.isSystem()) name = originalName;
 
         SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
+        if (WalletDbCRUD.IsAccountNameTaken(db, name, account.getId())) {
+            editAccName.setError("Такое название уже есть");
+            return;
+        }
 
         int iconId = selectedIconId > 0 ? selectedIconId : account.getIcon().getId();
 

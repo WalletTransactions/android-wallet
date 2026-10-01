@@ -85,6 +85,10 @@ public class AddCategoryActivity extends AppCompatActivity {
         }
 
         SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
+        if (WalletDbCRUD.IsAccountNameTaken(db, name, -1)) {
+            editName.setError("Такое название уже есть");
+            return;
+        }
 
         int iconId = selectedIconId > 0 ? selectedIconId
                 : Singleton.instance.getIconList(this).getUnknownIcon().getId();

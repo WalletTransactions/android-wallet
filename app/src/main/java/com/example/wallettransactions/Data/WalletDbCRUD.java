@@ -162,12 +162,25 @@ public class WalletDbCRUD {
         return links;
     }
 
-    /** ID счёта по имени или -1. deleted_at IS NULL — не резолвить в мягко удалённый tombstone. */
+    /**
+     * Занято ли имя другим живым счётом (правило {@link AccountNames}) — проверка до
+     * записи, чтобы экран показал ошибку, а не упёрся в uq_account_name.
+     * exceptId — сам редактируемый счёт (-1 при создании): «кафе» → «Кафе» — не конфликт.
+     */
+    public static boolean IsAccountNameTaken(SQLiteDatabase db, String name, int exceptId) {
+        int id = GetAccountIdByName(db, name);
+        return id > 0 && id != exceptId;
+    }
+
+    /**
+     * ID счёта по имени (правило {@link AccountNames}) или -1. deleted_at IS NULL — не
+     * резолвить в мягко удалённый tombstone; то же условие у индекса uq_account_name.
+     */
     public static int GetAccountIdByName(SQLiteDatabase db, String name) {
         Cursor c = db.rawQuery(
                 "SELECT " + WalletContract.AccountEntry._ID +
                 " FROM " + WalletContract.AccountEntry.TABLE_NAME +
-                " WHERE " + WalletContract.AccountEntry.COLUMN_NAME + "=? COLLATE NOCASE" +
+                " WHERE " + AccountNames.sameSql(WalletContract.AccountEntry.COLUMN_NAME) +
                 " AND " + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL",
                 new String[]{name});
         try {
