@@ -1,0 +1,49 @@
+# Сборка debug-APK и юнит-тесты на каждый push в main и на pull request.
+#
+# Установка на устройство и инструментальные тесты — не здесь: им нужен Pixel
+# по USB, это делает Jenkins (BuildPlatform). См. org/docs/TODO_ci.md.
+#
+# JDK 17 — как в ci/Containerfile (Gradle 7.5 не работает на JDK 21). Android
+# SDK берётся с раннера; недостающие build-tools Gradle докачает сам.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md"]
+  pull_request:
+    paths-ignore: ["**.md"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      # gradlew лежит в git без бита исполнения — запускаем через bash.
+      - name: Unit tests
+        run: bash ./gradlew :app:testDebugUnitTest --console=plain --no-daemon
+
+      - name: Assemble debug APK
+        run: bash ./gradlew :app:assembleDebug --console=plain --no-daemon
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: app/build/test-results/testDebugUnitTest/
+          if-no-files-found: ignore
