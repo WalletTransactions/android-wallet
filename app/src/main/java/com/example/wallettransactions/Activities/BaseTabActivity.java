@@ -10,8 +10,11 @@ import android.widget.TextView;
 
 import com.example.wallettransactions.Activities.Fragments.ChooseDatePeriodFragment;
 import com.example.wallettransactions.AdapterUtils;
+import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.Data.RecurringOperationsDb;
 import com.example.wallettransactions.Data.WalletDbLoader;
+import com.example.wallettransactions.DataItems.Accounts.AccountItem;
+import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.DataItems.DataFilter;
@@ -356,7 +359,63 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         intent.putExtra(TransactionActivity.cComment, "");
         intent.putExtra(TransactionActivity.cAmount, 0.0);
         intent.putExtra(TransactionActivity.cIsEdit, false);
+        putFilterPrefill(intent);
         startActivityForResult(intent, requestCodeSharedOperationAdd);
+    }
+
+    /**
+     * Лента отфильтрована по счетам — новая операция почти наверняка про них же: подставляем
+     * первый выбранный кошелёк и первую категорию фильтра. Тип берём из фильтра по виду
+     * операции; без него — расход, как и при пустом окне. У перевода кошелёк фильтра
+     * встаёт в «Откуда», второй выбранный кошелёк (если есть) — в «Куда».
+     * Кошелька в фильтре нет — подставляем последний использованный.
+     */
+    private void putFilterPrefill(Intent intent) {
+        DataFilter.OperationKind kind = state().getOperationKind();
+        if (kind == DataFilter.OperationKind.all) kind = DataFilter.OperationKind.expense;
+
+        AccountList accounts = Singleton.instance.getAccounts(this);
+        List<AccountItem> wallets = new ArrayList<>();
+        AccountItem category = null;
+
+        // Порядок id в фильтре — порядок выбора, поэтому «первый» здесь и есть первый выбранный.
+        for (Integer id : state().getAccountIds()) {
+            AccountItem item = accounts.getAccountById(id);
+            if (item == null || item.getIsArchived() || item.isSystem()) continue;
+
+            if (item.isOperatingAccount()) wallets.add(item);
+            else if (category == null) category = item;
+        }
+
+        AccountItem wallet = wallets.isEmpty() ? lastWallet(accounts) : wallets.get(0);
+        AccountItem from;
+        AccountItem to;
+        switch (kind) {
+            case income:
+                from = category;
+                to = wallet;
+                break;
+            case transfer:
+                from = wallet;
+                to = wallets.size() > 1 ? wallets.get(1) : null;
+                break;
+            default:
+                from = wallet;
+                to = category;
+                break;
+        }
+
+        intent.putExtra(TransactionActivity.cKind, kind.name());
+        if (from != null) intent.putExtra(TransactionActivity.cFrom, from.getId().intValue());
+        if (to != null) intent.putExtra(TransactionActivity.cTo, to.getId().intValue());
+    }
+
+    /** Кошелёк последней сохранённой операции, если его с тех пор не удалили и не убрали в архив. */
+    private AccountItem lastWallet(AccountList accounts) {
+        int id = AppSettings.getLastWalletId(this);
+        AccountItem item = id > 0 ? accounts.getAccountById(id) : null;
+        if (item == null || !item.isOperatingAccount() || item.getIsArchived()) return null;
+        return item;
     }
 
     // ── Плитки «Доход» и «Расход» карточки (android:onClick в view_period_summary.xml) ──

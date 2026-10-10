@@ -115,10 +115,22 @@ final class SyncApiClient {
     static final class PullStream {
         final long nextSeq;
         final JSONObject changes;
+        /** Курсор был дальше головы потока — сервер отдал поток с нуля (см. openapi.yaml wallet-api, syncPull). */
+        final boolean reset;
+        /** Леджер потока; {@code null} — у потока reference и у старого сервера без этого поля. */
+        final String ledgerId;
 
-        PullStream(long nextSeq, JSONObject changes) {
+        PullStream(long nextSeq, JSONObject changes, boolean reset, String ledgerId) {
             this.nextSeq = nextSeq;
             this.changes = changes;
+            this.reset = reset;
+            this.ledgerId = ledgerId;
+        }
+
+        static PullStream fromJson(JSONObject json) throws JSONException {
+            return new PullStream(json.getLong("next_seq"), json.getJSONObject("changes"),
+                    json.optBoolean("reset", false),
+                    json.isNull("ledger_id") ? null : json.getString("ledger_id"));
         }
     }
 
@@ -149,9 +161,7 @@ final class SyncApiClient {
             JSONObject json = new JSONObject(body);
             JSONObject ledgerJson = json.getJSONObject("ledger");
             JSONObject referenceJson = json.getJSONObject("reference");
-            return new PullResult(
-                    new PullStream(ledgerJson.getLong("next_seq"), ledgerJson.getJSONObject("changes")),
-                    new PullStream(referenceJson.getLong("next_seq"), referenceJson.getJSONObject("changes")));
+            return new PullResult(PullStream.fromJson(ledgerJson), PullStream.fromJson(referenceJson));
         }
     }
 }

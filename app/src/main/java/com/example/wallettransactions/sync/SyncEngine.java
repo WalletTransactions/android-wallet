@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -358,7 +359,9 @@ final class SyncEngine {
     private static int redirty(SQLiteDatabase db, String table, String uuid) {
         ContentValues cv = new ContentValues();
         cv.put("dirty", 1);
-        return db.update(table, cv, "uuid=? AND dirty<>1", new String[]{uuid});
+        String local = localUuid(db, table, uuid);
+        if (local == null) return 0;
+        return db.update(table, cv, "uuid=? AND dirty<>1", new String[]{local});
     }
 
     /**
@@ -726,6 +729,15 @@ final class SyncEngine {
      */
     static void pullAll(SQLiteDatabase db, SyncApiClient api, Context ctx, SyncLog log)
             throws IOException, JSONException {
+        // Строки, пропущенные до localUuid (ссылка на счёт с uuid без дефисов),
+        // уже позади курсора — один раз тянем оба потока заново. Upsert по uuid
+        // идемпотентен, а push уже прошёл, так что локальные правки не теряются.
+        if (!AppSettings.isUuidFormatResyncDone(ctx)) {
+            AppSettings.setLedgerSyncSeq(ctx, 0L);
+            AppSettings.setReferenceSyncSeq(ctx, 0L);
+            AppSettings.setUuidFormatResyncDone(ctx);
+            log.healed("Повторная загрузка с сервера — подтягиваю пропущенные операции");
+        }
         long ledgerSeq = AppSettings.getLedgerSyncSeq(ctx);
         long referenceSeq = AppSettings.getReferenceSyncSeq(ctx);
         boolean touchedAccounts = false;
@@ -738,6 +750,32 @@ final class SyncEngine {
         // на то, что курсор реально продвигается).
         for (int page = 0; page < 10_000; page++) {
             SyncApiClient.PullResult result = api.pull(ledgerSeq, referenceSeq, 500);
+
+            // Леджер сменился (другой user_id при том же email, инвайт) —
+            // курсор от старого леджера может оказаться и МЕНЬШЕ головы
+            // нового, тогда сервер reset не поставит и часть истории молча
+            // пропадёт. Страницу выбрасываем и тянем поток с нуля.
+            String ledgerId = result.ledger.ledgerId;
+            if (ledgerId != null && !ledgerId.equals(AppSettings.getSyncLedgerId(ctx))) {
+                boolean knownBefore = AppSettings.getSyncLedgerId(ctx) != null;
+                AppSettings.setSyncLedgerId(ctx, ledgerId);
+                if (knownBefore && ledgerSeq != 0) {
+                    Log.w(TAG, "pull: леджер сменился на " + ledgerId + " — курсор " + ledgerSeq + " сброшен");
+                    log.healed("Сервер сменил кошелёк — загружаю его заново");
+                    ledgerSeq = 0;
+                    AppSettings.setLedgerSyncSeq(ctx, 0L);
+                    continue;
+                }
+            }
+            if (result.ledger.reset || result.reference.reset) {
+                // Курсор был дальше головы потока (реальный случай 2026-09-30:
+                // 146 при голове 13 — записи бота не доезжали). Сервер уже
+                // отдал поток с нуля — применяем как обычно.
+                Log.w(TAG, "pull: курсор впереди сервера (ledger=" + ledgerSeq + ", reference="
+                        + referenceSeq + ") — поток начат заново");
+                log.healed("Позиция синхронизации разошлась с сервером — загружаю данные заново");
+            }
+
             boolean advanced = result.ledger.nextSeq != ledgerSeq || result.reference.nextSeq != referenceSeq;
             if (!advanced) break; // догнали сервер — оба потока пусты
 
@@ -853,7 +891,7 @@ final class SyncEngine {
         if (iconRows == null) return cache;
         for (int i = 0; i < iconRows.length(); i++) {
             JSONObject row = iconRows.getJSONObject(i);
-            if (rowExistsByUuid(db, "icon", row.getString("uuid"))) continue;
+            if (localUuid(db, "icon", row.getString("uuid")) != null) continue;
             String sha256 = row.getString("content_sha256");
             if (cache.containsKey(sha256)) continue;
             cache.put(sha256, api.downloadBlob(sha256));
@@ -892,7 +930,8 @@ final class SyncEngine {
     private static void applyIcon(SQLiteDatabase db, JSONObject row, Map<String, byte[]> newIconBlobs,
                                    SyncLog log) throws JSONException {
         String uuid = row.getString("uuid");
-        boolean exists = rowExistsByUuid(db, "icon", uuid);
+        String local = localUuid(db, "icon", uuid);
+        boolean exists = local != null;
 
         ContentValues cv = new ContentValues();
         cv.put("name", row.getString("name"));
@@ -901,7 +940,7 @@ final class SyncEngine {
 
         try {
             if (exists) {
-                db.update("icon", cv, "uuid=?", new String[]{uuid});
+                updateFromServer(db, "icon", cv, local);
             } else {
                 byte[] image = newIconBlobs.get(row.getString("content_sha256"));
                 if (image == null) {
@@ -1048,12 +1087,13 @@ final class SyncEngine {
         cv.put("currency_id", currencyId);
         applySyncColumns(cv, row);
         try {
-            boolean exists = rowExistsByUuid(db, "account_operating", uuid);
-            if (exists) {
-                db.update("account_operating", cv, "uuid=?", new String[]{uuid});
+            String local = localUuid(db, "account_operating", uuid);
+            if (local != null) {
+                updateFromServer(db, "account_operating", cv, local);
             } else {
                 cv.put("_id", accountId);
-                cv.put("uuid", uuid);
+                // Инвариант "uuid как у account того же счёта" — в его локальном написании.
+                cv.put("uuid", localUuid(db, "account", uuid));
                 db.insertOrThrow("account_operating", null, cv);
             }
         } catch (SQLiteException e) {
@@ -1115,9 +1155,10 @@ final class SyncEngine {
      */
     private static Boolean upsertByUuid(SQLiteDatabase db, String table, String uuid, ContentValues cv) {
         try {
-            boolean exists = rowExistsByUuid(db, table, uuid);
+            String local = localUuid(db, table, uuid);
+            boolean exists = local != null;
             if (exists) {
-                db.update(table, cv, "uuid=?", new String[]{uuid});
+                updateFromServer(db, table, cv, local);
             } else {
                 cv.put("uuid", uuid);
                 db.insertOrThrow(table, null, cv);
@@ -1134,10 +1175,46 @@ final class SyncEngine {
         }
     }
 
-    private static boolean rowExistsByUuid(SQLiteDatabase db, String table, String uuid) {
-        Cursor c = db.rawQuery("SELECT 1 FROM " + table + " WHERE uuid=? LIMIT 1", new String[]{uuid});
+    /**
+     * UPDATE строки данными с сервера так, чтобы она осталась {@code dirty=0}.
+     * <p>
+     * Триггер {@code trg_<table>_dirty} (WalletDbHelper.createDirtyTrigger) срабатывает
+     * при {@code NEW.dirty = OLD.dirty}. Явный {@code SET dirty=0} по строке, где и так
+     * был 0, под это условие попадает — и триггер помечал строку dirty=1. Так каждая
+     * обновлённая с сервера строка уходила обратно в следующий push, сервер выдавал ей
+     * новый seq, pull приносил её снова — по кругу. Поэтому в два шага через
+     * {@code dirty=2}: и 0/1→2, и 2→0 — смена значения, триггер молчит. Оба шага в
+     * транзакции страницы (applyPage), промежуточное 2 наружу не видно.
+     */
+    static void updateFromServer(SQLiteDatabase db, String table, ContentValues cv, String localUuid) {
+        cv.put("dirty", 2);
+        db.update(table, cv, "uuid=?", new String[]{localUuid});
+        ContentValues clean = new ContentValues();
+        clean.put("dirty", 0);
+        db.update(table, clean, "uuid=?", new String[]{localUuid});
+    }
+
+    /**
+     * uuid строки так, как он записан ЗДЕСЬ, или {@code null}, если строки нет.
+     * Локально uuid бывает в двух написаниях: {@code DEFAULT lower(hex(randomblob(16)))}
+     * даёт 32 hex-символа без дефисов (счета, справочники из сида), а
+     * {@code UUID.randomUUID()} — каноническую форму с дефисами. Сервер хранит
+     * тип {@code uuid} и в pull ВСЕГДА отдаёт каноническую форму, поэтому точное
+     * сравнение строк не находило, например, счёт без дефисов — и операция,
+     * записанная ботом на этот счёт, молча пропускалась. Ищем оба написания;
+     * {@code IN} по колонке uuid по-прежнему идёт по индексу.
+     */
+    static String localUuid(SQLiteDatabase db, String table, String uuid) {
+        if (uuid == null) return null;
+        String plain = uuid.toLowerCase(Locale.ROOT).replace("-", "");
+        String dashed = plain.length() == 32
+                ? plain.substring(0, 8) + "-" + plain.substring(8, 12) + "-" + plain.substring(12, 16)
+                        + "-" + plain.substring(16, 20) + "-" + plain.substring(20)
+                : plain;
+        Cursor c = db.rawQuery("SELECT uuid FROM " + table + " WHERE uuid IN (?, ?, ?) LIMIT 1",
+                new String[]{uuid, plain, dashed});
         try {
-            return c.moveToFirst();
+            return c.moveToFirst() ? c.getString(0) : null;
         } finally {
             c.close();
         }
@@ -1187,8 +1264,9 @@ final class SyncEngine {
     }
 
     private static Long findIdByUuid(SQLiteDatabase db, String table, String uuid) {
-        if (uuid == null) return null;
-        Cursor c = db.rawQuery("SELECT _id FROM " + table + " WHERE uuid=? LIMIT 1", new String[]{uuid});
+        String local = localUuid(db, table, uuid);
+        if (local == null) return null;
+        Cursor c = db.rawQuery("SELECT _id FROM " + table + " WHERE uuid=? LIMIT 1", new String[]{local});
         try {
             return c.moveToFirst() ? c.getLong(0) : null;
         } finally {

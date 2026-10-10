@@ -35,6 +35,7 @@ import java.util.Map;
 
 import com.example.wallettransactions.CalendarPicker;
 import com.example.wallettransactions.DateUtils;
+import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
@@ -80,6 +81,13 @@ public class TransactionActivity extends AppCompatActivity {
     public final static String cTo = "TransactionActivity.AccountToId";
 
     public final static String cIsEdit = "TransactionActivity.isEdit";
+
+    /**
+     * Тип новой операции: имя {@code DataFilter.OperationKind} (expense/income/transfer).
+     * Нужен, когда по одним счетам тип не вывести — например, перевод, у которого
+     * заполнено только «Откуда». При правке игнорируется: тип задают сами счета.
+     */
+    public final static String cKind = "TransactionActivity.Kind";
 
     /**
      * Имя ПО УМОЛЧАНИЮ для категории комиссии за перевод — используется только если её
@@ -312,6 +320,12 @@ public class TransactionActivity extends AppCompatActivity {
         mAccFrom = accountById(getIntent().getIntExtra(cFrom, 0));
         mAccTo   = accountById(getIntent().getIntExtra(cTo, 0));
         mKind    = deriveKind(mAccFrom, mAccTo);
+        if (!mIsEdit) {
+            String kind = getIntent().getStringExtra(cKind);
+            if ("income".equals(kind))        mKind = Kind.income;
+            else if ("transfer".equals(kind)) mKind = Kind.transfer;
+            else if ("expense".equals(kind))  mKind = Kind.expense;
+        }
 
         double amount = getIntent().getDoubleExtra(cAmount, 0);
         mAmount.setText(amount == 0 ? "" : String.valueOf(amount));
@@ -924,6 +938,11 @@ public class TransactionActivity extends AppCompatActivity {
             // Если ID  -1, значит произошла ошибка
             Toast.makeText(this, "Произошла ошибка при обновлении", Toast.LENGTH_SHORT).show();
         } else {
+            // Кошелёк операции: у расхода и перевода — списания, у дохода — зачисления.
+            AccountItem wallet = mKind == Kind.income ? mAccTo : mAccFrom;
+            if (wallet != null && wallet.isOperatingAccount())
+                AppSettings.setLastWalletId(this, wallet.getId());
+
             Intent resultIntent = new Intent();
             resultIntent.putExtra(cTranId, mTranId);
             setResult(RESULT_OK, resultIntent);

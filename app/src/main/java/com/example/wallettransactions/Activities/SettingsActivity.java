@@ -51,6 +51,7 @@ public class SettingsActivity extends AppCompatActivity {
     private FrameLayout switchAccessCode;
     private FrameLayout switchBiometric;
     private FrameLayout switchRemind;
+    private FrameLayout switchPickerKeyboard;
     private TextView rowRemindTime;
 
     /** Тапы по строке «Версия» — {@link #onVersionTap}. */
@@ -75,6 +76,7 @@ public class SettingsActivity extends AppCompatActivity {
         switchAccessCode = findViewById(R.id.switchAccessCode);
         switchBiometric = findViewById(R.id.switchBiometric);
         switchRemind = findViewById(R.id.switchRemind);
+        switchPickerKeyboard = findViewById(R.id.switchPickerKeyboard);
         rowRemindTime = findViewById(R.id.rowRemindTime);
 
         TextView versionValue = findViewById(R.id.versionValue);
@@ -100,6 +102,7 @@ public class SettingsActivity extends AppCompatActivity {
         applySwitchState(switchAccessCode, p.getBoolean(PREF_ACCESS_CODE_ON, false));
         applySwitchState(switchBiometric, p.getBoolean(PREF_BIOMETRIC_ON, false));
         applySwitchState(switchRemind, p.getBoolean(PREF_REMIND_ON, true));
+        applySwitchState(switchPickerKeyboard, AppSettings.isPickerKeyboardOn(this));
 
         int hour = p.getInt(PREF_REMIND_HOUR, 20);
         int minute = p.getInt(PREF_REMIND_MINUTE, 0);
@@ -208,6 +211,10 @@ public class SettingsActivity extends AppCompatActivity {
     public void onToggleRemind(View view) {
         boolean on = toggleSwitch(switchRemind);
         prefs().edit().putBoolean(PREF_REMIND_ON, on).apply();
+    }
+
+    public void onTogglePickerKeyboard(View view) {
+        AppSettings.setPickerKeyboardOn(this, toggleSwitch(switchPickerKeyboard));
     }
 
     public void onPickRemindTime(View view) {

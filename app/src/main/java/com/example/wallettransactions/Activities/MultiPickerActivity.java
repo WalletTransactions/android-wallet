@@ -17,6 +17,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.R;
@@ -93,6 +94,7 @@ public class MultiPickerActivity extends AppCompatActivity {
         });
 
         applyFilter();
+        AppSettings.applyPickerKeyboard(this, mSearchInput);
     }
 
     /** Именно contains, а не регулярка: символ вроде скобки в поиске не должен ронять экран. */

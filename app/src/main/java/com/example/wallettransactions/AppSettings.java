@@ -26,6 +26,8 @@ public final class AppSettings {
     private static final String PREF_FILTER_AMOUNT_MAX = "filterAmountMax";
     private static final String PREF_FILTER_EQ_MIN = "filterEqMin";
     private static final String PREF_FILTER_EQ_MAX = "filterEqMax";
+    private static final String PREF_LAST_WALLET_ID = "lastWalletId";
+    private static final String PREF_PICKER_KEYBOARD = "pickerKeyboard";
     private static final String PREF_THEME_MODE = "themeMode";
     private static final String PREF_SERVER_BASE_URL = "serverBaseUrl";
     private static final String PREF_DEVICE_ID = "deviceId";
@@ -35,6 +37,8 @@ public final class AppSettings {
     private static final String PREF_AUTO_CONNECT_INTERVAL_MINUTES = "autoConnectIntervalMinutes";
     private static final String PREF_LEDGER_SYNC_SEQ = "ledgerSyncSeq";
     private static final String PREF_REFERENCE_SYNC_SEQ = "referenceSyncSeq";
+    private static final String PREF_SYNC_LEDGER_ID = "syncLedgerId";
+    private static final String PREF_UUID_FORMAT_RESYNC_DONE = "uuidFormatResyncDone";
 
     /** См. {@link #getAutoConnectIntervalMinutes} — минимум, который вообще
      *  умеет {@code androidx.work} для периодической задачи. */
@@ -95,6 +99,41 @@ public final class AppSettings {
 
     public static void setFilterAccounts(Context ctx, String csvIds) {
         prefs(ctx).edit().putString(PREF_FILTER_ACCOUNTS, csvIds).apply();
+    }
+
+    /**
+     * Кошелёк последней сохранённой операции — его подставляет окно новой операции, когда
+     * фильтр кошелька не подсказывает. 0 — операций ещё не сохраняли.
+     */
+    public static int getLastWalletId(Context ctx) {
+        return prefs(ctx).getInt(PREF_LAST_WALLET_ID, 0);
+    }
+
+    public static void setLastWalletId(Context ctx, int id) {
+        prefs(ctx).edit().putInt(PREF_LAST_WALLET_ID, id).apply();
+    }
+
+    /**
+     * Экраны выбора категории/кошелька (AccountPickerActivity, MultiPickerActivity) открываются
+     * с фокусом в поиске и поднятой клавиатурой — можно сразу печатать. По умолчанию выключено.
+     */
+    public static boolean isPickerKeyboardOn(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_PICKER_KEYBOARD, false);
+    }
+
+    public static void setPickerKeyboardOn(Context ctx, boolean on) {
+        prefs(ctx).edit().putBoolean(PREF_PICKER_KEYBOARD, on).apply();
+    }
+
+    /**
+     * Ставит фокус в поле поиска и поднимает клавиатуру, если включено
+     * {@link #isPickerKeyboardOn}. Вызывать из onCreate экрана выбора.
+     */
+    public static void applyPickerKeyboard(android.app.Activity activity, android.widget.EditText search) {
+        if (!isPickerKeyboardOn(activity)) return;
+        search.requestFocus();
+        activity.getWindow().setSoftInputMode(
+                android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
     }
 
     /** Имя константы {@code DataFilter.OperationKind}; null — фильтра по виду ещё не было. */
@@ -278,7 +317,36 @@ public final class AppSettings {
         prefs(ctx).edit()
                 .putLong(PREF_LEDGER_SYNC_SEQ, 0L)
                 .putLong(PREF_REFERENCE_SYNC_SEQ, 0L)
+                .remove(PREF_SYNC_LEDGER_ID)
                 .apply();
+    }
+
+    /**
+     * Леджер сервера, к которому относится {@link #getLedgerSyncSeq} — из
+     * {@code ledger.ledger_id} ответа pull. Смена при том же email (аккаунт
+     * пересоздан на сервере, переход в чужой леджер по инвайту) — курсор от
+     * старого леджера не годится, {@code SyncEngine.pullAll} начинает поток
+     * заново. {@code null} — ещё не известен (первый синк или старая версия).
+     */
+    public static String getSyncLedgerId(Context ctx) {
+        return prefs(ctx).getString(PREF_SYNC_LEDGER_ID, null);
+    }
+
+    public static void setSyncLedgerId(Context ctx, String ledgerId) {
+        prefs(ctx).edit().putString(PREF_SYNC_LEDGER_ID, ledgerId).apply();
+    }
+
+    /**
+     * Одноразовая перекачка потоков с нуля после исправления поиска по uuid
+     * (SyncEngine.localUuid): до него строки со ссылкой на счёт, чей локальный
+     * uuid записан без дефисов, молча пропускались, а курсор уходил дальше.
+     */
+    public static boolean isUuidFormatResyncDone(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_UUID_FORMAT_RESYNC_DONE, false);
+    }
+
+    public static void setUuidFormatResyncDone(Context ctx) {
+        prefs(ctx).edit().putBoolean(PREF_UUID_FORMAT_RESYNC_DONE, true).apply();
     }
 
     // ── Тема оформления ────────────────────────────────────────────────────────

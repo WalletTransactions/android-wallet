@@ -19,6 +19,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.example.wallettransactions.AdapterUtils;
+import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.Data.WalletDbLoader;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
@@ -171,6 +172,7 @@ public class AccountPickerActivity extends AppCompatActivity {
 
         paintKindChips();
         applyFilters();
+        AppSettings.applyPickerKeyboard(this, mSearchInput);
     }
 
     public void btnUp(View view) {
