@@ -1123,22 +1123,24 @@ public class TransactionActivity extends AppCompatActivity {
         int type = mKind == Kind.transfer
                 ? AccountPickerActivity.cSelectedTypeOperationAccounts
                 : AccountPickerActivity.cSelectedTypeChargeAccounts;
-        openAccountPicker(mEditSlotTop.getHint().toString(), current, type, AccountSelectTop);
+        openAccountPicker(mEditSlotTop.getHint().toString(), current, getBottom(), type, AccountSelectTop);
     }
 
     public void onPickBottom(View view) {
         AccountItem current = topIsFrom() ? mAccTo : mAccFrom;
-        openAccountPicker(mEditSlotBottom.getHint().toString(), current,
+        openAccountPicker(mEditSlotBottom.getHint().toString(), current, getTop(),
                 AccountPickerActivity.cSelectedTypeOperationAccounts, AccountSelectBottom);
     }
 
     /**
      * Заголовок пикера — подпись самого слота («Статья расхода», «Куда», …): тип счёта
      * там уже задан, и переключателя категорий/кошельков на экране выбора не будет.
+     * {@code pair} — счёт второго слота: по нему пикер сортирует «по частоте».
      */
-    private void openAccountPicker(String title, AccountItem current, int selectedType, int requestCode) {
+    private void openAccountPicker(String title, AccountItem current, AccountItem pair,
+                                   int selectedType, int requestCode) {
         startActivityForResult(AccountPickerActivity.buildIntent(this, title, selectedType,
-                current == null ? 0 : current.getId()), requestCode);
+                current == null ? 0 : current.getId(), pair), requestCode);
     }
 
 
@@ -1217,7 +1219,9 @@ public class TransactionActivity extends AppCompatActivity {
     }
 
     public void onPickCommissionAccount(View view) {
-        openAccountPicker("Счёт списания комиссии", mAccCommission,
+        // Пара — кошелёк, с которого списывается комиссия.
+        AccountItem side = mRadioCommissionFromDest.isChecked() ? mAccTo : mAccFrom;
+        openAccountPicker("Счёт списания комиссии", mAccCommission, side,
                 AccountPickerActivity.cSelectedTypeChargeAccounts, AccountSelectCommission);
     }
 

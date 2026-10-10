@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.PopupMenu;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -26,6 +27,7 @@ import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.PeriodFilterState;
+import com.example.wallettransactions.PickerSort;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
 
@@ -61,6 +63,11 @@ import java.util.Map;
  * </ul>
  * В двух последних случаях переключатель скрыт: слот операции уже знает свой тип,
  * и подменять его выбором из другого списка нельзя.
+ *
+ * Порядок строк выбирается кнопкой в шапке ({@link PickerSort}) отдельно для кошельков
+ * и для категорий и сразу запоминается в настройках. «По частоте» учитывает счёт из
+ * второго слота операции ({@link #cPairAccountId}), если это кошелёк: сверху то, что
+ * чаще всего шло именно с ним, ниже — по общей частоте.
  */
 public class AccountPickerActivity extends AppCompatActivity {
 
@@ -73,16 +80,24 @@ public class AccountPickerActivity extends AppCompatActivity {
     public final static String cAccountId = "AccountPicker.AccountId";
     public final static String cTitle = "AccountPicker.Title";
     public final static String cCatalogMode = "AccountPicker.CatalogMode";
+    /** Счёт из второго слота операции (0 — нет): по нему считается частота «в паре». */
+    public final static String cPairAccountId = "AccountPicker.PairAccountId";
 
     private static final int REQUEST_EDIT_ACCOUNT = 300;
     private static final int REQUEST_ADD_WALLET   = 301;
     private static final int REQUEST_ADD_CATEGORY = 302;
 
     public static Intent buildIntent(Context ctx, String title, int selectedType, int currentAccountId) {
+        return buildIntent(ctx, title, selectedType, currentAccountId, null);
+    }
+
+    public static Intent buildIntent(Context ctx, String title, int selectedType, int currentAccountId,
+                                     AccountItem pairAccount) {
         Intent intent = new Intent(ctx, AccountPickerActivity.class);
         intent.putExtra(cTitle, title);
         intent.putExtra(cAccountSelectedType, selectedType);
         intent.putExtra(cAccountId, currentAccountId);
+        intent.putExtra(cPairAccountId, pairAccount == null ? 0 : pairAccount.getId());
         return intent;
     }
 
@@ -103,12 +118,17 @@ public class AccountPickerActivity extends AppCompatActivity {
 
     private TextView mKindCategories;
     private TextView mKindWallets;
+    private TextView mBtnSort;
     private EditText mSearchInput;
     private View mEmptyState;
 
     private boolean mShowWallets;
     private boolean mCatalogMode;
     private int mCurrentAccountId;
+    /** Только кошелёк: с категорией в паре частота ничего не говорит о выборе кошелька. */
+    private int mPairWalletId;
+    /** Читается из базы при первой сортировке по частоте; null — ещё не читали. */
+    private Map<Integer, WalletDbLoader.AccountUsage> mUsage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,6 +137,7 @@ public class AccountPickerActivity extends AppCompatActivity {
 
         mKindCategories = findViewById(R.id.kindCategories);
         mKindWallets    = findViewById(R.id.kindWallets);
+        mBtnSort        = findViewById(R.id.btnSort);
         mSearchInput    = findViewById(R.id.searchInput);
         mEmptyState     = findViewById(R.id.emptyState);
 
@@ -126,6 +147,10 @@ public class AccountPickerActivity extends AppCompatActivity {
         mCatalogMode      = getIntent().getBooleanExtra(cCatalogMode, false);
         mCurrentAccountId = getIntent().getIntExtra(cAccountId, 0);
         int selectedType  = getIntent().getIntExtra(cAccountSelectedType, cSelectedTypeALL);
+
+        int pairId = getIntent().getIntExtra(cPairAccountId, 0);
+        AccountItem pair = pairId > 0 ? Singleton.instance.getAccounts(this).getAccountById(pairId) : null;
+        mPairWalletId = pair != null && pair.isOperatingAccount() ? pairId : 0;
 
         findViewById(R.id.btnAddAccountRow).setVisibility(mCatalogMode ? View.VISIBLE : View.GONE);
 
@@ -222,6 +247,8 @@ public class AccountPickerActivity extends AppCompatActivity {
     private void paintKindChips() {
         paintChip(mKindCategories, !mShowWallets);
         paintChip(mKindWallets, mShowWallets);
+        // У каждого списка свой порядок — кнопка показывает режим видимого.
+        paintSortButton();
     }
 
     /** Тот же способ подсветки чипа, что на экране операции. */
@@ -261,6 +288,7 @@ public class AccountPickerActivity extends AppCompatActivity {
 
         mWalletRows.clear();
         mCategoryRows.clear();
+        mUsage = null;
 
         Map<Integer, WalletDbLoader.WalletBalanceRow> balances = new HashMap<>();
         if (currencyEq != null) {
@@ -285,16 +313,87 @@ public class AccountPickerActivity extends AppCompatActivity {
             }
         }
 
-        // Кошельки — как в отчёте: крупные остатки сверху, счета без курса к валюте
-        // эквивалента опускаются под те, что можно сравнить.
-        mWalletRows.sort(Comparator
-                .<Row>comparingInt(r -> r.hasEq ? 1 : 0).reversed()
-                .thenComparing((a, b) -> Double.compare(
-                        b.hasEq ? b.balanceEq : b.balance,
-                        a.hasEq ? a.balanceEq : a.balance)));
+        sortRows();
+    }
 
-        // У категорий сравнивать нечего — только имя.
-        mCategoryRows.sort((a, b) -> a.account.getName().compareToIgnoreCase(b.account.getName()));
+    // ── Сортировка ────────────────────────────────────────────────────────────
+
+    /** Попап у кнопки в шапке: режимы текущего списка, выбранный отмечен. */
+    public void onPickSort(View view) {
+        PickerSort[] modes = mShowWallets ? PickerSort.WALLET_MODES : PickerSort.CATEGORY_MODES;
+        PickerSort current = AppSettings.getPickerSort(this, mShowWallets);
+
+        PopupMenu popup = new PopupMenu(this, view);
+        for (int i = 0; i < modes.length; i++) {
+            popup.getMenu().add(0, i, i, modes[i].getTitle())
+                    .setCheckable(true)
+                    .setChecked(modes[i] == current);
+        }
+        popup.getMenu().setGroupCheckable(0, true, true);
+
+        popup.setOnMenuItemClickListener(item -> {
+            PickerSort picked = modes[item.getItemId()];
+            if (picked == current) return true;
+            AppSettings.setPickerSort(this, mShowWallets, picked);
+            sortRows();
+            paintSortButton();
+            applyFilters();
+            return true;
+        });
+        popup.show();
+    }
+
+    private void paintSortButton() {
+        mBtnSort.setText("⇅ " + AppSettings.getPickerSort(this, mShowWallets).getTitle());
+    }
+
+    /** Оба списка — каждый своим режимом из настроек. */
+    private void sortRows() {
+        mWalletRows.sort(comparator(AppSettings.getPickerSort(this, true)));
+        mCategoryRows.sort(comparator(AppSettings.getPickerSort(this, false)));
+    }
+
+    private Comparator<Row> comparator(PickerSort sort) {
+        Comparator<Row> byName = (a, b) -> a.account.getName().compareToIgnoreCase(b.account.getName());
+
+        switch (sort) {
+            case BALANCE:
+                // Как в отчёте: крупные остатки сверху, счета без курса к валюте
+                // эквивалента опускаются под те, что можно сравнить.
+                return Comparator
+                        .<Row>comparingInt(r -> r.hasEq ? 1 : 0).reversed()
+                        .thenComparing((a, b) -> Double.compare(
+                                b.hasEq ? b.balanceEq : b.balance,
+                                a.hasEq ? a.balanceEq : a.balance))
+                        .thenComparing(byName);
+
+            case USAGE:
+                // Сначала то, что шло с кошельком из второго слота, потом общая частота.
+                // При равном счёте выше тот, что использовали позже; ни разу не
+                // использованные — в конце по алфавиту.
+                Map<Integer, WalletDbLoader.AccountUsage> usage = usage();
+                WalletDbLoader.AccountUsage none = new WalletDbLoader.AccountUsage();
+                Comparator<String> laterFirst = Comparator.nullsLast(Comparator.<String>reverseOrder());
+                java.util.function.Function<Row, WalletDbLoader.AccountUsage> of =
+                        r -> usage.getOrDefault(r.account.getId(), none);
+                return Comparator
+                        .<Row>comparingInt(r -> -of.apply(r).pairCount)
+                        .thenComparing(r -> of.apply(r).pairLastDate, laterFirst)
+                        .thenComparingInt(r -> -of.apply(r).count)
+                        .thenComparing(r -> of.apply(r).lastDate, laterFirst)
+                        .thenComparing(byName);
+
+            default:
+                return byName;
+        }
+    }
+
+    private Map<Integer, WalletDbLoader.AccountUsage> usage() {
+        if (mUsage == null) {
+            mUsage = WalletDbLoader.LoadAccountUsage(
+                    Singleton.instance.getReadableDatabase(this), mPairWalletId);
+        }
+        return mUsage;
     }
 
     /** Счёт для строки списка: у кошелька есть остаток, у категории — нет. */

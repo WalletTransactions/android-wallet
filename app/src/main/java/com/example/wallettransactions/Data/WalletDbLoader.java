@@ -25,6 +25,7 @@ import com.example.wallettransactions.Singleton;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -194,6 +195,77 @@ public abstract class WalletDbLoader {
                         hasEq,
                         approx
                 ));
+            }
+        } finally {
+            cursor.close();
+        }
+        return result;
+    }
+
+    /** Сколько живых операций у счёта и когда была последняя — всего и в паре с одним счётом. */
+    public static class AccountUsage {
+        public int    count;
+        /** Дата в формате базы ({@link DateUtils#DateToStr}) — строки сравниваются как даты. */
+        public String lastDate;
+        public int    pairCount;
+        public String pairLastDate;
+    }
+
+    /**
+     * Частота использования счетов для сортировки экрана выбора. Считается на лету по
+     * {@code operation}, а не отдельным счётчиком: так она сама учитывает операции,
+     * пришедшие синком с других устройств, импорт, правку и удаление.
+     *
+     * @param pairAccountId счёт из второго слота операции (0 — нет): для каждого счёта
+     *        дополнительно считаются операции именно с ним. Валютный перевод лежит двумя
+     *        ногами через мост «Transfer» (связка {@code operation_link.type = 0}), поэтому
+     *        пара «кошелёк → кошелёк» собирается и по ногам, иначе такие переводы с
+     *        кошельком-партнёром не встречались бы никогда.
+     */
+    public static Map<Integer, AccountUsage> LoadAccountUsage(SQLiteDatabase db, int pairAccountId) {
+        Map<Integer, AccountUsage> result = new HashMap<>();
+
+        String total = "SELECT acc, count(*) cnt, max(date) last_date FROM (" +
+                "  SELECT acc_fr_id acc, date FROM operation WHERE deleted_at IS NULL" +
+                "  UNION ALL" +
+                "  SELECT acc_to_id acc, date FROM operation WHERE deleted_at IS NULL" +
+                ") GROUP BY acc";
+        Cursor cursor = db.rawQuery(total, null);
+        try {
+            while (cursor.moveToNext()) {
+                AccountUsage usage = new AccountUsage();
+                usage.count = cursor.getInt(1);
+                usage.lastDate = cursor.getString(2);
+                result.put(cursor.getInt(0), usage);
+            }
+        } finally {
+            cursor.close();
+        }
+
+        if (pairAccountId <= 0) return result;
+
+        String legs = " FROM operation_link k" +
+                "  JOIN operation m ON m._id = k.main_id" +
+                "  JOIN operation l ON l._id = k.link_id" +
+                "  WHERE k.type = " + OperationItem.LinkType.LEG.getValue() +
+                "  AND k.deleted_at IS NULL AND m.deleted_at IS NULL AND l.deleted_at IS NULL";
+        String pair = "SELECT acc, count(*) cnt, max(date) last_date FROM (" +
+                "  SELECT acc_to_id acc, date FROM operation WHERE deleted_at IS NULL AND acc_fr_id = ?" +
+                "  UNION ALL" +
+                "  SELECT acc_fr_id acc, date FROM operation WHERE deleted_at IS NULL AND acc_to_id = ?" +
+                "  UNION ALL" +
+                "  SELECT l.acc_to_id acc, m.date date" + legs + " AND m.acc_fr_id = ?" +
+                "  UNION ALL" +
+                "  SELECT m.acc_fr_id acc, m.date date" + legs + " AND l.acc_to_id = ?" +
+                ") GROUP BY acc";
+        String id = String.valueOf(pairAccountId);
+        cursor = db.rawQuery(pair, new String[]{id, id, id, id});
+        try {
+            while (cursor.moveToNext()) {
+                AccountUsage usage = result.get(cursor.getInt(0));
+                if (usage == null) continue;   // в общем счёте есть всё, что есть в паре
+                usage.pairCount = cursor.getInt(1);
+                usage.pairLastDate = cursor.getString(2);
             }
         } finally {
             cursor.close();

@@ -342,14 +342,14 @@ public class RecurringOperationActivity extends AppCompatActivity {
                 : AccountPickerActivity.cSelectedTypeChargeAccounts;
         AccountItem current = getTop();
         startActivityForResult(AccountPickerActivity.buildIntent(this, mLabelSlotTop.getText().toString(),
-                type, current == null ? 0 : current.getId()), AccountSelectTop);
+                type, current == null ? 0 : current.getId(), getBottom()), AccountSelectTop);
     }
 
     public void onPickBottom(View view) {
         AccountItem current = getBottom();
         startActivityForResult(AccountPickerActivity.buildIntent(this, mLabelSlotBottom.getText().toString(),
                 AccountPickerActivity.cSelectedTypeOperationAccounts,
-                current == null ? 0 : current.getId()), AccountSelectBottom);
+                current == null ? 0 : current.getId(), getTop()), AccountSelectBottom);
     }
 
     @Override

@@ -19,6 +19,7 @@ import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.BuildConfig;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
+import com.example.wallettransactions.PickerSort;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
 
@@ -52,6 +53,8 @@ public class SettingsActivity extends AppCompatActivity {
     private FrameLayout switchBiometric;
     private FrameLayout switchRemind;
     private FrameLayout switchPickerKeyboard;
+    private TextView walletSortValue;
+    private TextView categorySortValue;
     private TextView rowRemindTime;
 
     /** Тапы по строке «Версия» — {@link #onVersionTap}. */
@@ -77,6 +80,8 @@ public class SettingsActivity extends AppCompatActivity {
         switchBiometric = findViewById(R.id.switchBiometric);
         switchRemind = findViewById(R.id.switchRemind);
         switchPickerKeyboard = findViewById(R.id.switchPickerKeyboard);
+        walletSortValue = findViewById(R.id.walletSortValue);
+        categorySortValue = findViewById(R.id.categorySortValue);
         rowRemindTime = findViewById(R.id.rowRemindTime);
 
         TextView versionValue = findViewById(R.id.versionValue);
@@ -103,6 +108,7 @@ public class SettingsActivity extends AppCompatActivity {
         applySwitchState(switchBiometric, p.getBoolean(PREF_BIOMETRIC_ON, false));
         applySwitchState(switchRemind, p.getBoolean(PREF_REMIND_ON, true));
         applySwitchState(switchPickerKeyboard, AppSettings.isPickerKeyboardOn(this));
+        paintSortValues();
 
         int hour = p.getInt(PREF_REMIND_HOUR, 20);
         int minute = p.getInt(PREF_REMIND_MINUTE, 0);
@@ -215,6 +221,33 @@ public class SettingsActivity extends AppCompatActivity {
 
     public void onTogglePickerKeyboard(View view) {
         AppSettings.setPickerKeyboardOn(this, toggleSwitch(switchPickerKeyboard));
+    }
+
+    public void onPickWalletSort(View view) {
+        pickSort(true, "Сортировка кошельков");
+    }
+
+    public void onPickCategorySort(View view) {
+        pickSort(false, "Сортировка категорий");
+    }
+
+    private void pickSort(boolean wallets, String title) {
+        PickerSort[] modes = wallets ? PickerSort.WALLET_MODES : PickerSort.CATEGORY_MODES;
+        int checked = PickerSort.indexOf(modes, AppSettings.getPickerSort(this, wallets));
+
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setSingleChoiceItems(PickerSort.titles(modes), checked, (d, which) -> {
+                    AppSettings.setPickerSort(this, wallets, modes[which]);
+                    paintSortValues();
+                    d.dismiss();
+                })
+                .show();
+    }
+
+    private void paintSortValues() {
+        walletSortValue.setText(AppSettings.getPickerSort(this, true).getTitle());
+        categorySortValue.setText(AppSettings.getPickerSort(this, false).getTitle());
     }
 
     public void onPickRemindTime(View view) {

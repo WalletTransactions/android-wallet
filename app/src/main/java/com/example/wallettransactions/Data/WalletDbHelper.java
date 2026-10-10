@@ -23,7 +23,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 80;
+    private static final int DATABASE_VERSION = 81;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -68,6 +68,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
 
         createPartialUniqueIndexes(db);
         createUuidIndexes(db);
+        createOperationAccountIndexes(db);
         CreateViews(db);
         createSyncTriggers(db);
 
@@ -244,6 +245,20 @@ public class WalletDbHelper extends SQLiteOpenHelper {
 
     private void createUuidIndex(SQLiteDatabase db, String table) {
         db.execSQL("CREATE INDEX IF NOT EXISTS ix_" + table + "_uuid ON " + table + " (uuid)");
+    }
+
+    /**
+     * v81: поиск операций по счёту с любой стороны — частота «категория с этим кошельком»
+     * на экране выбора (WalletDbLoader.LoadAccountUsage); заодно ускоряет остатки по
+     * кошелькам, которые группируют по тем же колонкам. Только локальные: сервер
+     * индексов клиента не видит.
+     */
+    private void createOperationAccountIndexes(SQLiteDatabase db) {
+        String table = WalletContract.OperationEntry.TABLE_NAME;
+        String from = WalletContract.OperationEntry.COLUMN_FROM;
+        String to = WalletContract.OperationEntry.COLUMN_TO;
+        db.execSQL("CREATE INDEX IF NOT EXISTS ix_operation_acc_fr ON " + table + " (" + from + ", " + to + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS ix_operation_acc_to ON " + table + " (" + to + ", " + from + ")");
     }
 
     /**
@@ -1031,6 +1046,10 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             if (oldVersion < 80) {
                 // v80: имя счёта уникально без учёта регистра, «ё» = «е» (AccountNames).
                 migrateAccountNameIndex(db);
+            }
+            if (oldVersion < 81) {
+                // v81: частота счетов на экране выбора (WalletDbLoader.LoadAccountUsage).
+                createOperationAccountIndexes(db);
             }
             return;
         }

@@ -2,8 +2,10 @@ package com.example.wallettransactions.Activities;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.core.app.ActivityCompat;
@@ -14,6 +16,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.R;
@@ -141,6 +144,20 @@ public class MoreActivity extends BaseTabActivity {
     /** Открывает вход через Google (org/docs/TODO_mobile_sync.md, Фаза 1) —
      *  тот же экран обслуживает и первую связку, и повторную после того, как
      *  {@code SyncWorker} пометил сессию истёкшей. */
+    /**
+     * Веб-версия живёт на том же гейтвее, что и синк, — открываем «Адрес сервера»
+     * в браузере по умолчанию. Браузера может не быть вовсе (или адрес кривой) —
+     * тогда тост, а не падение.
+     */
+    public void onOpenWeb(View view) {
+        String url = AppSettings.getServerBaseUrl(this);
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, "Не найден браузер, чтобы открыть " + url, Toast.LENGTH_LONG).show();
+        }
+    }
+
     public void onLinkServer(View view) {
         startActivity(new Intent(this, SyncLinkActivity.class));
     }

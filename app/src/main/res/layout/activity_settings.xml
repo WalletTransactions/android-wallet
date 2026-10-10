@@ -127,7 +127,7 @@
                 android:gravity="center_vertical"
                 android:background="@drawable/bg_card"
                 android:padding="16dp"
-                android:layout_marginBottom="22dp">
+                android:layout_marginBottom="10dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -166,6 +166,97 @@
                         android:layout_margin="2dp"
                         android:background="@drawable/bg_switch_thumb"/>
                 </FrameLayout>
+            </LinearLayout>
+
+            <!-- Порядок строк на экране выбора — то же значение, что меняет кнопка «⇅»
+                 в шапке самого экрана (AppSettings.getPickerSort). -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:layout_marginBottom="22dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp"
+                    android:onClick="onPickWalletSort">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Сортировка кошельков"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextPrimary"/>
+
+                    <TextView
+                        android:id="@+id/walletSortValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorexpanse"
+                        android:layout_marginEnd="6dp"/>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/colorDivider"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp"
+                    android:onClick="onPickCategorySort">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="12dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Сортировка категорий"
+                            android:textSize="14.5sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/colorTextPrimary"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="частота — сначала с выбранным кошельком"
+                            android:textSize="12.5sp"
+                            android:textColor="@color/colorTextSecondary"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/categorySortValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorexpanse"
+                        android:layout_marginEnd="6dp"/>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"/>
+                </LinearLayout>
             </LinearLayout>
 
             <TextView style="@style/SettingsGroupLabel" android:text="БЕЗОПАСНОСТЬ"/>

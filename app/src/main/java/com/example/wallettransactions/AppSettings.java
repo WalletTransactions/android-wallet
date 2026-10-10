@@ -28,6 +28,8 @@ public final class AppSettings {
     private static final String PREF_FILTER_EQ_MAX = "filterEqMax";
     private static final String PREF_LAST_WALLET_ID = "lastWalletId";
     private static final String PREF_PICKER_KEYBOARD = "pickerKeyboard";
+    private static final String PREF_PICKER_WALLET_SORT = "pickerWalletSort";
+    private static final String PREF_PICKER_CATEGORY_SORT = "pickerCategorySort";
     private static final String PREF_THEME_MODE = "themeMode";
     private static final String PREF_SERVER_BASE_URL = "serverBaseUrl";
     private static final String PREF_DEVICE_ID = "deviceId";
@@ -123,6 +125,26 @@ public final class AppSettings {
 
     public static void setPickerKeyboardOn(Context ctx, boolean on) {
         prefs(ctx).edit().putBoolean(PREF_PICKER_KEYBOARD, on).apply();
+    }
+
+    /**
+     * Порядок строк на экране выбора: для кошельков ({@code wallets}) и для категорий
+     * свой. Меняется и кнопкой на самом экране выбора, и в «Настройках» — значение одно.
+     * По умолчанию — то, как список сортировался до появления настройки.
+     */
+    public static PickerSort getPickerSort(Context ctx, boolean wallets) {
+        PickerSort[] modes = wallets ? PickerSort.WALLET_MODES : PickerSort.CATEGORY_MODES;
+        PickerSort fallback = wallets ? PickerSort.BALANCE : PickerSort.NAME;
+        PickerSort sort = PickerSort.fromName(prefs(ctx).getString(
+                wallets ? PREF_PICKER_WALLET_SORT : PREF_PICKER_CATEGORY_SORT, null), fallback);
+        // «По остатку», сохранённый для категорий, — не их режим.
+        for (PickerSort mode : modes) if (mode == sort) return sort;
+        return fallback;
+    }
+
+    public static void setPickerSort(Context ctx, boolean wallets, PickerSort sort) {
+        prefs(ctx).edit().putString(
+                wallets ? PREF_PICKER_WALLET_SORT : PREF_PICKER_CATEGORY_SORT, sort.name()).apply();
     }
 
     /**
