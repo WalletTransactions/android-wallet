@@ -619,8 +619,11 @@
 
          Подпись на клавише действия — знак покрасивее (× ÷ −), а в tag лежит
          ASCII-оператор: именно он попадает в поле, и его же считает parseAmount.
-         Шрифт суммы (caprasimo) юникодных знаков может не знать — в поле только ASCII. -->
+         Шрифт суммы (caprasimo) юникодных знаков может не знать — в поле только ASCII.
+
+         Пока набирается комментарий, блок скрыт целиком — см. updateKeypadVisibility. -->
     <LinearLayout
+        android:id="@+id/keypad"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"

@@ -8,6 +8,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import com.google.android.material.snackbar.Snackbar;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import android.text.Editable;
@@ -16,6 +18,7 @@ import android.text.Spanned;
 import android.text.TextWatcher;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -154,6 +157,7 @@ public class TransactionActivity extends AppCompatActivity {
 
     /** Поле, которое сейчас набирает наша клавиатура. Системную мы не показываем нигде. */
     private EditText mKeypadTarget;
+    private View mKeypad;
 
     // ── Перевод между разновалютными счетами: сумма во второй валюте ───────────
     // Не пишем в базу отдельно — операция хранит одну amount (см. TODO_transfers.md).
@@ -257,6 +261,35 @@ public class TransactionActivity extends AppCompatActivity {
             mKeypadTarget.getText().clear();
             return true;
         });
+
+        // Калькулятор и системная клавиатура вдвоём съедают почти весь экран —
+        // пока пишется комментарий, калькулятор убираем.
+        mKeypad = findViewById(R.id.keypad);
+        View content = findViewById(android.R.id.content);
+        ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
+            updateKeypadVisibility(insets);
+            return insets;
+        });
+        mComment.setOnFocusChangeListener((v, hasFocus) ->
+                updateKeypadVisibility(ViewCompat.getRootWindowInsets(content)));
+    }
+
+    /**
+     * Калькулятор скрыт, только пока комментарий в фокусе и системная клавиатура
+     * на экране. Закрыли её («Назад») — калькулятор возвращается, а с ним и
+     * «Сохранить», хотя фокус ещё в комментарии.
+     */
+    private void updateKeypadVisibility(WindowInsetsCompat insets) {
+        boolean imeVisible = insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
+        mKeypad.setVisibility(mComment.hasFocus() && imeVisible ? View.GONE : View.VISIBLE);
+    }
+
+    /** Убирает системную клавиатуру из комментария — ввод уходит в калькулятор. */
+    private void leaveComment() {
+        if (!mComment.hasFocus()) return;
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(mComment.getWindowToken(), 0);
+        mComment.clearFocus();
     }
 
     /**
@@ -277,6 +310,7 @@ public class TransactionActivity extends AppCompatActivity {
         // по тому же самому.
         if (mKeypadTarget != null) commitExpression(mKeypadTarget);
 
+        leaveComment();
         mKeypadTarget = field;
 
         // Активное поле в полную силу, остальные приглушены — иначе не видно,
