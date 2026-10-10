@@ -264,13 +264,13 @@ public class TransactionActivity extends AppCompatActivity {
 
         // Калькулятор и системная клавиатура вдвоём съедают почти весь экран —
         // пока пишется комментарий, калькулятор убираем.
+        // Слушатель инсетов на content не годится: обёртка AppCompat (fitsSystemWindows)
+        // съедает их раньше, и до content они не доходят. Поэтому смотрим на каждую
+        // перекладку (adjustResize перекладывает окно при появлении клавиатуры), а
+        // состояние берём у корня окна — там инсеты целые.
         mKeypad = findViewById(R.id.keypad);
         View content = findViewById(android.R.id.content);
-        ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
-            updateKeypadVisibility(insets);
-            return insets;
-        });
-        mComment.setOnFocusChangeListener((v, hasFocus) ->
+        content.getViewTreeObserver().addOnGlobalLayoutListener(() ->
                 updateKeypadVisibility(ViewCompat.getRootWindowInsets(content)));
     }
 
@@ -281,7 +281,9 @@ public class TransactionActivity extends AppCompatActivity {
      */
     private void updateKeypadVisibility(WindowInsetsCompat insets) {
         boolean imeVisible = insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
-        mKeypad.setVisibility(mComment.hasFocus() && imeVisible ? View.GONE : View.VISIBLE);
+        int visibility = mComment.hasFocus() && imeVisible ? View.GONE : View.VISIBLE;
+        // Смена видимости сама вызывает перекладку — без проверки зациклились бы.
+        if (mKeypad.getVisibility() != visibility) mKeypad.setVisibility(visibility);
     }
 
     /** Убирает системную клавиатуру из комментария — ввод уходит в калькулятор. */
