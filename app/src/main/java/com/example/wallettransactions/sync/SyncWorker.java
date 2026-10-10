@@ -7,6 +7,15 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import com.example.wallettransactions.Data.RecurringOperationsDb;
+import com.example.wallettransactions.PeriodFilterState;
+import com.example.wallettransactions.Singleton;
+import com.example.wallettransactions.WalletApplication;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Периодическая синхронизация (экран «Настройки» → «Синхронизация» →
  * «Автоматическое подключение», org/docs/TODO_mobile_sync.md, Фаза 3, п. 4) —
@@ -14,7 +23,8 @@ import androidx.work.WorkerParameters;
  * → pull) — в {@link SyncRunner#runOnce}, общем и с кнопкой
  * «Синхронизировать сейчас» (экран «Настройки», по требованию пользователя) —
  * этот класс только переводит её {@link SyncRunner.Outcome} на язык
- * WorkManager (успех/повтор/провал), сам ничего не делает напрямую.
+ * WorkManager (успех/повтор/провал). Сверх синка — заводит наступившие
+ * периодические операции и уведомляет о новых ({@link NewOperationsNotifier}).
  */
 public class SyncWorker extends Worker {
 
@@ -27,10 +37,32 @@ public class SyncWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        SyncRunner.Outcome outcome = SyncRunner.runOnce(getApplicationContext());
+        Context ctx = getApplicationContext();
+
+        // Периодические операции — до синка: заведённое сразу уедет на сервер этим же
+        // проходом. Без этого они появлялись бы только при открытии приложения
+        // (BaseTabActivity), и уведомлять о них было бы некогда. Повтор не задвоит:
+        // генератор сдвигает last_date правила.
+        List<Long> recurringIds = new ArrayList<>();
+        if (!WalletApplication.hadCrash(ctx)) {
+            RecurringOperationsDb.generateDue(Singleton.instance.getWritableDatabase(ctx),
+                    LocalDateTime.now(), recurringIds);
+        }
+
+        SyncRunner.Outcome outcome = SyncRunner.runOnce(ctx);
+        boolean synced = outcome.status == SyncRunner.Status.OK;
+
+        // Открытые в фоне табы перечитают ленту на ближайшем onResume.
+        if (!recurringIds.isEmpty() || (synced && !outcome.log.isEmpty())) {
+            PeriodFilterState.get(ctx).markDataChanged();
+        }
+        // О периодических — и когда сервер недоступен: они заведены локально.
+        NewOperationsNotifier.notifyIfAny(ctx, synced ? outcome.log : null, recurringIds);
+
         switch (outcome.status) {
-            case NO_SESSION:
             case OK:
+                return Result.success();
+            case NO_SESSION:
                 return Result.success();
             case NEEDS_RELINK:
                 // Уведомление уже показано AuthSession — тихо повторить вход

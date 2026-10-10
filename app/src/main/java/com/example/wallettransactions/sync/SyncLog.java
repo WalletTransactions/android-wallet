@@ -61,6 +61,14 @@ public final class SyncLog {
     // попробует её снова следующим проходом", порядок появления важен так же.
     private final List<String> healedNotes = new ArrayList<>();
 
+    // Для уведомления о новых операциях (NewOperationsNotifier): uuid операций,
+    // которых до этого pull локально не было. Свои операции телефон знает до pull,
+    // так что сюда попадают только чужие — от бота, веба, другого устройства.
+    private final List<String> newOperationUuids = new ArrayList<>();
+    // Поток тянули с нуля (первый синк, смена кошелька, сброс курсора) — «новыми»
+    // тогда оказывается вся история, уведомлять о ней нельзя.
+    private boolean fullReload;
+
     // push()/pull() — package-private: заполняет только SyncEngine (тот же
     // пакет). Наружу (MoreActivity, другой пакет) — только готовый
     // текст, см. toDisplayText() ниже.
@@ -85,6 +93,22 @@ public final class SyncLog {
      */
     void healed(String detail) {
         healedNotes.add(detail);
+    }
+
+    void newOperation(String uuid) {
+        newOperationUuids.add(uuid);
+    }
+
+    void fullReload() {
+        fullReload = true;
+    }
+
+    public List<String> getNewOperationUuids() {
+        return newOperationUuids;
+    }
+
+    public boolean isFullReload() {
+        return fullReload;
     }
 
     private void bump(Direction direction, String type, String action) {

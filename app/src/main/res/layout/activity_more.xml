@@ -231,6 +231,54 @@
 
                 <View style="@style/MoreRowDivider"/>
 
+                <!-- Уведомление после фонового синка — приходит только при включённом
+                     автоподключении, с его же задержкой (sync.NewOperationsNotifier). -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Уведомлять о новых операциях"
+                            android:textSize="14.5sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/colorTextPrimary"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="периодические, из бота, веба и с других устройств"
+                            android:textSize="12.5sp"
+                            android:textColor="@color/colorTextSecondary"/>
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:id="@+id/switchNotifyNewOperations"
+                        android:layout_width="46dp"
+                        android:layout_height="26dp"
+                        android:background="@drawable/bg_switch_off"
+                        android:onClick="onToggleNotifyNewOperations">
+                        <View
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_margin="2dp"
+                            android:background="@drawable/bg_switch_thumb"/>
+                    </FrameLayout>
+                </LinearLayout>
+
+                <View style="@style/MoreRowDivider"/>
+
                 <LinearLayout
                     android:id="@+id/rowSyncNow"
                     android:layout_width="match_parent"

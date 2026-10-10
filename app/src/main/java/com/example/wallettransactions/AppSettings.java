@@ -37,6 +37,7 @@ public final class AppSettings {
     private static final String PREF_NEEDS_RELINK = "needsRelink";
     private static final String PREF_AUTO_CONNECT_ENABLED = "autoConnectEnabled";
     private static final String PREF_AUTO_CONNECT_INTERVAL_MINUTES = "autoConnectIntervalMinutes";
+    private static final String PREF_NOTIFY_NEW_OPERATIONS = "notifyNewOperations";
     private static final String PREF_LEDGER_SYNC_SEQ = "ledgerSyncSeq";
     private static final String PREF_REFERENCE_SYNC_SEQ = "referenceSyncSeq";
     private static final String PREF_SYNC_LEDGER_ID = "syncLedgerId";
@@ -297,6 +298,15 @@ public final class AppSettings {
 
     public static void setAutoConnectIntervalMinutes(Context ctx, int minutes) {
         prefs(ctx).edit().putInt(PREF_AUTO_CONNECT_INTERVAL_MINUTES, minutes).apply();
+    }
+
+    /** Экран «Ещё» → «Синхронизация» → «Уведомлять о новых операциях» (sync.NewOperationsNotifier). */
+    public static boolean isNotifyNewOperationsEnabled(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_NOTIFY_NEW_OPERATIONS, true);
+    }
+
+    public static void setNotifyNewOperationsEnabled(Context ctx, boolean enabled) {
+        prefs(ctx).edit().putBoolean(PREF_NOTIFY_NEW_OPERATIONS, enabled).apply();
     }
 
     /**

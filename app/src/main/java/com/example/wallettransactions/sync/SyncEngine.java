@@ -740,6 +740,7 @@ final class SyncEngine {
         }
         long ledgerSeq = AppSettings.getLedgerSyncSeq(ctx);
         long referenceSeq = AppSettings.getReferenceSyncSeq(ctx);
+        if (ledgerSeq == 0) log.fullReload();
         boolean touchedAccounts = false;
         boolean touchedIcons = false;
         boolean touchedCurrencies = false;
@@ -762,6 +763,7 @@ final class SyncEngine {
                 if (knownBefore && ledgerSeq != 0) {
                     Log.w(TAG, "pull: леджер сменился на " + ledgerId + " — курсор " + ledgerSeq + " сброшен");
                     log.healed("Сервер сменил кошелёк — загружаю его заново");
+                    log.fullReload();
                     ledgerSeq = 0;
                     AppSettings.setLedgerSyncSeq(ctx, 0L);
                     continue;
@@ -774,6 +776,7 @@ final class SyncEngine {
                 Log.w(TAG, "pull: курсор впереди сервера (ledger=" + ledgerSeq + ", reference="
                         + referenceSeq + ") — поток начат заново");
                 log.healed("Позиция синхронизации разошлась с сервером — загружаю данные заново");
+                log.fullReload();
             }
 
             boolean advanced = result.ledger.nextSeq != ledgerSeq || result.reference.nextSeq != referenceSeq;
@@ -1119,6 +1122,7 @@ final class SyncEngine {
         Boolean wasInsert = upsertByUuid(db, "operation", uuid, cv);
         if (wasInsert == null) return;
         log.pull("Операция", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
+        if (wasInsert && !rowIsDeleted(row)) log.newOperation(uuid);
     }
 
     private static void applyOperationLink(SQLiteDatabase db, JSONObject row) throws JSONException {

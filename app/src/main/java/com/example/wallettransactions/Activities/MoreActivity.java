@@ -46,6 +46,7 @@ public class MoreActivity extends BaseTabActivity {
     private TextView linkStatusValue;
     private FrameLayout switchAutoConnect;
     private TextView rowAutoConnectInterval;
+    private FrameLayout switchNotifyNewOperations;
     private TextView syncNowStatus;
 
     /** Не даёт запустить второй проход поверх ещё не завершённого (двойной тап). */
@@ -62,9 +63,11 @@ public class MoreActivity extends BaseTabActivity {
         switchAutoConnect = findViewById(R.id.switchAutoConnect);
         rowAutoConnectInterval = findViewById(R.id.rowAutoConnectInterval);
         syncNowStatus = findViewById(R.id.syncNowStatus);
+        switchNotifyNewOperations = findViewById(R.id.switchNotifyNewOperations);
 
         serverUrlValue.setText(AppSettings.getServerBaseUrl(this));
         applySwitchState(switchAutoConnect, AppSettings.isAutoConnectEnabled(this));
+        applySwitchState(switchNotifyNewOperations, AppSettings.isNotifyNewOperationsEnabled(this));
         rowAutoConnectInterval.setText(intervalLabel(AppSettings.getAutoConnectIntervalMinutes(this)));
         refreshLinkStatus();
     }
@@ -186,6 +189,18 @@ public class MoreActivity extends BaseTabActivity {
         boolean on = toggleSwitch(switchAutoConnect);
         AppSettings.setAutoConnectEnabled(this, on);
         SyncScheduler.reschedule(this);
+
+        if (on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
+        }
+    }
+
+    /** Само уведомление — sync.NewOperationsNotifier; разрешение то же, что у автоподключения. */
+    public void onToggleNotifyNewOperations(View view) {
+        boolean on = toggleSwitch(switchNotifyNewOperations);
+        AppSettings.setNotifyNewOperationsEnabled(this, on);
 
         if (on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)

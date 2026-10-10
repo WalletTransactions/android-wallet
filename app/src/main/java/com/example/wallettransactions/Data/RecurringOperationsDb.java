@@ -137,7 +137,13 @@ public final class RecurringOperationsDb {
      * @return сколько операций создано
      */
     public static int generateDue(SQLiteDatabase db, LocalDateTime now) {
+        return generateDue(db, now, null);
+    }
+
+    /** @param createdIds если не {@code null} — сюда складываются _id созданных операций (для уведомления). */
+    public static int generateDue(SQLiteDatabase db, LocalDateTime now, List<Long> createdIds) {
         int created = 0;
+        List<Long> ids = new ArrayList<>();
         db.beginTransaction();
         try {
             for (RecurringOperation r : loadAll(db)) {
@@ -153,12 +159,15 @@ public final class RecurringOperationsDb {
                     long id = WalletDbCRUD.InsertOperation(db, at.format(DATE_TIME),
                             r.accFromId, r.accToId, r.amount, r.comment != null ? r.comment : "");
                     if (id <= 0) throw new IllegalStateException("insert operation failed, rule " + r.id);
+                    ids.add(id);
                     created++;
                 }
                 r.lastDate = due.get(due.size() - 1);
                 update(db, r);
             }
             db.setTransactionSuccessful();
+            // Только после успеха: при откате этих _id в базе нет.
+            if (createdIds != null) createdIds.addAll(ids);
         } catch (RuntimeException e) {
             Log.e(TAG, "generateDue failed", e);
             created = 0;
