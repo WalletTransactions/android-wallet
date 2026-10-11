@@ -4,8 +4,10 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
@@ -57,19 +59,37 @@ public final class AppLock {
         app.registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
             @Override
             public void onActivityResumed(@NonNull Activity activity) {
+                // На resume, а не только на create: настройку могли сменить, пока экран лежал в стеке.
+                applyRecentsPrivacy(activity);
                 if (!locked || LockActivity.isUnlockScreen(activity)) return;
                 activity.startActivity(new Intent(activity, LockActivity.class)
                         .addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION));
                 activity.overridePendingTransition(0, 0);
             }
 
-            @Override public void onActivityCreated(@NonNull Activity a, Bundle b) {}
+            @Override public void onActivityCreated(@NonNull Activity a, Bundle b) { applyRecentsPrivacy(a); }
             @Override public void onActivityStarted(@NonNull Activity a) {}
             @Override public void onActivityPaused(@NonNull Activity a) {}
             @Override public void onActivityStopped(@NonNull Activity a) {}
             @Override public void onActivitySaveInstanceState(@NonNull Activity a, @NonNull Bundle b) {}
             @Override public void onActivityDestroyed(@NonNull Activity a) {}
         });
+    }
+
+    /**
+     * Превью в списке недавних (п. 4.2). API 33+ — просто не снимать скриншот для
+     * недавних; ниже такого нет, только {@code FLAG_SECURE}, который заодно запрещает
+     * скриншоты и запись экрана в приложении — поэтому это отдельная настройка.
+     */
+    public static void applyRecentsPrivacy(Activity activity) {
+        boolean hide = AppLockStore.isHideInRecents(activity);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            activity.setRecentsScreenshotEnabled(!hide);
+        } else if (hide) {
+            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        } else {
+            activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        }
     }
 
     public static boolean isLocked() {

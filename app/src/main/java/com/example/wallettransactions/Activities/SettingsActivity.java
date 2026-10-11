@@ -67,6 +67,8 @@ public class SettingsActivity extends AppCompatActivity {
     private BiometricPrompt biometricPrompt;
     private View rowsPinSet;
     private TextView lockTimeoutValue;
+    private FrameLayout switchHideRecents;
+    private TextView hideRecentsHint;
     private FrameLayout switchRemind;
     private FrameLayout switchPickerKeyboard;
     private TextView walletSortValue;
@@ -99,6 +101,8 @@ public class SettingsActivity extends AppCompatActivity {
         biometricPrompt = new BiometricPrompt(this, ContextCompat.getMainExecutor(this), enableBiometricCallback);
         rowsPinSet = findViewById(R.id.rowsPinSet);
         lockTimeoutValue = findViewById(R.id.lockTimeoutValue);
+        switchHideRecents = findViewById(R.id.switchHideRecents);
+        hideRecentsHint = findViewById(R.id.hideRecentsHint);
         switchRemind = findViewById(R.id.switchRemind);
         switchPickerKeyboard = findViewById(R.id.switchPickerKeyboard);
         walletSortValue = findViewById(R.id.walletSortValue);
@@ -293,6 +297,10 @@ public class SettingsActivity extends AppCompatActivity {
         applySwitchState(switchAccessCode, pinSet);
         rowsPinSet.setVisibility(pinSet ? View.VISIBLE : View.GONE);
         lockTimeoutValue.setText(AppLockStore.getTimeoutTitle(this));
+        applySwitchState(switchHideRecents, AppLockStore.getHideInRecentsSetting(this));
+        hideRecentsHint.setText(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ? "превью приложения в списке недавних"
+                : "превью в списке недавних; скриншоты в приложении тоже будут запрещены");
 
         // Ключ инвалидирован (отпечатки в телефоне изменились) — тумблер не должен врать.
         if (AppLockStore.isBiometricOn(this) && BiometricKey.cipherOrNull() == null) {
@@ -302,6 +310,12 @@ public class SettingsActivity extends AppCompatActivity {
         applySwitchState(switchBiometric, AppLockStore.isBiometricOn(this));
         labelBiometric.setTextColor(ContextCompat.getColor(this,
                 available ? R.color.colorTextPrimary : R.color.colorTextHint));
+    }
+
+    public void onToggleHideRecents(View view) {
+        AppLockStore.setHideInRecents(this, toggleSwitch(switchHideRecents));
+        // Этому экрану — сразу; остальные подхватят на своём onResume (AppLock).
+        AppLock.applyRecentsPrivacy(this);
     }
 
     private int canAuthenticate() {

@@ -195,6 +195,16 @@ public class AppLockTest {
         assertNotNull(BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_HW_UNAVAILABLE));
     }
 
+    @Test
+    public void hideInRecents_onlyWithPin_defaultOn() throws Exception {
+        assertFalse(AppLockStore.isHideInRecents(ctx));
+        AppLockStore.setPin(ctx, "1234");
+        assertTrue(AppLockStore.isHideInRecents(ctx));
+        AppLockStore.setHideInRecents(ctx, false);
+        assertFalse(AppLockStore.isHideInRecents(ctx));
+        AppLockStore.setHideInRecents(ctx, true);
+    }
+
     // ── Когда запирать ────────────────────────────────────────────────────────
 
     @Test

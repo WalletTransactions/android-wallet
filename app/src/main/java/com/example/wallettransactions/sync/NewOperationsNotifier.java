@@ -26,6 +26,7 @@ import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
+import com.example.wallettransactions.security.AppLockStore;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -97,16 +98,28 @@ public final class NewOperationsNotifier {
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
 
+        String title;
         if (lines.size() == 1) {
             boolean recurring = lines.get(0).startsWith("↻ ");
-            builder.setContentTitle(recurring ? "Периодическая операция" : "Новая операция")
+            title = recurring ? "Периодическая операция" : "Новая операция";
+            builder.setContentTitle(title)
                     .setContentText(recurring ? lines.get(0).substring(2) : lines.get(0));
         } else {
-            String title = lines.size() + " " + plural(lines.size());
+            title = lines.size() + " " + plural(lines.size());
             NotificationCompat.InboxStyle style = new NotificationCompat.InboxStyle().setBigContentTitle(title);
             for (int i = 0; i < Math.min(lines.size(), MAX_LINES); i++) style.addLine(lines.get(i));
             if (lines.size() > MAX_LINES) style.setSummaryText("и ещё " + (lines.size() - MAX_LINES));
             builder.setContentTitle(title).setContentText(lines.get(0)).setStyle(style);
+        }
+
+        // Код доступа включён — на экране блокировки телефона только заголовок, без сумм
+        // и комментариев (org/docs/TODO_app_lock.md, п. 4.1). Полный текст — после разблокировки.
+        if (AppLockStore.isPinSet(ctx)) {
+            builder.setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                    .setPublicVersion(new NotificationCompat.Builder(ctx, CHANNEL_ID)
+                            .setSmallIcon(R.mipmap.main_icon)
+                            .setContentTitle(title)
+                            .build());
         }
 
         NotificationManagerCompat.from(ctx).notify(NOTIFICATION_ID, builder.build());

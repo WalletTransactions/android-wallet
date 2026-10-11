@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Автобэкап до Android 12 (android:fullBackupContent). Пары с data_extraction_rules.xml —
+  держать одинаковыми. Исключено то, что без ключей Android Keystore этого телефона
+  бесполезно или вредно: ключи на другой телефон не переезжают (org/docs/TODO_app_lock.md, п. 4.3).
+    app_lock.xml   — хэш кода доступа (security.AppLockStore); без ключа app_lock_pepper
+                     код не проверить, и восстановленный телефон был бы заперт насовсем.
+    secure_auth.xml и __androidx_security_crypto_encrypted_prefs__.xml — токены синка
+                     (TokenStore, EncryptedSharedPreferences) и их набор ключей Tink; без
+                     мастер-ключа Keystore не расшифровать. После восстановления — заново
+                     «Связать с сервером».
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="app_lock.xml"/>
+    <exclude domain="sharedpref" path="secure_auth.xml"/>
+    <exclude domain="sharedpref" path="__androidx_security_crypto_encrypted_prefs__.xml"/>
+</full-backup-content>

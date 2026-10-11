@@ -39,6 +39,7 @@ public final class AppLockStore {
     private static final String KEY_FAILED = "failed_attempts";
     private static final String KEY_LOCKOUT_UNTIL = "lockout_until";
     private static final String KEY_BIOMETRIC = "biometric_on";
+    private static final String KEY_HIDE_IN_RECENTS = "hide_in_recents";
 
     private static PinHasher.Pepper pepper = new PinHasher.KeystorePepper();
 
@@ -164,6 +165,21 @@ public final class AppLockStore {
     public static void setBiometricOn(Context ctx, boolean on) {
         prefs(ctx).edit().putBoolean(KEY_BIOMETRIC, on).apply();
         if (!on) BiometricKey.delete();
+    }
+
+    // ── Недавние ──────────────────────────────────────────────────────────────
+
+    /** «Скрывать в недавних» (п. 4.2): по умолчанию включено, действует только при заданном коде. */
+    public static boolean isHideInRecents(Context ctx) {
+        return isPinSet(ctx) && prefs(ctx).getBoolean(KEY_HIDE_IN_RECENTS, true);
+    }
+
+    public static boolean getHideInRecentsSetting(Context ctx) {
+        return prefs(ctx).getBoolean(KEY_HIDE_IN_RECENTS, true);
+    }
+
+    public static void setHideInRecents(Context ctx, boolean hide) {
+        prefs(ctx).edit().putBoolean(KEY_HIDE_IN_RECENTS, hide).apply();
     }
 
     // ── Таймаут ───────────────────────────────────────────────────────────────

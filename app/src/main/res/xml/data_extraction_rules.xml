@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ (android:dataExtractionRules). Что и почему исключено — см. backup_rules.xml. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="app_lock.xml"/>
+        <exclude domain="sharedpref" path="secure_auth.xml"/>
+        <exclude domain="sharedpref" path="__androidx_security_crypto_encrypted_prefs__.xml"/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="app_lock.xml"/>
+        <exclude domain="sharedpref" path="secure_auth.xml"/>
+        <exclude domain="sharedpref" path="__androidx_security_crypto_encrypted_prefs__.xml"/>
+    </device-transfer>
+</data-extraction-rules>
