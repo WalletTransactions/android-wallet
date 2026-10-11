@@ -22,6 +22,7 @@ import androidx.credentials.exceptions.GetCredentialException;
 import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.TokenStore;
+import com.example.wallettransactions.sync.HttpClients;
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 
@@ -33,7 +34,6 @@ import java.io.IOException;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
@@ -47,8 +47,8 @@ import okhttp3.Response;
  * истёкший refresh-токен) — экран не различает эти два случая, вход через
  * Google в обоих один и тот же.
  *
- * Открывается с экрана «Ещё» → «Синхронизация» → «Связать с
- * сервером» ({@link MoreActivity#onLinkServer}).
+ * Открывается с экрана «Ещё» → «Интеграции» → «Связь с Google
+ * аккаунтом» ({@link IntegrationsActivity#onLinkServer}).
  *
  * Адрес сервера — {@link AppSettings#getServerBaseUrl}, настраивается там
  * же (по умолчанию {@code http://localhost:8090/} — LAN-only на этом
@@ -66,8 +66,6 @@ public class SyncLinkActivity extends AppCompatActivity {
             "432841979878-srpc0c3msmuli6gdcsojc2g812nmlot7.apps.googleusercontent.com";
 
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
-
-    private final OkHttpClient http = new OkHttpClient();
 
     private TextView textResult;
 
@@ -90,7 +88,7 @@ public class SyncLinkActivity extends AppCompatActivity {
                 .post(RequestBody.create(new byte[0])) // POST без тела — nonce сервер генерирует сам
                 .build();
 
-        http.newCall(request).enqueue(new Callback() {
+        HttpClients.get(this).newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 Log.e(TAG, "POST /auth/nonce failed", e);
@@ -192,7 +190,7 @@ public class SyncLinkActivity extends AppCompatActivity {
                 .post(RequestBody.create(payload.toString(), JSON))
                 .build();
 
-        http.newCall(request).enqueue(new Callback() {
+        HttpClients.get(this).newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 Log.e(TAG, "POST /auth/google/mobile failed", e);

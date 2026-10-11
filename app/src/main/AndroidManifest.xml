@@ -7,8 +7,8 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Уведомление "нужна повторная авторизация" от SyncWorker — на
          Android 13+ без него сервис уведомлений просто не покажет ничего,
-         не упадёт; запрашивается у пользователя при включении автоподключения
-         (см. MoreActivity.onToggleAutoConnect). -->
+         не упадёт; запрашивается у пользователя при включении автосинхронизации
+         (см. IntegrationsActivity.onToggleAutoConnect). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <!-- LAN-only на этом этапе, без TLS (org/docs/TODO_mobile_sync.md, п. 1.4
@@ -157,8 +157,13 @@
                 android:windowSoftInputMode="adjustResize"
                 android:exported="false"/>
 
+        <!-- Сервер, Google, Telegram, синхронизация — «Ещё» → «Интеграции». -->
+        <activity android:name=".Activities.IntegrationsActivity"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:exported="false"/>
+
         <!-- Вход/связка с сервером (org/docs/TODO_mobile_sync.md, Фаза 1) —
-             открывается с экрана «Настройки» → «Синхронизация», см. класс. -->
+             открывается с экрана «Ещё» → «Интеграции» → «Связь с Google аккаунтом», см. класс. -->
         <activity android:name=".Activities.SyncLinkActivity"
                 android:theme="@style/AppTheme.NoActionBar"
                 android:exported="false"/>

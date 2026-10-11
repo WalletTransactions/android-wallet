@@ -227,7 +227,7 @@ public class AppLockTest {
 
     @Test
     public void forgotPin_wipeWarning_dependsOnServerLink() {
-        assertTrue(ForgotPin.wipeWarning(true).contains("Связать с сервером"));
+        assertTrue(ForgotPin.wipeWarning(true).contains("Связь с Google аккаунтом"));
         assertTrue(ForgotPin.wipeWarning(false).contains("восстановить их будет неоткуда"));
     }
 

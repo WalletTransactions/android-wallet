@@ -9,8 +9,10 @@ import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.TaskStackBuilder;
 
 import com.example.wallettransactions.AppSettings;
+import com.example.wallettransactions.Activities.IntegrationsActivity;
 import com.example.wallettransactions.Activities.MoreActivity;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.TokenStore;
@@ -21,7 +23,6 @@ import org.json.JSONObject;
 import java.io.IOException;
 
 import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
@@ -38,7 +39,7 @@ import okhttp3.Response;
  * вход через Google отсюда нельзя: Credential Manager обязан показать UI
  * поверх Activity, а это фоновая задача без единой видимой Activity. Вместо
  * этого — {@link AppSettings#setNeedsRelink} и уведомление, по тапу на
- * которое открывается {@link MoreActivity}, где пользователь заново
+ * которое открывается {@link IntegrationsActivity}, где пользователь заново
  * пройдёт {@code SyncLinkActivity} сам.
  */
 final class AuthSession {
@@ -77,7 +78,7 @@ final class AuthSession {
                 .post(RequestBody.create(payload.toString(), JSON))
                 .build();
 
-        try (Response response = new OkHttpClient().newCall(request).execute()) {
+        try (Response response = HttpClients.get(ctx).newCall(request).execute()) {
             if (response.code() == 401) {
                 Log.i(TAG, "refresh-токен недействителен — нужна повторная авторизация");
                 TokenStore.clear(ctx);
@@ -115,10 +116,11 @@ final class AuthSession {
         manager.createNotificationChannel(new NotificationChannel(
                 CHANNEL_ID, "Статус синхронизации", NotificationManager.IMPORTANCE_DEFAULT));
 
-        Intent intent = new Intent(ctx, MoreActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                ctx, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        // «Ещё» под «Интеграциями» — чтобы «назад» с них вёл в приложение, а не наружу.
+        PendingIntent pendingIntent = TaskStackBuilder.create(ctx)
+                .addNextIntent(new Intent(ctx, MoreActivity.class))
+                .addNextIntent(new Intent(ctx, IntegrationsActivity.class))
+                .getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(ctx, CHANNEL_ID)
@@ -129,7 +131,7 @@ final class AuthSession {
                         .setAutoCancel(true);
 
         // На Android 13+ POST_NOTIFICATIONS — рантайм-разрешение (запрашивается
-        // при включении автоподключения, см. MoreActivity.onToggleAutoConnect);
+        // при включении автосинхронизации, см. IntegrationsActivity.onToggleAutoConnect);
         // без него notify() просто ничего не покажет, но раз проверка дешёвая —
         // не полагаемся молча на то, что NotificationManagerCompat не упадёт.
         if (ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.POST_NOTIFICATIONS)

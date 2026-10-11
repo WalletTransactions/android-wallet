@@ -32,11 +32,12 @@ final class SyncApiClient {
 
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
-    private final OkHttpClient http = new OkHttpClient();
+    private final OkHttpClient http;
     private final String baseUrl;
     private final String accessToken;
 
     SyncApiClient(Context ctx, String accessToken) {
+        this.http = HttpClients.get(ctx);
         this.baseUrl = AppSettings.getServerBaseUrl(ctx);
         this.accessToken = accessToken;
     }
@@ -88,6 +89,29 @@ final class SyncApiClient {
         try (Response response = http.newCall(request).execute()) {
             String body = response.body() != null ? response.body().string() : "";
             return new HttpResult(response.code(), new JSONObject(body.isEmpty() ? "{}" : body));
+        }
+    }
+
+    /**
+     * {@code HEAD /sync/blobs/:sha256} — есть ли уже такое содержимое на
+     * сервере. Отдельного серверного маршрута нет: cpp-httplib отвечает на
+     * HEAD тем же GET-обработчиком, только без тела (200 — есть, 404 — нет).
+     * Нужен, чтобы {@link SyncEngine} не перезаливал байты, которые сервер
+     * уже видел (инцидент 2026-10-11: 144 dirty-иконки заново на каждом
+     * синке через медленный Tailscale-relay — минуты ожидания, и обрыв на
+     * любой из них ронял весь push).
+     */
+    boolean blobExists(String sha256Hex) throws IOException {
+        Request request = new Request.Builder()
+                .url(baseUrl + "sync/blobs/" + sha256Hex)
+                .header("Authorization", "Bearer " + accessToken)
+                .head()
+                .build();
+
+        try (Response response = http.newCall(request).execute()) {
+            if (response.code() == 200) return true;
+            if (response.code() == 404) return false;
+            throw new IOException("HEAD /sync/blobs/" + sha256Hex + " -> HTTP " + response.code());
         }
     }
 

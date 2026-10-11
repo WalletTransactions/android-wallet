@@ -18,7 +18,7 @@ import java.util.List;
 
 /**
  * Периодическая синхронизация (экран «Настройки» → «Синхронизация» →
- * «Автоматическое подключение», org/docs/TODO_mobile_sync.md, Фаза 3, п. 4) —
+ * «Автоматическая синхронизация», org/docs/TODO_mobile_sync.md, Фаза 3, п. 4) —
  * планируется {@link SyncScheduler}. Сама последовательность (refresh → push
  * → pull) — в {@link SyncRunner#runOnce}, общем и с кнопкой
  * «Синхронизировать сейчас» (экран «Настройки», по требованию пользователя) —
@@ -50,7 +50,7 @@ public class SyncWorker extends Worker {
         }
 
         SyncRunner.Outcome outcome = SyncRunner.runOnce(ctx);
-        boolean synced = outcome.status == SyncRunner.Status.OK;
+        boolean synced = outcome.status == SyncRunner.Status.OK || outcome.status == SyncRunner.Status.PARTIAL;
 
         // Открытые в фоне табы перечитают ленту на ближайшем onResume.
         if (!recurringIds.isEmpty() || (synced && !outcome.log.isEmpty())) {
@@ -73,6 +73,7 @@ public class SyncWorker extends Worker {
                 // LAN-only стенда (план, п. 1.4).
                 Log.i(TAG, "sync: " + outcome.errorMessage);
                 return Result.retry();
+            case PARTIAL:
             case ERROR:
             default:
                 Log.w(TAG, "sync: " + outcome.errorMessage);

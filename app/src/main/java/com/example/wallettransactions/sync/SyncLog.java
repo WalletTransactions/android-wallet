@@ -61,6 +61,12 @@ public final class SyncLog {
     // попробует её снова следующим проходом", порядок появления важен так же.
     private final List<String> healedNotes = new ArrayList<>();
 
+    // В отличие от healedNotes — НЕ само себя лечит в этом проходе: строка
+    // осталась dirty и уйдёт только следующим синком (например, иконка не
+    // залилась из-за обрыва сети, см. SyncEngine.collectDirtyIcons). Непустой
+    // список — повод для SyncRunner вернуть ERROR, а не OK.
+    private final List<String> problemNotes = new ArrayList<>();
+
     // Для уведомления о новых операциях (NewOperationsNotifier): uuid операций,
     // которых до этого pull локально не было. Свои операции телефон знает до pull,
     // так что сюда попадают только чужие — от бота, веба, другого устройства.
@@ -70,7 +76,7 @@ public final class SyncLog {
     private boolean fullReload;
 
     // push()/pull() — package-private: заполняет только SyncEngine (тот же
-    // пакет). Наружу (MoreActivity, другой пакет) — только готовый
+    // пакет). Наружу (IntegrationsActivity, другой пакет) — только готовый
     // текст, см. toDisplayText() ниже.
     void push(String type, String action) {
         bump(Direction.PUSH, type, action);
@@ -95,6 +101,15 @@ public final class SyncLog {
         healedNotes.add(detail);
     }
 
+    /** См. {@link #problemNotes}. */
+    void problem(String detail) {
+        problemNotes.add(detail);
+    }
+
+    public List<String> getProblems() {
+        return problemNotes;
+    }
+
     void newOperation(String uuid) {
         newOperationUuids.add(uuid);
     }
@@ -117,7 +132,7 @@ public final class SyncLog {
     }
 
     public boolean isEmpty() {
-        return counts.isEmpty() && healedNotes.isEmpty();
+        return counts.isEmpty() && healedNotes.isEmpty() && problemNotes.isEmpty();
     }
 
     /** Готовый многострочный текст для показа в диалоге — по строке на (тип, действие), с числом строк. */
@@ -136,6 +151,9 @@ public final class SyncLog {
         // "что застряло, но само себя лечит" — отдельная категория внимания.
         for (String note : healedNotes) {
             sb.append("⚠ ").append(note).append('\n');
+        }
+        for (String note : problemNotes) {
+            sb.append("✖ ").append(note).append('\n');
         }
         return sb.toString();
     }

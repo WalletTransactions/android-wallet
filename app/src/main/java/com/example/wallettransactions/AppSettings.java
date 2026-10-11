@@ -286,7 +286,7 @@ public final class AppSettings {
         prefs(ctx).edit().putBoolean(PREF_NEEDS_RELINK, needsRelink).apply();
     }
 
-    /** Экран «Настройки» → «Синхронизация» → «Автоматическое подключение». */
+    /** Экран «Ещё» → «Интеграции» → «Автоматическая синхронизация». */
     public static boolean isAutoConnectEnabled(Context ctx) {
         return prefs(ctx).getBoolean(PREF_AUTO_CONNECT_ENABLED, false);
     }
@@ -304,7 +304,7 @@ public final class AppSettings {
         prefs(ctx).edit().putInt(PREF_AUTO_CONNECT_INTERVAL_MINUTES, minutes).apply();
     }
 
-    /** Экран «Ещё» → «Синхронизация» → «Уведомлять о новых операциях» (sync.NewOperationsNotifier). */
+    /** Экран «Ещё» → «Интеграции» → «Уведомлять о новых операциях» (sync.NewOperationsNotifier). */
     public static boolean isNotifyNewOperationsEnabled(Context ctx) {
         return prefs(ctx).getBoolean(PREF_NOTIFY_NEW_OPERATIONS, true);
     }

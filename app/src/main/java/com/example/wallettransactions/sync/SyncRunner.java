@@ -30,7 +30,13 @@ public final class SyncRunner {
 
     private SyncRunner() {}
 
-    public enum Status { NO_SESSION, NEEDS_RELINK, NETWORK_ERROR, ERROR, OK }
+    /**
+     * PARTIAL — push и pull прошли, но часть строк осталась dirty (см.
+     * {@link SyncLog#getProblems}): pull уже применён, поэтому вызывающий
+     * обращается с журналом как при OK (уведомления о новых операциях),
+     * но повторяет синк позже.
+     */
+    public enum Status { NO_SESSION, NEEDS_RELINK, NETWORK_ERROR, ERROR, PARTIAL, OK }
 
     public static final class Outcome {
         public final Status status;
@@ -67,6 +73,12 @@ public final class SyncRunner {
         try {
             SyncEngine.pushDirty(db, api, log);
             SyncEngine.pullAll(db, api, ctx, log);
+            if (!log.getProblems().isEmpty()) {
+                // Push/pull прошли, но часть строк осталась dirty (например,
+                // иконка не залилась — см. SyncEngine.collectDirtyIcons) —
+                // не "всё синхронизировано", подробности в журнале (✖).
+                return new Outcome(Status.PARTIAL, log, "Часть изменений не отправлена — повторите синхронизацию");
+            }
             return new Outcome(Status.OK, log, null);
         } catch (IOException e) {
             // Сервер выключен/недоступен по сети между push и pull — обычное
@@ -82,7 +94,7 @@ public final class SyncRunner {
             // 2026-09-09, см. README wallet-api). log здесь может уже
             // нести подтверждённые "Отправлено" за успешные порции ДО
             // упавшей — показываем оба факта разом (см.
-            // MoreActivity.showSyncResultDialog, ветка ERROR).
+            // IntegrationsActivity.showSyncResultDialog, ветка ERROR).
             return new Outcome(Status.ERROR, log, "Сервер отклонил часть изменений — " + e.getMessage());
         } catch (RuntimeException e) {
             // "Максимум дебаг-информации" по прямому запросу пользователя —

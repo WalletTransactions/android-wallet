@@ -8,7 +8,7 @@
     secure_auth.xml и __androidx_security_crypto_encrypted_prefs__.xml — токены синка
                      (TokenStore, EncryptedSharedPreferences) и их набор ключей Tink; без
                      мастер-ключа Keystore не расшифровать. После восстановления — заново
-                     «Связать с сервером».
+                     «Связь с Google аккаунтом».
 -->
 <full-backup-content>
     <exclude domain="sharedpref" path="app_lock.xml"/>

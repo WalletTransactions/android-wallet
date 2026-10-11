@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
@@ -54,7 +53,7 @@ public final class TelegramLinkClient {
 
     /** Понятная пользователю причина отказа — текст идёт прямо в диалог/строку. */
     public static final class TelegramException extends Exception {
-        /** Приложение не связано с сервером или сессия истекла — нужен «Связать с сервером». */
+        /** Приложение не связано с сервером или сессия истекла — нужен вход через «Связь с Google аккаунтом». */
         public final boolean needsServerLink;
 
         TelegramException(String message, boolean needsServerLink) {
@@ -62,8 +61,6 @@ public final class TelegramLinkClient {
             this.needsServerLink = needsServerLink;
         }
     }
-
-    private static final OkHttpClient HTTP = new OkHttpClient();
 
     private TelegramLinkClient() {}
 
@@ -95,7 +92,7 @@ public final class TelegramLinkClient {
 
     private static JSONObject call(Context ctx, String method, String path) throws TelegramException {
         if (TokenStore.getRefreshToken(ctx) == null || AppSettings.isNeedsRelink(ctx)) {
-            throw new TelegramException("Сначала свяжите приложение с сервером", true);
+            throw new TelegramException("Сначала войдите через «Связь с Google аккаунтом»", true);
         }
         try {
             String access = TokenStore.getAccessToken(ctx);
@@ -110,10 +107,10 @@ public final class TelegramLinkClient {
                 case NETWORK_ERROR:
                     throw new TelegramException("Сервер недоступен", false);
                 default:
-                    throw new TelegramException("Сессия истекла — нажмите «Связать с сервером»", true);
+                    throw new TelegramException("Сессия истекла — нажмите «Связь с Google аккаунтом»", true);
             }
             JSONObject body = execute(ctx, method, path, TokenStore.getAccessToken(ctx));
-            if (body == null) throw new TelegramException("Сессия истекла — нажмите «Связать с сервером»", true);
+            if (body == null) throw new TelegramException("Сессия истекла — нажмите «Связь с Google аккаунтом»", true);
             return body;
         } catch (IOException e) {
             throw new TelegramException("Сервер недоступен", false);
@@ -131,7 +128,7 @@ public final class TelegramLinkClient {
                 .header("Authorization", "Bearer " + accessToken)
                 .method(method, empty)
                 .build();
-        try (Response response = HTTP.newCall(request).execute()) {
+        try (Response response = HttpClients.get(ctx).newCall(request).execute()) {
             if (response.code() == 401) return null;
             String text = response.body() != null ? response.body().string() : "";
             JSONObject body = new JSONObject(text.isEmpty() ? "{}" : text);

@@ -15,15 +15,19 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -207,8 +211,24 @@ final class SyncEngine {
      * сейчас, одним нажатием кнопки.
      */
     static void pushDirty(SQLiteDatabase db, SyncApiClient api, SyncLog log) throws IOException, JSONException {
+        // Иконки, не залитые в ЭТОМ раунде (см. collectDirtyIcons), и строки,
+        // отложенные из-за них (см. deferDependents) — пересобираются каждым
+        // раундом заново, в журнал попадает состояние последнего. finally —
+        // чтобы пользователь узнал о них и тогда, когда push упал по другой
+        // причине.
+        List<String> problems = new ArrayList<>();
+        try {
+            pushDirtyRounds(db, api, log, problems);
+        } finally {
+            for (String p : problems) log.problem(p);
+        }
+    }
+
+    private static void pushDirtyRounds(SQLiteDatabase db, SyncApiClient api, SyncLog log, List<String> problems)
+            throws IOException, JSONException {
         for (int round = 1; ; round++) {
-            Map<String, JSONArray> byTable = collectDirtyByTable(db, api);
+            problems.clear();
+            Map<String, JSONArray> byTable = collectDirtyByTable(db, api, problems);
             if (byTable.isEmpty()) return; // нечего отправлять — либо с самого начала, либо всё уже вылечено
 
             boolean healed = false;
@@ -470,11 +490,13 @@ final class SyncEngine {
      * теперь так же одна транзакция, но НА КАЖДУЮ ПОРЦИЮ, не на весь
      * dirty-набор разом (см. {@link #pushDirty}).
      */
-    private static Map<String, JSONArray> collectDirtyByTable(SQLiteDatabase db, SyncApiClient api)
+    private static Map<String, JSONArray> collectDirtyByTable(SQLiteDatabase db, SyncApiClient api,
+                                                              List<String> problems)
             throws JSONException, IOException {
         Map<String, JSONArray> byTable = new LinkedHashMap<>();
 
-        putOrdered(byTable, "icon", collectDirtyIcons(db, api));
+        Set<String> deferred = new HashSet<>();
+        putOrdered(byTable, "icon", collectDirtyIcons(db, api, deferred, problems));
 
         putOrdered(byTable, "currency", collect(db,
                 "SELECT uuid, name, iso_code, icon_id, symbol, precision, deleted_at FROM currency WHERE dirty=1",
@@ -606,7 +628,57 @@ final class SyncEngine {
                     return row;
                 }));
 
+        if (!deferred.isEmpty()) deferDependents(byTable, deferred, problems);
         return byTable;
+    }
+
+    /**
+     * Убирает из {@code byTable} строки, которые ссылаются (через любое поле
+     * {@code *_uuid}) на uuid из {@code deferred} — иконку, которую в этом
+     * проходе не удалось залить (см. {@link #collectDirtyIcons}), — и, по
+     * цепочке, всё, что ссылается уже на них: счёт с такой иконкой → его
+     * {@code account_operating} (тот же uuid, что у счёта) → операции по
+     * нему → их {@code operation_link}. Иначе сервер ответил бы {@code
+     * missing_reference} на иконку, которую {@code redirty()} вылечить не
+     * может (она и так dirty) — и весь push упал бы, как раньше падал от
+     * одной незалитой картинки. Один проход по {@link #TABLE_ORDER}
+     * достаточен: ссылка всегда указывает на таблицу РАНЬШЕ по порядку.
+     * Отложенные строки остаются dirty и уйдут следующим синком.
+     */
+    static void deferDependents(Map<String, JSONArray> byTable, Set<String> deferred,
+                                        List<String> problems) throws JSONException {
+        int skipped = 0;
+        Iterator<Map.Entry<String, JSONArray>> tables = byTable.entrySet().iterator();
+        while (tables.hasNext()) {
+            Map.Entry<String, JSONArray> entry = tables.next();
+            JSONArray kept = new JSONArray();
+            JSONArray rows = entry.getValue();
+            for (int i = 0; i < rows.length(); i++) {
+                JSONObject row = rows.getJSONObject(i);
+                if (referencesDeferred(row, deferred)) {
+                    deferred.add(row.getString("uuid"));
+                    skipped++;
+                } else {
+                    kept.put(row);
+                }
+            }
+            if (kept.length() == 0) tables.remove();
+            else entry.setValue(kept);
+        }
+        if (skipped > 0) {
+            problems.add("отложено до следующего синка (ссылаются на незалитые иконки): " + skipped + " строк");
+        }
+    }
+
+    private static boolean referencesDeferred(JSONObject row, Set<String> deferred) {
+        Iterator<String> keys = row.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            if (!key.equals("uuid") && !key.endsWith("_uuid")) continue;
+            String value = row.optString(key, null);
+            if (value != null && deferred.contains(value)) return true;
+        }
+        return false;
     }
 
     /**
@@ -617,8 +689,9 @@ final class SyncEngine {
      * {@code db} (тот же довод, что и у {@link #prefetchNewIconBlobs} на
      * pull-стороне, только про SELECT, а не про целую транзакцию).
      */
-    private static JSONArray collectDirtyIcons(SQLiteDatabase db, SyncApiClient api)
-            throws JSONException, IOException {
+    private static JSONArray collectDirtyIcons(SQLiteDatabase db, SyncApiClient api, Set<String> deferred,
+                                               List<String> problems)
+            throws JSONException {
         List<Object[]> rows = new ArrayList<>(); // {uuid, name, image, iconType, deleted}
         Cursor c = db.rawQuery(
                 "SELECT uuid, name, image, icon_type, deleted_at FROM icon WHERE dirty=1", null);
@@ -633,19 +706,95 @@ final class SyncEngine {
 
         JSONArray result = new JSONArray();
         for (Object[] r : rows) {
-            SyncApiClient.HttpResult uploaded = api.uploadBlob((byte[]) r[2]);
-            if (uploaded.status != 200) {
-                throw new IOException("POST /sync/blobs -> HTTP " + uploaded.status);
+            String sha256;
+            try {
+                sha256 = ensureBlobUploaded(api, (byte[]) r[2]);
+            } catch (IOException e) {
+                // Не роняем весь push из-за одной картинки (инцидент
+                // 2026-10-11: обрыв на одной из 144 иконок через Tailscale-
+                // relay — и удаления операций так и не ушли). Иконка и всё,
+                // что на неё ссылается (см. deferDependents), остаются dirty
+                // до следующего синка; остальное уходит сейчас.
+                Log.w(TAG, "push: иконка " + r[0] + " не залита: " + e.getMessage());
+                deferred.add((String) r[0]);
+                problems.add("иконка «" + r[1] + "» не отправлена: " + e.getMessage());
+                continue;
             }
             JSONObject row = new JSONObject();
             row.put("uuid", r[0]);
             row.put("name", r[1]);
-            row.put("content_sha256", uploaded.body.getString("sha256"));
+            row.put("content_sha256", sha256);
             row.put("icon_type", r[3]);
             row.put("deleted", (Boolean) r[4]);
             result.put(row);
         }
         return result;
+    }
+
+    /** Попыток на ОДНУ иконку в {@link #ensureBlobUploaded} — см. её javadoc. */
+    private static final int BLOB_UPLOAD_ATTEMPTS = 3;
+
+    /**
+     * Возвращает {@code content_sha256} для байт иконки, заливая их только
+     * если сервер их ещё не видел ({@link SyncApiClient#blobExists}) — хеш
+     * считается локально тем же SHA-256, что и на сервере (wallet-api,
+     * blob.cpp), так что повторный синк после частичного сбоя не гонит
+     * заново уже залитые картинки. На обрыв соединения или ответ не 200
+     * (например, 400 с пустым телом — гейтвей не дочитал тело запроса, см.
+     * инцидент 2026-10-11) — до {@link #BLOB_UPLOAD_ATTEMPTS} попыток с
+     * паузой; 401 не повторяем — свежее токен уже не станет.
+     */
+    private static String ensureBlobUploaded(SyncApiClient api, byte[] bytes) throws IOException {
+        if (bytes == null || bytes.length == 0) throw new IOException("у иконки нет содержимого");
+        String sha256 = sha256Hex(bytes);
+        IOException last = null;
+        for (int attempt = 1; attempt <= BLOB_UPLOAD_ATTEMPTS; attempt++) {
+            try {
+                if (api.blobExists(sha256)) return sha256;
+                SyncApiClient.HttpResult uploaded = api.uploadBlob(bytes);
+                if (uploaded.status == 200) {
+                    String serverSha = uploaded.body.optString("sha256", "");
+                    if (!serverSha.equals(sha256)) {
+                        // Не должно случаться — тот же алгоритм на обеих сторонах; если
+                        // всё же разошлось, верим серверу: строка icon сошлётся на то,
+                        // что реально лежит в blob.
+                        Log.w(TAG, "push: sha256 иконки расходится: локально " + sha256 + ", сервер " + serverSha);
+                        if (!serverSha.isEmpty()) return serverSha;
+                    }
+                    return sha256;
+                }
+                last = new IOException("POST /sync/blobs -> HTTP " + uploaded.status
+                        + (uploaded.body.length() > 0 ? " " + uploaded.body : ""));
+                if (uploaded.status == 401) throw last;
+            } catch (JSONException e) {
+                last = new IOException("POST /sync/blobs: некорректный ответ сервера (" + e.getMessage() + ")");
+            } catch (IOException e) {
+                if (e == last) throw e; // 401 выше — не повторяем
+                last = e;
+            }
+            if (attempt < BLOB_UPLOAD_ATTEMPTS) {
+                Log.i(TAG, "push: заливка иконки, попытка " + attempt + " не удалась (" + last.getMessage() + "), повторяю");
+                try {
+                    Thread.sleep(1000L * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw last;
+                }
+            }
+        }
+        throw last;
+    }
+
+    static String sha256Hex(byte[] bytes) {
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new AssertionError(e); // SHA-256 гарантирован на любой Android
+        }
+        StringBuilder sb = new StringBuilder(64);
+        for (byte b : md.digest(bytes)) sb.append(String.format(Locale.ROOT, "%02x", b));
+        return sb.toString();
     }
 
     /**
