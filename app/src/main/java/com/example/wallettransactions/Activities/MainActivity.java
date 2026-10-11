@@ -36,6 +36,9 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
     /** ID счетов через запятую — контракт обмена с {@link FilterActivity}. */
     public static final String cFilterAccountList =  "Transaction.AccountList";
 
+    /** Тап по напоминанию (reminder.ReminderWorker): сразу открыть новую операцию. */
+    public static final String EXTRA_ADD_OPERATION = "MainActivity.addOperation";
+
     public IconList getIconList(){
         return Singleton.instance.getIconList(this);
     }
@@ -110,7 +113,23 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
             showCrashRecoveryDialog();
         } else {
             reloadSharedAndTabData();
+            // Не при восстановлении после поворота: экран операции уже открывался.
+            if (savedInstanceState == null) openAddOperationIfAsked(getIntent());
         }
+    }
+
+    /** Лента уже в стеке — напоминание приходит сюда, а не в onCreate (SINGLE_TOP). */
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (!com.example.wallettransactions.WalletApplication.hadCrash(this)) openAddOperationIfAsked(intent);
+    }
+
+    private void openAddOperationIfAsked(Intent intent) {
+        if (intent == null || !intent.getBooleanExtra(EXTRA_ADD_OPERATION, false)) return;
+        // Снять флаг: иначе пересоздание активности открыло бы экран операции ещё раз.
+        intent.removeExtra(EXTRA_ADD_OPERATION);
+        btnOperationAdd(null);
     }
 
     private void showCrashRecoveryDialog() {

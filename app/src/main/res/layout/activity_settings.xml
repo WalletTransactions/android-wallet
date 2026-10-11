@@ -504,7 +504,7 @@
                     android:id="@+id/switchRemind"
                     android:layout_width="46dp"
                     android:layout_height="26dp"
-                    android:background="@drawable/bg_switch_on"
+                    android:background="@drawable/bg_switch_off"
                     android:onClick="onToggleRemind">
                     <View
                         android:id="@+id/switchRemindThumb"

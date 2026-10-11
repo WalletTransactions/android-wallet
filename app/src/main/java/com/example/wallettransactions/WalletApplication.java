@@ -41,6 +41,8 @@ public class WalletApplication extends Application {
         com.example.wallettransactions.sync.SyncScheduler.ensureScheduled(this);
         // Периодические операции в фоне — цепочка задач, та же страховка.
         com.example.wallettransactions.sync.RecurringWorker.ensureScheduled(this);
+        // «Напоминание вносить операции» — тоже цепочка задач, та же страховка.
+        com.example.wallettransactions.reminder.ReminderWorker.ensureScheduled(this);
     }
 
     // ── Тема ───────────────────────────────────────────────────────────────────

@@ -38,6 +38,9 @@ public final class AppSettings {
     private static final String PREF_AUTO_CONNECT_ENABLED = "autoConnectEnabled";
     private static final String PREF_AUTO_CONNECT_INTERVAL_MINUTES = "autoConnectIntervalMinutes";
     private static final String PREF_NOTIFY_NEW_OPERATIONS = "notifyNewOperations";
+    private static final String PREF_REMIND_ON = "remindOn";
+    private static final String PREF_REMIND_HOUR = "remindHour";
+    private static final String PREF_REMIND_MINUTE = "remindMinute";
     private static final String PREF_LEDGER_SYNC_SEQ = "ledgerSyncSeq";
     private static final String PREF_REFERENCE_SYNC_SEQ = "referenceSyncSeq";
     private static final String PREF_SYNC_LEDGER_ID = "syncLedgerId";
@@ -308,6 +311,32 @@ public final class AppSettings {
 
     public static void setNotifyNewOperationsEnabled(Context ctx, boolean enabled) {
         prefs(ctx).edit().putBoolean(PREF_NOTIFY_NEW_OPERATIONS, enabled).apply();
+    }
+
+    /**
+     * «Настройки» → «Уведомления» → «Напоминание вносить операции» (reminder.ReminderWorker).
+     * Ключи — те же, что писал переключатель, пока был заглушкой. По умолчанию выключено:
+     * включение спрашивает разрешение на уведомления, а без спроса слать их каждый вечер
+     * тем, кто видел заглушку «включённой», не стоит.
+     */
+    public static boolean isRemindOn(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_REMIND_ON, false);
+    }
+
+    public static void setRemindOn(Context ctx, boolean on) {
+        prefs(ctx).edit().putBoolean(PREF_REMIND_ON, on).apply();
+    }
+
+    public static int getRemindHour(Context ctx) {
+        return prefs(ctx).getInt(PREF_REMIND_HOUR, 20);
+    }
+
+    public static int getRemindMinute(Context ctx) {
+        return prefs(ctx).getInt(PREF_REMIND_MINUTE, 0);
+    }
+
+    public static void setRemindTime(Context ctx, int hour, int minute) {
+        prefs(ctx).edit().putInt(PREF_REMIND_HOUR, hour).putInt(PREF_REMIND_MINUTE, minute).apply();
     }
 
     /**

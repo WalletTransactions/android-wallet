@@ -1,14 +1,16 @@
 package com.example.wallettransactions.Activities;
 
 import android.app.AlertDialog;
+import android.Manifest;
 import android.app.TimePickerDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -31,6 +33,7 @@ import com.example.wallettransactions.security.AppLock;
 import com.example.wallettransactions.security.AppLockStore;
 import com.example.wallettransactions.security.BiometricErrors;
 import com.example.wallettransactions.security.BiometricKey;
+import com.example.wallettransactions.reminder.ReminderWorker;
 
 import java.util.Calendar;
 import java.util.Locale;
@@ -44,18 +47,14 @@ import javax.crypto.Cipher;
  * (SharedPreferences) и переживают переоткрытие экрана. «Код доступа» — настоящий
  * (security.AppLock, org/docs/TODO_app_lock.md): включение, выключение и смена идут
  * через {@link LockActivity}. «Вход по отпечатку» — тоже (Фаза 2 плана, п. 3.4).
- * «Напоминание» пока только визуальное: планировщика напоминаний нет.
+ * «Напоминание вносить операции» — {@link ReminderWorker}.
  */
 public class SettingsActivity extends AppCompatActivity {
 
-    private static final String PREFS_NAME = "settings";
     private static final int REQUEST_PIN_ENABLE = 1;
     private static final int REQUEST_PIN_DISABLE = 2;
     private static final int REQUEST_PIN_CHANGE_VERIFY = 3;
     private static final int REQUEST_PIN_CHANGE_SET = 4;
-    private static final String PREF_REMIND_ON = "remindOn";
-    private static final String PREF_REMIND_HOUR = "remindHour";
-    private static final String PREF_REMIND_MINUTE = "remindMinute";
 
     private TextView mainCurrencyValue;
     private TextView chipThemeLight;
@@ -80,10 +79,6 @@ public class SettingsActivity extends AppCompatActivity {
     private static final long HIDDEN_MENU_TAP_TIMEOUT_MS = 1500;
     private int versionTapCount = 0;
     private long versionTapLastAt = 0;
-
-    private SharedPreferences prefs() {
-        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,20 +118,17 @@ public class SettingsActivity extends AppCompatActivity {
 
         applyThemeChips(AppSettings.getThemeMode(this));
 
-        SharedPreferences p = prefs();
         String savedIso = AppSettings.getCurrencyEqIso(this);
         Currency saved = savedIso != null
                 ? Singleton.instance.getCurrencyList(this).getCurrencyByISO(savedIso) : null;
         if (saved != null) mainCurrencyValue.setText(saved.getIso() + " — " + saved.getName());
 
         paintSecurity();
-        applySwitchState(switchRemind, p.getBoolean(PREF_REMIND_ON, true));
+        applySwitchState(switchRemind, AppSettings.isRemindOn(this));
         applySwitchState(switchPickerKeyboard, AppSettings.isPickerKeyboardOn(this));
         paintSortValues();
 
-        int hour = p.getInt(PREF_REMIND_HOUR, 20);
-        int minute = p.getInt(PREF_REMIND_MINUTE, 0);
-        rowRemindTime.setText(String.format(Locale.getDefault(), "каждый день в %02d:%02d", hour, minute));
+        paintRemindTime();
     }
 
     public void btnUp(View view) {
@@ -407,9 +399,22 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
+    // ── Напоминание ───────────────────────────────────────────────────────────
+
+    /**
+     * Само напоминание — reminder.ReminderWorker. Разрешение на уведомления (Android 13+)
+     * спрашиваем здесь, когда его включают, — как у «Уведомлять о новых операциях».
+     */
     public void onToggleRemind(View view) {
         boolean on = toggleSwitch(switchRemind);
-        prefs().edit().putBoolean(PREF_REMIND_ON, on).apply();
+        AppSettings.setRemindOn(this, on);
+        ReminderWorker.reschedule(this);
+
+        if (on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
+        }
     }
 
     public void onTogglePickerKeyboard(View view) {
@@ -444,14 +449,17 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     public void onPickRemindTime(View view) {
-        SharedPreferences p = prefs();
-        int hour = p.getInt(PREF_REMIND_HOUR, 20);
-        int minute = p.getInt(PREF_REMIND_MINUTE, 0);
-
         new TimePickerDialog(this, (TimePicker tp, int h, int m) -> {
-            prefs().edit().putInt(PREF_REMIND_HOUR, h).putInt(PREF_REMIND_MINUTE, m).apply();
-            rowRemindTime.setText(String.format(Locale.getDefault(), "каждый день в %02d:%02d", h, m));
-        }, hour, minute, true).show();
+            AppSettings.setRemindTime(this, h, m);
+            paintRemindTime();
+            // Выключенное напоминание reschedule не заведёт — только запомним время.
+            ReminderWorker.reschedule(this);
+        }, AppSettings.getRemindHour(this), AppSettings.getRemindMinute(this), true).show();
+    }
+
+    private void paintRemindTime() {
+        rowRemindTime.setText(String.format(Locale.getDefault(), "каждый день в %02d:%02d",
+                AppSettings.getRemindHour(this), AppSettings.getRemindMinute(this)));
     }
 
     public void onRateApp(View view) {
