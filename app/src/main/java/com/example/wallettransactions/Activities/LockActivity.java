@@ -8,20 +8,28 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.security.AppLock;
 import com.example.wallettransactions.security.AppLockStore;
+import com.example.wallettransactions.security.BiometricErrors;
+import com.example.wallettransactions.security.BiometricKey;
 import com.example.wallettransactions.security.PinHasher;
 
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.crypto.Cipher;
 
 /**
  * Экран кода доступа (org/docs/TODO_app_lock.md, Фаза 1) в трёх режимах:
@@ -33,6 +41,9 @@ import java.util.concurrent.Executors;
  *   <li>{@link #MODE_SET} — новый код: «Придумайте» → «Повторите».</li>
  * </ul>
  * Проверка и хэширование — PBKDF2, ~150 мс, поэтому в фоне; клавиши на это время глухие.
+ * <p>
+ * Отпечаток (Фаза 2, п. 3.5) — только на замке: выключение и смена кода требуют код.
+ * Диалог поднимается сам один раз на экземпляр замка, дальше — клавишей слева внизу.
  */
 public class LockActivity extends AppCompatActivity {
 
@@ -42,6 +53,7 @@ public class LockActivity extends AppCompatActivity {
 
     private static final String EXTRA_MODE = "LockActivity.mode";
     private static final String STATE_FIRST_PIN = "firstPin";
+    private static final String STATE_BIO_SHOWN = "bioShown";
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -52,12 +64,18 @@ public class LockActivity extends AppCompatActivity {
     private String firstPin;
     private boolean busy;
     private boolean keyLost;
+    private boolean dimmed;
+    /** Диалог отпечатка уже поднимался сам — второй раз только по клавише. */
+    private boolean bioAutoShown;
+    private BiometricPrompt biometricPrompt;
 
     private TextView title;
     private TextView message;
     private LinearLayout dots;
     private View keypad;
+    private View keyLeft;
     private View keyOk;
+    private View keyBio;
 
     private final Runnable lockoutTick = this::renderLockout;
 
@@ -85,9 +103,18 @@ public class LockActivity extends AppCompatActivity {
         message = findViewById(R.id.lockMessage);
         dots = findViewById(R.id.lockDots);
         keypad = findViewById(R.id.lockKeypad);
+        keyLeft = findViewById(R.id.lockKeyLeft);
         keyOk = findViewById(R.id.lockKeyOk);
+        keyBio = findViewById(R.id.lockKeyBio);
 
-        if (savedInstanceState != null) firstPin = savedInstanceState.getString(STATE_FIRST_PIN);
+        if (savedInstanceState != null) {
+            firstPin = savedInstanceState.getString(STATE_FIRST_PIN);
+            bioAutoShown = savedInstanceState.getBoolean(STATE_BIO_SHOWN);
+        }
+        // В onCreate, а не по требованию: так BiometricPrompt переживает поворот вместе с колбэком.
+        if (mode == MODE_UNLOCK) {
+            biometricPrompt = new BiometricPrompt(this, ContextCompat.getMainExecutor(this), biometricCallback);
+        }
         render();
     }
 
@@ -97,6 +124,7 @@ public class LockActivity extends AppCompatActivity {
         // Поворот на шаге «Повторите код» не должен терять первый ввод. Набранное
         // на текущем шаге не сохраняем — проще набрать заново, чем держать код в Bundle.
         if (firstPin != null) out.putString(STATE_FIRST_PIN, firstPin);
+        out.putBoolean(STATE_BIO_SHOWN, bioAutoShown);
     }
 
     @Override
@@ -106,6 +134,11 @@ public class LockActivity extends AppCompatActivity {
         // настройках из другого окна), — показывать нечего.
         if (mode == MODE_UNLOCK && !AppLock.isLocked()) { finishQuietly(); return; }
         renderLockout();
+        if (isBiometricOn() && !bioAutoShown) {
+            bioAutoShown = true;
+            // post: окно должно получить фокус, иначе диалог на части прошивок не всплывает.
+            getWindow().getDecorView().post(this::showBiometric);
+        }
     }
 
     @Override
@@ -129,12 +162,17 @@ public class LockActivity extends AppCompatActivity {
     // ── Ввод ──────────────────────────────────────────────────────────────────
 
     public void onLockKey(View view) {
-        if (busy || keyLost || lockoutRemaining() > 0) return;
         String tag = (String) view.getTag();
+        // Отпечаток — и во время паузы после ошибок кода, и без ключа проверки кода.
+        if ("left".equals(tag) && isBiometricOn()) {
+            if (!busy) showBiometric();
+            return;
+        }
+        if (busy || keyLost || lockoutRemaining() > 0) return;
 
         if ("del".equals(tag)) {
             if (entered.length() > 0) entered.setLength(entered.length() - 1);
-        } else if ("ok".equals(tag)) {
+        } else if ("left".equals(tag)) {
             if (isFirstSetStep() && entered.length() >= AppLockStore.MIN_LENGTH) acceptFirst();
             return;
         } else if (entered.length() < AppLockStore.MAX_LENGTH) {
@@ -220,7 +258,7 @@ public class LockActivity extends AppCompatActivity {
             // Без ключа Keystore код не проверить никак. Снять его — «Забыли код?»
             // (Фаза 4); до неё — только очистка данных приложения в настройках телефона.
             keyLost = true;
-            keypad.setAlpha(0.4f);
+            dimKeypad(true);
             showMessage("Ключ проверки кода на телефоне пропал, код не проверить. "
                     + "Очистите данные приложения: Настройки телефона → Приложения.", true);
             return;
@@ -257,7 +295,10 @@ public class LockActivity extends AppCompatActivity {
                 title.setText("Введите код");
                 showMessage("", false);
         }
-        keyOk.setVisibility(isFirstSetStep() ? View.VISIBLE : View.INVISIBLE);
+        boolean bio = isBiometricOn();
+        keyOk.setVisibility(isFirstSetStep() ? View.VISIBLE : View.GONE);
+        keyBio.setVisibility(bio ? View.VISIBLE : View.GONE);
+        keyLeft.setVisibility(isFirstSetStep() || bio ? View.VISIBLE : View.INVISIBLE);
         renderDots();
     }
 
@@ -285,18 +326,77 @@ public class LockActivity extends AppCompatActivity {
         if (mode == MODE_SET || keyLost) return;
         long remaining = lockoutRemaining();
         if (remaining <= 0) {
-            if (keypad.getAlpha() < 1f) {
-                keypad.setAlpha(1f);
+            if (dimmed) {
+                dimKeypad(false);
                 showMessage("", false);
             }
             return;
         }
         long sec = (remaining + 999) / 1000;
-        keypad.setAlpha(0.4f);
+        dimKeypad(true);
         showMessage(String.format(Locale.US, "Слишком много попыток. Повторите через %d:%02d",
                 sec / 60, sec % 60), true);
         main.postDelayed(lockoutTick, 1000);
     }
+
+    /** Цифры приглушены; клавиша отпечатка — нет, она работает и во время паузы. */
+    private void dimKeypad(boolean dim) {
+        dimmed = dim;
+        ViewGroup rows = (ViewGroup) keypad;
+        for (int i = 0; i < rows.getChildCount(); i++) {
+            ViewGroup row = (ViewGroup) rows.getChildAt(i);
+            for (int j = 0; j < row.getChildCount(); j++) {
+                View key = row.getChildAt(j);
+                key.setAlpha(dim && key != keyLeft ? 0.4f : 1f);
+            }
+        }
+    }
+
+    // ── Отпечаток ─────────────────────────────────────────────────────────────
+
+    private boolean isBiometricOn() {
+        return mode == MODE_UNLOCK && AppLockStore.isBiometricOn(this);
+    }
+
+    private void showBiometric() {
+        if (isFinishing() || biometricPrompt == null) return;
+        Cipher cipher = BiometricKey.cipherOrNull();
+        if (cipher == null) {
+            // Отпечатки в телефоне изменились — ключ негоден. Это защита от чужого
+            // пальца, добавленного в телефон: включать заново — только из настроек.
+            AppLockStore.setBiometricOn(this, false);
+            render();
+            showMessage(BiometricErrors.KEY_INVALIDATED, true);
+            return;
+        }
+        BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Вход в приложение")
+                .setNegativeButtonText("Ввести код")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                .build();
+        biometricPrompt.authenticate(info, new BiometricPrompt.CryptoObject(cipher));
+    }
+
+    private final BiometricPrompt.AuthenticationCallback biometricCallback =
+            new BiometricPrompt.AuthenticationCallback() {
+                @Override
+                public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                    BiometricPrompt.CryptoObject crypto = result.getCryptoObject();
+                    if (!BiometricKey.confirm(crypto != null ? crypto.getCipher() : null)) {
+                        showMessage(BiometricErrors.lockScreenMessage(-1), true);
+                        return;
+                    }
+                    AppLockStore.resetFailures(LockActivity.this);
+                    AppLock.unlock();
+                    finishQuietly();
+                }
+
+                @Override
+                public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                    String text = BiometricErrors.lockScreenMessage(errorCode);
+                    if (text != null) showMessage(text, true);
+                }
+            };
 
     private long lockoutRemaining() {
         return mode == MODE_SET ? 0 : AppLockStore.getLockoutRemainingMs(this, System.currentTimeMillis());

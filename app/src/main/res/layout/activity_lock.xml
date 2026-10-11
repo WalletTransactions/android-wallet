@@ -2,7 +2,8 @@
 <!--
   Экран кода доступа (LockActivity): замок, проверка текущего кода и установка нового.
   Клавиатура — те же клавиши KeypadKey, что на экране операции, только выше. Левая
-  нижняя клавиша — «ОК» при установке кода (длина 4–6 выбирается этим), иначе пустая.
+  нижняя клавиша — «ОК» при установке кода (длина 4–6 выбирается этим), отпечаток на
+  замке, если он включён, иначе пустая.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -93,13 +94,28 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
-            <TextView
-                android:id="@+id/lockKeyOk"
+            <FrameLayout
+                android:id="@+id/lockKeyLeft"
                 style="@style/LockKey"
-                android:tag="ok"
-                android:text="ОК"
-                android:textSize="17sp"
-                android:textColor="@color/colorPrimary"/>
+                android:tag="left">
+                <TextView
+                    android:id="@+id/lockKeyOk"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="ОК"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorPrimary"/>
+                <ImageView
+                    android:id="@+id/lockKeyBio"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="14dp"
+                    android:scaleType="fitCenter"
+                    android:contentDescription="Вход по отпечатку"
+                    android:src="@drawable/ic_fingerprint"/>
+            </FrameLayout>
             <TextView style="@style/LockKey" android:tag="0" android:text="0"/>
             <ImageView
                 style="@style/LockKey"

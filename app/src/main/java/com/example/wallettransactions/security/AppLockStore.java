@@ -38,6 +38,7 @@ public final class AppLockStore {
     private static final String KEY_TIMEOUT = "lock_timeout_ms";
     private static final String KEY_FAILED = "failed_attempts";
     private static final String KEY_LOCKOUT_UNTIL = "lockout_until";
+    private static final String KEY_BIOMETRIC = "biometric_on";
 
     private static PinHasher.Pepper pepper = new PinHasher.KeystorePepper();
 
@@ -79,12 +80,16 @@ public final class AppLockStore {
                 .commit();
     }
 
-    /** Выключение кода: остаются только настройки, не относящиеся к нему (таймаут). */
+    /**
+     * Выключение кода: остаются только настройки, не относящиеся к нему (таймаут).
+     * Отпечаток без кода не живёт — выключается вместе с ключом.
+     */
     public static void clearPin(Context ctx) {
         prefs(ctx).edit()
                 .remove(KEY_HASH).remove(KEY_SALT).remove(KEY_LENGTH).remove(KEY_ITERATIONS)
-                .remove(KEY_FAILED).remove(KEY_LOCKOUT_UNTIL)
+                .remove(KEY_FAILED).remove(KEY_LOCKOUT_UNTIL).remove(KEY_BIOMETRIC)
                 .commit();
+        BiometricKey.delete();
     }
 
     public static boolean isValidPin(String pin) {
@@ -141,6 +146,24 @@ public final class AppLockStore {
 
     public static int getFailedAttempts(Context ctx) {
         return prefs(ctx).getInt(KEY_FAILED, 0);
+    }
+
+    /** Вход по отпечатку: владелец подтверждён — счётчик ошибок кода и пауза снимаются. */
+    public static void resetFailures(Context ctx) {
+        prefs(ctx).edit().remove(KEY_FAILED).remove(KEY_LOCKOUT_UNTIL).commit();
+    }
+
+    // ── Отпечаток ─────────────────────────────────────────────────────────────
+
+    /** Флаг, а не сам отпечаток: его сверяет система, приложение получает только ответ. */
+    public static boolean isBiometricOn(Context ctx) {
+        return isPinSet(ctx) && prefs(ctx).getBoolean(KEY_BIOMETRIC, false);
+    }
+
+    /** Выключение удаляет и ключ: включат снова — {@link BiometricKey#create} заведёт новый. */
+    public static void setBiometricOn(Context ctx, boolean on) {
+        prefs(ctx).edit().putBoolean(KEY_BIOMETRIC, on).apply();
+        if (!on) BiometricKey.delete();
     }
 
     // ── Таймаут ───────────────────────────────────────────────────────────────

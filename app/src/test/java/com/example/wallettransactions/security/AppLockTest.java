@@ -3,11 +3,15 @@ package com.example.wallettransactions.security;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.content.Context;
 
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.After;
@@ -24,8 +28,8 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Код доступа (org/docs/TODO_app_lock.md, Фаза 1): хэш, паузы после ошибок, когда
- * запирать. AndroidKeyStore под Robolectric нет — ключ Keystore подменён обычным HMAC.
+ * Код доступа и отпечаток (org/docs/TODO_app_lock.md, Фазы 1–2): хэш, паузы после
+ * ошибок, флаг отпечатка, когда запирать. AndroidKeyStore под Robolectric нет — ключ Keystore подменён обычным HMAC.
  */
 @RunWith(RobolectricTestRunner.class)
 public class AppLockTest {
@@ -142,6 +146,53 @@ public class AppLockTest {
         for (int i = 0; i < 5; i++) AppLockStore.check(ctx, "0000", NOW);
         assertEquals(AppLockStore.MAX_LOCKOUT_MS,
                 AppLockStore.getLockoutRemainingMs(ctx, NOW - 24 * 3600_000L));
+    }
+
+    // ── Отпечаток ─────────────────────────────────────────────────────────────
+
+    @Test
+    public void biometric_offWithoutPin_andClearedWithPin() throws Exception {
+        AppLockStore.setBiometricOn(ctx, true);
+        assertFalse("без кода отпечаток не включается", AppLockStore.isBiometricOn(ctx));
+
+        AppLockStore.setPin(ctx, "1234");
+        AppLockStore.setBiometricOn(ctx, true);
+        assertTrue(AppLockStore.isBiometricOn(ctx));
+
+        AppLockStore.clearPin(ctx);
+        AppLockStore.setPin(ctx, "1234");
+        assertFalse("выключение кода снимает и отпечаток", AppLockStore.isBiometricOn(ctx));
+    }
+
+    @Test
+    public void resetFailures_liftsLockout() throws Exception {
+        AppLockStore.setPin(ctx, "1234");
+        for (int i = 0; i < 5; i++) AppLockStore.check(ctx, "0000", NOW);
+        AppLockStore.resetFailures(ctx);
+        assertEquals(0, AppLockStore.getLockoutRemainingMs(ctx, NOW));
+        assertEquals(0, AppLockStore.getFailedAttempts(ctx));
+    }
+
+    @Test
+    public void biometricErrors_reasons() {
+        assertEquals("Сначала включите код доступа",
+                BiometricErrors.unavailableReason(false, BiometricManager.BIOMETRIC_SUCCESS));
+        assertNull(BiometricErrors.unavailableReason(true, BiometricManager.BIOMETRIC_SUCCESS));
+        assertNotNull(BiometricErrors.unavailableReason(true, BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE));
+        assertTrue(BiometricErrors.canEnroll(true, BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED));
+        assertFalse(BiometricErrors.canEnroll(false, BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED));
+    }
+
+    @Test
+    public void biometricErrors_lockScreen() {
+        assertNull(BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_NEGATIVE_BUTTON));
+        assertNull(BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_USER_CANCELED));
+        assertNull(BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_CANCELED));
+        assertEquals("Отпечаток временно недоступен — введите код",
+                BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_LOCKOUT));
+        assertEquals("Отпечаток временно недоступен — введите код",
+                BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_LOCKOUT_PERMANENT));
+        assertNotNull(BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_HW_UNAVAILABLE));
     }
 
     // ── Когда запирать ────────────────────────────────────────────────────────

@@ -101,6 +101,8 @@ dependencies {
     // «Синхронизация» → «Автоматическое подключение») — переживает выгрузку
     // процесса и перезагрузку устройства, в отличие от голого Handler/Timer.
     implementation 'androidx.work:work-runtime:2.9.0'
+    // Вход по отпечатку на экране кода доступа (org/docs/TODO_app_lock.md, Фаза 2).
+    implementation 'androidx.biometric:biometric:1.1.0'
 
     testImplementation 'junit:junit:4.12'
     // Настоящая (не заглушка android.jar, которая на unit-тестах кидает

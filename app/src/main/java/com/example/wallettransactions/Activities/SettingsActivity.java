@@ -6,9 +6,14 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import androidx.core.content.ContextCompat;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -24,9 +29,13 @@ import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
 import com.example.wallettransactions.security.AppLock;
 import com.example.wallettransactions.security.AppLockStore;
+import com.example.wallettransactions.security.BiometricErrors;
+import com.example.wallettransactions.security.BiometricKey;
 
 import java.util.Calendar;
 import java.util.Locale;
+
+import javax.crypto.Cipher;
 
 /**
  * Экран «Настройки», открывается с таба «Ещё» нижней панели (MainActivity.navMore).
@@ -34,8 +43,8 @@ import java.util.Locale;
  * Тема оформления, валюта эквивалента и время напоминания реально сохраняются
  * (SharedPreferences) и переживают переоткрытие экрана. «Код доступа» — настоящий
  * (security.AppLock, org/docs/TODO_app_lock.md): включение, выключение и смена идут
- * через {@link LockActivity}. «Вход по отпечатку» и «Напоминание» пока только
- * визуальные: BiometricPrompt — Фаза 2 того же плана, планировщика напоминаний нет.
+ * через {@link LockActivity}. «Вход по отпечатку» — тоже (Фаза 2 плана, п. 3.4).
+ * «Напоминание» пока только визуальное: планировщика напоминаний нет.
  */
 public class SettingsActivity extends AppCompatActivity {
 
@@ -54,6 +63,8 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView chipThemeSystem;
     private FrameLayout switchAccessCode;
     private FrameLayout switchBiometric;
+    private TextView labelBiometric;
+    private BiometricPrompt biometricPrompt;
     private View rowsPinSet;
     private TextView lockTimeoutValue;
     private FrameLayout switchRemind;
@@ -83,6 +94,9 @@ public class SettingsActivity extends AppCompatActivity {
         chipThemeSystem = findViewById(R.id.chipThemeSystem);
         switchAccessCode = findViewById(R.id.switchAccessCode);
         switchBiometric = findViewById(R.id.switchBiometric);
+        labelBiometric = findViewById(R.id.labelBiometric);
+        // В onCreate: BiometricPrompt должен пережить поворот вместе с колбэком.
+        biometricPrompt = new BiometricPrompt(this, ContextCompat.getMainExecutor(this), enableBiometricCallback);
         rowsPinSet = findViewById(R.id.rowsPinSet);
         lockTimeoutValue = findViewById(R.id.lockTimeoutValue);
         switchRemind = findViewById(R.id.switchRemind);
@@ -112,7 +126,6 @@ public class SettingsActivity extends AppCompatActivity {
         if (saved != null) mainCurrencyValue.setText(saved.getIso() + " — " + saved.getName());
 
         paintSecurity();
-        applySwitchState(switchBiometric, false);
         applySwitchState(switchRemind, p.getBoolean(PREF_REMIND_ON, true));
         applySwitchState(switchPickerKeyboard, AppSettings.isPickerKeyboardOn(this));
         paintSortValues();
@@ -268,16 +281,116 @@ public class SettingsActivity extends AppCompatActivity {
         paintSecurity();
     }
 
+    /** Отпечатки могли поменять в настройках телефона, пока этот экран был в фоне. */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        paintSecurity();
+    }
+
     private void paintSecurity() {
         boolean pinSet = AppLockStore.isPinSet(this);
         applySwitchState(switchAccessCode, pinSet);
         rowsPinSet.setVisibility(pinSet ? View.VISIBLE : View.GONE);
         lockTimeoutValue.setText(AppLockStore.getTimeoutTitle(this));
+
+        // Ключ инвалидирован (отпечатки в телефоне изменились) — тумблер не должен врать.
+        if (AppLockStore.isBiometricOn(this) && BiometricKey.cipherOrNull() == null) {
+            AppLockStore.setBiometricOn(this, false);
+        }
+        boolean available = BiometricErrors.unavailableReason(pinSet, canAuthenticate()) == null;
+        applySwitchState(switchBiometric, AppLockStore.isBiometricOn(this));
+        labelBiometric.setTextColor(ContextCompat.getColor(this,
+                available ? R.color.colorTextPrimary : R.color.colorTextHint));
     }
 
-    /** BiometricPrompt — Фаза 2 (org/docs/TODO_app_lock.md). */
+    private int canAuthenticate() {
+        return BiometricManager.from(this).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG);
+    }
+
+    /**
+     * Выключение — сразу и без кода (удобства меньше, защиты не меньше). Включение —
+     * новый ключ Keystore и один успешный отпечаток; недоступен — объяснить почему.
+     */
     public void onToggleBiometric(View view) {
-        Toast.makeText(this, "Вход по отпечатку появится в следующей версии", Toast.LENGTH_SHORT).show();
+        if (AppLockStore.isBiometricOn(this)) {
+            AppLockStore.setBiometricOn(this, false);
+            paintSecurity();
+            return;
+        }
+        boolean pinSet = AppLockStore.isPinSet(this);
+        int can = canAuthenticate();
+        String reason = BiometricErrors.unavailableReason(pinSet, can);
+        if (reason != null) {
+            if (BiometricErrors.canEnroll(pinSet, can)) {
+                new AlertDialog.Builder(this)
+                        .setMessage(reason)
+                        .setPositiveButton("Открыть настройки", (d, w) -> openBiometricEnroll())
+                        .setNegativeButton("Отмена", null)
+                        .show();
+            } else {
+                Toast.makeText(this, reason, Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+
+        Cipher cipher;
+        try {
+            BiometricKey.create();
+            cipher = BiometricKey.cipherOrNull();
+        } catch (Exception e) {
+            cipher = null;
+        }
+        if (cipher == null) {
+            Toast.makeText(this, "Не удалось подготовить вход по отпечатку", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Вход по отпечатку")
+                .setSubtitle("Приложите палец, чтобы включить")
+                .setNegativeButtonText("Отмена")
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                .build();
+        biometricPrompt.authenticate(info, new BiometricPrompt.CryptoObject(cipher));
+    }
+
+    private final BiometricPrompt.AuthenticationCallback enableBiometricCallback =
+            new BiometricPrompt.AuthenticationCallback() {
+                @Override
+                public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                    BiometricPrompt.CryptoObject crypto = result.getCryptoObject();
+                    if (BiometricKey.confirm(crypto != null ? crypto.getCipher() : null)) {
+                        AppLockStore.setBiometricOn(SettingsActivity.this, true);
+                        Toast.makeText(SettingsActivity.this, "Вход по отпечатку включён", Toast.LENGTH_SHORT).show();
+                    } else {
+                        BiometricKey.delete();
+                    }
+                    paintSecurity();
+                }
+
+                @Override
+                public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                    BiometricKey.delete();
+                    paintSecurity();
+                }
+            };
+
+    /** Системный экран добавления отпечатка; возврат оттуда не запирает приложение. */
+    private void openBiometricEnroll() {
+        Intent intent;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            intent = new Intent(Settings.ACTION_BIOMETRIC_ENROLL)
+                    .putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                            BiometricManager.Authenticators.BIOMETRIC_STRONG);
+        } else {
+            intent = new Intent(Settings.ACTION_SECURITY_SETTINGS);
+        }
+        AppLock.allowNextLeave();
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+        }
     }
 
     public void onToggleRemind(View view) {
