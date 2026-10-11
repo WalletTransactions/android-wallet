@@ -64,7 +64,7 @@
 
             <!-- Та же вёрстка блока, что раньше была в activity_settings.xml
                  (SettingsGroupLabel + bg_card, строки с chevron/переключателем). -->
-            <TextView style="@style/SettingsGroupLabel" android:text="СИНХРОНИЗАЦИЯ"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="ИНТЕГРАЦИИ"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -146,6 +146,49 @@
                         android:textSize="13sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextSecondary"
+                        android:layout_marginEnd="6dp"/>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"/>
+                </LinearLayout>
+
+                <View style="@style/MoreRowDivider"/>
+
+                <!-- Telegram-бот для ввода трат — та же связка, что в веб-версии
+                     (MoreActivity.onTelegram, sync.TelegramLinkClient). Значение справа —
+                     подключённый аккаунт, сжимается многоточием, как адрес сервера. -->
+                <LinearLayout
+                    android:id="@+id/rowTelegram"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp"
+                    android:onClick="onTelegram">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:singleLine="true"
+                        android:text="Подключение к Telegram"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextPrimary"/>
+
+                    <TextView
+                        android:id="@+id/telegramStatusValue"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:gravity="end"
+                        android:singleLine="true"
+                        android:ellipsize="middle"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextHint"
                         android:layout_marginEnd="6dp"/>
 
                     <ImageView

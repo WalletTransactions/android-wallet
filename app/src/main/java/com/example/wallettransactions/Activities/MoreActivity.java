@@ -8,6 +8,8 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.text.InputType;
@@ -23,14 +25,20 @@ import com.example.wallettransactions.R;
 import com.example.wallettransactions.TokenStore;
 import com.example.wallettransactions.sync.SyncRunner;
 import com.example.wallettransactions.sync.SyncScheduler;
+import com.example.wallettransactions.sync.TelegramLinkClient;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Экран «Ещё» — таб нижней панели (navMore). Пункты, раньше жившие в боковом
  * drawer'е и меню Toolbar «Операций», теперь здесь ({@code activity_more.xml}).
  *
- * Блок «Синхронизация» — сюда же из «Настроек» (там он раньше стоял пятой
- * группой): статус связки с сервером должен быть на виду сразу на «Ещё», а не
- * спрятан на экране глубже.
+ * Блок «Интеграции» (до 2026-10-11 — «Синхронизация») — сюда же из «Настроек»
+ * (там он раньше стоял пятой группой): статус связки с сервером должен быть на
+ * виду сразу на «Ещё», а не спрятан на экране глубже. В нём же «Подключение к
+ * Telegram» — бот для ввода трат, та же связка, что в веб-версии.
  *
  * Общей шапки (период, фильтр, состояние денег) на этом экране нет — он ничего не
  * показывает за период, — но нижняя панель и её кнопка «+» те же, что на остальных
@@ -48,6 +56,18 @@ public class MoreActivity extends BaseTabActivity {
     private TextView rowAutoConnectInterval;
     private FrameLayout switchNotifyNewOperations;
     private TextView syncNowStatus;
+    private TextView telegramStatusValue;
+
+    /** Подключённые Telegram-аккаунты; {@code null} — ещё не загрузили (или не связаны с сервером). */
+    private List<TelegramLinkClient.Link> telegramLinks;
+    /**
+     * Ушли в Telegram по выданной ссылке и ждём новую связку: бот обменивает код
+     * не мгновенно, поэтому после возврата несколько раз перепроверяем
+     * (см. {@link #pollTelegramAfterReturn}). Значение — id связок до ухода.
+     */
+    private Set<String> telegramIdsBeforeLink;
+    private int telegramPollsLeft;
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
     /** Не даёт запустить второй проход поверх ещё не завершённого (двойной тап). */
     private boolean syncInProgress = false;
@@ -64,6 +84,7 @@ public class MoreActivity extends BaseTabActivity {
         rowAutoConnectInterval = findViewById(R.id.rowAutoConnectInterval);
         syncNowStatus = findViewById(R.id.syncNowStatus);
         switchNotifyNewOperations = findViewById(R.id.switchNotifyNewOperations);
+        telegramStatusValue = findViewById(R.id.telegramStatusValue);
 
         serverUrlValue.setText(AppSettings.getServerBaseUrl(this));
         applySwitchState(switchAutoConnect, AppSettings.isAutoConnectEnabled(this));
@@ -80,6 +101,13 @@ public class MoreActivity extends BaseTabActivity {
         // (нужна повторная авторизация) — экран уже был создан, onCreate не
         // перезапустится.
         refreshLinkStatus();
+        refreshTelegramStatus();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacksAndMessages(null);
     }
 
     @Override
@@ -116,7 +144,7 @@ public class MoreActivity extends BaseTabActivity {
         startActivity(new Intent(this, SettingsActivity.class));
     }
 
-    // ── Синхронизация ───────────────────────────────────────────────────────
+    // ── Интеграции: сервер ──────────────────────────────────────────────────
 
     /**
      * Адрес wallet-gateway (org/docs/TODO_mobile_sync.md, п. 1.4 — LAN-only,
@@ -178,6 +206,187 @@ public class MoreActivity extends BaseTabActivity {
         linkStatusValue.setTextColor(ContextCompat.getColor(this,
                 linked ? R.color.colorTextSecondary : R.color.colorTextHint));
     }
+
+    // ── Интеграции: Telegram ────────────────────────────────────────────────
+
+    private boolean isServerLinked() {
+        return TokenStore.getRefreshToken(this) != null && !AppSettings.isNeedsRelink(this);
+    }
+
+    /** Строка справа: подключённые аккаунты, «Не подключено» или что мешает узнать. */
+    private void refreshTelegramStatus() {
+        if (!isServerLinked()) {
+            telegramLinks = null;
+            setTelegramStatus("Нужна связь с сервером", R.color.colorTextHint);
+            return;
+        }
+        if (telegramLinks == null) setTelegramStatus("…", R.color.colorTextHint);
+        new Thread(() -> {
+            try {
+                List<TelegramLinkClient.Link> links = TelegramLinkClient.listLinks(this);
+                runOnUiThread(() -> onTelegramLinksLoaded(links));
+            } catch (TelegramLinkClient.TelegramException e) {
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    telegramLinks = null;
+                    setTelegramStatus(e.getMessage(), R.color.colorexpanse);
+                });
+            }
+        }).start();
+    }
+
+    private void onTelegramLinksLoaded(List<TelegramLinkClient.Link> links) {
+        if (isFinishing() || isDestroyed()) return;
+        telegramLinks = links;
+        if (links.isEmpty()) {
+            setTelegramStatus("Не подключено", R.color.colorTextHint);
+        } else {
+            StringBuilder names = new StringBuilder();
+            for (TelegramLinkClient.Link l : links) {
+                if (names.length() > 0) names.append(", ");
+                names.append(l.name);
+            }
+            setTelegramStatus(names.toString(), R.color.colorTextSecondary);
+        }
+
+        if (telegramIdsBeforeLink == null) return;
+        for (TelegramLinkClient.Link l : links) {
+            if (!telegramIdsBeforeLink.contains(l.tgUserId)) {
+                telegramIdsBeforeLink = null;
+                handler.removeCallbacksAndMessages(null);
+                Toast.makeText(this, "Telegram подключён: " + l.name, Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
+    }
+
+    private void setTelegramStatus(String text, int colorRes) {
+        telegramStatusValue.setText(text);
+        telegramStatusValue.setTextColor(ContextCompat.getColor(this, colorRes));
+    }
+
+    /**
+     * Не связано — сначала «Связать с сервером» (связка Telegram привязывается к
+     * пользователю сервера). Нет подключённых — сразу ссылка в Telegram. Есть —
+     * диалог: подключить ещё один или отключить.
+     */
+    public void onTelegram(View view) {
+        if (!isServerLinked()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Подключение к Telegram")
+                    .setMessage("Бот привязывается к вашему аккаунту на сервере — сначала свяжите "
+                            + "приложение с сервером.")
+                    .setPositiveButton("Связать", (d, w) -> onLinkServer(view))
+                    .setNegativeButton("Отмена", null)
+                    .show();
+            return;
+        }
+        if (telegramLinks == null) {
+            refreshTelegramStatus();
+            Toast.makeText(this, "Проверяю подключение…", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (telegramLinks.isEmpty()) {
+            startTelegramLink();
+            return;
+        }
+        StringBuilder message = new StringBuilder("Подключено:");
+        for (TelegramLinkClient.Link l : telegramLinks) {
+            message.append("\n").append(l.name);
+            if (l.createdAt.length() >= 10) message.append(" — с ").append(l.createdAt.substring(0, 10));
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Telegram")
+                .setMessage(message.toString())
+                .setPositiveButton("Подключить ещё", (d, w) -> startTelegramLink())
+                .setNeutralButton("Отключить", (d, w) -> pickTelegramToUnlink())
+                .setNegativeButton("Закрыть", null)
+                .show();
+    }
+
+    /**
+     * Одноразовая ссылка {@code t.me/<бот>?start=<код>} (живёт ~10 минут) —
+     * открывает Telegram, тот передаёт код боту, бот создаёт связку. Без
+     * Telegram ссылка откроется в браузере, там же кнопка «Открыть в Telegram».
+     */
+    private void startTelegramLink() {
+        setTelegramStatus("…", R.color.colorTextHint);
+        new Thread(() -> {
+            try {
+                String deepLink = TelegramLinkClient.createLinkCode(this);
+                runOnUiThread(() -> openTelegram(deepLink));
+            } catch (TelegramLinkClient.TelegramException e) {
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
+                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                    refreshTelegramStatus();
+                });
+            }
+        }).start();
+    }
+
+    private void openTelegram(String deepLink) {
+        if (isFinishing() || isDestroyed()) return;
+        Set<String> ids = new HashSet<>();
+        if (telegramLinks != null) for (TelegramLinkClient.Link l : telegramLinks) ids.add(l.tgUserId);
+        telegramIdsBeforeLink = ids;
+        telegramPollsLeft = 5;
+        try {
+            com.example.wallettransactions.security.AppLock.allowNextLeave();
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(deepLink)));
+        } catch (ActivityNotFoundException e) {
+            telegramIdsBeforeLink = null;
+            Toast.makeText(this, "Не найдено приложение, чтобы открыть " + deepLink, Toast.LENGTH_LONG).show();
+            return;
+        }
+        // onResume после возврата сам перепроверит; бот может не успеть — добираем опросом.
+        handler.postDelayed(this::pollTelegramAfterReturn, 3000);
+    }
+
+    private void pollTelegramAfterReturn() {
+        if (telegramIdsBeforeLink == null || telegramPollsLeft-- <= 0) return;
+        refreshTelegramStatus();
+        handler.postDelayed(this::pollTelegramAfterReturn, 3000);
+    }
+
+    private void pickTelegramToUnlink() {
+        if (telegramLinks == null || telegramLinks.isEmpty()) return;
+        if (telegramLinks.size() == 1) {
+            confirmTelegramUnlink(telegramLinks.get(0));
+            return;
+        }
+        String[] names = new String[telegramLinks.size()];
+        for (int i = 0; i < names.length; i++) names[i] = telegramLinks.get(i).name;
+        new AlertDialog.Builder(this)
+                .setTitle("Какой отключить?")
+                .setItems(names, (d, which) -> confirmTelegramUnlink(telegramLinks.get(which)))
+                .show();
+    }
+
+    private void confirmTelegramUnlink(TelegramLinkClient.Link link) {
+        new AlertDialog.Builder(this)
+                .setTitle("Отключить " + link.name + "?")
+                .setMessage("Бот перестанет принимать траты из этого Telegram. Подключить снова можно в любой момент.")
+                .setPositiveButton("Отключить", (d, w) -> new Thread(() -> {
+                    try {
+                        TelegramLinkClient.unlink(this, link.tgUserId);
+                        runOnUiThread(() -> {
+                            if (isFinishing() || isDestroyed()) return;
+                            Toast.makeText(this, "Telegram отключён", Toast.LENGTH_SHORT).show();
+                            refreshTelegramStatus();
+                        });
+                    } catch (TelegramLinkClient.TelegramException e) {
+                        runOnUiThread(() -> {
+                            if (isFinishing() || isDestroyed()) return;
+                            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                        });
+                    }
+                }).start())
+                .setNegativeButton("Отмена", null)
+                .show();
+    }
+
+    // ── Интеграции: синхронизация ───────────────────────────────────────────
 
     /**
      * На Android 13+ уведомление SyncWorker'а о просроченной сессии
