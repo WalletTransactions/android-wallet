@@ -81,6 +81,7 @@ public class FilePickerFragment extends Fragment {
                 Intent chooseFile = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 chooseFile.setType("*/*");
                 chooseFile = Intent.createChooser(chooseFile, "Open file");
+                com.example.wallettransactions.security.AppLock.allowNextLeave();
                 startActivityForResult(chooseFile, PICKFILE_RESULT_CODE);
             }
         });

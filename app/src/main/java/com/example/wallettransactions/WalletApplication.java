@@ -32,6 +32,8 @@ public class WalletApplication extends Application {
         // и тут же пересоздаться в тёмной — заметным миганием.
         AppSettings.applyThemeMode(this);
         installThemeResync();
+        // Код доступа: запирает на холодном старте и после ухода в фон.
+        com.example.wallettransactions.security.AppLock.install(this);
         // Обычно не нужен — androidx.work сам переживает выгрузку процесса
         // и перезагрузку устройства (расписание в его собственной базе),
         // это просто страховка на случай, если оно потерялось. Не трогает

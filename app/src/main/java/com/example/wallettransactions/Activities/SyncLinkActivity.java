@@ -131,6 +131,8 @@ public class SyncLinkActivity extends AppCompatActivity {
                 .addCredentialOption(option)
                 .build();
 
+        // Выбор аккаунта — чужой экран: возврат из него не должен запирать (security.AppLock).
+        com.example.wallettransactions.security.AppLock.allowNextLeave();
         CredentialManager.create(this).getCredentialAsync(
                 this,
                 request,

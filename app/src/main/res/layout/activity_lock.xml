@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран кода доступа (LockActivity): замок, проверка текущего кода и установка нового.
+  Клавиатура — те же клавиши KeypadKey, что на экране операции, только выше. Левая
+  нижняя клавиша — «ОК» при установке кода (длина 4–6 выбирается этим), иначе пустая.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:background="@color/colorBackground"
+    android:paddingLeft="21dp"
+    android:paddingRight="21dp"
+    android:paddingBottom="24dp">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <ImageView
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:src="@mipmap/main_icon"
+        android:contentDescription="@null"/>
+
+    <TextView
+        android:id="@+id/lockTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textSize="22sp"
+        android:fontFamily="@font/caprasimo"
+        android:textColor="@color/colorTextPrimary"/>
+
+    <TextView
+        android:id="@+id/lockMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:minLines="2"
+        android:gravity="center"
+        android:textSize="13.5sp"
+        android:textColor="@color/colorTextSecondary"/>
+
+    <LinearLayout
+        android:id="@+id/lockDots"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <LinearLayout
+        android:id="@+id/lockKeypad"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <TextView style="@style/LockKey" android:tag="1" android:text="1"/>
+            <TextView style="@style/LockKey" android:tag="2" android:text="2"/>
+            <TextView style="@style/LockKey" android:tag="3" android:text="3"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <TextView style="@style/LockKey" android:tag="4" android:text="4"/>
+            <TextView style="@style/LockKey" android:tag="5" android:text="5"/>
+            <TextView style="@style/LockKey" android:tag="6" android:text="6"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <TextView style="@style/LockKey" android:tag="7" android:text="7"/>
+            <TextView style="@style/LockKey" android:tag="8" android:text="8"/>
+            <TextView style="@style/LockKey" android:tag="9" android:text="9"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/lockKeyOk"
+                style="@style/LockKey"
+                android:tag="ok"
+                android:text="ОК"
+                android:textSize="17sp"
+                android:textColor="@color/colorPrimary"/>
+            <TextView style="@style/LockKey" android:tag="0" android:text="0"/>
+            <ImageView
+                style="@style/LockKey"
+                android:padding="16dp"
+                android:scaleType="fitCenter"
+                android:contentDescription="Стереть"
+                android:src="@drawable/ic_backspace"
+                android:tag="del"/>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

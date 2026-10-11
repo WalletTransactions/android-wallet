@@ -74,6 +74,11 @@
                 android:theme="@style/AppTheme.NoActionBar"
                 android:exported="false">
         </activity>
+        <!-- Код доступа (security.AppLock). Без анимации: замок должен появиться сразу,
+             а не выезжать поверх содержимого, которое он прячет. -->
+        <activity android:name=".Activities.LockActivity"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:exported="false"/>
         <activity android:name=".Activities.RecurringOperationListActivity"
                 android:theme="@style/AppTheme.NoActionBar"
                 android:exported="false">

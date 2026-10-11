@@ -155,6 +155,7 @@ public class MoreActivity extends BaseTabActivity {
     public void onOpenWeb(View view) {
         String url = AppSettings.getServerBaseUrl(this);
         try {
+            com.example.wallettransactions.security.AppLock.allowNextLeave();
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (ActivityNotFoundException e) {
             Toast.makeText(this, "Не найден браузер, чтобы открыть " + url, Toast.LENGTH_LONG).show();

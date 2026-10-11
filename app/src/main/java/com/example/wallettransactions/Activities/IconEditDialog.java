@@ -176,6 +176,7 @@ public class IconEditDialog {
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
         try {
+            com.example.wallettransactions.security.AppLock.allowNextLeave();
             ((Activity) context).startActivityForResult(intent, REQUEST_GALLERY);
         } catch (Exception e) {
             Toast.makeText(context, "Не найдено приложение для выбора изображения",

@@ -160,6 +160,7 @@ public class ExportActivity extends AppCompatActivity {
         shareIntent.setType(isJson ? "application/json" : "application/octet-stream");
         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
+        com.example.wallettransactions.security.AppLock.allowNextLeave();
         startActivity(Intent.createChooser(shareIntent, isJson ? "Поделиться JSON-экспортом" : "Поделиться файлом БД"));
     }
 

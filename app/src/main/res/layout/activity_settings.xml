@@ -298,6 +298,89 @@
                     </FrameLayout>
                 </LinearLayout>
 
+                <!-- Видны только при заданном коде (SettingsActivity.paintSecurity). -->
+                <LinearLayout
+                    android:id="@+id/rowsPinSet"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/colorDivider"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp"
+                        android:onClick="onChangeAccessCode">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Сменить код"
+                            android:textSize="14.5sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/colorTextPrimary"/>
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_chevron_right"/>
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/colorDivider"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="16dp"
+                        android:onClick="onPickLockTimeout">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="12dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Блокировать"
+                                android:textSize="14.5sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/colorTextPrimary"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:text="после ухода из приложения"
+                                android:textSize="12.5sp"
+                                android:textColor="@color/colorTextSecondary"/>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/lockTimeoutValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/colorexpanse"
+                            android:layout_marginEnd="6dp"/>
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_chevron_right"/>
+                    </LinearLayout>
+                </LinearLayout>
+
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/colorDivider"/>
 
                 <LinearLayout

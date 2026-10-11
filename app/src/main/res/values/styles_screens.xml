@@ -68,6 +68,13 @@
         <item name="android:scaleType">fitCenter</item>
     </style>
 
+    <!-- Клавиша экрана кода доступа (activity_lock.xml): выше — клавиатура там одна на экране. -->
+    <style name="LockKey" parent="KeypadKey">
+        <item name="android:layout_height">62dp</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:onClick">onLockKey</item>
+    </style>
+
     <!-- Экран правила повторяющейся операции (activity_recurring_operation.xml). -->
     <!-- Строка-выбор: счёт, частота, шаг — карточка с значением и шевроном. -->
     <style name="RecurringPickerRow">

@@ -22,6 +22,8 @@ import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
 import com.example.wallettransactions.PickerSort;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
+import com.example.wallettransactions.security.AppLock;
+import com.example.wallettransactions.security.AppLockStore;
 
 import java.util.Calendar;
 import java.util.Locale;
@@ -30,17 +32,18 @@ import java.util.Locale;
  * Экран «Настройки», открывается с таба «Ещё» нижней панели (MainActivity.navMore).
  *
  * Тема оформления, валюта эквивалента и время напоминания реально сохраняются
- * (SharedPreferences) и переживают переоткрытие экрана. Переключатели «Код доступа»/
- * «Вход по отпечатку»/«Напоминание» пока только визуальные — они меняют вид и тоже
- * сохраняют своё состояние, но ничего не включают на самом деле: PIN-экрана,
- * BiometricPrompt и планировщика уведомлений в проекте нет — это отдельная, более
- * крупная задача, если понадобится настоящая защита входа и напоминания.
+ * (SharedPreferences) и переживают переоткрытие экрана. «Код доступа» — настоящий
+ * (security.AppLock, org/docs/TODO_app_lock.md): включение, выключение и смена идут
+ * через {@link LockActivity}. «Вход по отпечатку» и «Напоминание» пока только
+ * визуальные: BiometricPrompt — Фаза 2 того же плана, планировщика напоминаний нет.
  */
 public class SettingsActivity extends AppCompatActivity {
 
     private static final String PREFS_NAME = "settings";
-    private static final String PREF_ACCESS_CODE_ON = "accessCodeOn";
-    private static final String PREF_BIOMETRIC_ON = "biometricOn";
+    private static final int REQUEST_PIN_ENABLE = 1;
+    private static final int REQUEST_PIN_DISABLE = 2;
+    private static final int REQUEST_PIN_CHANGE_VERIFY = 3;
+    private static final int REQUEST_PIN_CHANGE_SET = 4;
     private static final String PREF_REMIND_ON = "remindOn";
     private static final String PREF_REMIND_HOUR = "remindHour";
     private static final String PREF_REMIND_MINUTE = "remindMinute";
@@ -51,6 +54,8 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView chipThemeSystem;
     private FrameLayout switchAccessCode;
     private FrameLayout switchBiometric;
+    private View rowsPinSet;
+    private TextView lockTimeoutValue;
     private FrameLayout switchRemind;
     private FrameLayout switchPickerKeyboard;
     private TextView walletSortValue;
@@ -78,6 +83,8 @@ public class SettingsActivity extends AppCompatActivity {
         chipThemeSystem = findViewById(R.id.chipThemeSystem);
         switchAccessCode = findViewById(R.id.switchAccessCode);
         switchBiometric = findViewById(R.id.switchBiometric);
+        rowsPinSet = findViewById(R.id.rowsPinSet);
+        lockTimeoutValue = findViewById(R.id.lockTimeoutValue);
         switchRemind = findViewById(R.id.switchRemind);
         switchPickerKeyboard = findViewById(R.id.switchPickerKeyboard);
         walletSortValue = findViewById(R.id.walletSortValue);
@@ -104,8 +111,8 @@ public class SettingsActivity extends AppCompatActivity {
                 ? Singleton.instance.getCurrencyList(this).getCurrencyByISO(savedIso) : null;
         if (saved != null) mainCurrencyValue.setText(saved.getIso() + " — " + saved.getName());
 
-        applySwitchState(switchAccessCode, p.getBoolean(PREF_ACCESS_CODE_ON, false));
-        applySwitchState(switchBiometric, p.getBoolean(PREF_BIOMETRIC_ON, false));
+        paintSecurity();
+        applySwitchState(switchBiometric, false);
         applySwitchState(switchRemind, p.getBoolean(PREF_REMIND_ON, true));
         applySwitchState(switchPickerKeyboard, AppSettings.isPickerKeyboardOn(this));
         paintSortValues();
@@ -204,14 +211,73 @@ public class SettingsActivity extends AppCompatActivity {
         return "тапа";
     }
 
+    // ── Код доступа ───────────────────────────────────────────────────────────
+
+    /** Включение — придумать код; выключение — сначала текущий код. Тумблер меняет только результат. */
     public void onToggleAccessCode(View view) {
-        boolean on = toggleSwitch(switchAccessCode);
-        prefs().edit().putBoolean(PREF_ACCESS_CODE_ON, on).apply();
+        if (AppLockStore.isPinSet(this)) {
+            startActivityForResult(LockActivity.verifyIntent(this), REQUEST_PIN_DISABLE);
+        } else {
+            startActivityForResult(LockActivity.setIntent(this), REQUEST_PIN_ENABLE);
+        }
     }
 
+    public void onChangeAccessCode(View view) {
+        startActivityForResult(LockActivity.verifyIntent(this), REQUEST_PIN_CHANGE_VERIFY);
+    }
+
+    public void onPickLockTimeout(View view) {
+        long current = AppLockStore.getTimeoutMs(this);
+        int checked = 1;
+        for (int i = 0; i < AppLockStore.TIMEOUTS_MS.length; i++) {
+            if (AppLockStore.TIMEOUTS_MS[i] == current) checked = i;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Блокировать")
+                .setSingleChoiceItems(AppLockStore.TIMEOUT_TITLES, checked, (d, which) -> {
+                    AppLockStore.setTimeoutMs(this, AppLockStore.TIMEOUTS_MS[which]);
+                    paintSecurity();
+                    d.dismiss();
+                })
+                .show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK) return;
+        switch (requestCode) {
+            case REQUEST_PIN_ENABLE:
+                Toast.makeText(this, "Код доступа включён", Toast.LENGTH_SHORT).show();
+                break;
+            case REQUEST_PIN_DISABLE:
+                AppLockStore.clearPin(this);
+                AppLock.unlock();
+                Toast.makeText(this, "Код доступа выключен", Toast.LENGTH_SHORT).show();
+                break;
+            case REQUEST_PIN_CHANGE_VERIFY:
+                // Старый код остаётся, пока новый не подтверждён: отмена на любом шаге ничего не меняет.
+                startActivityForResult(LockActivity.setIntent(this), REQUEST_PIN_CHANGE_SET);
+                return;
+            case REQUEST_PIN_CHANGE_SET:
+                Toast.makeText(this, "Код изменён", Toast.LENGTH_SHORT).show();
+                break;
+            default:
+                return;
+        }
+        paintSecurity();
+    }
+
+    private void paintSecurity() {
+        boolean pinSet = AppLockStore.isPinSet(this);
+        applySwitchState(switchAccessCode, pinSet);
+        rowsPinSet.setVisibility(pinSet ? View.VISIBLE : View.GONE);
+        lockTimeoutValue.setText(AppLockStore.getTimeoutTitle(this));
+    }
+
+    /** BiometricPrompt — Фаза 2 (org/docs/TODO_app_lock.md). */
     public void onToggleBiometric(View view) {
-        boolean on = toggleSwitch(switchBiometric);
-        prefs().edit().putBoolean(PREF_BIOMETRIC_ON, on).apply();
+        Toast.makeText(this, "Вход по отпечатку появится в следующей версии", Toast.LENGTH_SHORT).show();
     }
 
     public void onToggleRemind(View view) {
@@ -263,6 +329,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     public void onRateApp(View view) {
         String pkg = getPackageName();
+        AppLock.allowNextLeave();
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + pkg)));
         } catch (ActivityNotFoundException e) {
