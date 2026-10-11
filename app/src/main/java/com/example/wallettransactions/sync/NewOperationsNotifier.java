@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
+import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
@@ -42,6 +43,7 @@ import java.util.List;
  */
 public final class NewOperationsNotifier {
 
+    private static final String TAG = "NewOperationsNotifier";
     private static final String CHANNEL_ID = "new_operations";
     // 1 занят уведомлением AuthSession о просроченной сессии.
     private static final int NOTIFICATION_ID = 2;
@@ -55,20 +57,30 @@ public final class NewOperationsNotifier {
      * @param recurringIds _id операций, только что заведённых по периодическим правилам
      */
     public static void notifyIfAny(Context ctx, SyncLog log, List<Long> recurringIds) {
-        if (!AppSettings.isNotifyNewOperationsEnabled(ctx)) return;
+        // Каждый отказ — строкой в лог: иначе "уведомления не было" не отличить
+        // от "синк не дошёл до сюда" (adb logcat -s NewOperationsNotifier).
+        if (!AppSettings.isNotifyNewOperationsEnabled(ctx)) { Log.i(TAG, "skip: выключено в настройках"); return; }
         List<String> pulledUuids = log != null && !log.isFullReload()
                 ? log.getNewOperationUuids() : Collections.emptyList();
-        if (pulledUuids.isEmpty() && recurringIds.isEmpty()) return;
+        if (pulledUuids.isEmpty() && recurringIds.isEmpty()) {
+            Log.i(TAG, "skip: новых нет" + (log != null && log.isFullReload() ? " (полная перезагрузка)" : ""));
+            return;
+        }
         // Приложение на экране — новое и так видно в списке.
-        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) return;
+        if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
+            Log.i(TAG, "skip: приложение на экране, новых " + (pulledUuids.size() + recurringIds.size()));
+            return;
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 && ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.POST_NOTIFICATIONS)
                         != PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG, "skip: нет разрешения POST_NOTIFICATIONS");
             return;
         }
 
         List<String> lines = describe(ctx, pulledUuids, recurringIds);
-        if (lines.isEmpty()) return;
+        if (lines.isEmpty()) { Log.i(TAG, "skip: все новые — связки или удалены"); return; }
+        Log.i(TAG, "notify: " + lines.size());
 
         NotificationManager manager = ctx.getSystemService(NotificationManager.class);
         if (manager == null) return;

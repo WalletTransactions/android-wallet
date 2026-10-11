@@ -168,8 +168,8 @@
                 </FrameLayout>
             </LinearLayout>
 
-            <!-- Порядок строк на экране выбора — то же значение, что меняет кнопка «⇅»
-                 в шапке самого экрана (AppSettings.getPickerSort). -->
+            <!-- Порядок, с которым открывается экран выбора (AppSettings.getPickerSort).
+                 Кнопка «⇅» в его шапке меняет порядок только на этот раз, сюда не пишет. -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

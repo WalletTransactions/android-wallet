@@ -776,7 +776,9 @@ final class SyncEngine {
                 Log.w(TAG, "pull: курсор впереди сервера (ledger=" + ledgerSeq + ", reference="
                         + referenceSeq + ") — поток начат заново");
                 log.healed("Позиция синхронизации разошлась с сервером — загружаю данные заново");
-                log.fullReload();
+                // Операции — только в потоке леджера; заново пришедшие справочники
+                // (валюты, курсы, иконки) не делают «новыми» все операции.
+                if (result.ledger.reset) log.fullReload();
             }
 
             boolean advanced = result.ledger.nextSeq != ledgerSeq || result.reference.nextSeq != referenceSeq;

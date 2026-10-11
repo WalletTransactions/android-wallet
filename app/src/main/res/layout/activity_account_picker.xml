@@ -47,8 +47,8 @@
             android:textColor="@color/colorTextPrimary"
             android:textSize="20sp"/>
 
-        <!-- Порядок строк (AccountPickerActivity.onPickSort): у кошельков и категорий
-             свой, подпись — режим видимого списка. Тот же вид, что у «По дате» в ленте. -->
+        <!-- Порядок строк (AccountPickerActivity.onPickSort): тап — следующий режим
+             видимого списка по кругу, подпись — текущий. Тот же вид, что у «По дате» в ленте. -->
         <TextView
             android:id="@+id/btnSort"
             android:layout_width="wrap_content"

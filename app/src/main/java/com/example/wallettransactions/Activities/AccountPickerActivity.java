@@ -7,7 +7,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.PopupMenu;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -64,8 +63,9 @@ import java.util.Map;
  * В двух последних случаях переключатель скрыт: слот операции уже знает свой тип,
  * и подменять его выбором из другого списка нельзя.
  *
- * Порядок строк выбирается кнопкой в шапке ({@link PickerSort}) отдельно для кошельков
- * и для категорий и сразу запоминается в настройках. «По частоте» учитывает счёт из
+ * Порядок строк ({@link PickerSort}) у кошельков и категорий свой: на входе — из
+ * «Настроек», кнопка в шапке переключает его по кругу только на этот раз, в
+ * настройки не сохраняя. «По частоте» учитывает счёт из
  * второго слота операции ({@link #cPairAccountId}), если это кошелёк: сверху то, что
  * чаще всего шло именно с ним, ниже — по общей частоте.
  */
@@ -127,6 +127,9 @@ public class AccountPickerActivity extends AppCompatActivity {
     private int mCurrentAccountId;
     /** Только кошелёк: с категорией в паре частота ничего не говорит о выборе кошелька. */
     private int mPairWalletId;
+    /** Порядок списков: на входе — из «Настроек», кнопка в шапке меняет только здесь. */
+    private PickerSort mWalletSort;
+    private PickerSort mCategorySort;
     /** Читается из базы при первой сортировке по частоте; null — ещё не читали. */
     private Map<Integer, WalletDbLoader.AccountUsage> mUsage;
 
@@ -151,6 +154,9 @@ public class AccountPickerActivity extends AppCompatActivity {
         int pairId = getIntent().getIntExtra(cPairAccountId, 0);
         AccountItem pair = pairId > 0 ? Singleton.instance.getAccounts(this).getAccountById(pairId) : null;
         mPairWalletId = pair != null && pair.isOperatingAccount() ? pairId : 0;
+
+        mWalletSort   = AppSettings.getPickerSort(this, true);
+        mCategorySort = AppSettings.getPickerSort(this, false);
 
         findViewById(R.id.btnAddAccountRow).setVisibility(mCatalogMode ? View.VISIBLE : View.GONE);
 
@@ -318,39 +324,32 @@ public class AccountPickerActivity extends AppCompatActivity {
 
     // ── Сортировка ────────────────────────────────────────────────────────────
 
-    /** Попап у кнопки в шапке: режимы текущего списка, выбранный отмечен. */
+    /**
+     * Тап по кнопке в шапке — следующий режим видимого списка по кругу. Только на этот
+     * раз: в настройки не пишется, следующий экран выбора снова откроется с режимом
+     * из «Настроек».
+     */
     public void onPickSort(View view) {
         PickerSort[] modes = mShowWallets ? PickerSort.WALLET_MODES : PickerSort.CATEGORY_MODES;
-        PickerSort current = AppSettings.getPickerSort(this, mShowWallets);
+        PickerSort next = modes[(PickerSort.indexOf(modes, currentSort()) + 1) % modes.length];
+        if (mShowWallets) mWalletSort = next; else mCategorySort = next;
 
-        PopupMenu popup = new PopupMenu(this, view);
-        for (int i = 0; i < modes.length; i++) {
-            popup.getMenu().add(0, i, i, modes[i].getTitle())
-                    .setCheckable(true)
-                    .setChecked(modes[i] == current);
-        }
-        popup.getMenu().setGroupCheckable(0, true, true);
+        sortRows();
+        paintSortButton();
+        applyFilters();
+    }
 
-        popup.setOnMenuItemClickListener(item -> {
-            PickerSort picked = modes[item.getItemId()];
-            if (picked == current) return true;
-            AppSettings.setPickerSort(this, mShowWallets, picked);
-            sortRows();
-            paintSortButton();
-            applyFilters();
-            return true;
-        });
-        popup.show();
+    private PickerSort currentSort() {
+        return mShowWallets ? mWalletSort : mCategorySort;
     }
 
     private void paintSortButton() {
-        mBtnSort.setText("⇅ " + AppSettings.getPickerSort(this, mShowWallets).getTitle());
+        mBtnSort.setText("⇅ " + currentSort().getTitle());
     }
 
-    /** Оба списка — каждый своим режимом из настроек. */
     private void sortRows() {
-        mWalletRows.sort(comparator(AppSettings.getPickerSort(this, true)));
-        mCategoryRows.sort(comparator(AppSettings.getPickerSort(this, false)));
+        mWalletRows.sort(comparator(mWalletSort));
+        mCategoryRows.sort(comparator(mCategorySort));
     }
 
     private Comparator<Row> comparator(PickerSort sort) {
