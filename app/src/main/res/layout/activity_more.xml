@@ -81,10 +81,11 @@
                     android:padding="16dp"
                     android:onClick="onPickServerUrl">
 
+                    <!-- Подпись — во всю длину, сжимается значение: длинный адрес рвал подпись на две строки. Многоточие посередине — видно и начало адреса, и порт. -->
                     <TextView
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:singleLine="true"
                         android:text="Адрес сервера"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
@@ -92,8 +93,13 @@
 
                     <TextView
                         android:id="@+id/serverUrlValue"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:gravity="end"
+                        android:singleLine="true"
+                        android:ellipsize="middle"
                         android:text="http://localhost:8090/"
                         android:textSize="13sp"
                         android:textStyle="bold"
@@ -117,10 +123,11 @@
                     android:padding="16dp"
                     android:onClick="onLinkServer">
 
+                    <!-- Как у «Адрес сервера» выше: длинный email сжимается многоточием, а не рвёт подпись. -->
                     <TextView
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:singleLine="true"
                         android:text="Связать с сервером"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
@@ -128,8 +135,13 @@
 
                     <TextView
                         android:id="@+id/linkStatusValue"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:gravity="end"
+                        android:singleLine="true"
+                        android:ellipsize="middle"
                         android:text="Не подключено"
                         android:textSize="13sp"
                         android:textStyle="bold"
