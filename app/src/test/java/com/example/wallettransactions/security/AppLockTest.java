@@ -28,8 +28,8 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Код доступа и отпечаток (org/docs/TODO_app_lock.md, Фазы 1–2): хэш, паузы после
- * ошибок, флаг отпечатка, когда запирать. AndroidKeyStore под Robolectric нет — ключ Keystore подменён обычным HMAC.
+ * Код доступа, отпечаток и «Забыли код?» (org/docs/TODO_app_lock.md): хэш, паузы
+ * после ошибок, флаг отпечатка, сброс кода, когда запирать. AndroidKeyStore под Robolectric нет — ключ Keystore подменён обычным HMAC.
  */
 @RunWith(RobolectricTestRunner.class)
 public class AppLockTest {
@@ -203,6 +203,32 @@ public class AppLockTest {
         AppLockStore.setHideInRecents(ctx, false);
         assertFalse(AppLockStore.isHideInRecents(ctx));
         AppLockStore.setHideInRecents(ctx, true);
+    }
+
+    // ── Забыли код ────────────────────────────────────────────────────────────
+
+    @Test
+    public void forgotPin_resetClearsPinBiometricAndLock() throws Exception {
+        AppLockStore.setPin(ctx, "1234");
+        AppLockStore.setBiometricOn(ctx, true);
+        for (int i = 0; i < 5; i++) AppLockStore.check(ctx, "0000", NOW);
+        AppLock.resetForTest(true);
+
+        ForgotPin.resetAndUnlock(ctx);
+
+        assertFalse(AppLock.isLocked());
+        assertFalse(AppLockStore.isPinSet(ctx));
+        assertFalse(AppLockStore.isBiometricOn(ctx));
+        assertEquals(0, AppLockStore.getLockoutRemainingMs(ctx, NOW));
+        // Новый код — с чистого листа, старый отпечаток не воскресает.
+        AppLockStore.setPin(ctx, "5678");
+        assertFalse(AppLockStore.isBiometricOn(ctx));
+    }
+
+    @Test
+    public void forgotPin_wipeWarning_dependsOnServerLink() {
+        assertTrue(ForgotPin.wipeWarning(true).contains("Связать с сервером"));
+        assertTrue(ForgotPin.wipeWarning(false).contains("восстановить их будет неоткуда"));
     }
 
     // ── Когда запирать ────────────────────────────────────────────────────────
