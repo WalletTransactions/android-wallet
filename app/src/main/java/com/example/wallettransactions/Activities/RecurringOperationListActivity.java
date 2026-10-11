@@ -25,6 +25,7 @@ import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.DataItems.Operations.RecurringOperation;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
+import com.example.wallettransactions.sync.RecurringWorker;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -98,6 +99,7 @@ public class RecurringOperationListActivity extends AppCompatActivity {
                 .setMessage("Уже созданные операции останутся, новые создаваться не будут.")
                 .setPositiveButton("Удалить", (d, w) -> {
                     RecurringOperationsDb.delete(db(), r.id);
+                    RecurringWorker.kick(this);
                     reload();
                 })
                 .setNegativeButton("Отмена", null)
@@ -107,10 +109,11 @@ public class RecurringOperationListActivity extends AppCompatActivity {
     /**
      * Включение — пауза снимается без досоздания пропущенного за время паузы
      * (см. {@link RecurringOperationsDb#setActive}); операции, наступающие с этого
-     * момента, заведёт генератор при следующем открытии таба.
+     * момента, заведёт {@link RecurringWorker} (или открытие таба, что раньше).
      */
     private void toggleActive(RecurringOperation r) {
         RecurringOperationsDb.setActive(db(), r, !r.isActive);
+        RecurringWorker.kick(this);
         mAdapter.notifyDataSetChanged();
     }
 

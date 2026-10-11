@@ -27,6 +27,7 @@ import com.example.wallettransactions.DataItems.Operations.RecurringOperation;
 import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
+import com.example.wallettransactions.sync.RecurringWorker;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -565,6 +566,7 @@ public class RecurringOperationActivity extends AppCompatActivity {
         }
 
         int created = RecurringOperationsDb.generateDue(db, LocalDateTime.now());
+        RecurringWorker.kick(this);
         if (created > 0) {
             PeriodFilterState.get(this).markDataChanged();
             Toast.makeText(this, "Создано операций: " + created, Toast.LENGTH_SHORT).show();
@@ -579,6 +581,7 @@ public class RecurringOperationActivity extends AppCompatActivity {
                 .setMessage("Уже созданные операции останутся, новые создаваться не будут.")
                 .setPositiveButton("Удалить", (d, w) -> {
                     RecurringOperationsDb.delete(db(), mRule.id);
+                    RecurringWorker.kick(this);
                     setResult(RESULT_OK);
                     finish();
                 })

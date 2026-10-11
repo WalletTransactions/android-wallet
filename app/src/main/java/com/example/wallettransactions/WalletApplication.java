@@ -37,6 +37,8 @@ public class WalletApplication extends Application {
         // это просто страховка на случай, если оно потерялось. Не трогает
         // уже идущее расписание (см. SyncWorker/SyncScheduler).
         com.example.wallettransactions.sync.SyncScheduler.ensureScheduled(this);
+        // Периодические операции в фоне — цепочка задач, та же страховка.
+        com.example.wallettransactions.sync.RecurringWorker.ensureScheduled(this);
     }
 
     // ── Тема ───────────────────────────────────────────────────────────────────
