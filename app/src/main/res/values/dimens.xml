@@ -10,4 +10,6 @@
     <dimen name="app_bar_height">200dp</dimen>
     <dimen name="item_width">200dp</dimen>
     <dimen name="text_margin">16dp</dimen>
+    <!-- Клавиша экрана кода (стиль LockKey); в горизонтальной ориентации ниже — values-land. -->
+    <dimen name="lock_key_height">62dp</dimen>
 </resources>

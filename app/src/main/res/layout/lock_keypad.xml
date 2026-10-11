@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Клавиатура экрана кода (LockActivity) — общая для портретной и горизонтальной разметки. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/lockKeypad"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView style="@style/LockKey" android:tag="1" android:text="1"/>
+        <TextView style="@style/LockKey" android:tag="2" android:text="2"/>
+        <TextView style="@style/LockKey" android:tag="3" android:text="3"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView style="@style/LockKey" android:tag="4" android:text="4"/>
+        <TextView style="@style/LockKey" android:tag="5" android:text="5"/>
+        <TextView style="@style/LockKey" android:tag="6" android:text="6"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView style="@style/LockKey" android:tag="7" android:text="7"/>
+        <TextView style="@style/LockKey" android:tag="8" android:text="8"/>
+        <TextView style="@style/LockKey" android:tag="9" android:text="9"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <FrameLayout
+            android:id="@+id/lockKeyLeft"
+            style="@style/LockKey"
+            android:tag="left">
+            <TextView
+                android:id="@+id/lockKeyOk"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="ОК"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorPrimary"/>
+            <ImageView
+                android:id="@+id/lockKeyBio"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="14dp"
+                android:scaleType="fitCenter"
+                android:contentDescription="Вход по отпечатку"
+                android:src="@drawable/ic_fingerprint"/>
+        </FrameLayout>
+        <TextView style="@style/LockKey" android:tag="0" android:text="0"/>
+        <ImageView
+            style="@style/LockKey"
+            android:padding="16dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="Стереть"
+            android:src="@drawable/ic_backspace"
+            android:tag="del"/>
+    </LinearLayout>
+</LinearLayout>

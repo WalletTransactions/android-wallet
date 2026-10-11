@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Четыре ряда клавиш должны влезть в высоту телефона, лежащего боком. -->
+    <dimen name="lock_key_height">52dp</dimen>
+</resources>
