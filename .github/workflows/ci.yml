@@ -57,11 +57,14 @@ jobs:
 
       # versionCode растёт при каждой сборке (app/version.properties) — на раннере
       # он свой, поэтому в имени артефакта ещё и короткий sha коммита.
+      # В pull request github.sha — служебный merge-коммит, а нужен коммит ветки.
       - name: APK name
         id: apk
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           code=$(grep '^VERSION_CODE=' app/version.properties | cut -d= -f2)
-          echo "name=wallet-debug-1.0.${code}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "name=wallet-debug-1.0.${code}-${HEAD_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
