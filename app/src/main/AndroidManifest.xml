@@ -11,6 +11,14 @@
          (см. IntegrationsActivity.onToggleAutoConnect). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
+    <!-- Экран «ИИ»: кнопка микрофона видна, только если есть системное
+         распознавание речи; с Android 11 без <queries> resolveActivity его не найдёт. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH"/>
+        </intent>
+    </queries>
+
     <!-- LAN-only на этом этапе, без TLS (org/docs/TODO_mobile_sync.md, п. 1.4
          и "Открытые вопросы") — адрес сервера вводится вручную (экран
          «Ещё») и может быть любым LAN IP, поэтому точечный
@@ -158,6 +166,23 @@
                 android:exported="false"/>
 
         <!-- Сервер, Google, Telegram, синхронизация — «Ещё» → «Интеграции». -->
+        <!-- Трата своими словами через wallet-ai (openspec changes/add-ai-client).
+             Принимает «Поделиться» текстом: сообщение банка из Viber/SMS попадает
+             в поле, разбор пользователь запускает сам. configChanges — поворот не
+             должен пересоздавать экран: ожидание разбора привязано к нему. -->
+        <activity android:name=".Activities.AiActivity"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:label="Кошелёк"
+                android:windowSoftInputMode="adjustResize"
+                android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+                android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+        </activity>
+
         <activity android:name=".Activities.IntegrationsActivity"
                 android:theme="@style/AppTheme.NoActionBar"
                 android:exported="false"/>

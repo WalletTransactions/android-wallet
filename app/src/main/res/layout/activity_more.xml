@@ -61,6 +61,42 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- Трата своими словами через wallet-ai (AiActivity). Активен, только если
+                 есть вход в аккаунт и сервер говорит, что ИИ включён (MoreActivity.refreshAiRow);
+                 иначе неактивен, причина — подписью. -->
+            <LinearLayout
+                android:id="@+id/rowAiCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:layout_marginBottom="14dp">
+
+                <LinearLayout android:id="@+id/rowAi" style="@style/MoreRow" android:onClick="onMoreAi">
+                    <TextView style="@style/MoreRowGlyph" android:text="✦"/>
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/MoreRowLabel"
+                            android:layout_width="match_parent"
+                            android:layout_weight="0"
+                            android:text="ИИ"/>
+                        <TextView
+                            android:id="@+id/rowAiHint"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="13dp"
+                            android:textSize="12.5sp"
+                            android:textColor="@color/colorTextSecondary"
+                            android:text="Трата своими словами"/>
+                    </LinearLayout>
+                    <ImageView style="@style/MoreRowChevron"/>
+                </LinearLayout>
+            </LinearLayout>
+
             <!-- Сервер, Google, Telegram, веб-версия, синхронизация — отдельный экран
                  «Интеграции» (IntegrationsActivity), до 2026-10-11 стояли блоком здесь. -->
             <LinearLayout

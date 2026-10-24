@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран «ИИ» (AiActivity): трата своими словами через wallet-ai — поле ввода,
+  карточка черновика, запись в базу телефона. Открывается с «Ещё» и через
+  «Поделиться» текстом. Экран «вглубь», без нижней панели — шапка как у
+  «Интеграций» (activity_integrations.xml). Поведение — openspec
+  changes/add-ai-client, spec ai-expense-entry.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="6dp">
+
+        <ImageButton
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:src="@drawable/ic_nav_back"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="ИИ"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/caprasimo"
+            android:textColor="@color/colorTextPrimary"/>
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/toolbar"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingTop="10dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="24dp">
+
+            <!-- Ввод -->
+            <LinearLayout style="@style/AiCard">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Трата своими словами"
+                    android:textSize="14.5sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorTextPrimary"/>
+
+                <EditText
+                    android:id="@+id/editText"
+                    style="@style/AiValue"
+                    android:layout_marginTop="10dp"
+                    android:minLines="3"
+                    android:gravity="top|start"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:hint="Например: вчера такси 450 с тинькоффа"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="6dp">
+
+                    <TextView
+                        android:id="@+id/tvCounter"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="0 / 500"
+                        android:textSize="12.5sp"
+                        android:textColor="@color/colorTextSecondary"/>
+
+                    <ImageButton
+                        android:id="@+id/btnMic"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_pill_secondary"
+                        android:src="@android:drawable/ic_btn_speak_now"
+                        android:contentDescription="Надиктовать"
+                        android:onClick="onMic"/>
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnParse"
+                    style="@style/AiButtonPrimary"
+                    android:text="Разобрать"
+                    android:onClick="onParse"/>
+
+                <TextView android:id="@+id/tvWarning" style="@style/AiWarning"/>
+            </LinearLayout>
+
+            <!-- Ожидание: синк, затем разбор -->
+            <LinearLayout
+                android:id="@+id/progressBox"
+                style="@style/AiCard"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvProgress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="14.5sp"
+                    android:textColor="@color/colorTextPrimary"/>
+
+                <Button
+                    style="@style/AiButtonOutline"
+                    android:text="Отменить"
+                    android:onClick="onCancel"/>
+            </LinearLayout>
+
+            <!-- ИИ не справился / недоступен -->
+            <LinearLayout
+                android:id="@+id/messageBox"
+                style="@style/AiCard"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="14.5sp"
+                    android:textColor="@color/colorTextPrimary"/>
+
+                <Button
+                    android:id="@+id/btnManual"
+                    style="@style/AiButtonOutline"
+                    android:text="Заполнить вручную"
+                    android:onClick="onManual"/>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvDone"
+                style="@style/AiNote"
+                android:layout_marginBottom="14dp"
+                android:textSize="14.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorprofit"/>
+
+            <!-- Карточка черновика -->
+            <LinearLayout
+                android:id="@+id/cardDraft"
+                style="@style/AiCard"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Понял из текста — проверьте перед записью:"
+                    android:textSize="14.5sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorTextPrimary"/>
+
+                <TextView style="@style/AiLabel" android:text="Сумма"/>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <EditText
+                        android:id="@+id/editAmount"
+                        style="@style/AiValue"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:inputType="numberDecimal"/>
+
+                    <TextView
+                        android:id="@+id/tvCurrency"
+                        android:layout_width="56dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextSecondary"/>
+                </LinearLayout>
+
+                <TextView android:id="@+id/tvWalletLabel" style="@style/AiLabel" android:text="Кошелёк"/>
+                <TextView
+                    android:id="@+id/tvWallet"
+                    style="@style/AiValue"
+                    android:hint="Выберите кошелёк"
+                    android:onClick="onPickWallet"/>
+                <TextView android:id="@+id/tvWalletNote" style="@style/AiWarning"/>
+
+                <TextView android:id="@+id/tvCategoryLabel" style="@style/AiLabel" android:text="Категория"/>
+                <TextView
+                    android:id="@+id/tvCategory"
+                    style="@style/AiValue"
+                    android:hint="Выберите категорию"
+                    android:onClick="onPickCategory"/>
+
+                <TextView style="@style/AiLabel" android:text="Дата и время"/>
+                <TextView
+                    android:id="@+id/tvDate"
+                    style="@style/AiValue"
+                    android:onClick="onPickDate"/>
+                <TextView android:id="@+id/tvDateNote" style="@style/AiWarning" android:text="Дата в будущем"/>
+
+                <TextView style="@style/AiLabel" android:text="Комментарий"/>
+                <EditText
+                    android:id="@+id/editComment"
+                    style="@style/AiValue"
+                    android:inputType="textCapSentences"/>
+
+                <TextView android:id="@+id/tvNotes" style="@style/AiNote"/>
+
+                <!-- Кошелёк или категория пропали с телефона -->
+                <LinearLayout
+                    android:id="@+id/problemBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="12dp"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_input_field"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/tvProblem"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorexpanse"/>
+
+                    <TextView
+                        android:id="@+id/tvProblemDetails"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textSize="12.5sp"
+                        android:textColor="@color/colorTextSecondary"/>
+
+                    <Button
+                        android:id="@+id/btnSyncRetry"
+                        style="@style/AiButtonOutline"
+                        android:text="Синхронизировать и повторить"
+                        android:onClick="onSyncRetry"/>
+
+                    <Button
+                        style="@style/AiButtonOutline"
+                        android:text="Выбрать другой"
+                        android:onClick="onPickOther"/>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvSource"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textSize="12.5sp"
+                    android:textStyle="italic"
+                    android:textColor="@color/colorTextSecondary"/>
+
+                <Button
+                    android:id="@+id/btnSave"
+                    style="@style/AiButtonPrimary"
+                    android:layout_marginTop="14dp"
+                    android:text="Записать"
+                    android:onClick="onSave"/>
+
+                <Button
+                    style="@style/AiButtonOutline"
+                    android:text="Отмена"
+                    android:onClick="onDiscard"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</RelativeLayout>

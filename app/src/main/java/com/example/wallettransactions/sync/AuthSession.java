@@ -62,7 +62,14 @@ final class AuthSession {
         NETWORK_ERROR,
     }
 
-    static Outcome ensureFresh(Context ctx) {
+    /**
+     * {@code synchronized}: refresh-токен одноразовый (ротация), и два
+     * параллельных refresh — проход синка и запрос экрана «ИИ» — отдали бы
+     * один и тот же токен, второй получил бы 401 и пользователь — ложное
+     * «Нужна повторная авторизация». Второй вызывающий ждёт первого и читает
+     * уже новый токен из {@link TokenStore}.
+     */
+    static synchronized Outcome ensureFresh(Context ctx) {
         String refreshToken = TokenStore.getRefreshToken(ctx);
         if (refreshToken == null) return Outcome.NO_SESSION;
 
@@ -104,6 +111,32 @@ final class AuthSession {
         } catch (JSONException e) {
             Log.w(TAG, "некорректный ответ /auth/refresh", e);
             return Outcome.NETWORK_ERROR;
+        }
+    }
+
+    /**
+     * Для запросов вне синка (экран «ИИ», статус ИИ на «Ещё»): refresh только
+     * если access-токена нет или он истекает меньше чем через минуту — иначе
+     * каждое открытие экрана крутило бы ротацию refresh-токена.
+     */
+    static Outcome ensureFreshForRequest(Context ctx) {
+        if (TokenStore.getRefreshToken(ctx) == null) return Outcome.NO_SESSION;
+        long exp = accessTokenExpiresAt(TokenStore.getAccessToken(ctx));
+        if (exp - 60 > System.currentTimeMillis() / 1000) return Outcome.OK;
+        return ensureFresh(ctx);
+    }
+
+    /** {@code exp} (секунды epoch) из payload JWT без проверки подписи; 0 — не разобрать. */
+    static long accessTokenExpiresAt(String jwt) {
+        if (jwt == null) return 0;
+        String[] parts = jwt.split("\\.");
+        if (parts.length < 2) return 0;
+        try {
+            byte[] json = android.util.Base64.decode(parts[1],
+                    android.util.Base64.URL_SAFE | android.util.Base64.NO_PADDING | android.util.Base64.NO_WRAP);
+            return new JSONObject(new String(json, java.nio.charset.StandardCharsets.UTF_8)).optLong("exp", 0);
+        } catch (IllegalArgumentException | JSONException e) {
+            return 0;
         }
     }
 
