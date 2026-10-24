@@ -91,6 +91,17 @@ public class TransactionActivity extends AppCompatActivity {
      * заполнено только «Откуда». При правке игнорируется: тип задают сами счета.
      */
     public final static String cKind = "TransactionActivity.Kind";
+    /**
+     * Результат «Сохранить»: {@code _id} главной проводки (расход, перевод, правка).
+     * У удаления его нет — по нему экран «ИИ» отличает запись от удаления и
+     * строит «Записано: …» по сохранённой операции, а не по черновику.
+     */
+    public final static String cSavedOperationId = "TransactionActivity.SavedOperationId";
+    /** Текст строки «Подсказка ИИ: …» над полями; пусто — строки нет. */
+    public final static String cHint = "TransactionActivity.Hint";
+    /** int[] {@code _id} кошельков и категорий, которые пикер ставит первыми (кандидаты resolver). */
+    public final static String cPriorityWalletIds = "TransactionActivity.PriorityWalletIds";
+    public final static String cPriorityCategoryIds = "TransactionActivity.PriorityCategoryIds";
 
     /**
      * Имя ПО УМОЛЧАНИЮ для категории комиссии за перевод — используется только если её
@@ -373,6 +384,11 @@ public class TransactionActivity extends AppCompatActivity {
         Date mDateTime = DateUtils.StrToDate(getIntent().getStringExtra(cDate));
 
         mScreenTitle.setText(mIsEdit ? "Изменение операции" : "Новая операция");
+
+        String hint = getIntent().getStringExtra(cHint);
+        TextView aiHint = findViewById(R.id.tvAiHint);
+        aiHint.setText(hint);
+        aiHint.setVisibility(hint == null || hint.isEmpty() ? View.GONE : View.VISIBLE);
         // Удалить можно только уже существующую операцию.
         mBtnDelete.setVisibility(mIsEdit ? View.VISIBLE : View.GONE);
 
@@ -981,6 +997,7 @@ public class TransactionActivity extends AppCompatActivity {
 
             Intent resultIntent = new Intent();
             resultIntent.putExtra(cTranId, mTranId);
+            resultIntent.putExtra(cSavedOperationId, newRowId);
             setResult(RESULT_OK, resultIntent);
             finish();
         }
@@ -1173,10 +1190,25 @@ public class TransactionActivity extends AppCompatActivity {
      * там уже задан, и переключателя категорий/кошельков на экране выбора не будет.
      * {@code pair} — счёт второго слота: по нему пикер сортирует «по частоте».
      */
+    /** Приоритетные счета для пикера этого типа: кошельки, категории или оба списка. */
+    private int[] priorityIds(int selectedType) {
+        int[] wallets = getIntent().getIntArrayExtra(cPriorityWalletIds);
+        int[] categories = getIntent().getIntArrayExtra(cPriorityCategoryIds);
+        if (selectedType == AccountPickerActivity.cSelectedTypeOperationAccounts) return wallets;
+        if (selectedType == AccountPickerActivity.cSelectedTypeChargeAccounts) return categories;
+        int nw = wallets == null ? 0 : wallets.length;
+        int nc = categories == null ? 0 : categories.length;
+        if (nw + nc == 0) return null;
+        int[] all = new int[nw + nc];
+        if (nw > 0) System.arraycopy(wallets, 0, all, 0, nw);
+        if (nc > 0) System.arraycopy(categories, 0, all, nw, nc);
+        return all;
+    }
+
     private void openAccountPicker(String title, AccountItem current, AccountItem pair,
                                    int selectedType, int requestCode) {
         startActivityForResult(AccountPickerActivity.buildIntent(this, title, selectedType,
-                current == null ? 0 : current.getId(), pair), requestCode);
+                current == null ? 0 : current.getId(), pair, priorityIds(selectedType)), requestCode);
     }
 
 

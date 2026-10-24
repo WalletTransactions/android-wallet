@@ -1,4 +1,5 @@
-# Сборка debug-APK и юнит-тесты на каждый push в main и на pull request.
+# Сборка debug-APK (артефакт wallet-debug-1.0.<code>-<sha>) и юнит-тесты на каждый
+# push в main и на pull request.
 #
 # Установка на устройство и инструментальные тесты — не здесь: им нужен Pixel
 # по USB, это делает Jenkins (BuildPlatform). См. org/docs/TODO_ci.md.
@@ -39,6 +40,32 @@ jobs:
 
       - name: Assemble debug APK
         run: bash ./gradlew :app:assembleDebug --console=plain --no-daemon
+
+      # APK подписан debug-ключом, который Gradle генерирует на раннере, а не ключом
+      # хоста: поверх приложения на телефоне не встанет (INSTALL_FAILED_UPDATE_INCOMPATIBLE).
+      # Для чистых устройств и проверки сборки; на свой телефон — deploy-debug.sh или
+      # Jenkins. Ключ хоста в секреты не кладём сознательно (решение 2026-10-24):
+      # ~/.android/debug.keystore общий для всех debug-сборок этой машины, его утечка
+      # позволила бы подменить приложение вместе с данными и сессией.
+      #
+      # versionCode растёт при каждой сборке (app/version.properties) — на раннере
+      # он свой, поэтому в имени артефакта ещё и короткий sha коммита.
+      # В pull request github.sha — служебный merge-коммит, а нужен коммит ветки.
+      - name: APK name
+        id: apk
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          code=$(grep '^VERSION_CODE=' app/version.properties | cut -d= -f2)
+          echo "name=wallet-debug-1.0.${code}-${HEAD_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload test results
         if: always()

@@ -45,6 +45,8 @@ public final class AppSettings {
     private static final String PREF_REFERENCE_SYNC_SEQ = "referenceSyncSeq";
     private static final String PREF_SYNC_LEDGER_ID = "syncLedgerId";
     private static final String PREF_UUID_FORMAT_RESYNC_DONE = "uuidFormatResyncDone";
+    private static final String PREF_LAST_SYNC_SUCCESS_AT = "lastSyncSuccessAt";
+    private static final String PREF_AI_LAST_WALLET_UUID = "aiLastWalletUuid";
 
     /** См. {@link #getAutoConnectIntervalMinutes} — минимум, который вообще
      *  умеет {@code androidx.work} для периодической задачи. */
@@ -409,6 +411,31 @@ public final class AppSettings {
 
     public static void setUuidFormatResyncDone(Context ctx) {
         prefs(ctx).edit().putBoolean(PREF_UUID_FORMAT_RESYNC_DONE, true).apply();
+    }
+
+    /**
+     * Время (epoch ms) последнего прохода синка с исходом OK/PARTIAL — пишет
+     * {@code SyncRunner}, показывает блок ошибки экрана «ИИ». 0 — не было.
+     */
+    public static long getLastSyncSuccessAt(Context ctx) {
+        return prefs(ctx).getLong(PREF_LAST_SYNC_SUCCESS_AT, 0L);
+    }
+
+    public static void setLastSyncSuccessAt(Context ctx, long epochMillis) {
+        prefs(ctx).edit().putLong(PREF_LAST_SYNC_SUCCESS_AT, epochMillis).apply();
+    }
+
+    /**
+     * uuid кошелька последней траты, записанной с экрана «ИИ» — уходит в задание
+     * {@code parse_expense} как {@code default_wallet_uuid}. uuid, а не _id: это
+     * значение resolver сравнивает со справочником сервера.
+     */
+    public static String getAiLastWalletUuid(Context ctx) {
+        return prefs(ctx).getString(PREF_AI_LAST_WALLET_UUID, null);
+    }
+
+    public static void setAiLastWalletUuid(Context ctx, String uuid) {
+        prefs(ctx).edit().putString(PREF_AI_LAST_WALLET_UUID, uuid).apply();
     }
 
     // ── Тема оформления ────────────────────────────────────────────────────────

@@ -1,0 +1,31 @@
+schema: spec-driven
+
+context: |
+  Все артефакты OpenSpec пишутся на русском; структурные заголовки OpenSpec и
+  ключевые слова SHALL/MUST — по-английски.
+  android-wallet — Android-клиент кошелька: Java, minSdk 27 / targetSdk 34, без DI и без Room.
+  Офлайн-первый: локальная SQLite (Data/: WalletDbLoader — чтение, WalletDbCRUD — запись),
+  кэш справочников Singleton, инвалидируется вручную. Устройство — docs/ARCHITECTURE.md.
+  Сеть — sync/: общий OkHttpClient (HttpClients, запасной DNS), AuthSession (токены google-auth,
+  EncryptedSharedPreferences), SyncApiClient (/sync/push, /sync/pull в wallet-api), фон — WorkManager.
+  Все вызовы — через wallet-gateway: /auth/* — google-auth, /api/* — wallet-api,
+  /api/reports/* — wallet-report, /api/ai/* — wallet-ai.
+  Новое поведение сервера (эндпоинт, поле, scope, aud) делается в репозитории того сервиса;
+  здесь — только клиент и ссылка на его контракт (openapi.yaml сервиса).
+  Инвариант wallet-ai: он ничего не пишет в кошелёк — отдаёт черновики; запись делает клиент
+  после подтверждения пользователя (локально + /sync/push).
+  Общие планы — org/docs/TODO_*.md (TODO_wallet_ai.md, TODO_statement_import.md).
+  Сборка — JDK 17 (~/.gradle/gradle.properties); рабочая папка на NTFS: `bash gradlew`.
+
+rules:
+  specs:
+    - Не дублировать JSON-схемы других сервисов — ссылаться на путь и сервис
+    - Каждое требование — с хотя бы одним сценарием WHEN/THEN
+    - Тексты интерфейса, на которые опираются сценарии, приводить дословно
+  design:
+    - Явно указывать, нужна ли правка в другом сервисе (google-auth, wallet-api, wallet-ai, wallet-gateway) и какая
+    - Описывать поведение без сети и при отказе сервера (офлайн-первый клиент)
+  tasks:
+    - Логика вне UI — с юнит-тестами (app/src/test, JUnit + Robolectric)
+    - Экран заканчивается ручной проверкой на устройстве/эмуляторе
+    - Изменение устройства приложения сопровождается правкой docs/ARCHITECTURE.md
