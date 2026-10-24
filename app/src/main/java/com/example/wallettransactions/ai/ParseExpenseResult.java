@@ -27,15 +27,18 @@ public final class ParseExpenseResult {
     public final Expense expense;
     /** {@code null}, если не {@link #DRAFT}. */
     public final Resolution resolution;
+    /** Исходный JSON — чтобы пережить пересоздание экрана ({@code onSaveInstanceState}). */
+    public final String json;
 
     private ParseExpenseResult(String outcome, String promptVersion, List<String> reasons, List<String> notes,
-                               Expense expense, Resolution resolution) {
+                               Expense expense, Resolution resolution, String json) {
         this.outcome = outcome;
         this.promptVersion = promptVersion;
         this.reasons = reasons;
         this.notes = notes;
         this.expense = expense;
         this.resolution = resolution;
+        this.json = json;
     }
 
     public boolean isDraft() {
@@ -51,7 +54,8 @@ public final class ParseExpenseResult {
                 strings(json.optJSONArray("reasons")),
                 strings(json.optJSONArray("notes")),
                 e == null ? null : Expense.fromJson(e),
-                r == null ? null : Resolution.fromJson(r));
+                r == null ? null : Resolution.fromJson(r),
+                json.toString());
     }
 
     /** Что модель поняла из текста — строки как в ответе. */

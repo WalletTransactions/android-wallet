@@ -1,7 +1,5 @@
 package com.example.wallettransactions.Activities;
 
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -14,13 +12,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.wallettransactions.AppSettings;
-import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
@@ -30,21 +25,21 @@ import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
 import com.example.wallettransactions.ai.AiTexts;
 import com.example.wallettransactions.ai.DraftReconciler;
+import com.example.wallettransactions.ai.OperationPrefill;
 import com.example.wallettransactions.ai.ParseExpenseResult;
-import com.example.wallettransactions.ai.ParseExpenseResult.Choice;
 import com.example.wallettransactions.ai.ParseExpenseResult.Ref;
 import com.example.wallettransactions.sync.AiApiClient;
 import com.example.wallettransactions.sync.SyncRunner;
 
+import com.example.wallettransactions.sync.SyncLog;
+
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -56,10 +51,11 @@ import java.util.UUID;
  * <p>
  * «Разобрать» — синк ({@link SyncRunner#runOnceShared}, до {@link #SYNC_WAIT_MS}),
  * чтобы resolver решал по тому же справочнику, что на телефоне; затем задание
- * {@code parse_expense} и long-poll. Черновик сверяется с базой телефона
- * ({@link DraftReconciler}): записать можно только на живые кошелёк и категорию.
- * Запись — локально через {@link WalletDbCRUD#InsertOperation}, на сервер её
- * отвезёт обычный синк.
+ * {@code parse_expense} и long-poll. Черновик правится и записывается в обычном
+ * окне операции ({@link TransactionActivity}, openspec changes/ai-expense-in-operation-window):
+ * поля и подсказки собирает {@link OperationPrefill}. Если кошелька или категории
+ * из черновика нет на телефоне, окно сразу не открывается — сначала блок ошибки.
+ * На сервер операцию отвезёт обычный синк.
  * <p>
  * Сеть — на голом {@code new Thread}, как у «Интеграций»; поздние ответы
  * отменённого разбора отсекает {@link #generation}. Текст траты в logcat не пишется.
@@ -69,6 +65,12 @@ public class AiActivity extends AppCompatActivity {
     static final int MAX_TEXT = 500;
     static final long SYNC_WAIT_MS = 10_000;
     private static final int REQUEST_SPEECH = 41;
+    private static final int REQUEST_OPERATION = 42;
+
+    private static final String STATE_DRAFT = "ai.draft";
+    private static final String STATE_SOURCE = "ai.source";
+    private static final String STATE_SYNC_STATUS = "ai.syncStatus";
+    private static final String STATE_SYNC_MESSAGE = "ai.syncMessage";
 
     private static final String LOGIN_TEXT = "Войдите, чтобы пользоваться ИИ";
     private static final String NO_NETWORK_TEXT = "Нет связи с сервером";
@@ -83,23 +85,10 @@ public class AiActivity extends AppCompatActivity {
     private View messageBox;
     private TextView tvMessage;
     private TextView tvDone;
-    private View cardDraft;
-    private EditText editAmount;
-    private TextView tvCurrency;
-    private TextView tvWalletLabel;
-    private TextView tvWallet;
-    private TextView tvWalletNote;
-    private TextView tvCategoryLabel;
-    private TextView tvCategory;
-    private TextView tvDate;
-    private TextView tvDateNote;
-    private EditText editComment;
-    private TextView tvNotes;
     private View problemBox;
     private TextView tvProblem;
     private TextView tvProblemDetails;
-    private TextView tvSource;
-    private Button btnSave;
+    private View pendingBox;
 
     /** Номер текущего разбора: ответ потока с другим номером уже никому не нужен. */
     private volatile int generation;
@@ -110,16 +99,9 @@ public class AiActivity extends AppCompatActivity {
     /** Исход синка перед текущим разбором — для деталей блока ошибки. */
     private SyncRunner.Outcome syncBeforeParse;
 
-    // Карточка
+    /** Последний черновик — живёт до записи или нового «Разобрать» («Открыть снова»). */
     private ParseExpenseResult draft;
     private String sourceText;
-    private AccountOperatingItem wallet;
-    private AccountItem category;
-    /** Серверное написание uuid выбранного кошелька — для default_wallet_uuid. */
-    private String walletUuid;
-    private final Calendar dateTime = Calendar.getInstance();
-    private DraftReconciler.Field walletField;
-    private DraftReconciler.Field categoryField;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,31 +118,18 @@ public class AiActivity extends AppCompatActivity {
         messageBox = findViewById(R.id.messageBox);
         tvMessage = findViewById(R.id.tvMessage);
         tvDone = findViewById(R.id.tvDone);
-        cardDraft = findViewById(R.id.cardDraft);
-        editAmount = findViewById(R.id.editAmount);
-        tvCurrency = findViewById(R.id.tvCurrency);
-        tvWalletLabel = findViewById(R.id.tvWalletLabel);
-        tvWallet = findViewById(R.id.tvWallet);
-        tvWalletNote = findViewById(R.id.tvWalletNote);
-        tvCategoryLabel = findViewById(R.id.tvCategoryLabel);
-        tvCategory = findViewById(R.id.tvCategory);
-        tvDate = findViewById(R.id.tvDate);
-        tvDateNote = findViewById(R.id.tvDateNote);
-        editComment = findViewById(R.id.editComment);
-        tvNotes = findViewById(R.id.tvNotes);
         problemBox = findViewById(R.id.problemBox);
         tvProblem = findViewById(R.id.tvProblem);
         tvProblemDetails = findViewById(R.id.tvProblemDetails);
-        tvSource = findViewById(R.id.tvSource);
-        btnSave = findViewById(R.id.btnSave);
+        pendingBox = findViewById(R.id.pendingBox);
 
         editText.addTextChangedListener(new SimpleWatcher(this::updateInputState));
-        editAmount.addTextChangedListener(new SimpleWatcher(this::validateCard));
 
         // Системное распознавание речи; нет его на устройстве — нет и кнопки.
         boolean canSpeak = speechIntent().resolveActivity(getPackageManager()) != null;
         btnMic.setVisibility(canSpeak ? View.VISIBLE : View.GONE);
 
+        if (savedInstanceState != null) restoreDraft(savedInstanceState);
         takeSharedText(getIntent());
         sessionMissing = !AiApiClient.hasSession(this);
         if (sessionMissing) showMessage(LOGIN_TEXT, true);
@@ -171,13 +140,6 @@ public class AiActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         takeSharedText(intent);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Карточка открыта, а кошелёк могли удалить на другом экране — перепроверить.
-        if (cardDraft.getVisibility() == View.VISIBLE) validateCard();
     }
 
     @Override
@@ -228,6 +190,10 @@ public class AiActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_OPERATION) {
+            onOperationResult(resultCode, data);
+            return;
+        }
         if (requestCode != REQUEST_SPEECH || resultCode != RESULT_OK || data == null) return;
         ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
         if (results == null || results.isEmpty()) return;
@@ -247,7 +213,7 @@ public class AiActivity extends AppCompatActivity {
         jobId = null;
         busy = true;
         sourceText = text;
-        hideCard();
+        clearDraft();
         messageBox.setVisibility(View.GONE);
         tvDone.setVisibility(View.GONE);
         tvWarning.setVisibility(View.GONE);
@@ -336,7 +302,7 @@ public class AiActivity extends AppCompatActivity {
         }
         ParseExpenseResult r = job.result;
         if (r.isDraft() && r.expense != null && r.resolution != null) {
-            showCard(r);
+            onDraft(r);
         } else if (ParseExpenseResult.REJECTED.equals(r.outcome)) {
             showMessage(AiTexts.rejected(r.reasons), true);
         } else {
@@ -400,219 +366,72 @@ public class AiActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    // ── Карточка ──────────────────────────────────────────────────────────────
+    // ── Черновик → окно операции ─────────────────────────────────────────────
 
-    private void showCard(ParseExpenseResult r) {
+    private void onDraft(ParseExpenseResult r) {
         draft = r;
-        // Синк мог принести новые счета — карточка строит списки из свежего кэша.
+        // Синк перед разбором мог принести новые счета — пикеры окна читают кэш.
         Singleton.instance.reloadAccounts(this);
-
-        editAmount.setText(r.expense.amount);
-        editComment.setText(r.expense.comment);
-        tvSource.setText("«" + sourceText + "»");
-        dateTime.setTime(parseDraftDate(r.expense.datetime));
-        tvDate.setText(DateUtils.DateToStr(dateTime.getTime()));
-
-        List<String> notes = new ArrayList<>();
-        if (r.notes.contains("currency_dropped")) notes.add("Валюту из текста пришлось убрать — проверьте кошелёк");
-        if (r.notes.contains("comment_truncated")) notes.add("Комментарий сокращён");
-        tvNotes.setText(String.join("\n", notes));
-        tvNotes.setVisibility(notes.isEmpty() ? View.GONE : View.VISIBLE);
-
-        reconcileDraft();
-        cardDraft.setVisibility(View.VISIBLE);
+        openOrExplain();
     }
 
-    /** Сверка черновика с телефоном: выбор полей, подписи resolver и блок ошибки. */
-    private void reconcileDraft() {
-        SQLiteDatabase db = Singleton.instance.getReadableDatabase(this);
-        walletField = DraftReconciler.reconcile(db, draft.resolution.wallet);
-        categoryField = DraftReconciler.reconcile(db, draft.resolution.category);
-
-        AccountList accounts = Singleton.instance.getAccounts(this);
-        wallet = null;
-        walletUuid = null;
-        if (walletField.selected != null) {
-            AccountItem item = accounts.getAccountById((int) walletField.selected.id);
-            if (item instanceof AccountOperatingItem) {
-                wallet = (AccountOperatingItem) item;
-                walletUuid = walletField.selected.ref.uuid;
-            }
-        }
-        category = null;
-        if (categoryField.selected != null) {
-            AccountItem item = accounts.getAccountById((int) categoryField.selected.id);
-            if (item != null && !item.isOperatingAccount()) category = item;
-        }
-
-        // Подписи вопроса resolver
-        Choice w = draft.resolution.wallet;
-        String walletNote = null;
-        tvWalletLabel.setText("Кошелёк");
-        if (w != null && Choice.ASK.equals(w.kind)) {
-            tvWalletLabel.setText("С какого кошелька?");
-            if ("currency_mismatch".equals(w.why) && w.force != null) {
-                walletNote = "В тексте " + draft.expense.currencyHint + ", а «" + w.force.name + "» в "
-                        + w.force.isoCode;
-            }
-        } else if (w != null && Choice.REJECT.equals(w.kind)) {
-            walletNote = AiTexts.walletReject(w.why, draft.expense.currencyHint);
-        }
-        tvWalletNote.setText(walletNote);
-        tvWalletNote.setVisibility(walletNote == null ? View.GONE : View.VISIBLE);
-        Choice c = draft.resolution.category;
-        tvCategoryLabel.setText(c != null && Choice.ASK.equals(c.kind) ? "Какая категория?" : "Категория");
-
-        showProblem(walletField.problem, categoryField.problem);
-        renderSelection();
-    }
-
-    /** Блок «пропал с телефона» — по кошельку и/или категории; null, null — скрыть. */
-    private void showProblem(DraftReconciler.Local walletProblem, DraftReconciler.Local categoryProblem) {
-        if (walletProblem == null && categoryProblem == null) {
+    /** Пропавших счетов нет — сразу окно; есть — блок ошибки на экране «ИИ». */
+    private void openOrExplain() {
+        OperationPrefill prefill = prefill();
+        if (prefill.hasProblem()) {
+            showProblem(prefill);
+        } else {
             problemBox.setVisibility(View.GONE);
-            return;
+            openOperation(prefill);
         }
+    }
+
+    private OperationPrefill prefill() {
+        return OperationPrefill.build(Singleton.instance.getReadableDatabase(this), draft, sourceText);
+    }
+
+    private void openOperation(OperationPrefill p) {
+        pendingBox.setVisibility(View.GONE);
+        Intent intent = new Intent(this, TransactionActivity.class);
+        intent.putExtra(TransactionActivity.cDate, p.date != null ? p.date : DateUtils.DateToStr(new Date()));
+        intent.putExtra(TransactionActivity.cAmount, p.amount);
+        intent.putExtra(TransactionActivity.cComment, p.comment);
+        intent.putExtra(TransactionActivity.cFrom, p.walletId);
+        intent.putExtra(TransactionActivity.cTo, p.categoryId);
+        intent.putExtra(TransactionActivity.cIsEdit, false);
+        intent.putExtra(TransactionActivity.cKind, "expense");
+        intent.putExtra(TransactionActivity.cHint, p.hint);
+        intent.putExtra(TransactionActivity.cPriorityWalletIds, p.priorityWalletIds);
+        intent.putExtra(TransactionActivity.cPriorityCategoryIds, p.priorityCategoryIds);
+        startActivityForResult(intent, REQUEST_OPERATION);
+    }
+
+    /** «Открыть операцию» (блок ошибки) и «Открыть снова» — тот же черновик, без запроса к ИИ. */
+    public void onOpenOperation(View view) {
+        if (draft == null) return;
+        problemBox.setVisibility(View.GONE);
+        openOperation(prefill());
+    }
+
+    private void showProblem(OperationPrefill p) {
         List<String> lines = new ArrayList<>();
-        if (walletProblem != null) lines.add(AiTexts.problem(true, walletProblem.ref.name, walletProblem.state));
-        if (categoryProblem != null) {
-            lines.add(AiTexts.problem(false, categoryProblem.ref.name, categoryProblem.state));
+        if (p.walletProblem != null) {
+            lines.add(AiTexts.problem(true, p.walletProblem.ref.name, p.walletProblem.state));
         }
-        String uuid = walletProblem != null ? walletProblem.ref.uuid : categoryProblem.ref.uuid;
+        if (p.categoryProblem != null) {
+            lines.add(AiTexts.problem(false, p.categoryProblem.ref.name, p.categoryProblem.state));
+        }
+        String uuid = p.walletProblem != null ? p.walletProblem.ref.uuid : p.categoryProblem.ref.uuid;
         tvProblem.setText(String.join("\n", lines));
         tvProblemDetails.setText(AiTexts.details(syncBeforeParse,
                 AppSettings.getLastSyncSuccessAt(this), uuid, new Date()));
+        pendingBox.setVisibility(View.GONE);
         problemBox.setVisibility(View.VISIBLE);
-    }
-
-    private void renderSelection() {
-        tvWallet.setText(wallet != null ? wallet.getName() : "");
-        tvCurrency.setText(wallet != null ? wallet.getCurrency().getSymbol() : "");
-        tvCategory.setText(category != null ? category.getName() : "");
-        validateCard();
-    }
-
-    /** Проверки перед записью: сумма, дата, живые кошелёк и категория. */
-    private void validateCard() {
-        if (draft == null) {
-            btnSave.setEnabled(false);
-            return;
-        }
-        BigDecimal amount = parseAmount(editAmount.getText().toString());
-        int precision = wallet != null ? wallet.getCurrency().getPrecision() : 2;
-        boolean amountOk = amount != null && amount.signum() > 0
-                && Math.max(amount.stripTrailingZeros().scale(), 0) <= precision;
-        editAmount.setError(amountOk || editAmount.length() == 0 ? null : "Проверьте сумму");
-        boolean dateOk = !dateTime.getTime().after(new Date());
-        tvDateNote.setVisibility(dateOk ? View.GONE : View.VISIBLE);
-        btnSave.setEnabled(amountOk && dateOk && wallet != null && category != null);
-    }
-
-    static BigDecimal parseAmount(String s) {
-        String t = s.trim().replace(',', '.').replace(" ", "");
-        if (t.isEmpty()) return null;
-        try {
-            return new BigDecimal(t);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private static Date parseDraftDate(String s) {
-        if (s != null && !s.isEmpty()) {
-            try {
-                return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).parse(s);
-            } catch (ParseException ignored) {
-                // ниже — «сейчас»
-            }
-        }
-        return new Date();
-    }
-
-    public void onPickWallet(View view) {
-        List<AccountItem> items = new ArrayList<>();
-        List<String> labels = new ArrayList<>();
-        AccountList accounts = Singleton.instance.getAccounts(this);
-        for (DraftReconciler.Local local : walletField.candidates) {
-            addOption(items, labels, accounts.getAccountById((int) local.id), null);
-        }
-        if (walletField.force != null) {
-            AccountItem force = accounts.getAccountById((int) walletField.force.id);
-            if (force != null) addOption(items, labels, force, " — всё равно в «" + force.getName() + "»");
-        }
-        for (AccountOperatingItem item : accounts.getOperationAccounts()) {
-            if (!item.getIsArchived() && !item.isSystem()) addOption(items, labels, item, null);
-        }
-        pick("Кошелёк", items, labels, picked -> {
-            wallet = (AccountOperatingItem) picked;
-            walletUuid = null;
-            clearProblemIfResolved();
-            renderSelection();
-        });
-    }
-
-    public void onPickCategory(View view) {
-        List<AccountItem> items = new ArrayList<>();
-        List<String> labels = new ArrayList<>();
-        AccountList accounts = Singleton.instance.getAccounts(this);
-        for (DraftReconciler.Local local : categoryField.candidates) {
-            addOption(items, labels, accounts.getAccountById((int) local.id), null);
-        }
-        for (AccountItem item : accounts.getExpanseAccounts()) {
-            if (!item.getIsArchived() && !item.isSystem()) addOption(items, labels, item, null);
-        }
-        pick("Категория", items, labels, picked -> {
-            category = picked;
-            clearProblemIfResolved();
-            renderSelection();
-        });
-    }
-
-    /** «Выбрать другой» — то поле, по которому ошибка (кошелёк — первым). */
-    public void onPickOther(View view) {
-        if (wallet == null) onPickWallet(view);
-        else onPickCategory(view);
-    }
-
-    private void clearProblemIfResolved() {
-        DraftReconciler.Local wp = wallet == null ? walletField.problem : null;
-        DraftReconciler.Local cp = category == null ? categoryField.problem : null;
-        showProblem(wp, cp);
-    }
-
-    private static void addOption(List<AccountItem> items, List<String> labels, AccountItem item, String suffix) {
-        if (item == null) return;
-        if (suffix == null && items.contains(item)) return;
-        items.add(item);
-        labels.add(item.getName() + (suffix != null ? suffix : ""));
-    }
-
-    private interface OnPicked {
-        void picked(AccountItem item);
-    }
-
-    private void pick(String title, List<AccountItem> items, List<String> labels, OnPicked onPicked) {
-        new AlertDialog.Builder(this)
-                .setTitle(title)
-                .setItems(labels.toArray(new String[0]), (d, which) -> onPicked.picked(items.get(which)))
-                .show();
-    }
-
-    public void onPickDate(View view) {
-        new DatePickerDialog(this, (dp, y, m, d) -> {
-            dateTime.set(y, m, d);
-            new TimePickerDialog(this, (tp, h, min) -> {
-                dateTime.set(Calendar.HOUR_OF_DAY, h);
-                dateTime.set(Calendar.MINUTE, min);
-                tvDate.setText(DateUtils.DateToStr(dateTime.getTime()));
-                validateCard();
-            }, dateTime.get(Calendar.HOUR_OF_DAY), dateTime.get(Calendar.MINUTE), true).show();
-        }, dateTime.get(Calendar.YEAR), dateTime.get(Calendar.MONTH), dateTime.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     /** «Синхронизировать и повторить»: синк и сверка того же черновика, без нового задания. */
     public void onSyncRetry(View view) {
-        if (busy) return;
+        if (busy || draft == null) return;
         busy = true;
         final int gen = generation;
         showProgress("Синхронизирую…");
@@ -624,73 +443,98 @@ public class AiActivity extends AppCompatActivity {
                 if (gen != generation || isFinishing()) return;
                 syncBeforeParse = sync;
                 endBusy();
-                if (draft != null) {
-                    Singleton.instance.reloadAccounts(this);
-                    reconcileDraft();
-                }
+                if (draft == null) return;
+                Singleton.instance.reloadAccounts(this);
+                openOrExplain();
             });
         }).start();
     }
 
-    public void onDiscard(View view) {
-        hideCard();
-    }
-
-    private void hideCard() {
-        draft = null;
-        wallet = null;
-        category = null;
-        cardDraft.setVisibility(View.GONE);
-        problemBox.setVisibility(View.GONE);
-    }
-
-    // ── Запись ────────────────────────────────────────────────────────────────
-
-    public void onSave(View view) {
-        validateCard();
-        if (!btnSave.isEnabled()) return;
-
-        SQLiteDatabase db = Singleton.instance.getWritableDatabase(this);
-        // Повторная сверка: кошелёк могли удалить, пока карточка была открыта.
-        DraftReconciler.State ws = DraftReconciler.stateById(db, wallet.getId());
-        DraftReconciler.State cs = DraftReconciler.stateById(db, category.getId());
-        if (ws != DraftReconciler.State.OK || cs != DraftReconciler.State.OK) {
-            DraftReconciler.Local wp = ws == DraftReconciler.State.OK ? null : localOf(db, wallet, ws);
-            DraftReconciler.Local cp = cs == DraftReconciler.State.OK ? null : localOf(db, category, cs);
-            if (wp != null) wallet = null;
-            if (cp != null) category = null;
-            showProblem(wp, cp);
-            renderSelection();
+    /** Возврат из окна: сохранено — «Записано: …» по операции из базы; нет — «Разбор не записан». */
+    private void onOperationResult(int resultCode, Intent data) {
+        long id = resultCode == RESULT_OK && data != null
+                ? data.getLongExtra(TransactionActivity.cSavedOperationId, -1) : -1;
+        if (id <= 0) {
+            if (draft != null) pendingBox.setVisibility(View.VISIBLE);
             return;
         }
 
-        BigDecimal amount = parseAmount(editAmount.getText().toString());
-        String comment = editComment.getText().toString().trim();
-        long id = WalletDbCRUD.InsertOperation(db, DateUtils.DateToStr(dateTime.getTime()),
-                wallet.getId(), category.getId(), amount.doubleValue(), comment);
-        if (id == -1) {
-            Toast.makeText(this, "Произошла ошибка при записи", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        AppSettings.setAiLastWalletUuid(this, walletUuid != null ? walletUuid : serverUuid(db, wallet.getId()));
+        SQLiteDatabase db = Singleton.instance.getReadableDatabase(this);
+        String done = savedLine(db, id);
         PeriodFilterState.get(this).markDataChanged();
         // Отвезти трату на сервер сразу, не дожидаясь фонового синка; ждать его экрану незачем.
         final Context app = getApplicationContext();
         new Thread(() -> SyncRunner.runOnce(app)).start();
 
-        tvDone.setText("Записано: " + amount.stripTrailingZeros().toPlainString() + " "
-                + wallet.getCurrency().getSymbol() + " · " + category.getName() + " · " + wallet.getName());
-        tvDone.setVisibility(View.VISIBLE);
-        hideCard();
+        tvDone.setText(done);
+        tvDone.setVisibility(done != null ? View.VISIBLE : View.GONE);
+        clearDraft();
         editText.setText("");
         sourceText = null;
         tvWarning.setVisibility(View.GONE);
     }
 
-    private static DraftReconciler.Local localOf(SQLiteDatabase db, AccountItem item, DraftReconciler.State state) {
-        return new DraftReconciler.Local(new Ref(serverUuid(db, item.getId()), item.getName(), "", "", 2),
-                state, item.getId());
+    /**
+     * «Записано: 450 ₽ · Такси · Тинькофф» по сохранённой операции — пользователь мог
+     * сменить в окне сумму, счета и вид. Заодно запоминает кошелёк для default_wallet_uuid.
+     */
+    private String savedLine(SQLiteDatabase db, long id) {
+        Cursor c = db.rawQuery("SELECT amount, acc_fr_id, acc_to_id FROM operation WHERE _id=? LIMIT 1",
+                new String[]{String.valueOf(id)});
+        try {
+            if (!c.moveToFirst()) return null;
+            BigDecimal amount = BigDecimal.valueOf(c.getDouble(0)).stripTrailingZeros();
+            Singleton.instance.reloadAccounts(this);
+            AccountList accounts = Singleton.instance.getAccounts(this);
+            AccountItem from = accounts.getAccountById(c.getInt(1));
+            AccountItem to = accounts.getAccountById(c.getInt(2));
+            AccountItem wallet = from != null && from.isOperatingAccount() ? from : to;
+            AccountItem other = wallet == from ? to : from;
+            if (wallet != null) AppSettings.setAiLastWalletUuid(this, serverUuid(db, wallet.getId()));
+            String symbol = wallet instanceof AccountOperatingItem
+                    ? " " + ((AccountOperatingItem) wallet).getCurrency().getSymbol() : "";
+            return "Записано: " + amount.toPlainString() + symbol
+                    + " · " + (other != null ? other.getName() : "")
+                    + " · " + (wallet != null ? wallet.getName() : "");
+        } finally {
+            c.close();
+        }
+    }
+
+    private void clearDraft() {
+        draft = null;
+        problemBox.setVisibility(View.GONE);
+        pendingBox.setVisibility(View.GONE);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle out) {
+        super.onSaveInstanceState(out);
+        if (draft == null) return;
+        out.putString(STATE_DRAFT, draft.json);
+        out.putString(STATE_SOURCE, sourceText);
+        if (syncBeforeParse != null) {
+            out.putString(STATE_SYNC_STATUS, syncBeforeParse.status.name());
+            out.putString(STATE_SYNC_MESSAGE, syncBeforeParse.errorMessage);
+        }
+    }
+
+    /** Черновик после пересоздания экрана: окно операции могло быть открыто поверх. */
+    private void restoreDraft(Bundle in) {
+        String json = in.getString(STATE_DRAFT);
+        if (json == null) return;
+        try {
+            draft = ParseExpenseResult.fromJson(new JSONObject(json));
+        } catch (JSONException e) {
+            return;
+        }
+        sourceText = in.getString(STATE_SOURCE);
+        String status = in.getString(STATE_SYNC_STATUS);
+        if (status != null) {
+            syncBeforeParse = new SyncRunner.Outcome(SyncRunner.Status.valueOf(status), new SyncLog(),
+                    in.getString(STATE_SYNC_MESSAGE));
+        }
+        pendingBox.setVisibility(View.VISIBLE);
     }
 
     /** uuid строки в серверном написании (с дефисами, строчными): локально бывает и без дефисов. */

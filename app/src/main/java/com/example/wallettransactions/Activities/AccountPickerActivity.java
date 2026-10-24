@@ -82,6 +82,12 @@ public class AccountPickerActivity extends AppCompatActivity {
     public final static String cCatalogMode = "AccountPicker.CatalogMode";
     /** Счёт из второго слота операции (0 — нет): по нему считается частота «в паре». */
     public final static String cPairAccountId = "AccountPicker.PairAccountId";
+    /**
+     * Счета, которые идут первыми в указанном порядке при любой сортировке
+     * (int[] {@code _id}): кандидаты resolver с экрана «ИИ», подсказка категории
+     * импорта выписки. Остальные — как обычно.
+     */
+    public final static String cPriorityIds = "AccountPicker.PriorityIds";
 
     private static final int REQUEST_EDIT_ACCOUNT = 300;
     private static final int REQUEST_ADD_WALLET   = 301;
@@ -93,7 +99,13 @@ public class AccountPickerActivity extends AppCompatActivity {
 
     public static Intent buildIntent(Context ctx, String title, int selectedType, int currentAccountId,
                                      AccountItem pairAccount) {
+        return buildIntent(ctx, title, selectedType, currentAccountId, pairAccount, null);
+    }
+
+    public static Intent buildIntent(Context ctx, String title, int selectedType, int currentAccountId,
+                                     AccountItem pairAccount, int[] priorityIds) {
         Intent intent = new Intent(ctx, AccountPickerActivity.class);
+        if (priorityIds != null && priorityIds.length > 0) intent.putExtra(cPriorityIds, priorityIds);
         intent.putExtra(cTitle, title);
         intent.putExtra(cAccountSelectedType, selectedType);
         intent.putExtra(cAccountId, currentAccountId);
@@ -114,6 +126,8 @@ public class AccountPickerActivity extends AppCompatActivity {
     private final List<Row> mCategoryRows = new ArrayList<>();
 
     private final List<Row> mVisibleRows = new ArrayList<>();
+    /** {@code _id} → место среди приоритетных ({@link #cPriorityIds}). */
+    private final Map<Integer, Integer> mPriorityRank = new HashMap<>();
     private AccountPickerAdapter mAdapter;
 
     private TextView mKindCategories;
@@ -150,6 +164,9 @@ public class AccountPickerActivity extends AppCompatActivity {
         mCatalogMode      = getIntent().getBooleanExtra(cCatalogMode, false);
         mCurrentAccountId = getIntent().getIntExtra(cAccountId, 0);
         int selectedType  = getIntent().getIntExtra(cAccountSelectedType, cSelectedTypeALL);
+
+        int[] priority = getIntent().getIntArrayExtra(cPriorityIds);
+        if (priority != null) for (int i = 0; i < priority.length; i++) mPriorityRank.putIfAbsent(priority[i], i);
 
         int pairId = getIntent().getIntExtra(cPairAccountId, 0);
         AccountItem pair = pairId > 0 ? Singleton.instance.getAccounts(this).getAccountById(pairId) : null;
@@ -348,8 +365,15 @@ public class AccountPickerActivity extends AppCompatActivity {
     }
 
     private void sortRows() {
-        mWalletRows.sort(comparator(mWalletSort));
-        mCategoryRows.sort(comparator(mCategorySort));
+        mWalletRows.sort(withPriority(comparator(mWalletSort)));
+        mCategoryRows.sort(withPriority(comparator(mCategorySort)));
+    }
+
+    /** Приоритетные счета — первыми в своём порядке, остальные — по {@code rest}. */
+    private Comparator<Row> withPriority(Comparator<Row> rest) {
+        if (mPriorityRank.isEmpty()) return rest;
+        return Comparator.<Row>comparingInt(r -> mPriorityRank.getOrDefault(r.account.getId(), Integer.MAX_VALUE))
+                .thenComparing(rest);
     }
 
     private Comparator<Row> comparator(PickerSort sort) {

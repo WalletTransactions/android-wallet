@@ -97,6 +97,32 @@ public final class AiTexts {
         return "Кошелёк не найден — выберите сам";
     }
 
+    /**
+     * Строка «Подсказка ИИ: …» в окне операции: исходный текст, вопросы resolver,
+     * несовпадение валюты, отказ по кошельку и пометки {@code notes} — по строке
+     * на каждое (spec ai-expense-entry, «Вопрос resolver», «Отказ resolver»,
+     * «Проверки в окне операции»).
+     */
+    public static String operationHint(String sourceText, ParseExpenseResult r) {
+        StringBuilder sb = new StringBuilder("Подсказка ИИ: «").append(sourceText).append('»');
+        ParseExpenseResult.Choice w = r.resolution != null ? r.resolution.wallet : null;
+        ParseExpenseResult.Choice c = r.resolution != null ? r.resolution.category : null;
+        String currency = r.expense != null ? r.expense.currencyHint : "";
+        if (w != null && ParseExpenseResult.Choice.ASK.equals(w.kind)) {
+            sb.append("\nС какого кошелька?");
+            if ("currency_mismatch".equals(w.why) && w.force != null) {
+                sb.append("\nВ тексте ").append(currency).append(", а «").append(w.force.name)
+                        .append("» в ").append(w.force.isoCode);
+            }
+        } else if (w != null && ParseExpenseResult.Choice.REJECT.equals(w.kind)) {
+            sb.append('\n').append(walletReject(w.why, currency));
+        }
+        if (c != null && ParseExpenseResult.Choice.ASK.equals(c.kind)) sb.append("\nКакая категория?");
+        if (r.notes.contains("currency_dropped")) sb.append("\nВалюту из текста пришлось убрать — проверьте кошелёк");
+        if (r.notes.contains("comment_truncated")) sb.append("\nКомментарий сокращён");
+        return sb.toString();
+    }
+
     private static String when(long at, Date now) {
         Calendar a = Calendar.getInstance();
         a.setTimeInMillis(at);

@@ -85,6 +85,37 @@ public class AiTextsTest {
                 AiTexts.walletReject("no_wallets", ""));
     }
 
+    /** Подсказка над полями окна операции — дословно из сценариев спеки. */
+    @Test
+    public void operationHint_texts() throws Exception {
+        assertEquals("Подсказка ИИ: «такси 450 с тинькоффа»",
+                AiTexts.operationHint("такси 450 с тинькоффа", result("found", "none", "found", "[]")));
+
+        assertEquals("Подсказка ИИ: «кофе 200»\nКакая категория?",
+                AiTexts.operationHint("кофе 200", result("found", "none", "ask", "[]")));
+
+        assertEquals("Подсказка ИИ: «ужин 40 евро @тинькофф»\nС какого кошелька?\nВ тексте EUR, а «Тинькофф» в RUB",
+                AiTexts.operationHint("ужин 40 евро @тинькофф", result("ask", "currency_mismatch", "found", "[]")));
+
+        assertEquals("Подсказка ИИ: «x»\nНет кошелька в EUR",
+                AiTexts.operationHint("x", result("reject", "no_wallet_in_currency", "found", "[]")));
+
+        assertEquals("Подсказка ИИ: «x»\nВ кошельке нет ни одного счёта — создайте его в приложении",
+                AiTexts.operationHint("x", result("reject", "no_wallets", "found", "[]")));
+
+        assertEquals("Подсказка ИИ: «x»\nВалюту из текста пришлось убрать — проверьте кошелёк\nКомментарий сокращён",
+                AiTexts.operationHint("x", result("found", "none", "found", "[\"currency_dropped\",\"comment_truncated\"]")));
+    }
+
+    private static ParseExpenseResult result(String walletKind, String walletWhy, String categoryKind, String notes)
+            throws Exception {
+        String force = "{\"uuid\":\"f\",\"name\":\"Тинькофф\",\"iso_code\":\"RUB\"}";
+        return ParseExpenseResult.fromJson(new org.json.JSONObject("{\"outcome\":\"draft\",\"prompt_version\":\"v\","
+                + "\"notes\":" + notes + ",\"expense\":{\"amount\":\"40\",\"currency_hint\":\"EUR\"},"
+                + "\"resolution\":{\"wallet\":{\"kind\":\"" + walletKind + "\",\"why\":\"" + walletWhy
+                + "\",\"force\":" + force + "},\"category\":{\"kind\":\"" + categoryKind + "\"}}}"));
+    }
+
     private static Date at(int y, int m, int d, int hh, int mm) {
         Calendar c = Calendar.getInstance();
         c.clear();

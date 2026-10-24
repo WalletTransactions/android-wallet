@@ -184,6 +184,21 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- «Подсказка ИИ: …» — окно открыто с экрана «ИИ» (extra cHint):
+                 исходный текст и вопросы resolver. Без подсказки скрыта. -->
+            <TextView
+                android:id="@+id/tvAiHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="18dp"
+                android:layout_marginRight="18dp"
+                android:layout_marginBottom="8dp"
+                android:padding="10dp"
+                android:background="@drawable/bg_input_field"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="13sp"
+                android:visibility="gone"/>
+
             <LinearLayout
                 android:id="@+id/rowAmount"
                 android:layout_width="match_parent"

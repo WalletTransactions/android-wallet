@@ -406,31 +406,48 @@ Binder-транзакции (~500 КБ), из-за чего extras приход�
 ## Экран «ИИ»
 
 Трата своими словами через wallet-ai (`/api/ai/*`, контракт — `wallet-ai/openapi.yaml`).
-Поведение — `openspec/changes/add-ai-client` (spec `ai-expense-entry`).
+Поведение — spec `openspec/specs/ai-expense-entry` (change `add-ai-client`,
+правка в окне операции — `ai-expense-in-operation-window`).
 
 ```mermaid
 flowchart LR
     T["Текст<br/>поле · голос · «Поделиться»"] --> S["SyncRunner.runOnceShared<br/>до 10 с"]
     S --> J["AiApiClient<br/>createJob → getJob?wait=25"]
-    J --> R["DraftReconciler<br/>uuid → локальный account"]
-    R --> C["Карточка"]
-    C --> W["WalletDbCRUD.InsertOperation<br/>+ фоновый синк"]
+    J --> R["OperationPrefill<br/>DraftReconciler: uuid → локальный account"]
+    R -->|все счета на телефоне| W["TransactionActivity<br/>«Новая операция» + подсказка"]
+    R -->|счёт пропал| P["Блок ошибки<br/>синк и повтор / открыть операцию"]
+    P --> W
+    W --> D["«Записано: …»<br/>+ фоновый синк"]
 ```
 
 | Класс | Ответственность |
 | --- | --- |
-| `Activities/AiActivity` | Экран: ввод, ожидание, карточка, запись. Приём `ACTION_SEND` `text/plain` |
+| `Activities/AiActivity` | Экран: ввод, ожидание, блок ошибки «пропал», результат окна операции. Приём `ACTION_SEND` `text/plain` |
 | `sync/AiApiClient` | Транспорт: status, jobs; свой `readTimeout` дольше long-poll |
 | `ai/ParseExpenseResult` | Разбор `ParseExpenseResult` из ответа задания |
 | `ai/DraftReconciler` | Сверка uuid черновика с телефоном: есть / нет / удалён / в архиве |
+| `ai/OperationPrefill` | Поля окна операции из черновика: живые счета, кандидаты для пикеров, подсказка |
 | `ai/AiTexts` | Тексты ошибок и деталей — дословно из спеки, под юнит-тестом |
 
 Почему синк перед разбором: resolver wallet-ai выбирает кошелёк и категорию по
 справочнику **сервера** (wallet-report), а записывать можно только на строку,
 которая есть в локальной базе. Push отдаёт серверу то, что создано на телефоне,
 pull приносит созданное в вебе и боте. Если uuid из черновика локально всё равно
-не нашёлся, карточка не даёт записать и показывает блок ошибки; сверка
-повторяется прямо перед `InsertOperation`.
+не нашёлся, окно не открывается сразу: экран «ИИ» показывает блок ошибки.
+
+Правка и запись — в обычном окне операции, отдельной карточки нет. Окно
+принимает от экрана «ИИ»:
+
+| Extra `TransactionActivity` | Что |
+| --- | --- |
+| `cHint` | строка «Подсказка ИИ: …» над полями (исходный текст, вопросы resolver, `notes`) |
+| `cPriorityWalletIds`, `cPriorityCategoryIds` | `int[]` `_id` кандидатов resolver; окно передаёт их пикеру как `AccountPickerActivity.cPriorityIds` — первыми при любой сортировке |
+| результат `cSavedOperationId` | `_id` главной проводки после «Сохранить»; у удаления его нет |
+
+По `cSavedOperationId` экран «ИИ» строит «Записано: …» из сохранённой операции
+(пользователь мог сменить сумму, счета, вид). Закрыли окно без сохранения —
+черновик остаётся («Открыть снова» без нового запроса к ИИ), он же переживает
+пересоздание экрана через `onSaveInstanceState`.
 
 `default_wallet_uuid` — `AppSettings.getAiLastWalletUuid`, серверное написание
 uuid (с дефисами): локально встречаются uuid без дефисов (`LocalUuid.find`).

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Экран «ИИ» (AiActivity): трата своими словами через wallet-ai — поле ввода,
-  карточка черновика, запись в базу телефона. Открывается с «Ещё» и через
+  Экран «ИИ» (AiActivity): трата своими словами через wallet-ai — поле ввода и
+  ожидание; черновик правится и записывается в окне операции (TransactionActivity). Открывается с «Ещё» и через
   «Поделиться» текстом. Экран «вглубь», без нижней панели — шапка как у
   «Интеграций» (activity_integrations.xml). Поведение — openspec
   changes/add-ai-client, spec ai-expense-entry.
@@ -158,133 +158,57 @@
                 android:textStyle="bold"
                 android:textColor="@color/colorprofit"/>
 
-            <!-- Карточка черновика -->
+            <!-- Черновик не открыт сразу: кошелёк или категория из разбора пропали с
+                 телефона. Правка и запись — в окне операции (TransactionActivity). -->
             <LinearLayout
-                android:id="@+id/cardDraft"
+                android:id="@+id/problemBox"
+                style="@style/AiCard"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvProblem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="14.5sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorexpanse"/>
+
+                <TextView
+                    android:id="@+id/tvProblemDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textSize="12.5sp"
+                    android:textColor="@color/colorTextSecondary"/>
+
+                <Button
+                    style="@style/AiButtonOutline"
+                    android:text="Синхронизировать и повторить"
+                    android:onClick="onSyncRetry"/>
+
+                <Button
+                    style="@style/AiButtonOutline"
+                    android:text="Открыть операцию"
+                    android:onClick="onOpenOperation"/>
+            </LinearLayout>
+
+            <!-- Окно операции закрыли без сохранения: черновик жив, ИИ повторно не зовём. -->
+            <LinearLayout
+                android:id="@+id/pendingBox"
                 style="@style/AiCard"
                 android:visibility="gone">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Понял из текста — проверьте перед записью:"
+                    android:text="Разбор не записан"
                     android:textSize="14.5sp"
-                    android:textStyle="bold"
                     android:textColor="@color/colorTextPrimary"/>
-
-                <TextView style="@style/AiLabel" android:text="Сумма"/>
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <EditText
-                        android:id="@+id/editAmount"
-                        style="@style/AiValue"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:inputType="numberDecimal"/>
-
-                    <TextView
-                        android:id="@+id/tvCurrency"
-                        android:layout_width="56dp"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/colorTextSecondary"/>
-                </LinearLayout>
-
-                <TextView android:id="@+id/tvWalletLabel" style="@style/AiLabel" android:text="Кошелёк"/>
-                <TextView
-                    android:id="@+id/tvWallet"
-                    style="@style/AiValue"
-                    android:hint="Выберите кошелёк"
-                    android:onClick="onPickWallet"/>
-                <TextView android:id="@+id/tvWalletNote" style="@style/AiWarning"/>
-
-                <TextView android:id="@+id/tvCategoryLabel" style="@style/AiLabel" android:text="Категория"/>
-                <TextView
-                    android:id="@+id/tvCategory"
-                    style="@style/AiValue"
-                    android:hint="Выберите категорию"
-                    android:onClick="onPickCategory"/>
-
-                <TextView style="@style/AiLabel" android:text="Дата и время"/>
-                <TextView
-                    android:id="@+id/tvDate"
-                    style="@style/AiValue"
-                    android:onClick="onPickDate"/>
-                <TextView android:id="@+id/tvDateNote" style="@style/AiWarning" android:text="Дата в будущем"/>
-
-                <TextView style="@style/AiLabel" android:text="Комментарий"/>
-                <EditText
-                    android:id="@+id/editComment"
-                    style="@style/AiValue"
-                    android:inputType="textCapSentences"/>
-
-                <TextView android:id="@+id/tvNotes" style="@style/AiNote"/>
-
-                <!-- Кошелёк или категория пропали с телефона -->
-                <LinearLayout
-                    android:id="@+id/problemBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginTop="12dp"
-                    android:padding="12dp"
-                    android:background="@drawable/bg_input_field"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:id="@+id/tvProblem"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textSize="14.5sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/colorexpanse"/>
-
-                    <TextView
-                        android:id="@+id/tvProblemDetails"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:textSize="12.5sp"
-                        android:textColor="@color/colorTextSecondary"/>
-
-                    <Button
-                        android:id="@+id/btnSyncRetry"
-                        style="@style/AiButtonOutline"
-                        android:text="Синхронизировать и повторить"
-                        android:onClick="onSyncRetry"/>
-
-                    <Button
-                        style="@style/AiButtonOutline"
-                        android:text="Выбрать другой"
-                        android:onClick="onPickOther"/>
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvSource"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:textSize="12.5sp"
-                    android:textStyle="italic"
-                    android:textColor="@color/colorTextSecondary"/>
-
-                <Button
-                    android:id="@+id/btnSave"
-                    style="@style/AiButtonPrimary"
-                    android:layout_marginTop="14dp"
-                    android:text="Записать"
-                    android:onClick="onSave"/>
 
                 <Button
                     style="@style/AiButtonOutline"
-                    android:text="Отмена"
-                    android:onClick="onDiscard"/>
+                    android:text="Открыть снова"
+                    android:onClick="onOpenOperation"/>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
