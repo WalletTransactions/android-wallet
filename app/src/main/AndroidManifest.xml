@@ -169,8 +169,11 @@
         <!-- Трата своими словами через wallet-ai (openspec changes/add-ai-client).
              Принимает «Поделиться» текстом: сообщение банка из Viber/SMS попадает
              в поле, разбор пользователь запускает сам. configChanges — поворот не
-             должен пересоздавать экран: ожидание разбора привязано к нему. -->
+             должен пересоздавать экран: ожидание разбора привязано к нему.
+             singleTop — повторное «Поделиться» при открытом экране приходит в
+             onNewIntent, а не складывает в задачу ещё один экран «ИИ». -->
         <activity android:name=".Activities.AiActivity"
+                android:launchMode="singleTop"
                 android:theme="@style/AppTheme.NoActionBar"
                 android:label="Кошелёк"
                 android:windowSoftInputMode="adjustResize"
