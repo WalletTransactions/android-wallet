@@ -1,4 +1,5 @@
-# Сборка debug-APK и юнит-тесты на каждый push в main и на pull request.
+# Сборка debug-APK (артефакт wallet-debug-1.0.<code>-<sha>) и юнит-тесты на каждый
+# push в main и на pull request.
 #
 # Установка на устройство и инструментальные тесты — не здесь: им нужен Pixel
 # по USB, это делает Jenkins (BuildPlatform). См. org/docs/TODO_ci.md.
@@ -24,6 +25,9 @@ jobs:
     name: Build and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # На уровне job, а не шага: if шага видит только env job/workflow.
+      DEBUG_KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
     steps:
       - uses: actions/checkout@v5
 
@@ -33,12 +37,39 @@ jobs:
           java-version: "17"
           cache: gradle
 
+      # Debug-подпись — тот же ключ, что у сборок на телефоне (~/.android/debug.keystore
+      # хоста, см. deploy-debug.sh): иначе APK из артефакта не встанет поверх
+      # установленного (INSTALL_FAILED_UPDATE_INCOMPATIBLE), только после удаления
+      # приложения вместе с данными. Секрета нет (форк, PR извне) — шаг пропускается,
+      # Gradle сгенерирует свой ключ.
+      - name: Debug keystore
+        if: env.DEBUG_KEYSTORE_BASE64 != ''
+        run: |
+          mkdir -p ~/.android
+          echo "$DEBUG_KEYSTORE_BASE64" | base64 -d > ~/.android/debug.keystore
+
       # gradlew лежит в git без бита исполнения — запускаем через bash.
       - name: Unit tests
         run: bash ./gradlew :app:testDebugUnitTest --console=plain --no-daemon
 
       - name: Assemble debug APK
         run: bash ./gradlew :app:assembleDebug --console=plain --no-daemon
+
+      # versionCode растёт при каждой сборке (app/version.properties) — на раннере
+      # он свой, поэтому в имени артефакта ещё и короткий sha коммита.
+      - name: APK name
+        id: apk
+        run: |
+          code=$(grep '^VERSION_CODE=' app/version.properties | cut -d= -f2)
+          echo "name=wallet-debug-1.0.${code}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload test results
         if: always()
