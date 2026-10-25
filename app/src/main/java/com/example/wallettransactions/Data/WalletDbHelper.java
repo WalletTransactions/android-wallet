@@ -23,7 +23,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 81;
+    private static final int DATABASE_VERSION = 82;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -1050,6 +1050,12 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             if (oldVersion < 81) {
                 // v81: частота счетов на экране выбора (WalletDbLoader.LoadAccountUsage).
                 createOperationAccountIndexes(db);
+            }
+            if (oldVersion < 82) {
+                // v82: индексы на uuid ещё раз — базы, прошедшие v72 до того, как туда
+                // добавили createUuidIndexes, остались без них, и pull искал каждую
+                // строку полным сканом (34k операций — ANR посреди синка, 2026-10-25).
+                createUuidIndexes(db);
             }
             return;
         }
