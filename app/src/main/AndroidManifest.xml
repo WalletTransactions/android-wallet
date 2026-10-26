@@ -186,6 +186,26 @@
             </intent-filter>
         </activity>
 
+        <!-- Экран «Выписка» (openspec changes/add-ai-statement-import): импорт выписки
+             через wallet-ai. Принимает «Поделиться» файлом (EXTRA_STREAM) из банковского
+             приложения: экран открывается с файлом, загрузку пользователь запускает сам.
+             configChanges и singleTop — как у экрана «ИИ»: опрос разбора привязан к экрану. -->
+        <activity android:name=".Activities.StatementImportActivity"
+                android:launchMode="singleTop"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:label="Выписка в Кошелёк"
+                android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+                android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="application/pdf"/>
+                <data android:mimeType="text/csv"/>
+                <data android:mimeType="text/comma-separated-values"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+        </activity>
+
         <activity android:name=".Activities.IntegrationsActivity"
                 android:theme="@style/AppTheme.NoActionBar"
                 android:exported="false"/>

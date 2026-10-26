@@ -27,7 +27,7 @@
   дата ±1 день, один к одному. Серверные группы дублей приложение не
   использует: задача ИИ — разобрать и предложить категории.
 - **Один uuid — одна операция**: проверка перед вставкой и уникальный индекс
-  `operation(uuid)` в локальной базе (миграция v82).
+  `operation(uuid)` в локальной базе (миграция v83: v82 занята индексами uuid, коммит a6c37d5).
 - Записываются **только расходы**; доходы и переводы видны как «не для
   записи».
 
@@ -57,7 +57,7 @@
   `/api/ai/imports*`; `ai/` — модель импорта и проверка на дубли;
   `TransactionActivity` — extra uuid, «создать или открыть»;
   `WalletDbCRUD.InsertOperation` — вставка с заданным uuid;
-  `WalletDbHelper` — миграция v82 (уникальный индекс); `AndroidManifest.xml` —
+  `WalletDbHelper` — миграция v83 (уникальный индекс); `AndroidManifest.xml` —
   приём `ACTION_SEND` с файлом; README и `docs/ARCHITECTURE.md`.
 - Серверы: правок нет. wallet-ai — по текущему контракту `openapi.yaml`
   (`/api/ai/imports`, `PATCH /rows` только `category_uuid`, `POST /committed`).

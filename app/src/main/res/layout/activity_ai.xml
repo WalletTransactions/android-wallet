@@ -210,6 +210,31 @@
                     android:text="Открыть снова"
                     android:onClick="onOpenOperation"/>
             </LinearLayout>
+
+            <!-- Импорт выписки — свой экран (StatementImportActivity, add-ai-statement-import). -->
+            <LinearLayout style="@style/AiCard">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Выписка из банка"
+                    android:textSize="14.5sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorTextPrimary"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="PDF или CSV из приложения банка — ИИ разберёт операции и подберёт категории, вы проверите и запишете"
+                    android:textSize="12.5sp"
+                    android:textColor="@color/colorTextSecondary"/>
+
+                <Button
+                    style="@style/AiButtonOutline"
+                    android:text="Загрузить выписку"
+                    android:onClick="onStatementImport"/>
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 </RelativeLayout>

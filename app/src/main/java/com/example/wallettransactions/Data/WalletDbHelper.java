@@ -23,7 +23,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 82;
+    private static final int DATABASE_VERSION = 83;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -68,6 +68,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
 
         createPartialUniqueIndexes(db);
         createUuidIndexes(db);
+        createOperationUuidUnique(db);
         createOperationAccountIndexes(db);
         CreateViews(db);
         createSyncTriggers(db);
@@ -245,6 +246,67 @@ public class WalletDbHelper extends SQLiteOpenHelper {
 
     private void createUuidIndex(SQLiteDatabase db, String table) {
         db.execSQL("CREATE INDEX IF NOT EXISTS ix_" + table + "_uuid ON " + table + " (uuid)");
+    }
+
+    /** uuid без дефисов и регистра — так же его ищет pull ({@code SyncEngine.localUuid}). */
+    private static final String OPERATION_UUID_KEY = "lower(replace(uuid, '-', ''))";
+
+    /**
+     * v83 (openspec add-ai-statement-import, operation-identity): не больше одной
+     * операции на uuid, живой или удалённой. На сервере {@code operation} —
+     * {@code PRIMARY KEY (ledger_id, uuid)}, и две локальные строки с одним uuid
+     * после синка расходятся с ним: на телефоне две траты, на сервере одна.
+     * Индекс по выражению, а не по колонке: uuid лежит и с дефисами, и без.
+     */
+    static void createOperationUuidUnique(SQLiteDatabase db) {
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS ux_operation_uuid ON "
+                + WalletContract.OperationEntry.TABLE_NAME + " (" + OPERATION_UUID_KEY + ")");
+    }
+
+    /**
+     * Дубли uuid до {@link #createOperationUuidUnique}: на uuid остаётся одна строка —
+     * живая, если такая есть (с меньшим {@code _id}). Лишние помечаются удалёнными и
+     * получают новый uuid: со старым их tombstone при синке удалил бы на сервере
+     * ту единственную операцию, которую представляет оставшаяся строка.
+     *
+     * @return сколько строк сведено
+     */
+    static int dedupeOperationUuids(SQLiteDatabase db) {
+        String table = WalletContract.OperationEntry.TABLE_NAME;
+        List<String> keys = new ArrayList<>();
+        Cursor c = db.rawQuery("SELECT " + OPERATION_UUID_KEY + " FROM " + table
+                + " GROUP BY 1 HAVING COUNT(*) > 1", null);
+        try {
+            while (c.moveToNext()) keys.add(c.getString(0));
+        } finally {
+            c.close();
+        }
+        int moved = 0;
+        long now = System.currentTimeMillis();
+        for (String key : keys) {
+            Cursor rows = db.rawQuery("SELECT _id, deleted_at FROM " + table + " WHERE " + OPERATION_UUID_KEY
+                    + " = ? ORDER BY deleted_at IS NOT NULL, _id", new String[]{key});
+            try {
+                boolean first = true;
+                while (rows.moveToNext()) {
+                    if (first) {
+                        first = false;
+                        continue;
+                    }
+                    ContentValues cv = new ContentValues();
+                    cv.put(WalletContract.OperationEntry.COLUMN_UUID, UUID.randomUUID().toString());
+                    cv.put(WalletContract.OperationEntry.COLUMN_DELETED_AT, rows.isNull(1) ? now : rows.getLong(1));
+                    cv.put(WalletContract.OperationEntry.COLUMN_DIRTY, 1);
+                    db.update(table, cv, WalletContract.OperationEntry._ID + "=?",
+                            new String[]{String.valueOf(rows.getLong(0))});
+                    moved++;
+                }
+            } finally {
+                rows.close();
+            }
+        }
+        if (moved > 0) Log.w(LOG_TAG, "v83: duplicate operation uuids resolved: " + moved);
+        return moved;
     }
 
     /**
@@ -1056,6 +1118,11 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
                 // добавили createUuidIndexes, остались без них, и pull искал каждую
                 // строку полным сканом (34k операций — ANR посреди синка, 2026-10-25).
                 createUuidIndexes(db);
+            }
+            if (oldVersion < 83) {
+                // v83: одна операция на uuid (импорт выписки пишет операции с uuid = row_id).
+                dedupeOperationUuids(db);
+                createOperationUuidUnique(db);
             }
             return;
         }

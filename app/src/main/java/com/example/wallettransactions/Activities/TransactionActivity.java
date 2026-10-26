@@ -4,6 +4,7 @@ import android.app.TimePickerDialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import com.google.android.material.snackbar.Snackbar;
@@ -102,6 +103,13 @@ public class TransactionActivity extends AppCompatActivity {
     /** int[] {@code _id} кошельков и категорий, которые пикер ставит первыми (кандидаты resolver). */
     public final static String cPriorityWalletIds = "TransactionActivity.PriorityWalletIds";
     public final static String cPriorityCategoryIds = "TransactionActivity.PriorityCategoryIds";
+    /**
+     * uuid, с которым сохранять новую операцию (строка импорта выписки — её {@code row_id};
+     * openspec add-ai-statement-import, operation-identity). Живая операция с ним уже
+     * есть — окно открывается на её правку; удалённая — «Сохранить» восстанавливает ту
+     * же строку. У перевода uuid получает главная проводка (списание с источника).
+     */
+    public final static String cOpUuid = "TransactionActivity.OpUuid";
 
     /**
      * Имя ПО УМОЛЧАНИЮ для категории комиссии за перевод — используется только если её
@@ -123,6 +131,10 @@ public class TransactionActivity extends AppCompatActivity {
     private Kind mKind = Kind.expense;
 
     private boolean mIsEdit;
+    /** {@link #cOpUuid} новой операции; null — uuid случайный (и всегда при правке). */
+    private String mOpUuid;
+    /** «Сохранить» уже записал операцию — второе быстрое нажатие ничего не делает. */
+    private boolean mSaved;
     private EditText mEditDate;
     private EditText mEditTime;
 
@@ -360,6 +372,7 @@ public class TransactionActivity extends AppCompatActivity {
         AssignComponents();
 
         mDbHelper = new WalletDbHelper(this);
+        openExistingByUuid();
 
         mTranId  = getIntent().getIntExtra(cTranId, -1);
         mIsEdit  = getIntent().getBooleanExtra(cIsEdit, false);
@@ -452,6 +465,44 @@ public class TransactionActivity extends AppCompatActivity {
 
     public void btnUp(View view) {
         finish();
+    }
+
+    /**
+     * {@link #cOpUuid}: живая операция с этим uuid уже есть — окно становится её правкой
+     * (те же extras, что передаёт список операций), а не создаёт вторую. Нет её или она
+     * удалена — новая операция сохранится с этим uuid.
+     */
+    private void openExistingByUuid() {
+        Intent in = getIntent();
+        if (in.getBooleanExtra(cIsEdit, false)) return;
+        mOpUuid = in.getStringExtra(cOpUuid);
+        if (mOpUuid == null) return;
+        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+        WalletDbCRUD.UuidMatch match = WalletDbCRUD.FindOperationByUuid(db, mOpUuid);
+        if (match == null || match.deleted) return;
+        Cursor c = db.rawQuery("SELECT date, acc_fr_id, acc_to_id, amount, comment FROM "
+                + WalletContract.OperationEntry.TABLE_NAME + " WHERE _id=?", new String[]{String.valueOf(match.id)});
+        try {
+            if (!c.moveToFirst()) return;
+            in.putExtra(cTranId, (int) match.id);
+            in.putExtra(cIsEdit, true);
+            in.putExtra(cDate, c.getString(0));
+            in.putExtra(cFrom, c.getInt(1));
+            in.putExtra(cTo, c.getInt(2));
+            in.putExtra(cAmount, c.getDouble(3));
+            in.putExtra(cComment, c.getString(4));
+            in.removeExtra(cHint);
+            mOpUuid = null;
+        } finally {
+            c.close();
+        }
+    }
+
+    /** Главная проводка новой операции: с {@link #cOpUuid} или, как раньше, со случайным uuid. */
+    private long insertMain(SQLiteDatabase db, String dateStr, int fromId, int toId, double amount, String comment) {
+        if (mOpUuid == null) return WalletDbCRUD.InsertOperation(db, dateStr, fromId, toId, amount, comment);
+        long id = WalletDbCRUD.InsertOperationWithUuid(db, mOpUuid, dateStr, fromId, toId, amount, comment);
+        return id == WalletDbCRUD.UUID_TAKEN ? -1 : id;
     }
 
     /**
@@ -924,6 +975,7 @@ public class TransactionActivity extends AppCompatActivity {
 
 
     public void SaveClick(View view) {
+        if (mSaved) return;
 
         if (mAccFrom == null)  {
            Toast.makeText(this, "Выберите счет списывания средств", Toast.LENGTH_SHORT).show();
@@ -978,6 +1030,9 @@ public class TransactionActivity extends AppCompatActivity {
         } else if (mKind == Kind.transfer) {
             newRowId = saveTransfer(db, dateStr, comment, amount);
 
+        } else if (mOpUuid != null) {
+            newRowId = insertMain(db, dateStr, mAccFrom.getId(), mAccTo.getId(), amount, comment);
+
         } else {
             // uuid — v72 (org/docs/TODO_mobile_sync.md, Фаза 3): единственный прямой
             // db.insert на operation в этом файле, остальные пути (saveTransfer/
@@ -990,6 +1045,7 @@ public class TransactionActivity extends AppCompatActivity {
             // Если ID  -1, значит произошла ошибка
             Toast.makeText(this, "Произошла ошибка при обновлении", Toast.LENGTH_SHORT).show();
         } else {
+            mSaved = true;
             // Кошелёк операции: у расхода и перевода — списания, у дохода — зачисления.
             AccountItem wallet = mKind == Kind.income ? mAccTo : mAccFrom;
             if (wallet != null && wallet.isOperatingAccount())
@@ -1033,16 +1089,14 @@ public class TransactionActivity extends AppCompatActivity {
 
                 double amountTo = parseAmount(mEditAmountTo.getText().toString());
 
-                mainId = WalletDbCRUD.InsertOperation(db, dateStr,
-                        mAccFrom.getId(), bridgeId, amount, comment);
+                mainId = insertMain(db, dateStr, mAccFrom.getId(), bridgeId, amount, comment);
                 long legId = WalletDbCRUD.InsertOperation(db, dateStr,
                         bridgeId, mAccTo.getId(), amountTo, comment);
                 if (mainId <= 0 || legId <= 0) return -1;
 
                 WalletDbCRUD.LinkOperations(db, mainId, legId, OperationItem.LinkType.LEG);
             } else {
-                mainId = WalletDbCRUD.InsertOperation(db, dateStr,
-                        mAccFrom.getId(), mAccTo.getId(), amount, comment);
+                mainId = insertMain(db, dateStr, mAccFrom.getId(), mAccTo.getId(), amount, comment);
                 if (mainId <= 0) return -1;
             }
 

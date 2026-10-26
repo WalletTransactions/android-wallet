@@ -13,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -92,6 +93,64 @@ public class WalletDbCRUD {
         cv.put(WalletContract.OperationEntry.COLUMN_AMOUNT, amount);
         cv.put(WalletContract.OperationEntry.COLUMN_COMMENT, comment);
         cv.put(WalletContract.OperationEntry.COLUMN_UUID, UUID.randomUUID().toString());
+        return db.insert(WalletContract.OperationEntry.TABLE_NAME, null, cv);
+    }
+
+    /** {@link #InsertOperationWithUuid}: живая операция с этим uuid уже есть — вставки не было. */
+    public static final long UUID_TAKEN = -2;
+
+    /** Операция, найденная по uuid: локальный {@code _id} и удалена ли она. */
+    public static final class UuidMatch {
+        public final long id;
+        public final boolean deleted;
+
+        UuidMatch(long id, boolean deleted) {
+            this.id = id;
+            this.deleted = deleted;
+        }
+    }
+
+    /**
+     * Операция с этим uuid в любом написании (с дефисами и без, любой регистр — как
+     * {@code ux_operation_uuid}, v83), живая или удалённая; {@code null} — такой нет.
+     */
+    public static UuidMatch FindOperationByUuid(SQLiteDatabase db, String uuid) {
+        String key = uuid.toLowerCase(Locale.ROOT).replace("-", "");
+        Cursor c = db.rawQuery("SELECT _id, deleted_at FROM " + WalletContract.OperationEntry.TABLE_NAME
+                + " WHERE lower(replace(uuid, '-', '')) = ? LIMIT 1", new String[]{key});
+        try {
+            return c.moveToFirst() ? new UuidMatch(c.getLong(0), !c.isNull(1)) : null;
+        } finally {
+            c.close();
+        }
+    }
+
+    /**
+     * Проводка с заданным заранее uuid (openspec add-ai-statement-import, operation-identity:
+     * строка импорта выписки пишется с {@code uuid = row_id}). Живая с этим uuid уже
+     * есть — {@link #UUID_TAKEN}, вторая не создаётся. Удалённая есть — та же строка
+     * получает новые поля и снова живая (dirty поднимет триггер синка).
+     *
+     * @return {@code _id} новой или восстановленной строки, {@link #UUID_TAKEN} или -1
+     */
+    public static long InsertOperationWithUuid(SQLiteDatabase db, String uuid, String date, int accFromId,
+                                               int accToId, double amount, String comment) {
+        UuidMatch existing = FindOperationByUuid(db, uuid);
+        if (existing != null && !existing.deleted) return UUID_TAKEN;
+
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.OperationEntry.COLUMN_DATE, date);
+        cv.put(WalletContract.OperationEntry.COLUMN_FROM, accFromId);
+        cv.put(WalletContract.OperationEntry.COLUMN_TO, accToId);
+        cv.put(WalletContract.OperationEntry.COLUMN_AMOUNT, amount);
+        cv.put(WalletContract.OperationEntry.COLUMN_COMMENT, comment);
+        if (existing != null) {
+            cv.putNull(WalletContract.OperationEntry.COLUMN_DELETED_AT);
+            int n = db.update(WalletContract.OperationEntry.TABLE_NAME, cv,
+                    WalletContract.OperationEntry._ID + "=?", new String[]{String.valueOf(existing.id)});
+            return n == 1 ? existing.id : -1;
+        }
+        cv.put(WalletContract.OperationEntry.COLUMN_UUID, uuid);
         return db.insert(WalletContract.OperationEntry.TABLE_NAME, null, cv);
     }
 

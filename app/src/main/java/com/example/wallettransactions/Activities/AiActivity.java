@@ -366,6 +366,12 @@ public class AiActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    /** «Загрузить выписку»: экран «Выписка» сразу с системным выбором файла. */
+    public void onStatementImport(View view) {
+        startActivity(new Intent(this, StatementImportActivity.class)
+                .putExtra(StatementImportActivity.EXTRA_PICK_FILE, true));
+    }
+
     // ── Черновик → окно операции ─────────────────────────────────────────────
 
     private void onDraft(ParseExpenseResult r) {

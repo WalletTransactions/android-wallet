@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран «Выписка» (StatementImportActivity): файл выписки → импорт в wallet-ai →
+  список разобранных строк, правка в окне операции, «Записать готовые».
+  Открывается с экрана «ИИ» и через «Поделиться» файлом. Шапка и карточки — как
+  у экрана «ИИ» (activity_ai.xml, styles_ai.xml). Поведение — openspec
+  changes/add-ai-statement-import, spec ai-statement-import.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="6dp">
+
+        <ImageButton
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:src="@drawable/ic_nav_back"
+            android:contentDescription="Назад"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="Выписка"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/caprasimo"
+            android:textColor="@color/colorTextPrimary"/>
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/toolbar"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingTop="10dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="24dp">
+
+            <!-- Файл и кошелёк -->
+            <LinearLayout
+                android:id="@+id/pickBox"
+                style="@style/AiCard">
+
+                <TextView style="@style/AiLabel" android:layout_marginTop="0dp" android:text="Файл выписки"/>
+
+                <TextView
+                    android:id="@+id/tvFile"
+                    style="@style/AiValue"
+                    android:hint="PDF с текстом, CSV или TXT до 5 МБ"
+                    android:onClick="onPickFile"/>
+
+                <TextView style="@style/AiLabel" android:text="Кошелёк выписки"/>
+
+                <TextView
+                    android:id="@+id/tvWallet"
+                    style="@style/AiValue"
+                    android:hint="Выберите кошелёк"
+                    android:onClick="onPickWallet"/>
+
+                <TextView android:id="@+id/tvPickError" style="@style/AiWarning"/>
+
+                <Button
+                    android:id="@+id/btnUpload"
+                    style="@style/AiButtonPrimary"
+                    android:text="Загрузить"
+                    android:onClick="onUpload"/>
+            </LinearLayout>
+
+            <!-- Ожидание: синк, загрузка, разбор -->
+            <LinearLayout
+                android:id="@+id/progressBox"
+                style="@style/AiCard"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvProgress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="14.5sp"
+                    android:textColor="@color/colorTextPrimary"/>
+
+                <ProgressBar
+                    android:id="@+id/progressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:indeterminate="true"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="С экрана можно уйти — разбор идёт на сервере, вернитесь позже"
+                    android:textSize="12.5sp"
+                    android:textColor="@color/colorTextSecondary"/>
+            </LinearLayout>
+
+            <!-- Отказ или провал разбора -->
+            <LinearLayout
+                android:id="@+id/messageBox"
+                style="@style/AiCard"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="14.5sp"
+                    android:textColor="@color/colorTextPrimary"/>
+
+                <Button
+                    style="@style/AiButtonOutline"
+                    android:text="Загрузить другую выписку"
+                    android:onClick="onAnother"/>
+            </LinearLayout>
+
+            <!-- Разобранные строки -->
+            <LinearLayout
+                android:id="@+id/listBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout style="@style/AiCard">
+
+                    <TextView
+                        android:id="@+id/tvListTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextPrimary"/>
+
+                    <TextView
+                        android:id="@+id/tvListSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textSize="12.5sp"
+                        android:textColor="@color/colorTextSecondary"/>
+
+                    <TextView android:id="@+id/tvListNote" style="@style/AiWarning"/>
+
+                    <Button
+                        android:id="@+id/btnWriteReady"
+                        style="@style/AiButtonPrimary"
+                        android:text="Записать готовые (0)"
+                        android:onClick="onWriteReady"/>
+
+                    <Button
+                        style="@style/AiButtonOutline"
+                        android:text="Загрузить другую выписку"
+                        android:onClick="onAnother"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/rowsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</RelativeLayout>

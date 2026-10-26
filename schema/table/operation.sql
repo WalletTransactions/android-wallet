@@ -16,3 +16,7 @@ CREATE TABLE "operation" (
   CONSTRAINT fk_acc_fr_id FOREIGN KEY (acc_fr_id) REFERENCES account (_id),
   CONSTRAINT fk_acc_to_id FOREIGN KEY (acc_to_id) REFERENCES account (_id)
 );
+
+-- v83 (WalletDbHelper.createOperationUuidUnique): одна операция на uuid, написание
+-- с дефисами и без, любой регистр — как ищет pull (SyncEngine.localUuid).
+CREATE UNIQUE INDEX ux_operation_uuid ON operation (lower(replace(uuid, '-', '')));

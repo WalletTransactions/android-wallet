@@ -6,6 +6,7 @@ import android.util.Log;
 import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.TokenStore;
 import com.example.wallettransactions.ai.ParseExpenseResult;
+import com.example.wallettransactions.ai.StatementImport;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -44,15 +46,20 @@ public final class AiApiClient {
 
     public enum SessionState { OK, NO_SESSION, NEEDS_RELINK, NETWORK_ERROR }
 
-    /** Не-2xx ответ: код и {@code error} из тела ({@code busy}, {@code unavailable}, …). */
+    /**
+     * Не-2xx ответ: код и {@code error} из тела ({@code busy}, {@code unavailable}, …);
+     * {@code importId} — у 429 {@code import_in_progress} (какой импорт уже идёт), иначе пусто.
+     */
     public static final class HttpError extends IOException {
         public final int code;
         public final String error;
+        public final String importId;
 
-        HttpError(String what, int code, String error) {
+        HttpError(String what, int code, String error, String importId) {
             super(what + " -> HTTP " + code + (error.isEmpty() ? "" : " " + error));
             this.code = code;
             this.error = error;
+            this.importId = importId;
         }
     }
 
@@ -170,6 +177,74 @@ public final class AiApiClient {
         }
     }
 
+    // ── Импорт выписки (openspec add-ai-statement-import) ─────────────────────
+    // В logcat — только id импорта, статус, число строк и длительность: суммы и
+    // описания строк — данные пользователя.
+
+    /** {@code createImport}: файл base64 в JSON (wallet-ai D9, не multipart). Ответ — 202 без строк. */
+    public StatementImport createImport(String walletUuid, String fileName, byte[] bytes)
+            throws IOException, JSONException {
+        JSONObject payload = new JSONObject()
+                .put("wallet_uuid", walletUuid)
+                .put("file", new JSONObject()
+                        .put("name", fileName)
+                        .put("content_base64", Base64.getEncoder().encodeToString(bytes)));
+        long started = System.currentTimeMillis();
+        JSONObject json = call("POST /api/ai/imports",
+                request("api/ai/imports").post(RequestBody.create(payload.toString(), JSON)).build());
+        StatementImport imp = StatementImport.fromJson(json);
+        Log.i(TAG, "import " + imp.id + " created: " + imp.status
+                + (imp.failure != null ? " (" + imp.failure + ")" : "")
+                + " in " + (System.currentTimeMillis() - started) + " ms");
+        return imp;
+    }
+
+    /** {@code listImports}: импорты пользователя, новые первыми, без строк. */
+    public List<StatementImport> listImports() throws IOException, JSONException {
+        JSONObject json = call("GET /api/ai/imports", request("api/ai/imports").get().build());
+        List<StatementImport> list = StatementImport.listFromJson(json);
+        Log.i(TAG, "imports: " + list.size());
+        return list;
+    }
+
+    /** {@code getImport}: статус и прогресс, в ready/done — строки. */
+    public StatementImport getImport(String id) throws IOException, JSONException {
+        long started = System.currentTimeMillis();
+        JSONObject json = call("GET /api/ai/imports/{id}", request("api/ai/imports/" + id).get().build());
+        return logged(StatementImport.fromJson(json), started);
+    }
+
+    /**
+     * {@code patchImportRows} — только категория: сервер выучит правило продавца и
+     * проставит её похожим строкам. Сумму и дату телефон на сервер не шлёт.
+     */
+    public StatementImport patchImportRowCategory(String id, String rowId, String categoryUuid)
+            throws IOException, JSONException {
+        JSONObject row = new JSONObject().put("row_id", rowId).put("category_uuid", categoryUuid);
+        JSONObject payload = new JSONObject().put("rows", new JSONArray().put(row));
+        long started = System.currentTimeMillis();
+        JSONObject json = call("PATCH /api/ai/imports/{id}/rows",
+                request("api/ai/imports/" + id + "/rows").patch(RequestBody.create(payload.toString(), JSON)).build());
+        return logged(StatementImport.fromJson(json), started);
+    }
+
+    /** {@code commitImportRows}: строки записаны на телефоне — сервер их замораживает. */
+    public StatementImport commitImportRows(String id, List<String> rowIds) throws IOException, JSONException {
+        JSONArray ids = new JSONArray();
+        for (String r : rowIds) ids.put(r);
+        JSONObject payload = new JSONObject().put("row_ids", ids);
+        long started = System.currentTimeMillis();
+        JSONObject json = call("POST /api/ai/imports/{id}/committed",
+                request("api/ai/imports/" + id + "/committed").post(RequestBody.create(payload.toString(), JSON)).build());
+        return logged(StatementImport.fromJson(json), started);
+    }
+
+    private static StatementImport logged(StatementImport imp, long started) {
+        Log.i(TAG, "import " + imp.id + ": " + imp.status + ", rows " + imp.rows.size()
+                + " in " + (System.currentTimeMillis() - started) + " ms");
+        return imp;
+    }
+
     private Request.Builder request(String path) {
         return new Request.Builder()
                 .url(baseUrl + path)
@@ -181,7 +256,8 @@ public final class AiApiClient {
             String body = response.body() != null ? response.body().string() : "";
             JSONObject json = body.isEmpty() ? new JSONObject() : parseOrEmpty(body);
             if (!response.isSuccessful()) {
-                throw new HttpError(what, response.code(), json.optString("error", ""));
+                throw new HttpError(what, response.code(), json.optString("error", ""),
+                        json.optString("import_id", ""));
             }
             if (body.isEmpty()) throw new JSONException(what + ": пустой ответ");
             return new JSONObject(body);
