@@ -353,12 +353,19 @@ public class StatementImportActivity extends AppCompatActivity {
                 return;
             }
             runOnUiThread(() -> { if (gen == generation) tvProgress.setText("Загружаю выписку…"); });
+            byte[] bytes;
             try {
-                byte[] bytes = readFile(uri);
-                if (bytes == null) {
-                    uploadFailed(gen, AiTexts.STATEMENT_FILE_TOO_BIG);
-                    return;
-                }
+                bytes = readFile(uri);
+            } catch (IOException | SecurityException e) {
+                // Доступ к URI мог пропасть (процесс пересоздан, источник отозвал право) — не сеть.
+                uploadFailed(gen, AiTexts.STATEMENT_FILE_UNREADABLE);
+                return;
+            }
+            if (bytes == null) {
+                uploadFailed(gen, AiTexts.STATEMENT_FILE_TOO_BIG);
+                return;
+            }
+            try {
                 AiApiClient client = sessionClient(app);
                 if (client == null) {
                     uploadFailed(gen, LOGIN_TEXT);

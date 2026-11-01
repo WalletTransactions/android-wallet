@@ -158,6 +158,20 @@ public abstract class BaseTabActivity extends AppCompatActivity {
 
         state().syncCurrencyEqFromSettings(this);
         applyRecurringOperations();
+        reloadIfStale();
+        state().addDataChangedListener(onDataChanged);
+    }
+
+    @Override
+    protected void onPause() {
+        state().removeDataChangedListener(onDataChanged);
+        super.onPause();
+    }
+
+    /** Данные сменились, пока экран открыт (фоновый синк) — см. PeriodFilterState.markDataChanged. */
+    private final Runnable onDataChanged = this::reloadIfStale;
+
+    private void reloadIfStale() {
         if (state().getRevision() == renderedRevision) return;
 
         updateCurrencyButton();

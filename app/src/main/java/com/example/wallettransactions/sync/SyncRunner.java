@@ -4,6 +4,7 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 
 import com.example.wallettransactions.AppSettings;
+import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.Singleton;
 import com.example.wallettransactions.TokenStore;
 
@@ -110,6 +111,10 @@ public final class SyncRunner {
                 if (outcome.status == Status.OK || outcome.status == Status.PARTIAL) {
                     AppSettings.setLastSyncSuccessAt(app, System.currentTimeMillis());
                 }
+                // Здесь, а не у вызывающих: синк запускают и WorkManager, и кнопка, и
+                // экраны ИИ/выписки — раньше ревизию поднимал только SyncWorker, и после
+                // остальных экраны показывали остатки до синка.
+                if (!outcome.log.isEmpty()) PeriodFilterState.get(app).markDataChanged();
                 return outcome;
             });
             current = task;

@@ -527,7 +527,7 @@ final class SyncEngine {
                 }));
 
         putOrdered(byTable, "currency_pair_rate", collect(db,
-                "SELECT uuid, currency_pair_id, date, rate, deleted_at FROM currency_pair_rate WHERE dirty=1",
+                "SELECT uuid, currency_pair_id, date, CAST(rate AS TEXT), deleted_at FROM currency_pair_rate WHERE dirty=1",
                 c -> {
                     JSONObject row = new JSONObject();
                     row.put("uuid", c.getString(0));
@@ -543,7 +543,7 @@ final class SyncEngine {
                     // иначе бьются об uq_currency_pair_rate_ledger при push.
                     String rawDate = c.getString(2);
                     row.put("date", rawDate.length() > 10 ? rawDate.substring(0, 10) : rawDate);
-                    row.put("rate", c.getString(3)); // текстом, тот же довод, что у amount выше
+                    row.put("rate", c.getString(3)); // текстом и через CAST — тот же довод, что у amount ниже
                     row.put("deleted", !c.isNull(4));
                     return row;
                 }));
@@ -596,17 +596,18 @@ final class SyncEngine {
                 }));
 
         putOrdered(byTable, "operation", collect(db,
-                "SELECT uuid, date, acc_fr_id, acc_to_id, amount, comment, deleted_at FROM operation WHERE dirty=1",
+                "SELECT uuid, date, acc_fr_id, acc_to_id, CAST(amount AS TEXT), comment, deleted_at FROM operation WHERE dirty=1",
                 c -> {
                     JSONObject row = new JSONObject();
                     row.put("uuid", c.getString(0));
                     row.put("date", c.getString(1));
                     row.put("acc_fr_uuid", uuidById(db, "account", c.getLong(2)));
                     row.put("acc_to_uuid", uuidById(db, "account", c.getLong(3)));
-                    // getString, не getDouble — текстовое представление
-                    // SQLite (сохраняет то, что реально лежит в колонке),
-                    // а не Double.toString (см. README wallet-api/schema,
-                    // "Деньги — numeric" — суммы протокол несёт строками).
+                    // Строкой, не getDouble (см. README wallet-api/schema, "Деньги —
+                    // numeric" — суммы протокол несёт строками). CAST в самом SELECT
+                    // обязателен: getString() по REAL-колонке форматирует Android
+                    // (CursorWindow, "%g") — 6 значащих цифр, 73791.98 уходил как
+                    // "73792". CAST AS TEXT форматирует SQLite — 15 цифр, без потерь.
                     row.put("amount", c.getString(4));
                     row.put("comment", c.getString(5));
                     row.put("deleted", !c.isNull(6));

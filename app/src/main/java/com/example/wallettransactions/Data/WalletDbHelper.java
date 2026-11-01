@@ -23,7 +23,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 83;
+    private static final int DATABASE_VERSION = 84;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -307,6 +307,29 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         }
         if (moved > 0) Log.w(LOG_TAG, "v83: duplicate operation uuids resolved: " + moved);
         return moved;
+    }
+
+    /**
+     * v84: до этой версии push брал сумму и курс через {@code Cursor.getString()} по
+     * REAL-колонке, а Android форматирует её как {@code "%g"} — 6 значащих цифр. На
+     * сервер ушли 73792 вместо 73791.98, и веб считал остатки по искажённым суммам.
+     * Строки, которые {@code %g} меняет, помечаются dirty: следующий синк отправит их
+     * заново уже через {@code CAST AS TEXT} (SyncEngine.collectDirtyByTable). Остальные
+     * ушли без потерь, их не трогаем.
+     */
+    static void redirtyPrecisionLosses(SQLiteDatabase db) {
+        int ops = redirtyWhere(db, WalletContract.OperationEntry.TABLE_NAME,
+                "amount <> CAST(printf('%g', amount) AS REAL)");
+        int rates = redirtyWhere(db, WalletContract.CurrencyPairRateEntry.TABLE_NAME,
+                "rate <> CAST(printf('%g', rate) AS REAL)");
+        if (ops + rates > 0) Log.w(LOG_TAG, "v84: re-push after precision loss: operations=" + ops + ", rates=" + rates);
+    }
+
+    private static int redirtyWhere(SQLiteDatabase db, String table, String lossCondition) {
+        ContentValues cv = new ContentValues();
+        cv.put("dirty", 1);
+        // dirty<>1: 0→1 — смена значения, триггер trg_<table>_dirty не вмешивается.
+        return db.update(table, cv, "deleted_at IS NULL AND dirty<>1 AND " + lossCondition, null);
     }
 
     /**
@@ -750,6 +773,12 @@ public class WalletDbHelper extends SQLiteOpenHelper {
 
         db.execSQL("drop VIEW IF EXISTS v_currency_conversion_rate;\n");
 
+        // Один курс на (from, to, date). Если заведены обе пары — прямая (ALLEUR) и
+        // обратная (EURALL) — а выбора в currency_conversion нет, v_currency_conversion
+        // даёт направление ALL→EUR дважды, и все запросы, что джойнят курс по
+        // max(date), удваивали строку: кошелёк в остатке (WalletDbLoader.LoadBalancesPerWallet),
+        // операцию в v_operation_eq. Обратная пара уступает прямой: прямой курс введён
+        // как есть, обратный — 1/x от другого числа.
         db.execSQL("CREATE VIEW v_currency_conversion_rate\n" +
                 "as\n" +
                 "select \n" +
@@ -762,6 +791,12 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                 "on r.currency_pair_id = cc.currency_pair_id and r.deleted_at is null\n" +
                 "join currency_pair p\n" +
                 "on p._id = cc.currency_pair_id and p.deleted_at is null\n" +
+                "where not (cc.is_reverse = 1 and exists (\n" +
+                "  select 1 from v_currency_conversion d\n" +
+                "  join currency_pair_rate dr\n" +
+                "  on dr.currency_pair_id = d.currency_pair_id and dr.deleted_at is null\n" +
+                "  where d.is_reverse = 0 and d.from_currency_id = cc.from_currency_id\n" +
+                "  and d.to_currency_id = cc.to_currency_id and dr.date = r.date))\n" +
                 "union select _id, name, iso_code , _id, name, iso_code , '2000-01-01', 1 from currency c where c.deleted_at is null;");
 
         db.execSQL("drop VIEW IF EXISTS v_operation;\n");
@@ -1123,6 +1158,11 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
                 // v83: одна операция на uuid (импорт выписки пишет операции с uuid = row_id).
                 dedupeOperationUuids(db);
                 createOperationUuidUnique(db);
+            }
+            if (oldVersion < 84) {
+                // v84: один курс на дату в v_currency_conversion_rate (см. CreateViews).
+                CreateViews(db);
+                redirtyPrecisionLosses(db);
             }
             return;
         }

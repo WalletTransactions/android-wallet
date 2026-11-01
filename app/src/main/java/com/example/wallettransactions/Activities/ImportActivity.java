@@ -20,6 +20,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.example.wallettransactions.Activities.Fragments.FilePickerFragment;
+import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
 import com.example.wallettransactions.Data.WalletImportData;
@@ -260,6 +261,9 @@ on cp."_id" =cpr.currency_pair_id */
         btnImportOperationJson.setEnabled(!active);
         btnImportRate.setEnabled(!active);
         tvError.setText(statusText);
+        // Импорт закончился (и при ошибке: часть строк могла записаться) — табы
+        // перечитают остатки и ленту, а не покажут то, что было до импорта.
+        if (!active) PeriodFilterState.get(this).markDataChanged();
     }
 
 

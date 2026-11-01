@@ -1,6 +1,8 @@
 package com.example.wallettransactions;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
@@ -48,6 +50,11 @@ public final class PeriodFilterState {
      */
     private int revision;
 
+    /** Открытые сейчас экраны — см. {@link #addDataChangedListener}. Только главный поток. */
+    private final List<Runnable> dataChangedListeners = new ArrayList<>();
+
+    private static final Handler mainHandler = new Handler(Looper.getMainLooper());
+
     private PeriodFilterState() {}
 
     public static synchronized PeriodFilterState get(Context ctx) {
@@ -64,10 +71,34 @@ public final class PeriodFilterState {
 
     /**
      * Данные в базе поменялись в обход экранов (например, повторяющиеся операции завели
-     * новые проводки) — табы должны перечитать себя на ближайшем onResume.
+     * новые проводки или синк принёс изменения) — табы в фоне перечитают себя на
+     * ближайшем onResume, а открытый сейчас — сразу, через слушатель. Без слушателя
+     * экран, на котором застал фоновый синк, показывал старые остатки, пока его не
+     * покинешь.
+     * <p>
+     * Можно звать из любого потока: с фонового ревизия поднимается на главном (там же
+     * её читают экраны), с главного — сразу, onResume рассчитывает увидеть её тут же.
      */
     public void markDataChanged() {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            bumpRevision();
+        } else {
+            mainHandler.post(this::bumpRevision);
+        }
+    }
+
+    private void bumpRevision() {
         ++revision;
+        for (Runnable listener : new ArrayList<>(dataChangedListeners)) listener.run();
+    }
+
+    /** Экран на переднем плане подписывается в onResume и отписывается в onPause. */
+    public void addDataChangedListener(Runnable listener) {
+        if (!dataChangedListeners.contains(listener)) dataChangedListeners.add(listener);
+    }
+
+    public void removeDataChangedListener(Runnable listener) {
+        dataChangedListeners.remove(listener);
     }
 
     // ── Период ────────────────────────────────────────────────────────────────

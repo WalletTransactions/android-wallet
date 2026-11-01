@@ -126,6 +126,7 @@ public final class AiTexts {
     // ── Экран «Выписка» (openspec add-ai-statement-import, spec ai-statement-import) ──
 
     public static final String STATEMENT_FILE_TOO_BIG = "Файл больше 5 МБ — разбейте выписку по месяцам";
+    public static final String STATEMENT_FILE_UNREADABLE = "Файл не открылся — выберите его заново";
     public static final String STATEMENT_NO_NETWORK = "Нет связи с сервером — список недоступен";
     public static final String STATEMENT_PAUSED = "Разбор на паузе: ИИ недоступен";
     public static final String STATEMENT_WALLET_MISSING = "Кошелька выписки нет на телефоне";

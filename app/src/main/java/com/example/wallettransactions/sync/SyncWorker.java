@@ -52,8 +52,9 @@ public class SyncWorker extends Worker {
         SyncRunner.Outcome outcome = SyncRunner.runOnce(ctx);
         boolean synced = outcome.status == SyncRunner.Status.OK || outcome.status == SyncRunner.Status.PARTIAL;
 
-        // Открытые в фоне табы перечитают ленту на ближайшем onResume.
-        if (!recurringIds.isEmpty() || (synced && !outcome.log.isEmpty())) {
+        // Изменения от самого синка отмечает SyncRunner; здесь — только заведённые
+        // периодические (они есть и тогда, когда сервер недоступен).
+        if (!recurringIds.isEmpty()) {
             PeriodFilterState.get(ctx).markDataChanged();
         }
         // О периодических — и когда сервер недоступен: они заведены локально.
