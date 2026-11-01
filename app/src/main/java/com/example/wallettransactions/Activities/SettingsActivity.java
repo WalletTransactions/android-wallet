@@ -26,6 +26,7 @@ import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.BuildConfig;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
+import com.example.wallettransactions.DataItems.CurrencyConversion.EquivalentCurrencies;
 import com.example.wallettransactions.PickerSort;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
@@ -35,7 +36,9 @@ import com.example.wallettransactions.security.BiometricErrors;
 import com.example.wallettransactions.security.BiometricKey;
 import com.example.wallettransactions.reminder.ReminderWorker;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 import javax.crypto.Cipher;
@@ -168,18 +171,26 @@ public class SettingsActivity extends AppCompatActivity {
 
     public void onPickMainCurrency(View view) {
         CurrencyList currencyList = Singleton.instance.getCurrencyList(this);
-        String[] items = new String[currencyList.size()];
-        for (int i = 0; i < currencyList.size(); i++) {
-            Currency c = currencyList.get(i);
+        String currentIso = AppSettings.getCurrencyEqIso(this);
+        Currency current = currentIso != null ? currencyList.getCurrencyByISO(currentIso) : null;
+        // Только валюты с флагом «Показывать в эквиваленте» + текущая (currency-ui-tweaks).
+        List<Currency> shown = EquivalentCurrencies.filter(new ArrayList<>(currencyList), current);
+
+        String[] items = new String[shown.size()];
+        int checked = -1;
+        for (int i = 0; i < shown.size(); i++) {
+            Currency c = shown.get(i);
             items[i] = c.getIso() + " — " + c.getName();
+            if (current != null && c.getId() == current.getId()) checked = i;
         }
 
         new AlertDialog.Builder(this)
                 .setTitle("Валюта эквивалента")
-                .setItems(items, (d, which) -> {
-                    Currency chosen = currencyList.get(which);
+                .setSingleChoiceItems(items, checked, (d, which) -> {
+                    Currency chosen = shown.get(which);
                     mainCurrencyValue.setText(chosen.getIso() + " — " + chosen.getName());
                     AppSettings.setCurrencyEqIso(this, chosen.getIso());
+                    d.dismiss();
                 })
                 .show();
     }
