@@ -10,7 +10,12 @@ public class CurrencyList extends ArrayList<Currency> {
     private Hashtable<Integer, Currency> currencyList = new Hashtable<Integer, Currency>();
 
     public Currency addCurrency(int id, String iso, String name, Icon icon, String symbol, int precision) {
-        Currency cur = new Currency(id, iso, name, icon, symbol, precision);
+        return addCurrency(id, iso, name, icon, symbol, precision, true, false);
+    }
+
+    public Currency addCurrency(int id, String iso, String name, Icon icon, String symbol, int precision,
+                                boolean showInEquivalent, boolean shared) {
+        Currency cur = new Currency(id, iso, name, icon, symbol, precision, showInEquivalent, shared);
         this.add(cur);
         currencyList.put(id, cur);
         return cur;

@@ -432,6 +432,29 @@ final class SyncEngine {
         return rows;
     }
 
+    /**
+     * Dirty-строки {@code currency} для push. {@code show_in_equivalent} шлётся всегда
+     * (openspec currency-ui-tweaks, design D6): сервер без колонки строит SQL по своему
+     * списку колонок и лишний ключ игнорирует.
+     */
+    static JSONArray collectDirtyCurrencies(SQLiteDatabase db) throws JSONException {
+        return collect(db,
+                "SELECT uuid, name, iso_code, icon_id, symbol, precision, deleted_at, show_in_equivalent "
+                        + "FROM currency WHERE dirty=1",
+                c -> {
+                    JSONObject row = new JSONObject();
+                    row.put("uuid", c.getString(0));
+                    row.put("name", c.getString(1));
+                    row.put("iso_code", c.getString(2));
+                    row.put("icon_uuid", uuidById(db, "icon", c.getLong(3)));
+                    row.put("symbol", c.getString(4));
+                    row.put("precision", c.getInt(5));
+                    row.put("deleted", !c.isNull(6));
+                    row.put("show_in_equivalent", c.getInt(7) != 0);
+                    return row;
+                });
+    }
+
     private static void putOrdered(Map<String, JSONArray> byTable, String table, JSONArray rows) {
         if (rows.length() > 0) byTable.put(table, rows);
     }
@@ -498,19 +521,7 @@ final class SyncEngine {
         Set<String> deferred = new HashSet<>();
         putOrdered(byTable, "icon", collectDirtyIcons(db, api, deferred, problems));
 
-        putOrdered(byTable, "currency", collect(db,
-                "SELECT uuid, name, iso_code, icon_id, symbol, precision, deleted_at FROM currency WHERE dirty=1",
-                c -> {
-                    JSONObject row = new JSONObject();
-                    row.put("uuid", c.getString(0));
-                    row.put("name", c.getString(1));
-                    row.put("iso_code", c.getString(2));
-                    row.put("icon_uuid", uuidById(db, "icon", c.getLong(3)));
-                    row.put("symbol", c.getString(4));
-                    row.put("precision", c.getInt(5));
-                    row.put("deleted", !c.isNull(6));
-                    return row;
-                }));
+        putOrdered(byTable, "currency", collectDirtyCurrencies(db));
 
         putOrdered(byTable, "currency_pair", collect(db,
                 "SELECT uuid, symbol, base_currency_id, quote_currency_id, precision, deleted_at "
@@ -1039,7 +1050,7 @@ final class SyncEngine {
      * делить одно и то же содержимое, скачивать его больше одного раза
      * незачем.
      */
-    private static Map<String, byte[]> prefetchNewIconBlobs(SQLiteDatabase db, JSONArray iconRows,
+    static Map<String, byte[]> prefetchNewIconBlobs(SQLiteDatabase db, JSONArray iconRows,
                                                               SyncApiClient api)
             throws JSONException, IOException {
         Map<String, byte[]> cache = new HashMap<>();
@@ -1114,7 +1125,7 @@ final class SyncEngine {
         }
     }
 
-    private static void applyCurrency(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+    static void applyCurrency(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
         String uuid = row.getString("uuid");
         Long iconId = findIdByUuid(db, "icon", row.getString("icon_uuid"));
         if (iconId == null) {
@@ -1127,13 +1138,27 @@ final class SyncEngine {
         cv.put("icon_id", iconId);
         cv.put("symbol", row.getString("symbol"));
         cv.put("precision", row.getInt("precision"));
+        // Старый сервер ключа не присылает — локальный флаг тогда не трогаем (design D6).
+        if (row.has("show_in_equivalent") && !row.isNull("show_in_equivalent")) {
+            cv.put("show_in_equivalent", row.getBoolean("show_in_equivalent") ? 1 : 0);
+        }
+        cv.put("is_shared", isSharedRow(row) ? 1 : 0);
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "currency", uuid, cv);
         if (wasInsert == null) return;
         log.pull("Валюта", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
     }
 
-    private static void applyCurrencyPair(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+    /**
+     * Общая ли строка справочника: у общих (поток {@code reference}) {@code ledger_id}
+     * пуст (openspec currency-ui-tweaks, design D1). Строку без ключа вовсе считаем
+     * своей — так безопаснее: своя строка допускает правку, а не теряет её.
+     */
+    static boolean isSharedRow(JSONObject row) {
+        return row.has("ledger_id") && row.isNull("ledger_id");
+    }
+
+    static void applyCurrencyPair(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
         String uuid = row.getString("uuid");
         Long baseId = findIdByUuid(db, "currency", row.getString("base_currency_uuid"));
         Long quoteId = findIdByUuid(db, "currency", row.getString("quote_currency_uuid"));
@@ -1146,6 +1171,7 @@ final class SyncEngine {
         cv.put("base_currency_id", baseId);
         cv.put("quote_currency_id", quoteId);
         cv.put("precision", row.getInt("precision"));
+        cv.put("is_shared", isSharedRow(row) ? 1 : 0);
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "currency_pair", uuid, cv);
         if (wasInsert == null) return;

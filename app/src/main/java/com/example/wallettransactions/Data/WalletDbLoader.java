@@ -512,6 +512,13 @@ public abstract class WalletDbLoader {
 
     public static void LoadCurrencyList(SQLiteDatabase db, Context context)
     {
+        LoadCurrencyList(db, Singleton.instance.getCurrencyList(context),
+                Singleton.instance.getIconList(context));
+    }
+
+    /** То же, что {@link #LoadCurrencyList(SQLiteDatabase, Context)}, без синглтона — для тестов. */
+    public static void LoadCurrencyList(SQLiteDatabase db, CurrencyList currencyList, IconList icons)
+    {
         // c.deleted_at IS NULL — с v72 WalletDbCRUD.DeleteCurrency стал мягким
         // (см. её javadoc); без фильтра "удалённая" валюта продолжала бы
         // появляться в списке выбора.
@@ -521,12 +528,13 @@ public abstract class WalletDbLoader {
                 +", c."+ WalletContract.CurrencyEntry.COLUMN_ICON_ID
                 +", c."+ WalletContract.CurrencyEntry.COLUMN_SYMBOL
                 +", c."+ WalletContract.CurrencyEntry.COLUMN_PRECISION
+                +", c."+ WalletContract.CurrencyEntry.COLUMN_SHOW_IN_EQUIVALENT
+                +", c."+ WalletContract.CurrencyEntry.COLUMN_IS_SHARED
                 +" FROM "+ WalletContract.CurrencyEntry.TABLE_NAME +" c"
                 +" WHERE c." + WalletContract.CurrencyEntry.COLUMN_DELETED_AT + " IS NULL";
 
 
         Cursor cursor = db.rawQuery(sql_select, null);
-        CurrencyList currencyList = Singleton.instance.getCurrencyList(context);
         try {
             int idColumnIndex = cursor.getColumnIndex(WalletContract.CurrencyEntry._ID);
             int nameColumnIndex = cursor.getColumnIndex(WalletContract.CurrencyEntry.COLUMN_ISO_NAME);
@@ -534,6 +542,8 @@ public abstract class WalletDbLoader {
             int iconIdColumnIndex = cursor.getColumnIndex(WalletContract.CurrencyEntry.COLUMN_ICON_ID);
             int symbolColumnIndex = cursor.getColumnIndex(WalletContract.CurrencyEntry.COLUMN_SYMBOL);
             int precisionColumnIndex = cursor.getColumnIndex(WalletContract.CurrencyEntry.COLUMN_PRECISION);
+            int showEqColumnIndex = cursor.getColumnIndex(WalletContract.CurrencyEntry.COLUMN_SHOW_IN_EQUIVALENT);
+            int sharedColumnIndex = cursor.getColumnIndex(WalletContract.CurrencyEntry.COLUMN_IS_SHARED);
 
             while (cursor.moveToNext()) {
                 int currentID = cursor.getInt(idColumnIndex);
@@ -544,8 +554,10 @@ public abstract class WalletDbLoader {
                 int currentPrecision = precisionColumnIndex >= 0 ? cursor.getInt(precisionColumnIndex) : 2;
 
                 currencyList.addCurrency(currentID, currentName, currentIsoName,
-                                        Singleton.instance.getIconList(context).getIconByIdOrUnknown(currentIconId),
-                                        currentSymbol, currentPrecision);
+                                        icons.getIconByIdOrUnknown(currentIconId),
+                                        currentSymbol, currentPrecision,
+                                        cursor.getInt(showEqColumnIndex) != 0,
+                                        cursor.getInt(sharedColumnIndex) != 0);
             }
         } finally {
             cursor.close();
@@ -563,6 +575,7 @@ public abstract class WalletDbLoader {
                 +", cp."+ WalletContract.CurrencyPairEntry.COLUMN_BASE_CURRECNCY_ID
                 +", cp."+ WalletContract.CurrencyPairEntry.COLUMN_QUOTE_CURRECNCY_ID
                 +", cp."+ WalletContract.CurrencyPairEntry.COLUMN_PRECISION
+                +", cp."+ WalletContract.CurrencyPairEntry.COLUMN_IS_SHARED
                 +", cpr."+WalletContract.CurrencyPairRateEntry.COLUMN_RATE
                 +", cpr."+WalletContract.CurrencyPairRateEntry.COLUMN_DATE
                 +"\n FROM "+ WalletContract.CurrencyPairEntry.TABLE_NAME
@@ -597,6 +610,7 @@ public abstract class WalletDbLoader {
             int baseCurColumnIndex   = cursor.getColumnIndex(WalletContract.CurrencyPairEntry.COLUMN_BASE_CURRECNCY_ID);
             int quoteCurColumnIndex  = cursor.getColumnIndex(WalletContract.CurrencyPairEntry.COLUMN_QUOTE_CURRECNCY_ID);
             int precisionColumnIndex = cursor.getColumnIndex(WalletContract.CurrencyPairEntry.COLUMN_PRECISION);
+            int sharedColumnIndex    = cursor.getColumnIndex(WalletContract.CurrencyPairEntry.COLUMN_IS_SHARED);
 
             while (cursor.moveToNext()) {
                 int currentID       = cursor.getInt(idColumnIndex);
@@ -608,7 +622,8 @@ public abstract class WalletDbLoader {
                 currencyPairList.AddCurrencyPair(currentID, currentSymbol,
                         currencyList.getCurrencyById(currentBaseCur),
                         currencyList.getCurrencyById(currentQuoteCur),
-                        currentPrecision);
+                        currentPrecision,
+                        cursor.getInt(sharedColumnIndex) != 0);
             }
         } finally {
             cursor.close();

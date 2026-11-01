@@ -9,7 +9,12 @@ public class CurrencyPairList {
     private Hashtable<Integer, CurrencyPair> mCurrencyPairs = new Hashtable<Integer, CurrencyPair>();
 
     public CurrencyPair AddCurrencyPair(int id, String symbol, Currency baseCurrency, Currency quoteCurrency, int precision) {
-        CurrencyPair currencyPair = new CurrencyPair(id, symbol, baseCurrency, quoteCurrency, precision);
+        return AddCurrencyPair(id, symbol, baseCurrency, quoteCurrency, precision, false);
+    }
+
+    public CurrencyPair AddCurrencyPair(int id, String symbol, Currency baseCurrency, Currency quoteCurrency,
+                                        int precision, boolean shared) {
+        CurrencyPair currencyPair = new CurrencyPair(id, symbol, baseCurrency, quoteCurrency, precision, shared);
         mCurrencyPairs.put(id, currencyPair);
         mCurrencyPairArray.add(currencyPair);
         return currencyPair;
