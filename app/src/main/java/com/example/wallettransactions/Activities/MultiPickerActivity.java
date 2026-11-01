@@ -8,9 +8,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -92,6 +94,16 @@ public class MultiPickerActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int st, int b, int c) {}
             public void afterTextChanged(Editable s) { applyFilter(); }
         });
+        // Enter на клавиатуре = «Готово» (spec account-screens): возвращает весь выбор,
+        // включая скрытые поиском отмеченные счета — onDone идёт по mAllItems.
+        mSearchInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (isDoneKey(actionId, event)) {
+                onDone(v);
+                return true;
+            }
+            // Отпускание физического Enter: действие уже выполнено на нажатии — только поглощаем.
+            return event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER;
+        });
 
         applyFilter();
         AppSettings.applyPickerKeyboard(this, mSearchInput);
@@ -157,6 +169,17 @@ public class MultiPickerActivity extends AppCompatActivity {
 
     public void btnUp(View view) {
         finish();
+    }
+
+    /**
+     * Действие «Готово» экранной клавиатуры или Enter физической: та присылает
+     * {@code IME_NULL} с {@link KeyEvent} — и на нажатие, и на отпускание, поэтому
+     * берём только {@code ACTION_DOWN}, иначе второй вызов пришёл бы в уже закрытый экран.
+     */
+    static boolean isDoneKey(int actionId, KeyEvent event) {
+        if (actionId == EditorInfo.IME_ACTION_DONE) return true;
+        return event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                && event.getAction() == KeyEvent.ACTION_DOWN;
     }
 
     public void onDone(View view) {

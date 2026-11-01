@@ -1,10 +1,8 @@
 package com.example.wallettransactions.Activities;
 
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import androidx.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,12 +36,11 @@ import java.util.Set;
  * остатков по кошелькам ({@code activity_account.xml}).
  *
  * Выбор счёта для операции жил здесь же вторым режимом и открывался списком-диалогом;
- * теперь это отдельный экран — {@link AccountPickerActivity}.
+ * теперь это отдельный экран — {@link AccountPickerActivity}. Кнопки «+» в шапке нет:
+ * счета заводятся только в справочнике «Кошельки и категории» (тот же
+ * AccountPickerActivity, режим справочника; openspec currency-ui-tweaks, design D10).
  */
 public class AccountActivity extends BaseTabActivity {
-
-    private static final int REQUEST_ADD_CATEGORY = 200;
-    private static final int REQUEST_ADD_WALLET   = 201;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -199,31 +196,6 @@ public class AccountActivity extends BaseTabActivity {
             this.netEq = netEq;
             this.netEqComputable = netEqComputable;
             this.netNative = netNative;
-        }
-    }
-
-    public void onAddAccount(View view) {
-        new AlertDialog.Builder(this)
-                .setTitle("Добавить")
-                .setItems(new String[]{"Кошелёк", "Категория"}, (d, which) -> {
-                    if (which == 0) {
-                        startActivityForResult(new Intent(this, AddWalletActivity.class), REQUEST_ADD_WALLET);
-                    } else {
-                        startActivityForResult(new Intent(this, AddCategoryActivity.class), REQUEST_ADD_CATEGORY);
-                    }
-                })
-                .show();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        switch (requestCode) {
-            case REQUEST_ADD_CATEGORY:
-            case REQUEST_ADD_WALLET:
-                if (resultCode == RESULT_OK) reloadSharedAndTabData();
-                break;
         }
     }
 

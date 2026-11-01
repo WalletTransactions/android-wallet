@@ -157,12 +157,22 @@ public final class AppSettings {
     /**
      * Ставит фокус в поле поиска и поднимает клавиатуру, если включено
      * {@link #isPickerKeyboardOn}. Вызывать из onCreate экрана выбора.
+     * <p>
+     * {@code setSoftInputMode} заменяет режим целиком, вместе с битами adjust — без
+     * {@link #pickerSoftInputMode} {@code adjustResize} из манифеста затирался бы, и
+     * клавиатура снова закрывала бы «Готово» (openspec currency-ui-tweaks, design D11).
      */
     public static void applyPickerKeyboard(android.app.Activity activity, android.widget.EditText search) {
         if (!isPickerKeyboardOn(activity)) return;
         search.requestFocus();
         activity.getWindow().setSoftInputMode(
-                android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+                pickerSoftInputMode(activity.getWindow().getAttributes().softInputMode));
+    }
+
+    /** Текущий режим с состоянием {@code ALWAYS_VISIBLE}: биты adjust сохраняются, меняются только биты state. */
+    static int pickerSoftInputMode(int current) {
+        int adjust = current & android.view.WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST;
+        return adjust | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
     }
 
     /** Имя константы {@code DataFilter.OperationKind}; null — фильтра по виду ещё не было. */

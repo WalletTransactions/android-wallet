@@ -59,6 +59,7 @@
         <activity
                 android:name=".Activities.MultiPickerActivity"
                 android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
                 android:exported="false"/>
         <activity
                 android:name=".Activities.CurrencyFormActivity"
@@ -130,6 +131,7 @@
         </activity>
         <activity android:name=".Activities.AccountPickerActivity"
                 android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
                 android:exported="false"/>
         <activity android:name=".Activities.ImportActivity"
                 android:theme="@style/AppTheme.NoActionBar"
