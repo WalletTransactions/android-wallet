@@ -72,6 +72,16 @@ public class CurrencyPairListActivity extends AppCompatActivity {
             intent.putExtra(CurrencyPairRateListActivity.ARG_ITEM_SYMBOL, item.getSymbol());
             startActivity(intent);
         });
+        listPairs.setOnItemLongClickListener((parent, view, position, id) -> {
+            CurrencyPair item = adapter.getItem(position);
+            if (item == null) return false;
+            if (item.isShared()) {
+                Toast.makeText(this, "Общая пара — удалить нельзя", Toast.LENGTH_SHORT).show();
+            } else {
+                confirmDeletePair(this, item, this::applyFilter);
+            }
+            return true;
+        });
 
         EditText currencyFilterSearch = findViewById(R.id.currencyFilterSearch);
         currencyFilterSearch.addTextChangedListener(new TextWatcher() {
@@ -108,6 +118,34 @@ public class CurrencyPairListActivity extends AppCompatActivity {
 
     public void onAddPair(View view) {
         showAddPairDialog();
+    }
+
+    /** Кнопка «Валюты» в тулбаре — список валют в режиме просмотра. */
+    public void onOpenCurrencies(View view) {
+        startActivity(CurrencyPickerActivity.buildBrowseIntent(this));
+    }
+
+    /**
+     * Подтверждение и удаление своей пары вместе с курсами (spec currency-pairs) — общее
+     * для долгого нажатия здесь и кнопки в тулбаре CurrencyPairRateListActivity. Пишет
+     * только локально; на сервер пара и курсы уйдут tombstone'ами со следующим push.
+     */
+    static void confirmDeletePair(android.app.Activity activity, CurrencyPair pair, Runnable onDeleted) {
+        new AlertDialog.Builder(activity)
+                .setMessage("Удалить пару " + pair.getSymbol() + "? Вся история её курса тоже будет удалена.")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Удалить", (d, w) -> {
+                    SQLiteDatabase writable = new WalletDbHelper(activity).getWritableDatabase();
+                    int deleted = WalletDbCRUD.DeleteCurrencyPair(writable, pair.getId());
+                    writable.close();
+                    if (deleted == 0) {
+                        Toast.makeText(activity, "Общая пара — удалить нельзя", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    Singleton.instance.reloadCurrencyPairList(activity);
+                    onDeleted.run();
+                })
+                .show();
     }
 
     /**

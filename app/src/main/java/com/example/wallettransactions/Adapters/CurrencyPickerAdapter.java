@@ -82,6 +82,11 @@ public class CurrencyPickerAdapter extends BaseAdapter implements Filterable {
         view.findViewById(R.id.selectMark)
                 .setVisibility(c.getIso().equals(selectedIso) ? View.VISIBLE : View.GONE);
 
+        TextView tags = view.findViewById(R.id.currencyTags);
+        String tagText = tagsOf(c);
+        tags.setText(tagText);
+        tags.setVisibility(tagText.isEmpty() ? View.GONE : View.VISIBLE);
+
         ImageView icon = view.findViewById(R.id.currencyIcon);
         if (c.getIcon() != null) icon.setImageBitmap(c.getIcon().getBitmap());
         else icon.setImageDrawable(null);
@@ -92,6 +97,17 @@ public class CurrencyPickerAdapter extends BaseAdapter implements Filterable {
         });
 
         return view;
+    }
+
+    /** Подписи строки (spec currency-directory «Пометка скрытой валюты в списке»). */
+    static String tagsOf(Currency c) {
+        StringBuilder sb = new StringBuilder();
+        if (c.isShared()) sb.append("общая");
+        if (!c.isShowInEquivalent()) {
+            if (sb.length() > 0) sb.append(" · ");
+            sb.append("не в эквиваленте");
+        }
+        return sb.toString();
     }
 
     @Override
