@@ -2,7 +2,7 @@
 
 ## 1. Схема
 
-- [ ] 1.1 `WalletDbHelper`: `DATABASE_VERSION = 84`, в `onCreate` колонка `icon.origin INTEGER NOT NULL DEFAULT 0`, в `onUpgrade` (`oldVersion < 84`) — `ADD COLUMN`, `origin = 1 WHERE dirty = 1`, `dirty = 0` у всех иконок; `WalletContract.IconEntry.COLUMN_ORIGIN`; Robolectric-тест апгрейда v83→v84 (dirty-иконка → своя, остальные → с сервера)
+- [ ] 1.1 `WalletDbHelper`: `DATABASE_VERSION = 86`, в `onCreate` колонка `icon.origin INTEGER NOT NULL DEFAULT 0`, в `onUpgrade` (`oldVersion < 86`) — `ADD COLUMN`, `origin = 1 WHERE dirty = 1`, `dirty = 0` у всех иконок; `WalletContract.IconEntry.COLUMN_ORIGIN`; Robolectric-тест апгрейда v85→v86 (dirty-иконка → своя, остальные → с сервера)
 - [ ] 1.2 `schema/table/icon.sql`: колонка `origin` с комментарием, обновить комментарий к `dirty` и заголовок версии
 
 ## 2. Push
