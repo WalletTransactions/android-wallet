@@ -1,13 +1,17 @@
 package com.example.wallettransactions.Data;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import androidx.test.core.app.ApplicationProvider;
+
+import com.example.wallettransactions.DataItems.IconList;
 
 import org.junit.After;
 import org.junit.Before;
@@ -88,6 +92,28 @@ public class IconOriginDbTest {
         } finally {
             c.close();
         }
+    }
+
+    /** 4.1: признак «с сервера» в модели {@code Icon} — из {@code icon.origin}. */
+    @Test
+    public void loadIcons_fromServerFlagFollowsOrigin() {
+        // Сид не нужен (а крупный PNG из drawable не лезет в CursorWindow Robolectric).
+        db.execSQL("UPDATE icon SET deleted_at = 1");
+        long server = insertIcon("srv", WalletContract.IconEntry.ORIGIN_SERVER);
+        long own = insertIcon("own", WalletContract.IconEntry.ORIGIN_LOCAL);
+        IconList list = new IconList();
+        WalletDbLoader.LoadIcons(db, list);
+        assertTrue(list.getIconById((int) server).isFromServer());
+        assertFalse(list.getIconById((int) own).isFromServer());
+    }
+
+    private long insertIcon(String name, int origin) {
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.IconEntry.COLUMN_NAME, name);
+        cv.put(WalletContract.IconEntry.COLUMN_IMAGE, new byte[]{0});
+        cv.put(WalletContract.IconEntry.COLUMN_ICON_TYPE, 0);
+        cv.put(WalletContract.IconEntry.COLUMN_ORIGIN, origin);
+        return db.insertOrThrow(WalletContract.IconEntry.TABLE_NAME, null, cv);
     }
 
     /** Иконки из seed.json заведены на телефоне — на сервере их uuid нет, они свои. */
