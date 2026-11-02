@@ -145,6 +145,14 @@ public class WalletContract {
         public final static String COLUMN_DIRTY = "dirty";
         public final static String COLUMN_DELETED_AT = "deleted_at";
         public final static String COLUMN_UPDATED_BY_DEVICE = "updated_by_device";
+        /**
+         * v86 (openspec server-managed-icons): откуда иконка — {@link #ORIGIN_SERVER}
+         * (пришла через pull или ушла на сервер прежней версией) или {@link #ORIGIN_LOCAL}
+         * (своя, на сервер не отправляется).
+         */
+        public final static String COLUMN_ORIGIN = "origin";
+        public final static int ORIGIN_SERVER = 0;
+        public final static int ORIGIN_LOCAL = 1;
     }
 
     public static final class CurrencyConversionEntry implements BaseColumns {

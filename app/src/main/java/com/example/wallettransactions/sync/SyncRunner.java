@@ -172,7 +172,7 @@ public final class SyncRunner {
             SyncEngine.pullAll(db, api, ctx, log);
             if (!log.getProblems().isEmpty()) {
                 // Push/pull прошли, но часть строк осталась dirty (например,
-                // иконка не залилась — см. SyncEngine.collectDirtyIcons) —
+                // нет иконки-заместителя — см. SyncEngine.PushIconRefs) —
                 // не "всё синхронизировано", подробности в журнале (✖).
                 return new Outcome(Status.PARTIAL, log, "Часть изменений не отправлена — повторите синхронизацию");
             }

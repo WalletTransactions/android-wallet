@@ -2,7 +2,9 @@
 <!--
   «Добавить/Редактировать иконку» — один лист на оба режима, как dialog_edit_rate.xml:
   dialogTitle и подпись btnSelectIcon меняются из кода, btnDelete скрывается
-  (visibility="gone") для новой иконки.
+  (visibility="gone") для новой иконки. Иконка с сервера открывается только для
+  просмотра: поля, выбор картинки, «Удалить» и «Сохранить» скрыты, вместо них —
+  txtIconNameReadOnly и txtServerIconHint (см. IconEditDialog.showReadOnly).
 
   Превью — круг 104dp на bg_icon_circle без padding: обрезка круглая, поэтому
   иконка ложится ровно в подложку и видно ровно то, что попадёт в базу.
@@ -64,7 +66,33 @@
                 android:textSize="14sp"
                 android:textStyle="bold"/>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="НАЗВАНИЕ"/>
+            <!-- Иконка с сервера (server-managed-icons): только имя и подсказка, без правки. -->
+            <TextView
+                android:id="@+id/txtIconNameReadOnly"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_horizontal"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/txtServerIconHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:gravity="center_horizontal"
+                android:text="Иконка с сервера — изменить или удалить её может администратор на сайте."
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="14sp"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/lblIconName"
+                style="@style/SettingsGroupLabel"
+                android:text="НАЗВАНИЕ"/>
 
             <EditText
                 android:id="@+id/edtIconName"
@@ -72,9 +100,13 @@
                 android:hint="Например, Продукты"
                 android:inputType="textCapSentences"/>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="ТИП"/>
+            <TextView
+                android:id="@+id/lblIconType"
+                style="@style/SettingsGroupLabel"
+                android:text="ТИП"/>
 
             <LinearLayout
+                android:id="@+id/iconTypeChips"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"

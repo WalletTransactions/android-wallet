@@ -39,7 +39,12 @@ public class IconList {
 
     public Icon AddIcon(int id, String name, Bitmap bitmap, Icon.IconType type)
     {
-        Icon ic = new Icon(id, name, bitmap, type);
+        return AddIcon(id, name, bitmap, type, false);
+    }
+
+    public Icon AddIcon(int id, String name, Bitmap bitmap, Icon.IconType type, boolean fromServer)
+    {
+        Icon ic = new Icon(id, name, bitmap, type, fromServer);
         fIconList.put(id, ic);
         if (name.equals(cUnknownIconName))
             cUnknownIcon = ic;

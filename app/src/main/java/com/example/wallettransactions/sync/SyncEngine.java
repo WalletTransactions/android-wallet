@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteException;
 import android.util.Log;
 
 import com.example.wallettransactions.AppSettings;
+import com.example.wallettransactions.Data.WalletContract;
 import com.example.wallettransactions.Singleton;
 
 import org.json.JSONArray;
@@ -15,8 +16,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -63,33 +62,29 @@ import java.util.UUID;
  * сервере (sync_repo.cpp) — обязателен по той же причине: строка-ссылка не
  * должна уйти в порции РАНЬШЕ строки, на которую ссылается.
  *
- * <h3>Иконки — метаданные и содержимое раздельно (org/docs/TODO_mobile_sync.md, "Иконки")</h3>
- * {@code icon} синхронизируется как обычная таблица (метаданные —
- * name/icon_type/content_sha256), но САМИ БАЙТЫ изображения через
- * push/pull не идут — отдельные {@code POST}/{@code GET /sync/blobs}
- * (см. {@link SyncApiClient#uploadBlob}/{@link SyncApiClient#downloadBlob}).
- * На push — сначала заливаем байты, получаем {@code content_sha256},
- * потом строим строку {@code icon} (см. {@link #collectDirtyIcons}). На
- * pull — для НОВОЙ (по uuid) иконки сначала скачиваем содержимое, для уже
- * существующей — только обновляем метаданные, байты не перекачиваем (см.
- * {@link #applyIcon}); все нужные для страницы скачивания делаются ДО
- * {@code db.beginTransaction()} (см. {@link #prefetchNewIconBlobs}), не
- * внутри неё — держать sqlite-транзакцию открытой на время сетевого
- * запроса означало бы блокировать доступ к БД для всего остального
- * приложения (один общий connection, см. {@code Singleton}) на
- * непредсказуемое время.
+ * <h3>Иконки — только скачиваются (openspec server-managed-icons)</h3>
+ * Общий набор иконок ведёт администратор на сайте; телефон иконки на сервер
+ * НЕ отправляет — ни строк {@code icon} в push, ни байт в {@code POST
+ * /sync/blobs}. Иконка на телефоне — либо «с сервера» ({@code icon.origin
+ * = 0}), либо «своя» ({@code origin = 1}, из галереи или seed.json). У счёта
+ * или валюты со своей иконкой в push уходит {@code icon_uuid} заместителя с
+ * сервера ({@link IconSubstitutes}, {@link PushIconRefs}); нет заместителя —
+ * строка и всё, что на неё ссылается, откладываются ({@link #deferDependents}).
+ * Pull с тем же заместителем свою иконку не затирает ({@link PullIconGuard}).
  * <p>
- * Известный, сознательно не закрытый в этом заходе пробел: локальное
- * удаление иконки ({@code IconEditDialog.deleteIcon}) остаётся жёстким
- * {@code DELETE}, не soft-delete — раньше это было безобидно ("синку всё
- * равно нечего терять", план, Фаза 3, п. 1), теперь, когда push icon
- * реализован, это означает, что удаление иконки НЕ долетает до других
- * устройств. Не исправлено намеренно — перевод на soft-delete снял бы и
- * защиту от удаления ИСПОЛЬЗУЕМОЙ иконки (сейчас — обычный FK
- * {@code ON DELETE RESTRICT}, при soft-delete внешний ключ перестаёт
- * видеть конфликт), это смена пользовательской гарантии, не механическая
- * правка — решение за пользователем (см. org/docs/TODO_mobile_sync.md,
- * "Открытые вопросы").
+ * На pull метаданные иконки идут строкой {@code icon}, а байты — отдельным
+ * {@code GET /sync/blobs} ({@link SyncApiClient#downloadBlob}): для НОВОЙ
+ * (по uuid) иконки сначала скачиваем содержимое, для уже существующей —
+ * только обновляем метаданные, байты не перекачиваем (см. {@link #applyIcon});
+ * все нужные для страницы скачивания делаются ДО {@code db.beginTransaction()}
+ * (см. {@link #prefetchNewIconBlobs}), не внутри неё — держать
+ * sqlite-транзакцию открытой на время сетевого запроса означало бы
+ * блокировать доступ к БД для всего остального приложения (один общий
+ * connection, см. {@code Singleton}) на непредсказуемое время.
+ * <p>
+ * Локальное удаление своей иконки ({@code IconEditDialog.deleteIcon}) —
+ * жёсткий {@code DELETE} (защиту от удаления ИСПОЛЬЗУЕМОЙ даёт FK); иконки с
+ * сервера на телефоне не правятся и не удаляются.
  *
  * <h3>Что ещё сознательно не решено в этом заходе</h3>
  * <ul>
@@ -211,11 +206,10 @@ final class SyncEngine {
      * сейчас, одним нажатием кнопки.
      */
     static void pushDirty(SQLiteDatabase db, SyncApiClient api, SyncLog log) throws IOException, JSONException {
-        // Иконки, не залитые в ЭТОМ раунде (см. collectDirtyIcons), и строки,
-        // отложенные из-за них (см. deferDependents) — пересобираются каждым
-        // раундом заново, в журнал попадает состояние последнего. finally —
-        // чтобы пользователь узнал о них и тогда, когда push упал по другой
-        // причине.
+        // Строки, отложенные из-за своей иконки без заместителя (см. PushIconRefs,
+        // deferDependents) — пересобираются каждым раундом заново, в журнал
+        // попадает состояние последнего. finally — чтобы пользователь узнал о
+        // них и тогда, когда push упал по другой причине.
         List<String> problems = new ArrayList<>();
         try {
             pushDirtyRounds(db, api, log, problems);
@@ -228,7 +222,7 @@ final class SyncEngine {
             throws IOException, JSONException {
         for (int round = 1; ; round++) {
             problems.clear();
-            Map<String, JSONArray> byTable = collectDirtyByTable(db, api, problems);
+            Map<String, JSONArray> byTable = collectDirtyByTable(db, problems);
             if (byTable.isEmpty()) return; // нечего отправлять — либо с самого начала, либо всё уже вылечено
 
             boolean healed = false;
@@ -397,7 +391,6 @@ final class SyncEngine {
      */
     private static void logPortionSent(JSONObject portion, SyncLog log) throws JSONException {
         Map<String, String> displayType = new HashMap<>();
-        displayType.put("icon", "Иконка");
         displayType.put("currency", "Валюта");
         displayType.put("currency_pair", "Валютная пара");
         displayType.put("currency_pair_rate", "Курс");
@@ -435,9 +428,10 @@ final class SyncEngine {
     /**
      * Dirty-строки {@code currency} для push. {@code show_in_equivalent} шлётся всегда
      * (openspec currency-ui-tweaks, design D6): сервер без колонки строит SQL по своему
-     * списку колонок и лишний ключ игнорирует.
+     * списку колонок и лишний ключ игнорирует. {@code icon_uuid} своей иконки — заместитель
+     * ({@link PushIconRefs}).
      */
-    static JSONArray collectDirtyCurrencies(SQLiteDatabase db) throws JSONException {
+    static JSONArray collectDirtyCurrencies(SQLiteDatabase db, PushIconRefs icons) throws JSONException {
         return collect(db,
                 "SELECT uuid, name, iso_code, icon_id, symbol, precision, deleted_at, show_in_equivalent "
                         + "FROM currency WHERE dirty=1",
@@ -446,7 +440,7 @@ final class SyncEngine {
                     row.put("uuid", c.getString(0));
                     row.put("name", c.getString(1));
                     row.put("iso_code", c.getString(2));
-                    row.put("icon_uuid", uuidById(db, "icon", c.getLong(3)));
+                    row.put("icon_uuid", icons.uuidFor(c.getLong(3)));
                     row.put("symbol", c.getString(4));
                     row.put("precision", c.getInt(5));
                     row.put("deleted", !c.isNull(6));
@@ -504,8 +498,8 @@ final class SyncEngine {
     }
 
     /**
-     * Собирает все dirty-строки по 8 синхронизируемым таблицам (без
-     * {@code icon} — он собирается тоже, просто отдельно, см. ниже) в
+     * Собирает все dirty-строки по 8 синхронизируемым таблицам ({@code icon}
+     * в push не уходит, см. javadoc класса, "Иконки") в
      * порядке {@link #TABLE_ORDER} — {@code LinkedHashMap} сохраняет именно
      * этот порядок вставки, на нём строится нарезка на порции (см.
      * {@link #chunkIntoPortions}). Раньше это была одна {@code changes} на
@@ -513,15 +507,14 @@ final class SyncEngine {
      * теперь так же одна транзакция, но НА КАЖДУЮ ПОРЦИЮ, не на весь
      * dirty-набор разом (см. {@link #pushDirty}).
      */
-    private static Map<String, JSONArray> collectDirtyByTable(SQLiteDatabase db, SyncApiClient api,
-                                                              List<String> problems)
-            throws JSONException, IOException {
+    static Map<String, JSONArray> collectDirtyByTable(SQLiteDatabase db, List<String> problems)
+            throws JSONException {
         Map<String, JSONArray> byTable = new LinkedHashMap<>();
 
         Set<String> deferred = new HashSet<>();
-        putOrdered(byTable, "icon", collectDirtyIcons(db, api, deferred, problems));
+        PushIconRefs icons = new PushIconRefs(db, deferred, problems);
 
-        putOrdered(byTable, "currency", collectDirtyCurrencies(db));
+        putOrdered(byTable, "currency", collectDirtyCurrencies(db, icons));
 
         putOrdered(byTable, "currency_pair", collect(db,
                 "SELECT uuid, symbol, base_currency_id, quote_currency_id, precision, deleted_at "
@@ -586,7 +579,7 @@ final class SyncEngine {
                     row.put("uuid", c.getString(0));
                     row.put("name", c.getString(1));
                     row.put("comment", c.getString(2));
-                    row.put("icon_uuid", uuidById(db, "icon", c.getLong(3)));
+                    row.put("icon_uuid", icons.uuidFor(c.getLong(3)));
                     row.put("is_archived", c.getInt(4) != 0);
                     row.put("system_kind", c.getInt(5));
                     row.put("kind", c.getInt(6));
@@ -646,16 +639,16 @@ final class SyncEngine {
 
     /**
      * Убирает из {@code byTable} строки, которые ссылаются (через любое поле
-     * {@code *_uuid}) на uuid из {@code deferred} — иконку, которую в этом
-     * проходе не удалось залить (см. {@link #collectDirtyIcons}), — и, по
+     * {@code *_uuid}) на uuid из {@code deferred} — свою иконку, для которой
+     * нет заместителя с сервера (см. {@link PushIconRefs}), — и, по
      * цепочке, всё, что ссылается уже на них: счёт с такой иконкой → его
      * {@code account_operating} (тот же uuid, что у счёта) → операции по
      * нему → их {@code operation_link}. Иначе сервер ответил бы {@code
-     * missing_reference} на иконку, которую {@code redirty()} вылечить не
-     * может (она и так dirty) — и весь push упал бы, как раньше падал от
-     * одной незалитой картинки. Один проход по {@link #TABLE_ORDER}
+     * missing_reference} на иконку, которой у него нет и не будет, — и весь
+     * push упал бы. Один проход по {@link #TABLE_ORDER}
      * достаточен: ссылка всегда указывает на таблицу РАНЬШЕ по порядку.
-     * Отложенные строки остаются dirty и уйдут следующим синком.
+     * Отложенные строки остаются dirty и уйдут следующим синком (после pull
+     * иконок с сервера заместитель обычно находится).
      */
     static void deferDependents(Map<String, JSONArray> byTable, Set<String> deferred,
                                         List<String> problems) throws JSONException {
@@ -678,7 +671,7 @@ final class SyncEngine {
             else entry.setValue(kept);
         }
         if (skipped > 0) {
-            problems.add("отложено до следующего синка (ссылаются на незалитые иконки): " + skipped + " строк");
+            problems.add("отложено до следующего синка (нет иконки-заместителя): " + skipped + " строк");
         }
     }
 
@@ -694,119 +687,57 @@ final class SyncEngine {
     }
 
     /**
-     * Отдельно от {@link #collect} — иконке нужна сеть (заливка содержимого,
-     * см. javadoc класса, "Иконки") ПРЕЖДЕ чем строка попадёт в {@code
-     * changes}. Сырые поля читаются и КУРСОР ЗАКРЫВАЕТСЯ первым же циклом —
-     * сетевые вызовы идут уже после, не с открытым {@code Cursor} поверх
-     * {@code db} (тот же довод, что и у {@link #prefetchNewIconBlobs} на
-     * pull-стороне, только про SELECT, а не про целую транзакцию).
+     * {@code icon_id} → {@code icon_uuid} для push {@code currency}/{@code account}
+     * (openspec server-managed-icons, design п. 3). Иконка с сервера — её uuid. Своя —
+     * uuid заместителя ({@link IconSubstitutes}, индекс строится один раз за раунд и
+     * только если в раунде есть своя иконка). Нет заместителя — uuid своей иконки
+     * кладётся в {@code deferred}: {@link #deferDependents} уберёт строку и всё, что на
+     * неё ссылается, а в журнал — «нет иконки-заместителя для «<имя>»: строка отложена»
+     * (один раз на иконку).
      */
-    private static JSONArray collectDirtyIcons(SQLiteDatabase db, SyncApiClient api, Set<String> deferred,
-                                               List<String> problems)
-            throws JSONException {
-        List<Object[]> rows = new ArrayList<>(); // {uuid, name, image, iconType, deleted}
-        Cursor c = db.rawQuery(
-                "SELECT uuid, name, image, icon_type, deleted_at FROM icon WHERE dirty=1", null);
-        try {
-            while (c.moveToNext()) {
-                rows.add(new Object[]{c.getString(0), c.getString(1), c.getBlob(2), c.getInt(3),
-                        !c.isNull(4)});
-            }
-        } finally {
-            c.close();
+    static final class PushIconRefs {
+        private final SQLiteDatabase db;
+        private final Set<String> deferred;
+        private final List<String> problems;
+        private final Map<Long, String> resolved = new HashMap<>();
+        private IconSubstitutes substitutes;
+
+        PushIconRefs(SQLiteDatabase db, Set<String> deferred, List<String> problems) {
+            this.db = db;
+            this.deferred = deferred;
+            this.problems = problems;
         }
 
-        JSONArray result = new JSONArray();
-        for (Object[] r : rows) {
-            String sha256;
+        String uuidFor(long iconId) {
+            if (resolved.containsKey(iconId)) return resolved.get(iconId);
+            String uuid = resolve(iconId);
+            resolved.put(iconId, uuid);
+            return uuid;
+        }
+
+        private String resolve(long iconId) {
+            String uuid;
+            String name;
+            byte[] image;
+            Cursor c = db.rawQuery("SELECT uuid, origin, name, image FROM icon WHERE _id=? LIMIT 1",
+                    new String[]{String.valueOf(iconId)});
             try {
-                sha256 = ensureBlobUploaded(api, (byte[]) r[2]);
-            } catch (IOException e) {
-                // Не роняем весь push из-за одной картинки (инцидент
-                // 2026-10-11: обрыв на одной из 144 иконок через Tailscale-
-                // relay — и удаления операций так и не ушли). Иконка и всё,
-                // что на неё ссылается (см. deferDependents), остаются dirty
-                // до следующего синка; остальное уходит сейчас.
-                Log.w(TAG, "push: иконка " + r[0] + " не залита: " + e.getMessage());
-                deferred.add((String) r[0]);
-                problems.add("иконка «" + r[1] + "» не отправлена: " + e.getMessage());
-                continue;
+                if (!c.moveToFirst()) return null; // как uuidById: ссылка в никуда — пусть разбирается сервер
+                if (c.getInt(1) != WalletContract.IconEntry.ORIGIN_LOCAL) return c.getString(0);
+                uuid = c.getString(0);
+                name = c.getString(2);
+                image = c.getBlob(3);
+            } finally {
+                c.close();
             }
-            JSONObject row = new JSONObject();
-            row.put("uuid", r[0]);
-            row.put("name", r[1]);
-            row.put("content_sha256", sha256);
-            row.put("icon_type", r[3]);
-            row.put("deleted", (Boolean) r[4]);
-            result.put(row);
+            if (substitutes == null) substitutes = IconSubstitutes.load(db);
+            String substitute = substitutes.substituteFor(name, image);
+            if (substitute != null) return substitute;
+            Log.w(TAG, "push: нет иконки-заместителя для " + uuid + " (" + name + ") — строка отложена");
+            deferred.add(uuid);
+            problems.add("нет иконки-заместителя для «" + name + "»: строка отложена");
+            return uuid;
         }
-        return result;
-    }
-
-    /** Попыток на ОДНУ иконку в {@link #ensureBlobUploaded} — см. её javadoc. */
-    private static final int BLOB_UPLOAD_ATTEMPTS = 3;
-
-    /**
-     * Возвращает {@code content_sha256} для байт иконки, заливая их только
-     * если сервер их ещё не видел ({@link SyncApiClient#blobExists}) — хеш
-     * считается локально тем же SHA-256, что и на сервере (wallet-api,
-     * blob.cpp), так что повторный синк после частичного сбоя не гонит
-     * заново уже залитые картинки. На обрыв соединения или ответ не 200
-     * (например, 400 с пустым телом — гейтвей не дочитал тело запроса, см.
-     * инцидент 2026-10-11) — до {@link #BLOB_UPLOAD_ATTEMPTS} попыток с
-     * паузой; 401 не повторяем — свежее токен уже не станет.
-     */
-    private static String ensureBlobUploaded(SyncApiClient api, byte[] bytes) throws IOException {
-        if (bytes == null || bytes.length == 0) throw new IOException("у иконки нет содержимого");
-        String sha256 = sha256Hex(bytes);
-        IOException last = null;
-        for (int attempt = 1; attempt <= BLOB_UPLOAD_ATTEMPTS; attempt++) {
-            try {
-                if (api.blobExists(sha256)) return sha256;
-                SyncApiClient.HttpResult uploaded = api.uploadBlob(bytes);
-                if (uploaded.status == 200) {
-                    String serverSha = uploaded.body.optString("sha256", "");
-                    if (!serverSha.equals(sha256)) {
-                        // Не должно случаться — тот же алгоритм на обеих сторонах; если
-                        // всё же разошлось, верим серверу: строка icon сошлётся на то,
-                        // что реально лежит в blob.
-                        Log.w(TAG, "push: sha256 иконки расходится: локально " + sha256 + ", сервер " + serverSha);
-                        if (!serverSha.isEmpty()) return serverSha;
-                    }
-                    return sha256;
-                }
-                last = new IOException("POST /sync/blobs -> HTTP " + uploaded.status
-                        + (uploaded.body.length() > 0 ? " " + uploaded.body : ""));
-                if (uploaded.status == 401) throw last;
-            } catch (JSONException e) {
-                last = new IOException("POST /sync/blobs: некорректный ответ сервера (" + e.getMessage() + ")");
-            } catch (IOException e) {
-                if (e == last) throw e; // 401 выше — не повторяем
-                last = e;
-            }
-            if (attempt < BLOB_UPLOAD_ATTEMPTS) {
-                Log.i(TAG, "push: заливка иконки, попытка " + attempt + " не удалась (" + last.getMessage() + "), повторяю");
-                try {
-                    Thread.sleep(1000L * attempt);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    throw last;
-                }
-            }
-        }
-        throw last;
-    }
-
-    static String sha256Hex(byte[] bytes) {
-        MessageDigest md;
-        try {
-            md = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new AssertionError(e); // SHA-256 гарантирован на любой Android
-        }
-        StringBuilder sb = new StringBuilder(64);
-        for (byte b : md.digest(bytes)) sb.append(String.format(Locale.ROOT, "%02x", b));
-        return sb.toString();
     }
 
     /**
@@ -1029,11 +960,14 @@ final class SyncEngine {
             // класса) — переносит проверку внешних ключей на COMMIT этой
             // транзакции вместо каждого отдельного INSERT.
             db.execSQL("PRAGMA defer_foreign_keys = ON");
+            // Индекс заместителей строится лениво, при первом счёте/валюте —
+            // то есть уже после иконок этой страницы (icon первая в TABLE_ORDER).
+            PullIconGuard iconGuard = new PullIconGuard(db);
             for (String table : TABLE_ORDER) {
                 JSONArray rows = merged.get(table);
                 if (rows == null) continue;
                 for (int i = 0; i < rows.length(); i++) {
-                    applyRow(db, table, rows.getJSONObject(i), newIconBlobs, log);
+                    applyRow(db, table, rows.getJSONObject(i), newIconBlobs, iconGuard, log);
                 }
             }
             db.setTransactionSuccessful();
@@ -1048,7 +982,9 @@ final class SyncEngine {
      * перекачиваются (см. javadoc класса, "Иконки"). Дедуп по
      * {@code content_sha256}: несколько новых иконок в одной странице могут
      * делить одно и то же содержимое, скачивать его больше одного раза
-     * незачем.
+     * незачем. Новую иконку, которая совпадает со своей и по имени, и по
+     * картинке, тоже не качаем: {@link #applyIcon} не вставит её, а сделает
+     * своей иконкой с сервера.
      */
     static Map<String, byte[]> prefetchNewIconBlobs(SQLiteDatabase db, JSONArray iconRows,
                                                               SyncApiClient api)
@@ -1060,19 +996,24 @@ final class SyncEngine {
             if (localUuid(db, "icon", row.getString("uuid")) != null) continue;
             String sha256 = row.getString("content_sha256");
             if (cache.containsKey(sha256)) continue;
+            if (!rowIsDeleted(row)) {
+                OwnIcon own = OwnIcon.findByName(db, row.getString("name"), null);
+                if (own != null && own.sha256.equals(sha256)) continue;
+            }
             cache.put(sha256, api.downloadBlob(sha256));
         }
         return cache;
     }
 
     private static void applyRow(SQLiteDatabase db, String table, JSONObject row,
-                                  Map<String, byte[]> newIconBlobs, SyncLog log) throws JSONException {
+                                  Map<String, byte[]> newIconBlobs, PullIconGuard iconGuard,
+                                  SyncLog log) throws JSONException {
         switch (table) {
-            case "currency": applyCurrency(db, row, log); break;
+            case "currency": applyCurrency(db, row, log, iconGuard); break;
             case "currency_pair": applyCurrencyPair(db, row, log); break;
             case "currency_pair_rate": applyCurrencyPairRate(db, row, log); break;
             case "currency_conversion": applyCurrencyConversion(db, row); break;
-            case "account": applyAccount(db, row, log); break;
+            case "account": applyAccount(db, row, log, iconGuard); break;
             case "account_operating": applyAccountOperating(db, row); break;
             case "operation": applyOperation(db, row, log); break;
             case "operation_link": applyOperationLink(db, row); break;
@@ -1092,42 +1033,164 @@ final class SyncEngine {
      * ожидаемый путь), строка пропускается. Для уже существующей — байты не
      * перекачиваются вообще, обновляются только метаданные (см. javadoc
      * класса, "Иконки", почему смена содержимого не поддерживается).
+     * <p>
+     * openspec server-managed-icons (design п. 1, 5): строка с сервера всегда
+     * {@code origin = 0} — и новая, и уже известная по uuid (своя, когда-то
+     * ушедшая на сервер, снова становится «с сервера»: сервер главный). Имя
+     * занято живой своей иконкой — своя переименовывается в «<имя> (своя)» /
+     * «(своя N)» в той же транзакции; если у своей та же картинка, что у
+     * новой с сервера, — это одна и та же иконка (seed.json после чистой
+     * установки): своя получает uuid и метаданные серверной и становится
+     * «с сервера», дубль не заводится. Конфликт с иконкой «с сервера» — как
+     * раньше, пропуск с логом.
      */
-    private static void applyIcon(SQLiteDatabase db, JSONObject row, Map<String, byte[]> newIconBlobs,
-                                   SyncLog log) throws JSONException {
+    static void applyIcon(SQLiteDatabase db, JSONObject row, Map<String, byte[]> newIconBlobs,
+                          SyncLog log) throws JSONException {
         String uuid = row.getString("uuid");
         String local = localUuid(db, "icon", uuid);
         boolean exists = local != null;
+        boolean deleted = rowIsDeleted(row);
+        String name = row.getString("name");
+        String sha256 = row.getString("content_sha256");
 
         ContentValues cv = new ContentValues();
-        cv.put("name", row.getString("name"));
+        cv.put("name", name);
         cv.put("icon_type", row.getInt("icon_type"));
+        cv.put(WalletContract.IconEntry.COLUMN_ORIGIN, WalletContract.IconEntry.ORIGIN_SERVER);
         applySyncColumns(cv, row);
 
         try {
-            if (exists) {
-                updateFromServer(db, "icon", cv, local);
-            } else {
-                byte[] image = newIconBlobs.get(row.getString("content_sha256"));
+            // Tombstone имя не занимает (uq_icon_name — частичный, deleted_at IS NULL).
+            OwnIcon own = deleted ? null : OwnIcon.findByName(db, name, local);
+            if (!exists && own != null && own.sha256.equals(sha256)) {
+                cv.put("uuid", uuid);
+                cv.put("dirty", 2); // два шага через 2 — см. updateFromServer
+                db.update("icon", cv, "_id=?", new String[]{String.valueOf(own.id)});
+                ContentValues clean = new ContentValues();
+                clean.put("dirty", 0);
+                db.update("icon", clean, "_id=?", new String[]{String.valueOf(own.id)});
+                log.pull("Иконка", "Своя стала иконкой с сервера");
+                return;
+            }
+            byte[] image = null;
+            if (!exists) {
+                image = newIconBlobs.get(sha256);
                 if (image == null) {
                     Log.w(TAG, "icon " + uuid + ": содержимое не предзагружено — строка пропущена");
                     return;
                 }
+            }
+            if (own != null) {
+                String renamed = OwnIcon.freeOwnName(db, name);
+                ContentValues rename = new ContentValues();
+                rename.put("name", renamed);
+                db.update("icon", rename, "_id=?", new String[]{String.valueOf(own.id)});
+                Log.i(TAG, "icon: своя «" + name + "» переименована в «" + renamed + "» — имя занято иконкой с сервера");
+                log.pull("Иконка", "Своя переименована");
+            }
+            if (exists) {
+                updateFromServer(db, "icon", cv, local);
+            } else {
                 cv.put("image", image);
                 cv.put("uuid", uuid);
                 db.insertOrThrow("icon", null, cv);
             }
-            log.pull("Иконка", rowIsDeleted(row) ? "Удалено" : (exists ? "Изменено" : "Добавлено"));
+            log.pull("Иконка", deleted ? "Удалено" : (exists ? "Изменено" : "Добавлено"));
         } catch (SQLiteException e) {
-            // uq_icon_name и т.п. — тот же класс проблемы, что у upsertByUuid
-            // (см. javadoc класса, "Что ещё сознательно не решено").
+            // uq_icon_name с иконкой «с сервера» и т.п. — тот же класс проблемы,
+            // что у upsertByUuid (см. javadoc класса, "Что ещё сознательно не решено").
             Log.w(TAG, "upsert icon uuid=" + uuid + " не удался: " + e.getMessage());
         }
     }
 
+    /** Живая своя иконка ({@code origin = 1}) — для конфликта имени на pull, см. {@link #applyIcon}. */
+    static final class OwnIcon {
+        final long id;
+        final String sha256;
+
+        private OwnIcon(long id, String sha256) {
+            this.id = id;
+            this.sha256 = sha256;
+        }
+
+        /** Своя живая иконка с этим именем (кроме строки {@code excludeUuid}), или {@code null}. */
+        static OwnIcon findByName(SQLiteDatabase db, String name, String excludeUuid) {
+            Cursor c = db.rawQuery("SELECT _id, image FROM icon WHERE name=? AND deleted_at IS NULL"
+                            + " AND origin=" + WalletContract.IconEntry.ORIGIN_LOCAL
+                            + " AND uuid<>? LIMIT 1",
+                    new String[]{name, excludeUuid == null ? "" : excludeUuid});
+            try {
+                if (!c.moveToFirst()) return null;
+                byte[] image = c.getBlob(1);
+                return new OwnIcon(c.getLong(0), image == null ? "" : IconSubstitutes.sha256Hex(image));
+            } finally {
+                c.close();
+            }
+        }
+
+        /** «<имя> (своя)», занято — «<имя> (своя 2)», «(своя 3)», … среди живых иконок. */
+        static String freeOwnName(SQLiteDatabase db, String name) {
+            String candidate = name + " (своя)";
+            for (int n = 2; nameTaken(db, candidate); n++) candidate = name + " (своя " + n + ")";
+            return candidate;
+        }
+
+        private static boolean nameTaken(SQLiteDatabase db, String name) {
+            Cursor c = db.rawQuery("SELECT 1 FROM icon WHERE name=? AND deleted_at IS NULL LIMIT 1",
+                    new String[]{name});
+            try {
+                return c.moveToFirst();
+            } finally {
+                c.close();
+            }
+        }
+    }
+
+    /**
+     * Своя иконка не затирается заместителем (openspec server-managed-icons,
+     * design п. 4): если у счёта/валюты локально своя иконка, а с сервера
+     * пришёл тот же {@code icon_uuid}, что телефон сам отправил бы вместо неё,
+     * — {@code icon_id} не трогаем. Другой {@code icon_uuid} (иконку сменили
+     * на другом устройстве или на сайте) применяется. Индекс заместителей —
+     * один на страницу pull, строится при первом вызове.
+     */
+    static final class PullIconGuard {
+        private final SQLiteDatabase db;
+        private IconSubstitutes substitutes;
+
+        PullIconGuard(SQLiteDatabase db) {
+            this.db = db;
+        }
+
+        /** {@code table} — {@code account} или {@code currency}. */
+        boolean keepsOwnIcon(String table, String rowUuid, String incomingIconUuid) {
+            String local = localUuid(db, table, rowUuid);
+            if (local == null) return false;
+            String name;
+            byte[] image;
+            Cursor c = db.rawQuery("SELECT i.origin, i.name, i.image FROM " + table + " t"
+                    + " JOIN icon i ON i._id = t.icon_id WHERE t.uuid=? LIMIT 1", new String[]{local});
+            try {
+                if (!c.moveToFirst() || c.getInt(0) != WalletContract.IconEntry.ORIGIN_LOCAL) return false;
+                name = c.getString(1);
+                image = c.getBlob(2);
+            } finally {
+                c.close();
+            }
+            if (substitutes == null) substitutes = IconSubstitutes.load(db);
+            return IconSubstitutes.sameUuid(substitutes.substituteFor(name, image), incomingIconUuid);
+        }
+    }
+
     static void applyCurrency(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+        applyCurrency(db, row, log, new PullIconGuard(db));
+    }
+
+    static void applyCurrency(SQLiteDatabase db, JSONObject row, SyncLog log, PullIconGuard iconGuard)
+            throws JSONException {
         String uuid = row.getString("uuid");
-        Long iconId = findIdByUuid(db, "icon", row.getString("icon_uuid"));
+        String iconUuid = row.getString("icon_uuid");
+        Long iconId = findIdByUuid(db, "icon", iconUuid);
         if (iconId == null) {
             Log.w(TAG, "currency " + uuid + ": icon_uuid ещё не известен локально — строка пропущена");
             return;
@@ -1135,7 +1198,7 @@ final class SyncEngine {
         ContentValues cv = new ContentValues();
         cv.put("name", row.getString("name"));
         cv.put("iso_code", row.getString("iso_code"));
-        cv.put("icon_id", iconId);
+        if (!iconGuard.keepsOwnIcon("currency", uuid, iconUuid)) cv.put("icon_id", iconId);
         cv.put("symbol", row.getString("symbol"));
         cv.put("precision", row.getInt("precision"));
         // Старый сервер ключа не присылает — локальный флаг тогда не трогаем (design D6).
@@ -1217,18 +1280,19 @@ final class SyncEngine {
         upsertByUuid(db, "currency_conversion", uuid, cv);
     }
 
-    private static void applyAccount(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+    static void applyAccount(SQLiteDatabase db, JSONObject row, SyncLog log, PullIconGuard iconGuard)
+            throws JSONException {
         String uuid = row.getString("uuid");
-        Long iconId = findIdByUuid(db, "icon", row.getString("icon_uuid"));
+        String iconUuid = row.getString("icon_uuid");
+        Long iconId = findIdByUuid(db, "icon", iconUuid);
         if (iconId == null) {
-            Log.w(TAG, "account " + uuid + ": icon_uuid ещё не известен локально (push иконок не "
-                    + "реализован, см. wallet-api/README.md) — строка пропущена");
+            Log.w(TAG, "account " + uuid + ": icon_uuid ещё не известен локально — строка пропущена");
             return;
         }
         ContentValues cv = new ContentValues();
         cv.put("name", row.getString("name"));
         cv.put("comment", row.getString("comment"));
-        cv.put("icon_id", iconId);
+        if (!iconGuard.keepsOwnIcon("account", uuid, iconUuid)) cv.put("icon_id", iconId);
         cv.put("is_archived", row.getBoolean("is_archived") ? 1 : 0);
         // system_kind/kind — та же пара колонок, что и в push-стороне (collectDirtyByTable) выше;
         // без них строка «Transfer»/«Transfer commission», пришедшая с другого устройства, теряла

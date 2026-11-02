@@ -33,7 +33,8 @@ import java.io.File;
 /**
  * «Добавить/Редактировать иконку» — один лист dialog_add_edit_icon.xml на оба
  * режима, как RateEditDialog: заголовок и подпись кнопки выбора меняются,
- * btnDelete скрыт для новой иконки.
+ * btnDelete скрыт для новой иконки. Иконка с сервера ({@link Icon#isFromServer})
+ * открывается только для просмотра — см. {@link #showReadOnly}.
  */
 public class IconEditDialog {
 
@@ -117,15 +118,42 @@ public class IconEditDialog {
         if (dialog.getWindow() != null)
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
+        view.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
+        if (!isNew && icon.isFromServer()) {
+            showReadOnly(view);
+            dialog.show();
+            return;
+        }
+
         btnSelect.setOnClickListener(v -> openGallery());
         imgPreview.setOnClickListener(v -> openGallery());
         btnDelete.setOnClickListener(v -> deleteIcon());
-        view.findViewById(R.id.btnCancel).setOnClickListener(v -> dialog.dismiss());
         view.findViewById(R.id.btnSave).setOnClickListener(v -> {
             if (isNew) saveNewIcon(); else updateIcon();
         });
 
         dialog.show();
+    }
+
+    /**
+     * Иконка с сервера (openspec server-managed-icons): её ведёт администратор на сайте,
+     * на телефоне — только просмотр. Видны картинка, имя и подсказка; полей правки, выбора
+     * картинки, «Удалить» и «Сохранить» нет.
+     */
+    private void showReadOnly(View view) {
+        ((TextView) view.findViewById(R.id.dialogTitle)).setText("Иконка");
+        TextView name = view.findViewById(R.id.txtIconNameReadOnly);
+        name.setText(icon.getName());
+        name.setVisibility(View.VISIBLE);
+        view.findViewById(R.id.txtServerIconHint).setVisibility(View.VISIBLE);
+        for (int id : new int[]{R.id.btnSelectIcon, R.id.lblIconName, R.id.edtIconName,
+                R.id.lblIconType, R.id.iconTypeChips, R.id.btnDelete, R.id.btnSave}) {
+            view.findViewById(id).setVisibility(View.GONE);
+        }
+        imgPreview.setClickable(false);
+        TextView close = view.findViewById(R.id.btnCancel);
+        close.setText("Закрыть");
+        ((android.widget.LinearLayout.LayoutParams) close.getLayoutParams()).setMarginEnd(0);
     }
 
     private void setupTypeChips() {
@@ -255,9 +283,11 @@ public class IconEditDialog {
             values.put(WalletContract.IconEntry.COLUMN_NAME, name);
             values.put(WalletContract.IconEntry.COLUMN_IMAGE, encodeIcon(selectedBitmap));
             values.put(WalletContract.IconEntry.COLUMN_ICON_TYPE, selectedType.getValue());
-            // uuid — v72 (org/docs/TODO_mobile_sync.md, Фаза 3): нужен для pull (icon
-            // приходит от сервера по uuid), хотя push иконок пока не реализован.
+            // uuid — v72 (org/docs/TODO_mobile_sync.md, Фаза 3), у всех синхронизируемых строк.
             values.put(WalletContract.IconEntry.COLUMN_UUID, java.util.UUID.randomUUID().toString());
+            // Своя иконка (server-managed-icons): на сервер не уходит, в push вместо неё —
+            // иконка-заместитель с сервера (SyncEngine.PushIconRefs).
+            values.put(WalletContract.IconEntry.COLUMN_ORIGIN, WalletContract.IconEntry.ORIGIN_LOCAL);
 
             long id = db.insert(WalletContract.IconEntry.TABLE_NAME, null, values);
             db.close();

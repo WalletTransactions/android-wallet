@@ -146,7 +146,8 @@ public class SyncEngineCurrencyFlagsTest {
         cv.put("uuid", CUR_OWN);
         db.insertOrThrow("currency", null, cv);
 
-        JSONArray rows = SyncEngine.collectDirtyCurrencies(db);
+        JSONArray rows = SyncEngine.collectDirtyCurrencies(db,
+                new SyncEngine.PushIconRefs(db, new java.util.HashSet<>(), new java.util.ArrayList<>()));
         JSONObject pushed = null;
         for (int i = 0; i < rows.length(); i++) {
             if (CUR_OWN.equals(rows.getJSONObject(i).getString("uuid"))) pushed = rows.getJSONObject(i);

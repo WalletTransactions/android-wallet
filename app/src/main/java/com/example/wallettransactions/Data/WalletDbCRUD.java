@@ -539,6 +539,7 @@ public class WalletDbCRUD {
         cv.put(WalletContract.IconEntry.COLUMN_ICON_TYPE, iconType);
         cv.put(WalletContract.IconEntry.COLUMN_IMAGE, bytes);
         cv.put(WalletContract.IconEntry.COLUMN_UUID, UUID.randomUUID().toString());
+        cv.put(WalletContract.IconEntry.COLUMN_ORIGIN, WalletContract.IconEntry.ORIGIN_LOCAL);
         return db.insert(WalletContract.IconEntry.TABLE_NAME, null, cv);
     }
 

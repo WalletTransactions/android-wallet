@@ -23,7 +23,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 85;
+    private static final int DATABASE_VERSION = 86;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -91,6 +91,8 @@ public class WalletDbHelper extends SQLiteOpenHelper {
              + WalletContract.IconEntry.COLUMN_NAME + " INT NOT NULL, \n"
              + WalletContract.IconEntry.COLUMN_IMAGE + " BLOB NOT NULL, \n"
              + WalletContract.IconEntry.COLUMN_ICON_TYPE + " INT NOT NULL, \n"
+             // v86 — см. markIconOriginV86.
+             + WalletContract.IconEntry.COLUMN_ORIGIN + " INTEGER NOT NULL DEFAULT 0, \n"
              + SYNC_COLUMNS_DDL;
     }
 
@@ -352,6 +354,28 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         addColumnIfMissing(db, WalletContract.CurrencyPairEntry.TABLE_NAME,
                 WalletContract.CurrencyPairEntry.COLUMN_IS_SHARED, "INTEGER NOT NULL DEFAULT 0");
         if (ctx != null) com.example.wallettransactions.AppSettings.setReferenceSyncSeq(ctx, 0);
+    }
+
+    /**
+     * v86 (openspec server-managed-icons, design п. 1): {@code icon.origin} — 0 «с сервера»,
+     * 1 «своя». Иконки больше не уходят в push, поэтому ещё не отправленная ({@code dirty = 1})
+     * становится своей, остальные — с сервера; {@code dirty} у иконок обнуляется.
+     * <p>
+     * Порядок и условия — из-за {@code trg_icon_dirty} ({@code WHEN NEW.dirty = OLD.dirty}):
+     * первый UPDATE задевает только {@code dirty = 1} (триггер тогда ничего не меняет),
+     * второй — только {@code dirty <> 0} (значение меняется, триггер молчит). Бланковый
+     * {@code SET dirty = 0} пометил бы dirty все уже чистые строки.
+     * {@code addColumnIfMissing} — апгрейд из базы &lt; 72 уже пересобрал {@code icon}
+     * текущим телом с этой колонкой.
+     */
+    static void markIconOriginV86(SQLiteDatabase db) {
+        String table = WalletContract.IconEntry.TABLE_NAME;
+        String origin = WalletContract.IconEntry.COLUMN_ORIGIN;
+        String dirty = WalletContract.IconEntry.COLUMN_DIRTY;
+        addColumnIfMissing(db, table, origin, "INTEGER NOT NULL DEFAULT 0");
+        db.execSQL("UPDATE " + table + " SET " + origin + " = " + WalletContract.IconEntry.ORIGIN_LOCAL
+                + " WHERE " + dirty + " = 1");
+        db.execSQL("UPDATE " + table + " SET " + dirty + " = 0 WHERE " + dirty + " <> 0");
     }
 
     private static void addColumnIfMissing(SQLiteDatabase db, String table, String column, String ddl) {
@@ -1201,6 +1225,10 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             if (oldVersion < 85) {
                 // v85: флаг «Показывать в эквиваленте» и признак общей строки (currency-ui-tweaks).
                 addCurrencyFlagsV85(db, mContext);
+            }
+            if (oldVersion < 86) {
+                // v86: признак происхождения иконки, иконки больше не отправляются (server-managed-icons).
+                markIconOriginV86(db);
             }
             return;
         }

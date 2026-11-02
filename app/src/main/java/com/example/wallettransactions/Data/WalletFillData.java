@@ -155,6 +155,9 @@ public class WalletFillData {
         byte[] img = bos.toByteArray();
 
         values.put(WalletContract.IconEntry.COLUMN_IMAGE, img);
+        // Иконка из seed.json заведена здесь, на сервере её uuid нет — своя (server-managed-icons):
+        // в push вместо неё уходит заместитель, одноимённая с сервера её не дублирует (SyncEngine.applyIcon).
+        values.put(WalletContract.IconEntry.COLUMN_ORIGIN, WalletContract.IconEntry.ORIGIN_LOCAL);
 
         return db.insert(WalletContract.IconEntry.TABLE_NAME, null, values);
     }

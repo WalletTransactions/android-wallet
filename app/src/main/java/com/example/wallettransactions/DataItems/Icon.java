@@ -54,6 +54,8 @@ public class Icon {
     private Bitmap bitmap32;
     private Bitmap bitmap64;
     private IconType fType = IconType.CATEGORY;
+    /** {@code icon.origin = 0} (openspec server-managed-icons): только просмотр, правит администратор на сайте. */
+    private boolean fFromServer;
 
     public Bitmap getBitmap32(){
        if (bitmap32 == null)
@@ -87,6 +89,10 @@ public class Icon {
         fType = type;
     }
 
+    public boolean isFromServer() {
+        return fFromServer;
+    }
+
     public Icon(int id, String name, Bitmap bitmap) {
         fId = id;
         fName = name;
@@ -94,9 +100,14 @@ public class Icon {
     }
 
     public Icon(int id, String name, Bitmap bitmap, IconType type) {
+        this(id, name, bitmap, type, false);
+    }
+
+    public Icon(int id, String name, Bitmap bitmap, IconType type, boolean fromServer) {
         fId = id;
         fName = name;
         fBitmap = bitmap;
         fType = type;
+        fFromServer = fromServer;
     }
 }

@@ -43,6 +43,7 @@ public abstract class WalletDbLoader {
           //      +", "+ WalletContract.IconsEntry.COLUMN_RESOURCE
                 +", "+ WalletContract.IconEntry.COLUMN_IMAGE
                 +", "+ WalletContract.IconEntry.COLUMN_ICON_TYPE
+                +", "+ WalletContract.IconEntry.COLUMN_ORIGIN
                 +" FROM "+ WalletContract.IconEntry.TABLE_NAME
                 +" WHERE " + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL";
 
@@ -54,6 +55,7 @@ public abstract class WalletDbLoader {
          //   int resourceColumnIndex = cursor.getColumnIndex(WalletContract.IconsEntry.COLUMN_RESOURCE);
             int imageColumnIndex = cursor.getColumnIndex(WalletContract.IconEntry.COLUMN_IMAGE);
             int typeColumnIndex = cursor.getColumnIndex(WalletContract.IconEntry.COLUMN_ICON_TYPE);
+            int originColumnIndex = cursor.getColumnIndex(WalletContract.IconEntry.COLUMN_ORIGIN);
 
             while (cursor.moveToNext()) {
                 int currentID = cursor.getInt(idColumnIndex);
@@ -63,9 +65,11 @@ public abstract class WalletDbLoader {
                 byte[] currentImage = cursor.getBlob(imageColumnIndex);
                 Icon.IconType currentType = Icon.IconType.fromValue(cursor.getInt(typeColumnIndex));
 
+                boolean fromServer = cursor.getInt(originColumnIndex) == WalletContract.IconEntry.ORIGIN_SERVER;
+
                 iconList.AddIcon(currentID, currentName,
                         BitmapFactory.decodeByteArray(currentImage, 0, currentImage.length),
-                        currentType);
+                        currentType, fromServer);
             }
             return res;
         } finally {
