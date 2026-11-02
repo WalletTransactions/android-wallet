@@ -960,11 +960,14 @@ final class SyncEngine {
             // класса) — переносит проверку внешних ключей на COMMIT этой
             // транзакции вместо каждого отдельного INSERT.
             db.execSQL("PRAGMA defer_foreign_keys = ON");
+            // Индекс заместителей строится лениво, при первом счёте/валюте —
+            // то есть уже после иконок этой страницы (icon первая в TABLE_ORDER).
+            PullIconGuard iconGuard = new PullIconGuard(db);
             for (String table : TABLE_ORDER) {
                 JSONArray rows = merged.get(table);
                 if (rows == null) continue;
                 for (int i = 0; i < rows.length(); i++) {
-                    applyRow(db, table, rows.getJSONObject(i), newIconBlobs, log);
+                    applyRow(db, table, rows.getJSONObject(i), newIconBlobs, iconGuard, log);
                 }
             }
             db.setTransactionSuccessful();
@@ -979,7 +982,9 @@ final class SyncEngine {
      * перекачиваются (см. javadoc класса, "Иконки"). Дедуп по
      * {@code content_sha256}: несколько новых иконок в одной странице могут
      * делить одно и то же содержимое, скачивать его больше одного раза
-     * незачем.
+     * незачем. Новую иконку, которая совпадает со своей и по имени, и по
+     * картинке, тоже не качаем: {@link #applyIcon} не вставит её, а сделает
+     * своей иконкой с сервера.
      */
     static Map<String, byte[]> prefetchNewIconBlobs(SQLiteDatabase db, JSONArray iconRows,
                                                               SyncApiClient api)
@@ -991,19 +996,24 @@ final class SyncEngine {
             if (localUuid(db, "icon", row.getString("uuid")) != null) continue;
             String sha256 = row.getString("content_sha256");
             if (cache.containsKey(sha256)) continue;
+            if (!rowIsDeleted(row)) {
+                OwnIcon own = OwnIcon.findByName(db, row.getString("name"), null);
+                if (own != null && own.sha256.equals(sha256)) continue;
+            }
             cache.put(sha256, api.downloadBlob(sha256));
         }
         return cache;
     }
 
     private static void applyRow(SQLiteDatabase db, String table, JSONObject row,
-                                  Map<String, byte[]> newIconBlobs, SyncLog log) throws JSONException {
+                                  Map<String, byte[]> newIconBlobs, PullIconGuard iconGuard,
+                                  SyncLog log) throws JSONException {
         switch (table) {
-            case "currency": applyCurrency(db, row, log); break;
+            case "currency": applyCurrency(db, row, log, iconGuard); break;
             case "currency_pair": applyCurrencyPair(db, row, log); break;
             case "currency_pair_rate": applyCurrencyPairRate(db, row, log); break;
             case "currency_conversion": applyCurrencyConversion(db, row); break;
-            case "account": applyAccount(db, row, log); break;
+            case "account": applyAccount(db, row, log, iconGuard); break;
             case "account_operating": applyAccountOperating(db, row); break;
             case "operation": applyOperation(db, row, log); break;
             case "operation_link": applyOperationLink(db, row); break;
@@ -1023,42 +1033,164 @@ final class SyncEngine {
      * ожидаемый путь), строка пропускается. Для уже существующей — байты не
      * перекачиваются вообще, обновляются только метаданные (см. javadoc
      * класса, "Иконки", почему смена содержимого не поддерживается).
+     * <p>
+     * openspec server-managed-icons (design п. 1, 5): строка с сервера всегда
+     * {@code origin = 0} — и новая, и уже известная по uuid (своя, когда-то
+     * ушедшая на сервер, снова становится «с сервера»: сервер главный). Имя
+     * занято живой своей иконкой — своя переименовывается в «<имя> (своя)» /
+     * «(своя N)» в той же транзакции; если у своей та же картинка, что у
+     * новой с сервера, — это одна и та же иконка (seed.json после чистой
+     * установки): своя получает uuid и метаданные серверной и становится
+     * «с сервера», дубль не заводится. Конфликт с иконкой «с сервера» — как
+     * раньше, пропуск с логом.
      */
-    private static void applyIcon(SQLiteDatabase db, JSONObject row, Map<String, byte[]> newIconBlobs,
-                                   SyncLog log) throws JSONException {
+    static void applyIcon(SQLiteDatabase db, JSONObject row, Map<String, byte[]> newIconBlobs,
+                          SyncLog log) throws JSONException {
         String uuid = row.getString("uuid");
         String local = localUuid(db, "icon", uuid);
         boolean exists = local != null;
+        boolean deleted = rowIsDeleted(row);
+        String name = row.getString("name");
+        String sha256 = row.getString("content_sha256");
 
         ContentValues cv = new ContentValues();
-        cv.put("name", row.getString("name"));
+        cv.put("name", name);
         cv.put("icon_type", row.getInt("icon_type"));
+        cv.put(WalletContract.IconEntry.COLUMN_ORIGIN, WalletContract.IconEntry.ORIGIN_SERVER);
         applySyncColumns(cv, row);
 
         try {
-            if (exists) {
-                updateFromServer(db, "icon", cv, local);
-            } else {
-                byte[] image = newIconBlobs.get(row.getString("content_sha256"));
+            // Tombstone имя не занимает (uq_icon_name — частичный, deleted_at IS NULL).
+            OwnIcon own = deleted ? null : OwnIcon.findByName(db, name, local);
+            if (!exists && own != null && own.sha256.equals(sha256)) {
+                cv.put("uuid", uuid);
+                cv.put("dirty", 2); // два шага через 2 — см. updateFromServer
+                db.update("icon", cv, "_id=?", new String[]{String.valueOf(own.id)});
+                ContentValues clean = new ContentValues();
+                clean.put("dirty", 0);
+                db.update("icon", clean, "_id=?", new String[]{String.valueOf(own.id)});
+                log.pull("Иконка", "Своя стала иконкой с сервера");
+                return;
+            }
+            byte[] image = null;
+            if (!exists) {
+                image = newIconBlobs.get(sha256);
                 if (image == null) {
                     Log.w(TAG, "icon " + uuid + ": содержимое не предзагружено — строка пропущена");
                     return;
                 }
+            }
+            if (own != null) {
+                String renamed = OwnIcon.freeOwnName(db, name);
+                ContentValues rename = new ContentValues();
+                rename.put("name", renamed);
+                db.update("icon", rename, "_id=?", new String[]{String.valueOf(own.id)});
+                Log.i(TAG, "icon: своя «" + name + "» переименована в «" + renamed + "» — имя занято иконкой с сервера");
+                log.pull("Иконка", "Своя переименована");
+            }
+            if (exists) {
+                updateFromServer(db, "icon", cv, local);
+            } else {
                 cv.put("image", image);
                 cv.put("uuid", uuid);
                 db.insertOrThrow("icon", null, cv);
             }
-            log.pull("Иконка", rowIsDeleted(row) ? "Удалено" : (exists ? "Изменено" : "Добавлено"));
+            log.pull("Иконка", deleted ? "Удалено" : (exists ? "Изменено" : "Добавлено"));
         } catch (SQLiteException e) {
-            // uq_icon_name и т.п. — тот же класс проблемы, что у upsertByUuid
-            // (см. javadoc класса, "Что ещё сознательно не решено").
+            // uq_icon_name с иконкой «с сервера» и т.п. — тот же класс проблемы,
+            // что у upsertByUuid (см. javadoc класса, "Что ещё сознательно не решено").
             Log.w(TAG, "upsert icon uuid=" + uuid + " не удался: " + e.getMessage());
         }
     }
 
+    /** Живая своя иконка ({@code origin = 1}) — для конфликта имени на pull, см. {@link #applyIcon}. */
+    static final class OwnIcon {
+        final long id;
+        final String sha256;
+
+        private OwnIcon(long id, String sha256) {
+            this.id = id;
+            this.sha256 = sha256;
+        }
+
+        /** Своя живая иконка с этим именем (кроме строки {@code excludeUuid}), или {@code null}. */
+        static OwnIcon findByName(SQLiteDatabase db, String name, String excludeUuid) {
+            Cursor c = db.rawQuery("SELECT _id, image FROM icon WHERE name=? AND deleted_at IS NULL"
+                            + " AND origin=" + WalletContract.IconEntry.ORIGIN_LOCAL
+                            + " AND uuid<>? LIMIT 1",
+                    new String[]{name, excludeUuid == null ? "" : excludeUuid});
+            try {
+                if (!c.moveToFirst()) return null;
+                byte[] image = c.getBlob(1);
+                return new OwnIcon(c.getLong(0), image == null ? "" : IconSubstitutes.sha256Hex(image));
+            } finally {
+                c.close();
+            }
+        }
+
+        /** «<имя> (своя)», занято — «<имя> (своя 2)», «(своя 3)», … среди живых иконок. */
+        static String freeOwnName(SQLiteDatabase db, String name) {
+            String candidate = name + " (своя)";
+            for (int n = 2; nameTaken(db, candidate); n++) candidate = name + " (своя " + n + ")";
+            return candidate;
+        }
+
+        private static boolean nameTaken(SQLiteDatabase db, String name) {
+            Cursor c = db.rawQuery("SELECT 1 FROM icon WHERE name=? AND deleted_at IS NULL LIMIT 1",
+                    new String[]{name});
+            try {
+                return c.moveToFirst();
+            } finally {
+                c.close();
+            }
+        }
+    }
+
+    /**
+     * Своя иконка не затирается заместителем (openspec server-managed-icons,
+     * design п. 4): если у счёта/валюты локально своя иконка, а с сервера
+     * пришёл тот же {@code icon_uuid}, что телефон сам отправил бы вместо неё,
+     * — {@code icon_id} не трогаем. Другой {@code icon_uuid} (иконку сменили
+     * на другом устройстве или на сайте) применяется. Индекс заместителей —
+     * один на страницу pull, строится при первом вызове.
+     */
+    static final class PullIconGuard {
+        private final SQLiteDatabase db;
+        private IconSubstitutes substitutes;
+
+        PullIconGuard(SQLiteDatabase db) {
+            this.db = db;
+        }
+
+        /** {@code table} — {@code account} или {@code currency}. */
+        boolean keepsOwnIcon(String table, String rowUuid, String incomingIconUuid) {
+            String local = localUuid(db, table, rowUuid);
+            if (local == null) return false;
+            String name;
+            byte[] image;
+            Cursor c = db.rawQuery("SELECT i.origin, i.name, i.image FROM " + table + " t"
+                    + " JOIN icon i ON i._id = t.icon_id WHERE t.uuid=? LIMIT 1", new String[]{local});
+            try {
+                if (!c.moveToFirst() || c.getInt(0) != WalletContract.IconEntry.ORIGIN_LOCAL) return false;
+                name = c.getString(1);
+                image = c.getBlob(2);
+            } finally {
+                c.close();
+            }
+            if (substitutes == null) substitutes = IconSubstitutes.load(db);
+            return IconSubstitutes.sameUuid(substitutes.substituteFor(name, image), incomingIconUuid);
+        }
+    }
+
     static void applyCurrency(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+        applyCurrency(db, row, log, new PullIconGuard(db));
+    }
+
+    static void applyCurrency(SQLiteDatabase db, JSONObject row, SyncLog log, PullIconGuard iconGuard)
+            throws JSONException {
         String uuid = row.getString("uuid");
-        Long iconId = findIdByUuid(db, "icon", row.getString("icon_uuid"));
+        String iconUuid = row.getString("icon_uuid");
+        Long iconId = findIdByUuid(db, "icon", iconUuid);
         if (iconId == null) {
             Log.w(TAG, "currency " + uuid + ": icon_uuid ещё не известен локально — строка пропущена");
             return;
@@ -1066,7 +1198,7 @@ final class SyncEngine {
         ContentValues cv = new ContentValues();
         cv.put("name", row.getString("name"));
         cv.put("iso_code", row.getString("iso_code"));
-        cv.put("icon_id", iconId);
+        if (!iconGuard.keepsOwnIcon("currency", uuid, iconUuid)) cv.put("icon_id", iconId);
         cv.put("symbol", row.getString("symbol"));
         cv.put("precision", row.getInt("precision"));
         // Старый сервер ключа не присылает — локальный флаг тогда не трогаем (design D6).
@@ -1148,18 +1280,19 @@ final class SyncEngine {
         upsertByUuid(db, "currency_conversion", uuid, cv);
     }
 
-    private static void applyAccount(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+    static void applyAccount(SQLiteDatabase db, JSONObject row, SyncLog log, PullIconGuard iconGuard)
+            throws JSONException {
         String uuid = row.getString("uuid");
-        Long iconId = findIdByUuid(db, "icon", row.getString("icon_uuid"));
+        String iconUuid = row.getString("icon_uuid");
+        Long iconId = findIdByUuid(db, "icon", iconUuid);
         if (iconId == null) {
-            Log.w(TAG, "account " + uuid + ": icon_uuid ещё не известен локально (push иконок не "
-                    + "реализован, см. wallet-api/README.md) — строка пропущена");
+            Log.w(TAG, "account " + uuid + ": icon_uuid ещё не известен локально — строка пропущена");
             return;
         }
         ContentValues cv = new ContentValues();
         cv.put("name", row.getString("name"));
         cv.put("comment", row.getString("comment"));
-        cv.put("icon_id", iconId);
+        if (!iconGuard.keepsOwnIcon("account", uuid, iconUuid)) cv.put("icon_id", iconId);
         cv.put("is_archived", row.getBoolean("is_archived") ? 1 : 0);
         // system_kind/kind — та же пара колонок, что и в push-стороне (collectDirtyByTable) выше;
         // без них строка «Transfer»/«Transfer commission», пришедшая с другого устройства, теряла
