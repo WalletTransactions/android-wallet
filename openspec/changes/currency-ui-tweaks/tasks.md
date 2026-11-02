@@ -26,22 +26,28 @@
 
 - [x] 3.1 `WalletDbCRUD.DeleteCurrencyPair(db, pairId)`: одна транзакция, `deleted_at` у пары и её живых курсов, отказ (возврат 0) для `is_shared = 1`; проверка — Robolectric-тест: курсы и пара мягко удалены и `dirty`, общая пара не тронута
   Код — 5820568. Тесты — `CurrencyFlagsDbTest.deleteCurrencyPair_*`.
-- [ ] 3.2 `CurrencyPairRateListActivity`: кнопка «Удалить пару» в тулбаре (`activity_currency_pair_rate_list.xml`), скрыта для общей пары; диалог «Удалить пару <символ>? Вся история её курса тоже будет удалена.» с «Удалить»/«Отмена»; после удаления — `finish()`; проверка — вручную на эмуляторе: своя пара удаляется, у общей кнопки нет
+- [x] 3.2 `CurrencyPairRateListActivity`: кнопка «Удалить пару» в тулбаре (`activity_currency_pair_rate_list.xml`), скрыта для общей пары; диалог «Удалить пару <символ>? Вся история её курса тоже будет удалена.» с «Удалить»/«Отмена»; после удаления — `finish()`; проверка — вручную на эмуляторе: своя пара удаляется, у общей кнопки нет
+  Проверено вручную 2026-11-02 на Pixel 8 Pro: оба пути (тулбар истории курса, долгое нажатие), второй диалог с числом курсов у пары с историей, без него — у пары без курсов (022d37b).
   Код — 5820568; проверка на устройстве.
-- [ ] 3.3 `CurrencyPairListActivity`: долгое нажатие на строку — тот же диалог для своей пары, тост «Общая пара — удалить нельзя» для общей; после удаления — `Singleton` пар инвалидирован, список перечитан; проверка — вручную на эмуляторе, в т.ч. в режиме полёта: пара исчезает сразу, после включения сети уходит в push (лог синка «Валютная пара — Удалено» на другом устройстве)
+- [x] 3.3 `CurrencyPairListActivity`: долгое нажатие на строку — тот же диалог для своей пары, тост «Общая пара — удалить нельзя» для общей; после удаления — `Singleton` пар инвалидирован, список перечитан; проверка — вручную на эмуляторе, в т.ч. в режиме полёта: пара исчезает сразу, после включения сети уходит в push (лог синка «Валютная пара — Удалено» на другом устройстве)
+  Проверено вручную 2026-11-02 на Pixel 8 Pro: оба пути (тулбар истории курса, долгое нажатие), второй диалог с числом курсов у пары с историей, без него — у пары без курсов (022d37b).
   Код — 5820568 (диалог общий: `CurrencyPairListActivity.confirmDeletePair`); проверка на устройстве.
 
 ## 4. Список валют и флаг
 
-- [ ] 4.1 `CurrencyPickerActivity`: экстра режима просмотра (design D4), заголовок «Валюты», тап → `CurrencyFormActivity`; кнопка «Валюты» в тулбаре `activity_currencypair_list.xml` открывает его; проверка — вручную: из «Курсы валют» открывается список, из «Новая валютная пара» выбор работает как раньше
+- [x] 4.1 `CurrencyPickerActivity`: экстра режима просмотра (design D4), заголовок «Валюты», тап → `CurrencyFormActivity`; кнопка «Валюты» в тулбаре `activity_currencypair_list.xml` открывает его; проверка — вручную: из «Курсы валют» открывается список, из «Новая валютная пара» выбор работает как раньше
+  Проверено вручную 2026-11-02 на Pixel 8 Pro (сборка main 1e5bc14, versionCode 93, контур test).
   Код — 5820568 (`ARG_BROWSE`, `buildBrowseIntent`); проверка на устройстве.
-- [ ] 4.2 `currency_picker_item_layout.xml` + адаптер: подписи «общая» и «не в эквиваленте»; проверка — вручную на валютах обоих видов
+- [x] 4.2 `currency_picker_item_layout.xml` + адаптер: подписи «общая» и «не в эквиваленте»; проверка — вручную на валютах обоих видов
+  Проверено вручную 2026-11-02 на Pixel 8 Pro (сборка main 1e5bc14, versionCode 93, контур test).
   Код — 5820568 (`CurrencyPickerAdapter.tagsOf`); проверка на устройстве.
 - [x] 4.3 `CurrencyFormActivity` + `activity_currency_form.xml`: переключатель «Показывать в эквиваленте» (у новой валюты включён); `WalletDbCRUD.InsertCurrency`/`UpdateCurrency` пишут флаг; проверка — Robolectric-тест CRUD (флаг сохраняется, `dirty = 1`)
   Код — 5820568. Тест — `CurrencyFlagsDbTest.insertAndUpdateCurrency_storeFlagAndMarkDirty`; вид переключателя на экране — в ручной проверке 4.4.
-- [ ] 4.4 Форма общей валюты только для чтения (design D7): поля и переключатель неактивны, «Сохранить»/«Удалить» скрыты, подпись «Общая валюта — изменить нельзя»; проверка — вручную на общей и своей валюте
+- [x] 4.4 Форма общей валюты только для чтения (design D7): поля и переключатель неактивны, «Сохранить»/«Удалить» скрыты, подпись «Общая валюта — изменить нельзя»; проверка — вручную на общей и своей валюте
+  Проверено вручную 2026-11-02 на Pixel 8 Pro (сборка main 1e5bc14, versionCode 93, контур test).
   Код — 5820568 (`applyReadOnly`; `UpdateCurrency` не меняет строку с `is_shared = 1` — тест `updateCurrency_sharedRowUntouched`); проверка на устройстве.
-- [ ] 4.5 Запрет смены кода валюты из пары (D8): проверка живых пар в `WalletDbCRUD` и ошибка «Код используется в валютной паре» в `onSave`; проверка — Robolectric-тест функции проверки (смена кода у валюты пары → отказ, смена только названия → разрешено) и вручную в форме
+- [x] 4.5 Запрет смены кода валюты из пары (D8): проверка живых пар в `WalletDbCRUD` и ошибка «Код используется в валютной паре» в `onSave`; проверка — Robolectric-тест функции проверки (смена кода у валюты пары → отказ, смена только названия → разрешено) и вручную в форме
+  Проверено вручную 2026-11-02 на Pixel 8 Pro (сборка main 1e5bc14, versionCode 93, контур test).
   Код — 5820568 (`WalletDbCRUD.IsIsoChangeBlocked`), тест `CurrencyFlagsDbTest.isoChange_blockedOnlyForCurrencyInLivePair` проходит; проверка на устройстве (форма).
 - [ ] 4.6 Правки валют с веба (D9): переименовать/создать/удалить свою валюту на вебе, синк на телефоне; проверка — вручную: список «Валюты» и пикеры показывают изменения без перезапуска
   Код — 5820568 (список «Валюты» перечитывает синглтон в `onResume`); проверка на устройстве.
@@ -50,7 +56,8 @@
 
 - [x] 5.1 Чистая функция фильтрации (design D5): с флагом + текущая; пусто → исходный список; проверка — JUnit-тест по сценариям `currency-directory` «Пикеры валюты эквивалента учитывают флаг»
   Код — 7f79f2b: `EquivalentCurrencies.filter`/`forHeader` (текущая — по id). Тест — `EquivalentCurrenciesTest`.
-- [ ] 5.2 Подключить её в `BaseTabActivity.onPickCurrencyEq` (поверх `currenciesInUse`, при пустом пересечении — все валюты с флагом) и `SettingsActivity.onPickMainCurrency`; проверка — вручную: скрытая `BTC` пропадает из обоих пикеров, текущая скрытая остаётся отмеченной
+- [x] 5.2 Подключить её в `BaseTabActivity.onPickCurrencyEq` (поверх `currenciesInUse`, при пустом пересечении — все валюты с флагом) и `SettingsActivity.onPickMainCurrency`; проверка — вручную: скрытая `BTC` пропадает из обоих пикеров, текущая скрытая остаётся отмеченной
+  Проверено вручную 2026-11-02 на Pixel 8 Pro (сборка main 1e5bc14, versionCode 93, контур test).
   Код — 7f79f2b («Настройки» теперь отмечают текущую — `setSingleChoiceItems`); проверка на устройстве.
 
 ## 6. Интеграция
@@ -60,11 +67,14 @@
 
 ## 7. Экраны счетов (только телефон)
 
-- [ ] 7.1 Таб «Кошельки» без «+» (design D10): убрать `btnAddAccount` из `activity_account.xml` (и упоминание кнопки в комментарии разметки), `onAddAccount`, `REQUEST_ADD_WALLET`/`REQUEST_ADD_CATEGORY` и их ветку в `AccountActivity.onActivityResult`; проверка — `grep onAddAccount` находит только `AccountPickerActivity` и `activity_account_picker.xml`; вручную: в шапке «Кошельков» нет «+», а «Ещё» → «Кошельки и категории» → «+ Добавить» заводит кошелёк
+- [x] 7.1 Таб «Кошельки» без «+» (design D10): убрать `btnAddAccount` из `activity_account.xml` (и упоминание кнопки в комментарии разметки), `onAddAccount`, `REQUEST_ADD_WALLET`/`REQUEST_ADD_CATEGORY` и их ветку в `AccountActivity.onActivityResult`; проверка — `grep onAddAccount` находит только `AccountPickerActivity` и `activity_account_picker.xml`; вручную: в шапке «Кошельков» нет «+», а «Ещё» → «Кошельки и категории» → «+ Добавить» заводит кошелёк
+  Проверено вручную 2026-11-02 на Pixel 8 Pro (сборка main 1e5bc14, versionCode 93, контур test).
   Код — 752c3f5; `grep onAddAccount` — только `AccountPickerActivity.java` и `activity_account_picker.xml`; проверка на устройстве.
-- [ ] 7.2 `AndroidManifest.xml`: `android:windowSoftInputMode="adjustResize"` у `MultiPickerActivity` и `AccountPickerActivity` (D11); `AppSettings.applyPickerKeyboard` сохраняет биты `SOFT_INPUT_MASK_ADJUST` при установке `SOFT_INPUT_STATE_ALWAYS_VISIBLE`; проверка — вручную на эмуляторе, с настройкой клавиатуры на экранах выбора и без неё: в «Фильтр» → «Счёт затрат» после тапа в поиск «Готово» видна над клавиатурой
+- [x] 7.2 `AndroidManifest.xml`: `android:windowSoftInputMode="adjustResize"` у `MultiPickerActivity` и `AccountPickerActivity` (D11); `AppSettings.applyPickerKeyboard` сохраняет биты `SOFT_INPUT_MASK_ADJUST` при установке `SOFT_INPUT_STATE_ALWAYS_VISIBLE`; проверка — вручную на эмуляторе, с настройкой клавиатуры на экранах выбора и без неё: в «Фильтр» → «Счёт затрат» после тапа в поиск «Готово» видна над клавиатурой
+  Проверено вручную 2026-11-02 на Pixel 8 Pro (сборка main 1e5bc14, versionCode 93, контур test).
   Код — 752c3f5 (биты — `AppSettings.pickerSoftInputMode`, тест `PickerKeyboardModeTest`); проверка на устройстве.
-- [ ] 7.3 `activity_multi_picker.xml`: `imeOptions="actionDone"` у `searchInput`; `MultiPickerActivity`: `OnEditorActionListener` (`IME_ACTION_DONE` или `KEYCODE_ENTER` на `ACTION_DOWN`) → `onDone(null)`; проверка — вручную по сценариям `account-screens` «Enter на клавиатуре равен „Готово“»: отмеченный и скрытый поиском счёт возвращается в «Фильтр»
+- [x] 7.3 `activity_multi_picker.xml`: `imeOptions="actionDone"` у `searchInput`; `MultiPickerActivity`: `OnEditorActionListener` (`IME_ACTION_DONE` или `KEYCODE_ENTER` на `ACTION_DOWN`) → `onDone(null)`; проверка — вручную по сценариям `account-screens` «Enter на клавиатуре равен „Готово“»: отмеченный и скрытый поиском счёт возвращается в «Фильтр»
+  Проверено вручную 2026-11-02 на Pixel 8 Pro (сборка main 1e5bc14, versionCode 93, контур test).
   Код — 752c3f5 (`MultiPickerActivity.isDoneKey`, тест `MultiPickerDoneKeyTest`; отпускание физического Enter только поглощается); проверка на устройстве.
 
 ## Workflow follow-up
