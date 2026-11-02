@@ -58,6 +58,17 @@
             android:paddingTop="14dp"
             android:paddingBottom="20dp">
 
+            <!-- Общая валюта (is_shared) — форма только для чтения, см. CurrencyFormActivity.applyReadOnly. -->
+            <TextView
+                android:id="@+id/sharedNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:text="Общая валюта — изменить нельзя"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="13sp"
+                android:visibility="gone"/>
+
             <TextView style="@style/SettingsGroupLabel" android:text="Иконка"/>
 
             <ImageView
@@ -105,6 +116,41 @@
                 android:hint="2"
                 android:inputType="number"
                 android:maxLength="1"/>
+
+            <!-- Флаг currency.show_in_equivalent: предлагать ли валюту в пикерах эквивалента.
+                 Переключатель — тот же, что в «Настройках» (bg_switch_on/off + бегунок). -->
+            <LinearLayout
+                android:id="@+id/rowShowInEquivalent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:onClick="onToggleShowInEquivalent">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Показывать в эквиваленте"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textSize="14.5sp"
+                    android:textStyle="bold"/>
+
+                <FrameLayout
+                    android:id="@+id/switchShowInEquivalent"
+                    android:layout_width="46dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/bg_switch_on">
+                    <View
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="end"
+                        android:layout_margin="2dp"
+                        android:background="@drawable/bg_switch_thumb"/>
+                </FrameLayout>
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"

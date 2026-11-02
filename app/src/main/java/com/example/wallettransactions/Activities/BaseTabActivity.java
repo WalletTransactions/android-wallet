@@ -17,6 +17,7 @@ import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
+import com.example.wallettransactions.DataItems.CurrencyConversion.EquivalentCurrencies;
 import com.example.wallettransactions.DataItems.DataFilter;
 import com.example.wallettransactions.DataItems.Operations.EquivalentResult;
 import com.example.wallettransactions.DataItems.ReportItems.ReportByAccount;
@@ -331,12 +332,14 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         PopupMenu popup = new PopupMenu(this, view);
         Currency currencyEq = getCurrencyEq();
 
+        // Только валюты с флагом «Показывать в эквиваленте» + текущая (currency-ui-tweaks).
+        List<Currency> allCurrencies = new ArrayList<>(Singleton.instance.getCurrencyList(this));
         int idx = 0;
-        for (Currency currency : currenciesInUse()) {
+        for (Currency currency : EquivalentCurrencies.forHeader(currenciesInUse(), allCurrencies, currencyEq)) {
             MenuItem menuItem = popup.getMenu().add(R.id.checkgroup, currency.getId(), idx,
                     currency.getIso() + " (" + currency.getSymbol() + ")");
             menuItem.setCheckable(true);
-            if (currencyEq != null && currencyEq.equals(currency)) menuItem.setChecked(true);
+            if (currencyEq != null && currencyEq.getId() == currency.getId()) menuItem.setChecked(true);
             ++idx;
         }
         popup.getMenu().setGroupCheckable(R.id.checkgroup, true, true);

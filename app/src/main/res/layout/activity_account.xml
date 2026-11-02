@@ -3,9 +3,10 @@
   Экран «Кошельки» — таб нижней панели (navWallets).
 
   Шапка — те же общие блоки, что на «Операциях» и «Отчётах»: view_tab_title +
-  своя кнопка «добавить счёт» + view_tab_actions (фильтр, валюта) и
-  view_period_summary (период, состояние денег, активный фильтр). Ниже — список
-  кошельков за тот же период (wallet_balance_item_layout.xml).
+  view_tab_actions (фильтр, валюта) и view_period_summary (период, состояние
+  денег, активный фильтр). Ниже — список кошельков за тот же период
+  (wallet_balance_item_layout.xml). Кошельки и категории заводятся только в
+  справочнике «Ещё» → «Кошельки и категории» (AccountPickerActivity).
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -26,15 +27,6 @@
         android:paddingBottom="12dp">
 
         <include layout="@layout/view_tab_title"/>
-
-        <ImageButton
-            android:id="@+id/btnAddAccount"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/bg_pill_secondary"
-            android:contentDescription="Добавить счёт"
-            android:src="@android:drawable/ic_input_add"
-            android:onClick="onAddAccount"/>
 
         <include layout="@layout/view_tab_actions"/>
     </LinearLayout>

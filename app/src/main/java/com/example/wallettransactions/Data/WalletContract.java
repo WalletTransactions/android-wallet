@@ -124,6 +124,10 @@ public class WalletContract {
         public final static String COLUMN_ICON_ID = "icon_id";
         public final static String COLUMN_SYMBOL = "symbol";
         public final static String COLUMN_PRECISION = "precision";
+        /** v85: предлагать ли валюту в пикерах эквивалента; синкается ({@code show_in_equivalent}). */
+        public final static String COLUMN_SHOW_IN_EQUIVALENT = "show_in_equivalent";
+        /** v85: 1 — строка из общего справочника сервера ({@code ledger_id} пуст в pull), локальная. */
+        public final static String COLUMN_IS_SHARED = "is_shared";
         public final static String COLUMN_UUID = "uuid";
         public final static String COLUMN_DIRTY = "dirty";
         public final static String COLUMN_DELETED_AT = "deleted_at";
@@ -166,6 +170,8 @@ public class WalletContract {
         public final static String COLUMN_BASE_CURRECNCY_ID = "base_currency_id";
         public final static String COLUMN_QUOTE_CURRECNCY_ID = "quote_currency_id";
         public final static String COLUMN_PRECISION = "precision";
+        /** v85: 1 — пара из общего справочника сервера ({@code ledger_id} пуст в pull), локальная. */
+        public final static String COLUMN_IS_SHARED = "is_shared";
         public final static String COLUMN_UUID = "uuid";
         public final static String COLUMN_DIRTY = "dirty";
         public final static String COLUMN_DELETED_AT = "deleted_at";

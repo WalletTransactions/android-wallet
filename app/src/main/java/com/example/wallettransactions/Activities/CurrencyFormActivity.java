@@ -6,8 +6,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -46,9 +48,13 @@ public class CurrencyFormActivity extends AppCompatActivity {
     private EditText editSymbol;
     private EditText editPrecision;
     private ImageView imgIcon;
+    private FrameLayout switchShowInEquivalent;
 
     private int currencyId = -1;
     private int iconId = -1;
+    /** У новой валюты флаг включён (spec currency-directory «Флаг в форме валюты»). */
+    private boolean showInEquivalent = true;
+    private boolean readOnly;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +66,7 @@ public class CurrencyFormActivity extends AppCompatActivity {
         editSymbol = findViewById(R.id.editCurrencySymbol);
         editPrecision = findViewById(R.id.editCurrencyPrecision);
         imgIcon = findViewById(R.id.imgCurrencyIcon);
+        switchShowInEquivalent = findViewById(R.id.switchShowInEquivalent);
 
         currencyId = getIntent().getIntExtra(ARG_CURRENCY_ID, -1);
 
@@ -72,6 +79,8 @@ public class CurrencyFormActivity extends AppCompatActivity {
         }
 
         renderIcon();
+        renderSwitch();
+        if (readOnly) applyReadOnly();
     }
 
     private void fillFrom(Currency currency) {
@@ -83,6 +92,43 @@ public class CurrencyFormActivity extends AppCompatActivity {
         editSymbol.setText(currency.getSymbol());
         editPrecision.setText(String.valueOf(currency.getPrecision()));
         iconId = currency.getIcon() != null ? currency.getIcon().getId() : -1;
+        showInEquivalent = currency.isShowInEquivalent();
+        readOnly = currency.isShared();
+    }
+
+    /**
+     * Общая валюта только для чтения (design D7): сервер молча пропускает push чужой
+     * строки, и правка на телефоне тихо разошлась бы с ним. Поля и переключатель
+     * неактивны, «Сохранить»/«Удалить» скрыты, видна подпись.
+     */
+    private void applyReadOnly() {
+        for (View v : new View[]{editName, editIso, editSymbol, editPrecision, imgIcon,
+                findViewById(R.id.rowShowInEquivalent), switchShowInEquivalent}) {
+            v.setEnabled(false);
+            v.setClickable(false);
+        }
+        switchShowInEquivalent.setAlpha(0.5f);
+        findViewById(R.id.btnSave).setVisibility(View.GONE);
+        findViewById(R.id.btnDelete).setVisibility(View.GONE);
+        findViewById(R.id.sharedNote).setVisibility(View.VISIBLE);
+    }
+
+    /** Строка «Показывать в эквиваленте» (android:onClick). */
+    public void onToggleShowInEquivalent(View view) {
+        if (readOnly) return;
+        showInEquivalent = !showInEquivalent;
+        renderSwitch();
+    }
+
+    /** Тот же переключатель, что в SettingsActivity.applySwitchState: фон on/off и бегунок start/end. */
+    private void renderSwitch() {
+        switchShowInEquivalent.setBackgroundResource(
+                showInEquivalent ? R.drawable.bg_switch_on : R.drawable.bg_switch_off);
+        View thumb = switchShowInEquivalent.getChildAt(0);
+        if (thumb == null) return;
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) thumb.getLayoutParams();
+        lp.gravity = showInEquivalent ? Gravity.END : Gravity.START;
+        thumb.setLayoutParams(lp);
     }
 
     private void renderIcon() {
@@ -111,6 +157,7 @@ public class CurrencyFormActivity extends AppCompatActivity {
     }
 
     public void onSave(View view) {
+        if (readOnly) return;
         String name = editName.getText().toString().trim();
         String iso = editIso.getText().toString().trim().toUpperCase(Locale.ROOT);
         String symbol = editSymbol.getText().toString().trim();
@@ -129,11 +176,19 @@ public class CurrencyFormActivity extends AppCompatActivity {
         int precision = parsePrecision(editPrecision.getText().toString().trim());
 
         SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
+        // Код валюты из живой пары не меняется (design D8) — пара осталась бы со старым символом.
+        if (WalletDbCRUD.IsIsoChangeBlocked(db, currencyId, iso)) {
+            editIso.setError("Код используется в валютной паре");
+            return;
+        }
+
         boolean ok;
         if (currencyId > 0) {
-            ok = WalletDbCRUD.UpdateCurrency(db, currencyId, name, iso, symbol, precision, iconId) > 0;
+            ok = WalletDbCRUD.UpdateCurrency(db, currencyId, name, iso, symbol, precision, iconId,
+                    showInEquivalent) > 0;
         } else {
-            ok = WalletDbCRUD.InsertCurrency(db, name, iso, symbol, precision, iconId) > 0;
+            ok = WalletDbCRUD.InsertCurrency(db, name, iso, symbol, precision, iconId,
+                    showInEquivalent) > 0;
         }
 
         if (!ok) {
@@ -157,6 +212,7 @@ public class CurrencyFormActivity extends AppCompatActivity {
     }
 
     public void onDelete(View view) {
+        if (readOnly) return;
         SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
 
         if (WalletDbCRUD.IsCurrencyInUse(db, currencyId)) {

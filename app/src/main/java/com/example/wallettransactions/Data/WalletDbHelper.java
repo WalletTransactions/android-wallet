@@ -23,7 +23,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 84;
+    private static final int DATABASE_VERSION = 85;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -120,6 +120,9 @@ public class WalletDbHelper extends SQLiteOpenHelper {
              + WalletContract.CurrencyEntry.COLUMN_ICON_ID + " INTEGER NOT NULL, \n"
              + WalletContract.CurrencyEntry.COLUMN_SYMBOL + " TEXT NOT NULL, \n"
              + WalletContract.CurrencyEntry.COLUMN_PRECISION + " INTEGER NOT NULL DEFAULT 2, \n"
+             // v85 — см. addCurrencyFlagsV85.
+             + WalletContract.CurrencyEntry.COLUMN_SHOW_IN_EQUIVALENT + " INTEGER NOT NULL DEFAULT 1, \n"
+             + WalletContract.CurrencyEntry.COLUMN_IS_SHARED + " INTEGER NOT NULL DEFAULT 0, \n"
              + SYNC_COLUMNS_DDL + ", \n"
              + " CONSTRAINT fk_currency_icon_id FOREIGN KEY ("
              + WalletContract.CurrencyEntry.COLUMN_ICON_ID
@@ -133,6 +136,8 @@ public class WalletDbHelper extends SQLiteOpenHelper {
              + WalletContract.CurrencyPairEntry.COLUMN_BASE_CURRECNCY_ID + " integer NOT NULL, \n"
              + WalletContract.CurrencyPairEntry.COLUMN_QUOTE_CURRECNCY_ID + " INTEGER NOT NULL, \n"
              + WalletContract.CurrencyPairEntry.COLUMN_PRECISION + " INTEGER NOT NULL DEFAULT 5, \n"
+             // v85 — см. addCurrencyFlagsV85.
+             + WalletContract.CurrencyPairEntry.COLUMN_IS_SHARED + " INTEGER NOT NULL DEFAULT 0, \n"
              + SYNC_COLUMNS_DDL + ", \n"
              + " CONSTRAINT fk_currency_pair_base_currency_id FOREIGN KEY ("
              + WalletContract.CurrencyPairEntry.COLUMN_BASE_CURRECNCY_ID
@@ -325,6 +330,35 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         if (ops + rates > 0) Log.w(LOG_TAG, "v84: re-push after precision loss: operations=" + ops + ", rates=" + rates);
     }
 
+    /**
+     * v85 (openspec currency-ui-tweaks, design D1/D2): {@code currency.show_in_equivalent}
+     * (1 — валюта предлагается в пикерах эквивалента), {@code currency.is_shared} и
+     * {@code currency_pair.is_shared} (1 — строка из общего справочника сервера).
+     * <p>
+     * Только {@code ADD COLUMN} со значением по умолчанию, без {@code UPDATE} строк:
+     * любой UPDATE поднял бы {@code dirty} через {@code trg_<table>_dirty} и отправил бы
+     * весь справочник в push. Общие строки получат {@code is_shared = 1} от повторного
+     * pull потока {@code reference} — поэтому его курсор сбрасывается в 0 (ledger не
+     * трогаем: свои строки и так {@code is_shared = 0}).
+     * <p>
+     * {@code columnExists} — апгрейд из очень старой базы (oldVersion &lt; 72) уже
+     * пересобрал таблицы ТЕКУЩИМ телом с этими колонками (тот же случай, что v75/v76).
+     */
+    static void addCurrencyFlagsV85(SQLiteDatabase db, Context ctx) {
+        addColumnIfMissing(db, WalletContract.CurrencyEntry.TABLE_NAME,
+                WalletContract.CurrencyEntry.COLUMN_SHOW_IN_EQUIVALENT, "INTEGER NOT NULL DEFAULT 1");
+        addColumnIfMissing(db, WalletContract.CurrencyEntry.TABLE_NAME,
+                WalletContract.CurrencyEntry.COLUMN_IS_SHARED, "INTEGER NOT NULL DEFAULT 0");
+        addColumnIfMissing(db, WalletContract.CurrencyPairEntry.TABLE_NAME,
+                WalletContract.CurrencyPairEntry.COLUMN_IS_SHARED, "INTEGER NOT NULL DEFAULT 0");
+        if (ctx != null) com.example.wallettransactions.AppSettings.setReferenceSyncSeq(ctx, 0);
+    }
+
+    private static void addColumnIfMissing(SQLiteDatabase db, String table, String column, String ddl) {
+        if (columnExists(db, table, column)) return;
+        db.execSQL("ALTER TABLE " + table + " ADD COLUMN " + column + " " + ddl);
+    }
+
     private static int redirtyWhere(SQLiteDatabase db, String table, String lossCondition) {
         ContentValues cv = new ContentValues();
         cv.put("dirty", 1);
@@ -479,7 +513,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
      * v75 добавил {@code system_kind} безусловно — то есть колонка там уже есть, и
      * последующий {@code ALTER TABLE ADD COLUMN} упал бы на "duplicate column name".
      */
-    private boolean columnExists(SQLiteDatabase db, String table, String column) {
+    private static boolean columnExists(SQLiteDatabase db, String table, String column) {
         Cursor c = db.rawQuery("PRAGMA table_info(" + table + ")", null);
         try {
             int nameIdx = c.getColumnIndex("name");
@@ -1163,6 +1197,10 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
                 // v84: один курс на дату в v_currency_conversion_rate (см. CreateViews).
                 CreateViews(db);
                 redirtyPrecisionLosses(db);
+            }
+            if (oldVersion < 85) {
+                // v85: флаг «Показывать в эквиваленте» и признак общей строки (currency-ui-tweaks).
+                addCurrencyFlagsV85(db, mContext);
             }
             return;
         }

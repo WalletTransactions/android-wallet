@@ -565,30 +565,108 @@ public class WalletDbCRUD {
     // ── Валюты (экран «Список валют» → форма валюты) ───────────────────────────
 
     public static long InsertCurrency(SQLiteDatabase db, String name, String iso,
-                                      String symbol, int precision, int iconId) {
+                                      String symbol, int precision, int iconId,
+                                      boolean showInEquivalent) {
         // uuid — только здесь, не в currencyValues(): тот же метод используют
         // Insert и Update, а uuid не должен меняться при правке существующей валюты.
-        ContentValues cv = currencyValues(name, iso, symbol, precision, iconId);
+        ContentValues cv = currencyValues(name, iso, symbol, precision, iconId, showInEquivalent);
         cv.put(WalletContract.CurrencyEntry.COLUMN_UUID, UUID.randomUUID().toString());
         return db.insert(WalletContract.CurrencyEntry.TABLE_NAME, null, cv);
     }
 
+    /**
+     * Общая валюта (is_shared = 1) не правится: сервер такой push молча пропускает,
+     * и телефон разошёлся бы с ним (openspec currency-ui-tweaks, design D7). Форма её
+     * уже не даёт править — условие здесь страхует обход формы.
+     */
     public static int UpdateCurrency(SQLiteDatabase db, int id, String name, String iso,
-                                     String symbol, int precision, int iconId) {
+                                     String symbol, int precision, int iconId,
+                                     boolean showInEquivalent) {
         return db.update(WalletContract.CurrencyEntry.TABLE_NAME,
-                currencyValues(name, iso, symbol, precision, iconId),
-                WalletContract.CurrencyEntry._ID + "=?", new String[]{Integer.toString(id)});
+                currencyValues(name, iso, symbol, precision, iconId, showInEquivalent),
+                WalletContract.CurrencyEntry._ID + "=? AND "
+                        + WalletContract.CurrencyEntry.COLUMN_IS_SHARED + "=0",
+                new String[]{Integer.toString(id)});
     }
 
     private static ContentValues currencyValues(String name, String iso, String symbol,
-                                                int precision, int iconId) {
+                                                int precision, int iconId, boolean showInEquivalent) {
         ContentValues cv = new ContentValues();
         cv.put(WalletContract.CurrencyEntry.COLUMN_NAME, name);
         cv.put(WalletContract.CurrencyEntry.COLUMN_ISO_NAME, iso);
         cv.put(WalletContract.CurrencyEntry.COLUMN_SYMBOL, symbol);
         cv.put(WalletContract.CurrencyEntry.COLUMN_PRECISION, precision);
         cv.put(WalletContract.CurrencyEntry.COLUMN_ICON_ID, iconId);
+        cv.put(WalletContract.CurrencyEntry.COLUMN_SHOW_IN_EQUIVALENT, showInEquivalent ? 1 : 0);
         return cv;
+    }
+
+    /**
+     * Сменить ISO-код валюты, входящей в живую пару, нельзя (design D8): символ пары —
+     * склейка кодов, и пара осталась бы со старым символом. То же правило, что
+     * {@code 409 currency_in_pair} в REST wallet-api. Код не меняется (с точностью до
+     * регистра) — правка разрешена, даже если валюта в паре.
+     */
+    public static boolean IsIsoChangeBlocked(SQLiteDatabase db, int currencyId, String newIso) {
+        if (currencyId <= 0) return false;
+        Cursor c = db.rawQuery("SELECT " + WalletContract.CurrencyEntry.COLUMN_ISO_NAME
+                        + " FROM " + WalletContract.CurrencyEntry.TABLE_NAME
+                        + " WHERE " + WalletContract.CurrencyEntry._ID + "=?",
+                new String[]{Integer.toString(currencyId)});
+        String oldIso;
+        try {
+            if (!c.moveToFirst()) return false;
+            oldIso = c.getString(0);
+        } finally {
+            c.close();
+        }
+        if (oldIso != null && oldIso.equalsIgnoreCase(newIso)) return false;
+        return IsCurrencyInPair(db, currencyId);
+    }
+
+    /** Валюта — база или котировка хотя бы одной живой пары. */
+    public static boolean IsCurrencyInPair(SQLiteDatabase db, int currencyId) {
+        return countRows(db, "SELECT COUNT(*) FROM " + WalletContract.CurrencyPairEntry.TABLE_NAME
+                + " WHERE (" + WalletContract.CurrencyPairEntry.COLUMN_BASE_CURRECNCY_ID + "=?"
+                + " OR " + WalletContract.CurrencyPairEntry.COLUMN_QUOTE_CURRECNCY_ID + "=?)"
+                + " AND " + WalletContract.CurrencyPairEntry.COLUMN_DELETED_AT + " IS NULL",
+                currencyId, currencyId) > 0;
+    }
+
+    /**
+     * Мягко удаляет свою пару и все её живые курсы одной транзакцией (design D3) —
+     * тот же каскад, что {@code DELETE /api/currency-pairs/{uuid}} на сервере. dirty
+     * ставит триггер, push отправит и пару, и курсы tombstone'ами. Общую пару
+     * (is_shared = 1) не трогает и возвращает 0 — проверка здесь, а не только в UI.
+     * {@code currency_conversion}, ссылающаяся на пару, не меняется (сервер её тоже
+     * не трогает): эквивалент через пару становится неизвестным.
+     *
+     * @return 1 — пара удалена, 0 — не найдена, уже удалена или общая.
+     */
+    public static int DeleteCurrencyPair(SQLiteDatabase db, int pairId) {
+        long now = System.currentTimeMillis();
+        db.beginTransaction();
+        try {
+            ContentValues pairCv = new ContentValues();
+            pairCv.put(WalletContract.CurrencyPairEntry.COLUMN_DELETED_AT, now);
+            int pairs = db.update(WalletContract.CurrencyPairEntry.TABLE_NAME, pairCv,
+                    WalletContract.CurrencyPairEntry._ID + "=? AND "
+                            + WalletContract.CurrencyPairEntry.COLUMN_IS_SHARED + "=0 AND "
+                            + WalletContract.CurrencyPairEntry.COLUMN_DELETED_AT + " IS NULL",
+                    new String[]{Integer.toString(pairId)});
+            if (pairs == 0) return 0;
+
+            ContentValues rateCv = new ContentValues();
+            rateCv.put(WalletContract.CurrencyPairRateEntry.COLUMN_DELETED_AT, now);
+            db.update(WalletContract.CurrencyPairRateEntry.TABLE_NAME, rateCv,
+                    WalletContract.CurrencyPairRateEntry.COLUMN_CURRENCY_PAIR_RATE + "=? AND "
+                            + WalletContract.CurrencyPairRateEntry.COLUMN_DELETED_AT + " IS NULL",
+                    new String[]{Integer.toString(pairId)});
+            db.setTransactionSuccessful();
+            return pairs;
+        } finally {
+            db.endTransaction();
+        }
     }
 
     /**
@@ -602,11 +680,7 @@ public class WalletDbCRUD {
         return countRows(db, "SELECT COUNT(*) FROM " + WalletContract.AccountOperatingEntry.TABLE_NAME
                 + " WHERE " + WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID + "=?"
                 + " AND " + WalletContract.AccountOperatingEntry.COLUMN_DELETED_AT + " IS NULL", currencyId) > 0
-            || countRows(db, "SELECT COUNT(*) FROM " + WalletContract.CurrencyPairEntry.TABLE_NAME
-                + " WHERE (" + WalletContract.CurrencyPairEntry.COLUMN_BASE_CURRECNCY_ID + "=?"
-                + " OR " + WalletContract.CurrencyPairEntry.COLUMN_QUOTE_CURRECNCY_ID + "=?)"
-                + " AND " + WalletContract.CurrencyPairEntry.COLUMN_DELETED_AT + " IS NULL",
-                currencyId, currencyId) > 0;
+            || IsCurrencyInPair(db, currencyId);
     }
 
     /** Мягкое удаление с v72 — тот же довод, что у DeleteOperation/DeleteAccount выше. */

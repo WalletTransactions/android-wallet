@@ -129,6 +129,8 @@ erDiagram
         int icon_id FK
         text symbol
         int precision
+        int show_in_equivalent "v85, синк"
+        int is_shared "v85, локальная"
     }
     account {
         int _id PK
@@ -155,6 +157,7 @@ erDiagram
         int base_currency_id FK
         int quote_currency_id FK
         int precision
+        int is_shared "v85, локальная"
     }
     currency_pair_rate {
         int _id PK
@@ -180,6 +183,35 @@ erDiagram
     currency_pair ||--o{ currency_pair_rate : ""
     currency_pair ||--o{ currency_conversion : ""
 ```
+
+### Свои и общие валюты и пары (v85)
+
+На сервере у `currency` и `currency_pair` есть общие строки (`ledger_id IS NULL`,
+приходят в pull потоком `reference`) и свои (`ledger_id` леджера, поток `ledger`).
+Сервер молча пропускает push чужой строки, поэтому телефон должен их различать:
+
+- `is_shared` (`currency`, `currency_pair`) — только локальная колонка, в push не
+  уходит. `SyncEngine.applyCurrency`/`applyCurrencyPair` пишут `1`, если в строке
+  pull `ledger_id` пуст, иначе `0`. Строки, созданные на телефоне, — `0`. Общая пара
+  не удаляется (`WalletDbCRUD.DeleteCurrencyPair` возвращает 0), форма общей валюты
+  только для чтения (`CurrencyFormActivity`, `UpdateCurrency` с `is_shared = 0`).
+- `show_in_equivalent` (`currency`, по умолчанию 1) — синкается как
+  `currency.show_in_equivalent` (boolean). Push шлёт его всегда; pull без ключа
+  (старый сервер) локальное значение не трогает. Читают его пикеры валюты
+  эквивалента через `EquivalentCurrencies` (с флагом + текущая; если флаг снят у
+  всех — весь список).
+
+Миграция v85 только добавляет колонки (`ALTER TABLE … DEFAULT`), без `UPDATE`:
+триггер `trg_<table>_dirty` отправил бы весь справочник в push. Вместо этого
+`AppSettings.setReferenceSyncSeq(ctx, 0)` — следующий синк перекачивает поток
+`reference`, и общие строки получают `is_shared = 1` (курсор `ledger` не трогается).
+До этого синка все строки считаются своими: удаление общей пары локально возможно,
+сервер такой tombstone пропустит, а повторный pull вернёт пару.
+
+Удаление своей пары — мягкое, вместе с её живыми курсами, одной транзакцией
+(тот же каскад, что `DELETE /api/currency-pairs/{uuid}` на сервере);
+`currency_conversion` не трогается, эквивалент через пару становится неизвестным
+(`v_currency_conversion` берёт только живые пары).
 
 ### Кошельки и категории — одна таблица
 
@@ -319,7 +351,8 @@ round(vccr.rate * (coalesce(opt.amount_to, 0) - coalesce(opf.amount_fr, 0)), 2) 
 
 ## Миграции
 
-`DATABASE_VERSION = 72` в `WalletDbHelper`.
+`DATABASE_VERSION = 85` в `WalletDbHelper` (v85 — `currency.show_in_equivalent`,
+`currency.is_shared`, `currency_pair.is_shared`, см. «Свои и общие валюты и пары»).
 
 `onUpgrade` разветвляется по порогу 68. Для 68 и выше — инкрементальные `ALTER TABLE`
 (69 добавила `currency.precision`, 70 — `currency_pair.precision`, 71 — таблицу

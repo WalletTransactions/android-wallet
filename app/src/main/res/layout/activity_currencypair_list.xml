@@ -16,6 +16,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingLeft="14dp"
+        android:paddingRight="14dp"
         android:paddingTop="8dp"
         android:paddingBottom="10dp">
 
@@ -37,6 +38,23 @@
             android:textStyle="bold"
             android:fontFamily="@font/caprasimo"
             android:textColor="@color/colorTextPrimary"/>
+
+        <!-- Список валют в режиме просмотра (CurrencyPickerActivity.buildBrowseIntent). -->
+        <TextView
+            android:id="@+id/btnCurrencies"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp"
+            android:text="Валюты"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13.5sp"
+            android:textStyle="bold"
+            android:onClick="onOpenCurrencies"/>
     </LinearLayout>
 
     <!-- Поиск валюты — единственный фильтр экрана и виден всегда: раскрывающаяся панель

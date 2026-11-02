@@ -46,16 +46,33 @@
         android:textStyle="bold"
         android:textColor="@color/colorTextPrimary"/>
 
-    <TextView
-        android:id="@+id/currencyName"
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="Доллар США"
-        android:textSize="13.5sp"
-        android:textColor="@color/colorTextSecondary"/>
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/currencyName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Доллар США"
+            android:textSize="13.5sp"
+            android:textColor="@color/colorTextSecondary"/>
+
+        <!-- Подписи «общая» / «не в эквиваленте» (CurrencyPickerAdapter.tagsOf), обе — через « · ». -->
+        <TextView
+            android:id="@+id/currencyTags"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textSize="11.5sp"
+            android:textColor="@color/colorTextHint"
+            android:visibility="gone"/>
+    </LinearLayout>
 
     <TextView
         android:id="@+id/currencySymbol"

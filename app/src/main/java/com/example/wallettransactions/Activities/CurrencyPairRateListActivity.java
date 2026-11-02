@@ -77,6 +77,7 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
 
     private String mCurrencyPairSymbol;
     private int currencyPairId;
+    private CurrencyPair currentPair;
     private ChooseDatePeriodFragment fragmentDatePeriod;
     private CurrencyPairRateAdapter adapter;
     private List<Pair<Date, Double>> items = new ArrayList<>();
@@ -106,6 +107,9 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
                 .getItemBySymbol(mCurrencyPairSymbol);
         int pairPrecision = pair0 != null ? pair0.getPrecision() : 5;
         currencyPairId = pair0 != null ? pair0.getId() : -1;
+        currentPair = pair0;
+        findViewById(R.id.btnDeletePair)
+                .setVisibility(pair0 != null && !pair0.isShared() ? View.VISIBLE : View.GONE);
 
         ListView lst = findViewById(R.id.listView);
         adapter = new CurrencyPairRateAdapter(this, items, pairPrecision);
@@ -177,6 +181,12 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
 
     public void btnDownloadRates(View view) {
         showDownloadDialog();
+    }
+
+    /** Кнопка «Удалить пару» в тулбаре (видна только у своей пары). После удаления экран закрывается. */
+    public void onDeletePair(View view) {
+        if (currentPair == null || currentPair.isShared()) return;
+        CurrencyPairListActivity.confirmDeletePair(this, currentPair, this::finish);
     }
 
     public void onAddRateClick(View view) {
