@@ -62,8 +62,8 @@ public final class SyncLog {
     private final List<String> healedNotes = new ArrayList<>();
 
     // В отличие от healedNotes — НЕ само себя лечит в этом проходе: строка
-    // осталась dirty и уйдёт только следующим синком (например, иконка не
-    // залилась из-за обрыва сети, см. SyncEngine.collectDirtyIcons). Непустой
+    // осталась dirty и уйдёт только следующим синком (например, у своей иконки
+    // счёта нет заместителя с сервера, см. SyncEngine.PushIconRefs). Непустой
     // список — повод для SyncRunner вернуть ERROR, а не OK.
     private final List<String> problemNotes = new ArrayList<>();
 
