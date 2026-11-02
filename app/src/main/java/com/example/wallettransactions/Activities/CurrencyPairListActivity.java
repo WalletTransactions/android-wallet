@@ -135,17 +135,50 @@ public class CurrencyPairListActivity extends AppCompatActivity {
                 .setMessage("Удалить пару " + pair.getSymbol() + "? Вся история её курса тоже будет удалена.")
                 .setNegativeButton("Отмена", null)
                 .setPositiveButton("Удалить", (d, w) -> {
-                    SQLiteDatabase writable = new WalletDbHelper(activity).getWritableDatabase();
-                    int deleted = WalletDbCRUD.DeleteCurrencyPair(writable, pair.getId());
-                    writable.close();
-                    if (deleted == 0) {
-                        Toast.makeText(activity, "Общая пара — удалить нельзя", Toast.LENGTH_SHORT).show();
-                        return;
+                    long rates = liveRateCount(activity, pair.getId());
+                    if (rates == 0) {
+                        deletePair(activity, pair, onDeleted);
+                    } else {
+                        confirmWithRateCount(activity, pair, rates, onDeleted);
                     }
-                    Singleton.instance.reloadCurrencyPairList(activity);
-                    onDeleted.run();
                 })
                 .show();
+    }
+
+    /**
+     * Второй шаг для пары с историей: курсы вводились руками и восстановить их нечем,
+     * поэтому перед удалением переспрашиваем, называя, сколько курсов уйдёт. Пара без
+     * курсов сюда не попадает (spec currency-pairs).
+     */
+    private static void confirmWithRateCount(android.app.Activity activity, CurrencyPair pair, long rates,
+                                             Runnable onDeleted) {
+        new AlertDialog.Builder(activity)
+                .setMessage("У пары " + pair.getSymbol() + " курсов: " + rates
+                        + ". Удалить пару вместе со всеми курсами?")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Удалить", (d, w) -> deletePair(activity, pair, onDeleted))
+                .show();
+    }
+
+    private static long liveRateCount(android.app.Activity activity, int pairId) {
+        return android.database.DatabaseUtils.queryNumEntries(
+                Singleton.instance.getReadableDatabase(activity),
+                com.example.wallettransactions.Data.WalletContract.CurrencyPairRateEntry.TABLE_NAME,
+                com.example.wallettransactions.Data.WalletContract.CurrencyPairRateEntry.COLUMN_CURRENCY_PAIR_RATE + "=? AND "
+                        + com.example.wallettransactions.Data.WalletContract.CurrencyPairRateEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{Integer.toString(pairId)});
+    }
+
+    private static void deletePair(android.app.Activity activity, CurrencyPair pair, Runnable onDeleted) {
+        SQLiteDatabase writable = new WalletDbHelper(activity).getWritableDatabase();
+        int deleted = WalletDbCRUD.DeleteCurrencyPair(writable, pair.getId());
+        writable.close();
+        if (deleted == 0) {
+            Toast.makeText(activity, "Общая пара — удалить нельзя", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Singleton.instance.reloadCurrencyPairList(activity);
+        onDeleted.run();
     }
 
     /**
