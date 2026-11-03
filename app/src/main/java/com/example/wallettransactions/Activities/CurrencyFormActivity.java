@@ -16,9 +16,7 @@ import android.widget.Toast;
 
 import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.Data.WalletDbHelper;
-import com.example.wallettransactions.Data.WalletDbLoader;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
-import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
 import com.example.wallettransactions.DataItems.Icon;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
@@ -196,7 +194,7 @@ public class CurrencyFormActivity extends AppCompatActivity {
             return;
         }
 
-        reloadCurrencies(db);
+        reloadCurrencies();
         setResult(RESULT_OK);
         finish();
     }
@@ -228,17 +226,19 @@ public class CurrencyFormActivity extends AppCompatActivity {
                 .setNegativeButton("Отмена", null)
                 .setPositiveButton("Удалить", (d, w) -> {
                     WalletDbCRUD.DeleteCurrency(db, currencyId);
-                    reloadCurrencies(db);
+                    reloadCurrencies();
                     setResult(RESULT_OK);
                     finish();
                 })
                 .show();
     }
 
-    /** Список валют лежит в синглтоне, поэтому после записи его надо перечитать. */
-    private void reloadCurrencies(SQLiteDatabase db) {
-        CurrencyList currencies = Singleton.instance.getCurrencyList(this);
-        currencies.clear();
-        WalletDbLoader.LoadCurrencyList(db, this);
+    /**
+     * Список валют лежит в синглтоне, поэтому после записи его надо перечитать — тем же
+     * путём, что и синк: объекты обновляются на месте, а табы перерисуют шапку при
+     * возврате (ревизия поднята, android-wallet#8).
+     */
+    private void reloadCurrencies() {
+        Singleton.instance.reloadCurrencyList(this);
     }
 }

@@ -7,6 +7,7 @@ import android.os.Looper;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
+import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
 import com.example.wallettransactions.DataItems.DataFilter;
 
 import java.util.ArrayList;
@@ -264,6 +265,44 @@ public final class PeriodFilterState {
     public Currency getCurrencyEq(Context ctx) {
         if (currencyEq == null) currencyEq = resolveCurrencyEq(ctx);
         return currencyEq;
+    }
+
+    /**
+     * Справочник валют перечитан ({@code Singleton.reloadCurrencyList} — синк или форма
+     * валюты). Объекты {@link Currency} обновлены на месте, так что {@link #currencyEq}
+     * уже несёт новые символ и название, — остаётся перерисовать открытые экраны и
+     * заменить валюту, если её удалили (android-wallet#8).
+     * <p>
+     * Можно звать из любого потока, как {@link #markDataChanged}: {@code currencyEq}
+     * меняется на главном, где его читают экраны.
+     */
+    public void onCurrenciesReloaded(Context ctx) {
+        Context app = ctx.getApplicationContext() != null ? ctx.getApplicationContext() : ctx;
+        Runnable apply = () -> {
+            replaceDeletedCurrencyEq(app);
+            bumpRevision();
+        };
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            apply.run();
+        } else {
+            mainHandler.post(apply);
+        }
+    }
+
+    /**
+     * Удалённой валюты в списке нет (LoadCurrencyList берёт только {@code deleted_at IS
+     * NULL}) — берём сохранённую в настройках или EUR, как при запуске; нет и их — первую
+     * из справочника. В {@link AppSettings} ничего не пишем: если валюту заведут снова,
+     * {@link #syncCurrencyEqFromSettings} вернёт её сам.
+     */
+    private void replaceDeletedCurrencyEq(Context ctx) {
+        if (currencyEq == null) return;
+        CurrencyList currencies = Singleton.instance.getCurrencyList(ctx);
+        if (currencies.contains(currencyEq)) return;
+
+        Currency next = resolveCurrencyEq(ctx);
+        if (next == null && !currencies.isEmpty()) next = currencies.get(0);
+        currencyEq = next;
     }
 
     public void setCurrencyEq(Context ctx, Currency currency) {
