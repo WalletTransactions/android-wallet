@@ -67,11 +67,18 @@ public class AccountList extends Hashtable<Integer, AccountItem> {
         return res;
     }
 
+    /**
+     * Кошельки с валютой. Кошелёк ({@code kind == WALLET}) без строки
+     * {@code account_operating} загружается простым {@link AccountItem} (см.
+     * {@code WalletDbLoader.LoadAccounts}) — без валюты ему здесь не место, а
+     * приведение типа роняло бы пикер эквивалента. Такие кошельки оставлял
+     * pull, пока не научился откладывать строки (sync.PullDeferredRows).
+     */
     public ArrayList<AccountOperatingItem> getOperationAccounts() {
         ArrayList<AccountOperatingItem> res = new ArrayList<AccountOperatingItem>();
 
         for (AccountItem itm : values()) {
-            if (itm.isOperatingAccount()) {
+            if (itm.isOperatingAccount() && itm instanceof AccountOperatingItem) {
                 res.add((AccountOperatingItem)itm);
             }
         }

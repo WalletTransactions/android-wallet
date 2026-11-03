@@ -824,19 +824,21 @@ final class SyncEngine {
         // Строки, пропущенные до localUuid (ссылка на счёт с uuid без дефисов),
         // уже позади курсора — один раз тянем оба потока заново. Upsert по uuid
         // идемпотентен, а push уже прошёл, так что локальные правки не теряются.
-        if (!AppSettings.isUuidFormatResyncDone(ctx)) {
+        // То же для строк, чей родитель пришёл на более поздней странице (см.
+        // PullDeferredRows): до неё они терялись — например, account_operating
+        // кошелька, чью валюту недавно правили, и кошелёк оставался без валюты.
+        if (!AppSettings.isUuidFormatResyncDone(ctx) || !AppSettings.isDeferredRowsResyncDone(ctx)) {
             AppSettings.setLedgerSyncSeq(ctx, 0L);
             AppSettings.setReferenceSyncSeq(ctx, 0L);
             AppSettings.setUuidFormatResyncDone(ctx);
-            log.healed("Повторная загрузка с сервера — подтягиваю пропущенные операции");
+            AppSettings.setDeferredRowsResyncDone(ctx);
+            log.healed("Повторная загрузка с сервера — подтягиваю пропущенные данные");
         }
         long ledgerSeq = AppSettings.getLedgerSyncSeq(ctx);
         long referenceSeq = AppSettings.getReferenceSyncSeq(ctx);
         if (ledgerSeq == 0) log.fullReload();
-        boolean touchedAccounts = false;
-        boolean touchedIcons = false;
-        boolean touchedCurrencies = false;
-        boolean touchedCurrencyPairs = false;
+        PullDeferredRows deferred = PullDeferredRows.load(ctx);
+        Set<String> touched = new HashSet<>();
 
         // Кап на число страниц — защита от бага в курсорах/ответе сервера,
         // который иначе крутил бы цикл вечно (условие выхода ниже опирается
@@ -857,6 +859,9 @@ final class SyncEngine {
                     log.healed("Сервер сменил кошелёк — загружаю его заново");
                     log.fullReload();
                     ledgerSeq = 0;
+                    // Отложенное ждало строк старого леджера — их уже не будет.
+                    deferred.clear();
+                    deferred.save();
                     AppSettings.setLedgerSyncSeq(ctx, 0L);
                     continue;
                 }
@@ -876,26 +881,34 @@ final class SyncEngine {
             boolean advanced = result.ledger.nextSeq != ledgerSeq || result.reference.nextSeq != referenceSeq;
             if (!advanced) break; // догнали сервер — оба потока пусты
 
-            if (touchesAccounts(result.ledger.changes) || touchesAccounts(result.reference.changes)) {
-                touchedAccounts = true;
-            }
-            if (result.ledger.changes.has("icon") || result.reference.changes.has("icon")) {
-                touchedIcons = true;
-            }
-            if (result.ledger.changes.has("currency") || result.reference.changes.has("currency")) {
-                touchedCurrencies = true;
-            }
-            if (touchesCurrencyPairs(result.ledger.changes) || touchesCurrencyPairs(result.reference.changes)) {
-                touchedCurrencyPairs = true;
-            }
+            touched.addAll(applyPage(db, result.ledger.changes, result.reference.changes, api, log, deferred));
 
-            applyPage(db, result.ledger.changes, result.reference.changes, api, log);
-
+            // Сначала отложенное, потом курсоры: умрём между ними — страница
+            // придёт снова, и её строки просто заменят свои отложенные копии.
+            deferred.save();
             ledgerSeq = result.ledger.nextSeq;
             referenceSeq = result.reference.nextSeq;
             AppSettings.setLedgerSyncSeq(ctx, ledgerSeq);
             AppSettings.setReferenceSyncSeq(ctx, referenceSeq);
         }
+
+        // Новых страниц нет, а отложенное осталось (родитель пришёл в самой
+        // последней странице или был применён в прошлом синке) — ещё один проход.
+        if (!deferred.isEmpty()) {
+            touched.addAll(applyPage(db, new JSONObject(), new JSONObject(), api, log, deferred));
+            deferred.save();
+        }
+        if (!deferred.isEmpty()) {
+            // Поток догнан, а родителя так и нет — на сервере строка ссылается на
+            // то, чего нам не прислали. Не теряем: повторим на следующем синке.
+            Log.w(TAG, "pull: строки без родителя после полной загрузки — " + deferred.summary());
+            log.problem("Часть данных ждёт связанных записей с сервера (" + deferred.summary() + ")");
+        }
+
+        boolean touchedAccounts = touched.contains("account") || touched.contains("account_operating");
+        boolean touchedIcons = touched.contains("icon");
+        boolean touchedCurrencies = touched.contains("currency");
+        boolean touchedCurrencyPairs = touched.contains("currency_pair") || touched.contains("currency_pair_rate");
 
         if (touchedAccounts) {
             // Singleton.accounts — кэш в памяти, сам себя не перечитывает
@@ -920,14 +933,6 @@ final class SyncEngine {
         }
     }
 
-    private static boolean touchesAccounts(JSONObject changes) {
-        return changes.has("account") || changes.has("account_operating");
-    }
-
-    private static boolean touchesCurrencyPairs(JSONObject changes) {
-        return changes.has("currency_pair") || changes.has("currency_pair_rate");
-    }
-
     private static Map<String, JSONArray> mergeChanges(JSONObject a, JSONObject b) throws JSONException {
         Map<String, JSONArray> merged = new LinkedHashMap<>();
         for (JSONObject src : new JSONObject[]{a, b}) {
@@ -946,9 +951,23 @@ final class SyncEngine {
         return merged;
     }
 
-    private static void applyPage(SQLiteDatabase db, JSONObject ledgerChanges, JSONObject referenceChanges,
-                                   SyncApiClient api, SyncLog log) throws JSONException, IOException {
+    /**
+     * Применяет страницу вместе с отложенными строками прошлых страниц (см.
+     * {@link PullDeferredRows}): внутри каждой таблицы сначала отложенные (они
+     * старше), потом строки страницы. Отложенную строку, чью новую версию
+     * принесла эта страница, не повторяем — новая пройдёт сама. Что снова не
+     * применилось, остаётся в {@code deferred}; содержимое {@code deferred}
+     * меняется только после коммита, так что упавшая транзакция его не портит.
+     *
+     * @return таблицы, где хоть одна строка применилась (для перечитывания кэшей
+     *         в памяти: счета, валюты, пары)
+     */
+    static Set<String> applyPage(SQLiteDatabase db, JSONObject ledgerChanges, JSONObject referenceChanges,
+                                  SyncApiClient api, SyncLog log, PullDeferredRows deferred)
+            throws JSONException, IOException {
         Map<String, JSONArray> merged = mergeChanges(ledgerChanges, referenceChanges);
+        PullDeferredRows stillDeferred = PullDeferredRows.inMemory();
+        Set<String> appliedTables = new HashSet<>();
         // Скачивание содержимого НОВЫХ иконок — ДО транзакции (см. javadoc
         // класса, "Иконки") — держать sqlite-транзакцию открытой на время
         // сетевого запроса означало бы блокировать доступ к БД для всего
@@ -965,15 +984,35 @@ final class SyncEngine {
             PullIconGuard iconGuard = new PullIconGuard(db);
             for (String table : TABLE_ORDER) {
                 JSONArray rows = merged.get(table);
-                if (rows == null) continue;
-                for (int i = 0; i < rows.length(); i++) {
-                    applyRow(db, table, rows.getJSONObject(i), newIconBlobs, iconGuard, log);
+                List<JSONObject> queue = new ArrayList<>(
+                        deferred.rowsToRetry(table, uuidsOf(rows)));
+                if (rows != null) {
+                    for (int i = 0; i < rows.length(); i++) queue.add(rows.getJSONObject(i));
+                }
+                for (JSONObject row : queue) {
+                    if (applyRow(db, table, row, newIconBlobs, iconGuard, log)) {
+                        appliedTables.add(table);
+                    } else {
+                        stillDeferred.add(table, row);
+                    }
                 }
             }
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
         }
+        deferred.replaceWith(stillDeferred);
+        return appliedTables;
+    }
+
+    private static Set<String> uuidsOf(JSONArray rows) throws JSONException {
+        Set<String> uuids = new HashSet<>();
+        if (rows == null) return uuids;
+        for (int i = 0; i < rows.length(); i++) {
+            String uuid = rows.getJSONObject(i).optString("uuid", null);
+            if (uuid != null) uuids.add(uuid);
+        }
+        return uuids;
     }
 
     /**
@@ -1005,23 +1044,29 @@ final class SyncEngine {
         return cache;
     }
 
-    private static void applyRow(SQLiteDatabase db, String table, JSONObject row,
-                                  Map<String, byte[]> newIconBlobs, PullIconGuard iconGuard,
-                                  SyncLog log) throws JSONException {
+    /**
+     * @return {@code false} — строку надо отложить: её родитель (иконка, валюта,
+     *         счёт, пара, проводка) ещё не пришёл (см. {@link PullDeferredRows});
+     *         {@code true} — строка обработана (применена или отброшена насовсем).
+     */
+    private static boolean applyRow(SQLiteDatabase db, String table, JSONObject row,
+                                     Map<String, byte[]> newIconBlobs, PullIconGuard iconGuard,
+                                     SyncLog log) throws JSONException {
         switch (table) {
-            case "currency": applyCurrency(db, row, log, iconGuard); break;
-            case "currency_pair": applyCurrencyPair(db, row, log); break;
-            case "currency_pair_rate": applyCurrencyPairRate(db, row, log); break;
-            case "currency_conversion": applyCurrencyConversion(db, row); break;
-            case "account": applyAccount(db, row, log, iconGuard); break;
-            case "account_operating": applyAccountOperating(db, row); break;
-            case "operation": applyOperation(db, row, log); break;
-            case "operation_link": applyOperationLink(db, row); break;
-            case "icon": applyIcon(db, row, newIconBlobs, log); break;
+            case "currency": return applyCurrency(db, row, log, iconGuard);
+            case "currency_pair": return applyCurrencyPair(db, row, log);
+            case "currency_pair_rate": return applyCurrencyPairRate(db, row, log);
+            case "currency_conversion": return applyCurrencyConversion(db, row);
+            case "account": return applyAccount(db, row, log, iconGuard);
+            case "account_operating": return applyAccountOperating(db, row);
+            case "operation": return applyOperation(db, row, log);
+            case "operation_link": return applyOperationLink(db, row);
+            case "icon": applyIcon(db, row, newIconBlobs, log); return true;
             default:
                 // Неизвестная клиенту таблица — сервер может быть новее
                 // этого релиза (тот же принцип, что у push_batch на
                 // сервере для незнакомого имени) — игнор, не ошибка.
+                return true;
         }
     }
 
@@ -1182,18 +1227,18 @@ final class SyncEngine {
         }
     }
 
-    static void applyCurrency(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
-        applyCurrency(db, row, log, new PullIconGuard(db));
+    static boolean applyCurrency(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+        return applyCurrency(db, row, log, new PullIconGuard(db));
     }
 
-    static void applyCurrency(SQLiteDatabase db, JSONObject row, SyncLog log, PullIconGuard iconGuard)
+    static boolean applyCurrency(SQLiteDatabase db, JSONObject row, SyncLog log, PullIconGuard iconGuard)
             throws JSONException {
         String uuid = row.getString("uuid");
         String iconUuid = row.getString("icon_uuid");
         Long iconId = findIdByUuid(db, "icon", iconUuid);
         if (iconId == null) {
             Log.w(TAG, "currency " + uuid + ": icon_uuid ещё не известен локально — строка пропущена");
-            return;
+            return false;
         }
         ContentValues cv = new ContentValues();
         cv.put("name", row.getString("name"));
@@ -1208,8 +1253,9 @@ final class SyncEngine {
         cv.put("is_shared", isSharedRow(row) ? 1 : 0);
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "currency", uuid, cv);
-        if (wasInsert == null) return;
+        if (wasInsert == null) return true;
         log.pull("Валюта", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
+        return true;
     }
 
     /**
@@ -1221,13 +1267,13 @@ final class SyncEngine {
         return row.has("ledger_id") && row.isNull("ledger_id");
     }
 
-    static void applyCurrencyPair(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+    static boolean applyCurrencyPair(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
         String uuid = row.getString("uuid");
         Long baseId = findIdByUuid(db, "currency", row.getString("base_currency_uuid"));
         Long quoteId = findIdByUuid(db, "currency", row.getString("quote_currency_uuid"));
         if (baseId == null || quoteId == null) {
             Log.w(TAG, "currency_pair " + uuid + ": валюта ещё не синхронизирована — строка пропущена");
-            return;
+            return false;
         }
         ContentValues cv = new ContentValues();
         cv.put("symbol", row.getString("symbol"));
@@ -1237,16 +1283,17 @@ final class SyncEngine {
         cv.put("is_shared", isSharedRow(row) ? 1 : 0);
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "currency_pair", uuid, cv);
-        if (wasInsert == null) return;
+        if (wasInsert == null) return true;
         log.pull("Валютная пара", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
+        return true;
     }
 
-    private static void applyCurrencyPairRate(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+    private static boolean applyCurrencyPairRate(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
         String uuid = row.getString("uuid");
         Long pairId = findIdByUuid(db, "currency_pair", row.getString("currency_pair_uuid"));
         if (pairId == null) {
             Log.w(TAG, "currency_pair_rate " + uuid + ": пара ещё не синхронизирована — строка пропущена");
-            return;
+            return false;
         }
         ContentValues cv = new ContentValues();
         cv.put("currency_pair_id", pairId);
@@ -1257,18 +1304,19 @@ final class SyncEngine {
         cv.put("rate", row.getString("rate")); // numeric-как-строка, не парсим в double
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "currency_pair_rate", uuid, cv);
-        if (wasInsert == null) return;
+        if (wasInsert == null) return true;
         log.pull("Курс", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
+        return true;
     }
 
-    private static void applyCurrencyConversion(SQLiteDatabase db, JSONObject row) throws JSONException {
+    private static boolean applyCurrencyConversion(SQLiteDatabase db, JSONObject row) throws JSONException {
         String uuid = row.getString("uuid");
         Long fromId = findIdByUuid(db, "currency", row.getString("from_currency_uuid"));
         Long toId = findIdByUuid(db, "currency", row.getString("to_currency_uuid"));
         Long pairId = findIdByUuid(db, "currency_pair", row.getString("currency_pair_uuid"));
         if (fromId == null || toId == null || pairId == null) {
             Log.w(TAG, "currency_conversion " + uuid + ": валюта/пара ещё не синхронизированы — строка пропущена");
-            return;
+            return false;
         }
         ContentValues cv = new ContentValues();
         cv.put("from_currency_id", fromId);
@@ -1278,16 +1326,17 @@ final class SyncEngine {
         cv.put("is_reverse", row.getBoolean("is_reverse") ? 1 : 0);
         applySyncColumns(cv, row);
         upsertByUuid(db, "currency_conversion", uuid, cv);
+        return true;
     }
 
-    static void applyAccount(SQLiteDatabase db, JSONObject row, SyncLog log, PullIconGuard iconGuard)
+    static boolean applyAccount(SQLiteDatabase db, JSONObject row, SyncLog log, PullIconGuard iconGuard)
             throws JSONException {
         String uuid = row.getString("uuid");
         String iconUuid = row.getString("icon_uuid");
         Long iconId = findIdByUuid(db, "icon", iconUuid);
         if (iconId == null) {
             Log.w(TAG, "account " + uuid + ": icon_uuid ещё не известен локально — строка пропущена");
-            return;
+            return false;
         }
         ContentValues cv = new ContentValues();
         cv.put("name", row.getString("name"));
@@ -1301,8 +1350,9 @@ final class SyncEngine {
         cv.put("kind", row.getInt("kind"));
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "account", uuid, cv);
-        if (wasInsert == null) return;
+        if (wasInsert == null) return true;
         log.pull("Счёт", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
+        return true;
     }
 
     /**
@@ -1315,18 +1365,18 @@ final class SyncEngine {
      * по отдельному полю ссылки (его в протоколе и нет, см.
      * wallet-api/schema/table/account_operating.sql).
      */
-    private static void applyAccountOperating(SQLiteDatabase db, JSONObject row) throws JSONException {
+    private static boolean applyAccountOperating(SQLiteDatabase db, JSONObject row) throws JSONException {
         String uuid = row.getString("uuid");
         Long accountId = findIdByUuid(db, "account", uuid);
         if (accountId == null) {
             Log.w(TAG, "account_operating " + uuid + ": account ещё не применён — строка пропущена "
                     + "(нарушен порядок применения таблиц?)");
-            return;
+            return false;
         }
         Long currencyId = findIdByUuid(db, "currency", row.getString("currency_uuid"));
         if (currencyId == null) {
             Log.w(TAG, "account_operating " + uuid + ": валюта ещё не синхронизирована — строка пропущена");
-            return;
+            return false;
         }
         ContentValues cv = new ContentValues();
         cv.put("currency_id", currencyId);
@@ -1344,15 +1394,16 @@ final class SyncEngine {
         } catch (SQLiteException e) {
             Log.w(TAG, "upsert account_operating uuid=" + uuid + " не удался: " + e.getMessage());
         }
+        return true;
     }
 
-    private static void applyOperation(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+    private static boolean applyOperation(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
         String uuid = row.getString("uuid");
         Long accFr = findIdByUuid(db, "account", row.getString("acc_fr_uuid"));
         Long accTo = findIdByUuid(db, "account", row.getString("acc_to_uuid"));
         if (accFr == null || accTo == null) {
             Log.w(TAG, "operation " + uuid + ": счёт ещё не синхронизирован — строка пропущена");
-            return;
+            return false;
         }
         ContentValues cv = new ContentValues();
         cv.put("date", isoTimestampToLocalDbFormat(row.getString("date")));
@@ -1362,18 +1413,19 @@ final class SyncEngine {
         cv.put("comment", row.getString("comment"));
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "operation", uuid, cv);
-        if (wasInsert == null) return;
+        if (wasInsert == null) return true;
         log.pull("Операция", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
         if (wasInsert && !rowIsDeleted(row)) log.newOperation(uuid);
+        return true;
     }
 
-    private static void applyOperationLink(SQLiteDatabase db, JSONObject row) throws JSONException {
+    private static boolean applyOperationLink(SQLiteDatabase db, JSONObject row) throws JSONException {
         String uuid = row.getString("uuid");
         Long mainId = findIdByUuid(db, "operation", row.getString("main_uuid"));
         Long linkId = findIdByUuid(db, "operation", row.getString("link_uuid"));
         if (mainId == null || linkId == null) {
             Log.w(TAG, "operation_link " + uuid + ": проводка ещё не синхронизирована — строка пропущена");
-            return;
+            return false;
         }
         ContentValues cv = new ContentValues();
         cv.put("main_id", mainId);
@@ -1381,6 +1433,7 @@ final class SyncEngine {
         cv.put("type", row.getInt("type"));
         applySyncColumns(cv, row);
         upsertByUuid(db, "operation_link", uuid, cv);
+        return true;
     }
 
     // ── Общие мелочи ─────────────────────────────────────────────────────────
