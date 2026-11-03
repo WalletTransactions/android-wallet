@@ -60,8 +60,11 @@ public final class AppSettings {
      * при пробросе {@code adb reverse tcp:8090 tcp:8090}, либо запуск
      * тестов на самом сервере) — на реальном телефоне в общей Wi-Fi сети
      * это должен быть LAN-адрес компьютера, см. экран «Настройки».
+     * <p>
+     * Порт — от варианта сборки (openspec android-flavors): prod — {@code :8090},
+     * qa — {@code :8091} (test-контур), см. {@code productFlavors} в app/build.gradle.
      */
-    public static final String DEFAULT_SERVER_BASE_URL = "http://localhost:8090/";
+    public static final String DEFAULT_SERVER_BASE_URL = BuildConfig.DEFAULT_SERVER_URL;
 
     /** Значения {@link #getThemeMode}: строки, а не int-константы AppCompat, — их
      *  значения могут поменяться между версиями библиотеки, а в prefs они навсегда. */

@@ -46,7 +46,10 @@ jobs:
 
       # gradlew лежит в git без бита исполнения — запускаем через bash.
       - name: Unit tests
-        run: bash ./gradlew :app:testDebugUnitTest --console=plain --no-daemon
+        run: bash ./gradlew :app:testProdDebugUnitTest --console=plain --no-daemon
+
+      # Релиз — только вариант prod (openspec android-flavors, D3): qa ставят
+      # с хоста (deploy-debug.sh / Jenkins), в GitHub Releases он не нужен.
 
       - name: Release APK (signed)
         if: env.HAS_RELEASE_KEY == 'true'
@@ -56,10 +59,10 @@ jobs:
           KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
-          bash ./gradlew :app:assembleRelease --console=plain --no-daemon
+          bash ./gradlew :app:assembleProdRelease --console=plain --no-daemon
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          "$tools/zipalign" -f 4 app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/aligned.apk"
+          "$tools/zipalign" -f 4 app/build/outputs/apk/prod/release/app-prod-release-unsigned.apk "$RUNNER_TEMP/aligned.apk"
           "$tools/apksigner" sign --ks "$RUNNER_TEMP/release.jks" \
             --ks-pass env:KEYSTORE_PASSWORD --ks-key-alias "$KEY_ALIAS" --key-pass env:KEY_PASSWORD \
             --out "$RUNNER_TEMP/app.apk" "$RUNNER_TEMP/aligned.apk"
@@ -69,8 +72,8 @@ jobs:
       - name: Debug APK (runner key)
         if: env.HAS_RELEASE_KEY != 'true'
         run: |
-          bash ./gradlew :app:assembleDebug --console=plain --no-daemon
-          cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/app.apk"
+          bash ./gradlew :app:assembleProdDebug --console=plain --no-daemon
+          cp app/build/outputs/apk/prod/debug/app-prod-debug.apk "$RUNNER_TEMP/app.apk"
           echo "SIGNING=debug" >> "$GITHUB_ENV"
 
       - name: Publish release

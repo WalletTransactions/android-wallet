@@ -71,9 +71,25 @@ ci/              unit-тесты в контейнере (JDK17 + Android SDK)
 в `local.properties` (`sdk.dir=...`), файл в git не хранится.
 
 ```bash
-./gradlew assembleDebug          # APK: app/build/outputs/apk/debug/
-./deploy-debug.sh [serial]       # собрать и поставить на устройство через adb
+./gradlew assembleDebug             # оба варианта: app/build/outputs/apk/{prod,qa}/debug/
+./deploy-debug.sh [serial]          # собрать и поставить prod на устройство через adb
+FLAVOR=qa ./deploy-debug.sh         # то же для qa; FLAVOR=all — оба
 ```
+
+### Варианты: prod и qa
+
+Два приложения рядом на одном телефоне, у каждого своя база, настройки и вход
+(openspec `android-flavors`):
+
+| Вариант | Пакет | Название | Сервер по умолчанию |
+|---|---|---|---|
+| `prod` | `com.example.wallettransactions` | «Посчитай и сбереги» | `http://localhost:8090/` |
+| `qa` | `com.example.wallettransactions.qa` | «QA Посчитай и сбереги» (оранжевая иконка с плашкой «QA») | `http://localhost:8091/` (test-контур) |
+
+LAN-адрес хоста вводится в «Ещё» → «Интеграции» в каждом приложении. Вход
+Google в `qa` работает, только если в Google Cloud зарегистрирован Android
+OAuth client для `com.example.wallettransactions.qa` с SHA-1 debug-ключа хоста
+(см. `openspec/changes/android-flavors/design.md`).
 
 `versionCode` растёт автоматически при каждой сборке (`app/version.properties`),
 `versionName` — `1.0.<code>`; версия и время сборки видны в «Настройки → О приложении».
@@ -81,11 +97,11 @@ ci/              unit-тесты в контейнере (JDK17 + Android SDK)
 ## Тесты
 
 ```bash
-./gradlew :app:testDebugUnitTest     # локально
+./gradlew :app:testProdDebugUnitTest # локально (от варианта тесты не зависят)
 bash ci/run_unit_tests.sh            # в одноразовом контейнере, на хосте нужен только Docker
 ```
 
-Отчёты JUnit — `app/build/test-results/testDebugUnitTest/`. Подробнее —
+Отчёты JUnit — `app/build/test-results/testProdDebugUnitTest/`. Подробнее —
 [`ci/README.md`](ci/README.md).
 
 ## Релизы
