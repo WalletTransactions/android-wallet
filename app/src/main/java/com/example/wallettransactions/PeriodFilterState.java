@@ -7,6 +7,7 @@ import android.os.Looper;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
+import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
 import com.example.wallettransactions.DataItems.DataFilter;
 
 import java.util.ArrayList;
@@ -261,9 +262,67 @@ public final class PeriodFilterState {
 
     // ── Валюта эквивалента ────────────────────────────────────────────────────
 
+    /**
+     * Никогда не null. Пока справочник валют пуст (полная очистка базы без сида, смена
+     * сервера — валюты ещё не пришли синком), отдаёт заглушку {@link #isPlaceholder}:
+     * экраны и загрузчики зовут {@code currencyEq.getId()} без проверок, и раньше
+     * приложение падало на старте, не дойдя до синка, который заполнил бы справочник.
+     * Заглушку при каждом вызове пробуем заменить настоящей валютой.
+     */
     public Currency getCurrencyEq(Context ctx) {
-        if (currencyEq == null) currencyEq = resolveCurrencyEq(ctx);
+        if (currencyEq == null || isPlaceholder(currencyEq)) {
+            Currency resolved = resolveCurrencyEq(ctx);
+            if (resolved != null) currencyEq = resolved;
+            else if (currencyEq == null) currencyEq = placeholderCurrencyEq(ctx);
+        }
         return currencyEq;
+    }
+
+    /** id −1 — такой строки в {@code currency} нет: курсов к ней нет, эквивалент пустой. */
+    public static boolean isPlaceholder(Currency currency) {
+        return currency != null && currency.getId() < 0;
+    }
+
+    private static Currency placeholderCurrencyEq(Context ctx) {
+        String iso = AppSettings.getCurrencyEqIso(ctx);
+        if (iso == null) iso = "EUR";
+        return new Currency(-1, iso, iso, null, iso, 2, true, false);
+    }
+
+    /**
+     * Справочник валют перечитан ({@code Singleton.reloadCurrencyList} — синк или форма
+     * валюты). Объекты {@link Currency} обновлены на месте, так что {@link #currencyEq}
+     * уже несёт новые символ и название, — остаётся перерисовать открытые экраны и
+     * заменить валюту, если её удалили (android-wallet#8).
+     * <p>
+     * Можно звать из любого потока, как {@link #markDataChanged}: {@code currencyEq}
+     * меняется на главном, где его читают экраны.
+     */
+    public void onCurrenciesReloaded(Context ctx) {
+        Context app = ctx.getApplicationContext() != null ? ctx.getApplicationContext() : ctx;
+        Runnable apply = () -> {
+            replaceDeletedCurrencyEq(app);
+            bumpRevision();
+        };
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            apply.run();
+        } else {
+            mainHandler.post(apply);
+        }
+    }
+
+    /**
+     * Удалённой валюты (и заглушки) в списке нет (LoadCurrencyList берёт только
+     * {@code deleted_at IS NULL}) — берём ту же, что при запуске ({@link #resolveCurrencyEq});
+     * справочник пуст — заглушку. В {@link AppSettings} ничего не пишем: если валюту заведут
+     * снова, {@link #syncCurrencyEqFromSettings} вернёт её сам.
+     */
+    private void replaceDeletedCurrencyEq(Context ctx) {
+        if (currencyEq == null) return;
+        if (Singleton.instance.getCurrencyList(ctx).contains(currencyEq)) return;
+
+        Currency next = resolveCurrencyEq(ctx);
+        currencyEq = next != null ? next : placeholderCurrencyEq(ctx);
     }
 
     public void setCurrencyEq(Context ctx, Currency currency) {
@@ -341,11 +400,14 @@ public final class PeriodFilterState {
         }
     }
 
+    /** Сохранённая в настройках → EUR → первая из справочника; null — только если он пуст. */
     private Currency resolveCurrencyEq(Context ctx) {
+        CurrencyList currencies = Singleton.instance.getCurrencyList(ctx);
         String savedIso = AppSettings.getCurrencyEqIso(ctx);
-        Currency saved = savedIso != null
-                ? Singleton.instance.getCurrencyList(ctx).getCurrencyByISO(savedIso) : null;
-        return saved != null ? saved : Singleton.instance.getCurrencyList(ctx).getCurrencyByISO("EUR");
+        Currency found = savedIso != null ? currencies.getCurrencyByISO(savedIso) : null;
+        if (found == null) found = currencies.getCurrencyByISO("EUR");
+        if (found == null && !currencies.isEmpty()) found = currencies.get(0);
+        return found;
     }
 
     private static Date startOfDay(Date date) {

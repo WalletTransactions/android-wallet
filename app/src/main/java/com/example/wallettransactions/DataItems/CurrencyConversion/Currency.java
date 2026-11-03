@@ -39,4 +39,20 @@ public class Currency {
         this.showInEquivalent = showInEquivalent;
         this.shared = shared;
     }
+
+    /**
+     * Перезаписывает поля той же строки {@code currency} (id не меняется). Зовёт только
+     * {@link CurrencyList#addCurrency} при перечитывании справочника — так счета, пары и
+     * текущая валюта эквивалента, взявшие ссылку раньше, видят новые данные (android-wallet#8).
+     */
+    void update(String iso, String name, Icon icon, String symbol, int precision,
+                boolean showInEquivalent, boolean shared) {
+        this.iso = iso;
+        this.name = name;
+        this.icon = icon;
+        this.symbol = symbol;
+        this.precision = precision;
+        this.showInEquivalent = showInEquivalent;
+        this.shared = shared;
+    }
 }

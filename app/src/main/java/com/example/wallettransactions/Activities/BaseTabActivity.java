@@ -331,6 +331,8 @@ public abstract class BaseTabActivity extends AppCompatActivity {
     public void onPickCurrencyEq(View view) {
         PopupMenu popup = new PopupMenu(this, view);
         Currency currencyEq = getCurrencyEq();
+        // Заглушка пустого справочника — не валюта, в списке ей не место.
+        if (PeriodFilterState.isPlaceholder(currencyEq)) currencyEq = null;
 
         // Только валюты с флагом «Показывать в эквиваленте» + текущая (currency-ui-tweaks).
         List<Currency> allCurrencies = new ArrayList<>(Singleton.instance.getCurrencyList(this));

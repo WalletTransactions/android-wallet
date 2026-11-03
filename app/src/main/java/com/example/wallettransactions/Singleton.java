@@ -106,18 +106,23 @@ public class Singleton {
      * <p>
      * {@code CurrencyList.clear()} — унаследованный {@code ArrayList.clear()},
      * чистит только сам список; собственный {@code Hashtable} (для
-     * {@code getCurrencyById}) он не трогает, но это безобидно —
-     * {@code addCurrency} ниже перезапишет в нём запись на тот же id, не
-     * оставив дубля, а по мягко удалённым валютам (их LoadCurrencyList
-     * больше не вернёт) в нём просто останется недостижимая по спискам
-     * запись — известный маленький пробел самого {@code CurrencyList}, не
-     * этого метода.
+     * {@code getCurrencyById}) он не трогает — и на этом держится перечитывание
+     * на месте: {@code addCurrency} находит в нём объект с тем же id и
+     * обновляет его поля, а не заводит новый (android-wallet#8). Поэтому
+     * счета, пары и валюта эквивалента видят правку без собственного reload.
+     * По мягко удалённым валютам (их LoadCurrencyList больше не вернёт) в нём
+     * остаётся недостижимая по спискам запись; если это текущая валюта
+     * эквивалента, её заменит {@code PeriodFilterState.onCurrenciesReloaded}.
+     * <p>
+     * Звать и после записи валюты на самом телефоне ({@code CurrencyFormActivity}):
+     * {@code onCurrenciesReloaded} поднимает ревизию, и табы перерисуют шапку.
      */
     public void reloadCurrencyList(Context context) {
         if (currencyList == null) return;
 
         currencyList.clear();
         WalletDbLoader.LoadCurrencyList(getReadableDatabase(context), context);
+        PeriodFilterState.get(context).onCurrenciesReloaded(context);
     }
 
     public WalletDbHelper getDbHelper(Context context) {

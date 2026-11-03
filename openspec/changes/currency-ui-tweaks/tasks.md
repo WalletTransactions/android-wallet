@@ -51,6 +51,7 @@
   Код — 5820568 (`WalletDbCRUD.IsIsoChangeBlocked`), тест `CurrencyFlagsDbTest.isoChange_blockedOnlyForCurrencyInLivePair` проходит; проверка на устройстве (форма).
 - [ ] 4.6 Правки валют с веба (D9): переименовать/создать/удалить свою валюту на вебе, синк на телефоне; проверка — вручную: список «Валюты» и пикеры показывают изменения без перезапуска — Тест: [android-wallet#5](https://github.com/WalletTransactions/android-wallet/issues/5)
   Код — 5820568 (список «Валюты» перечитывает синглтон в `onResume`); проверка на устройстве.
+  Баг [#8](https://github.com/WalletTransactions/android-wallet/issues/8) (2026-11-03): эквивалент на «Операциях» не обновлялся после синка — `CurrencyList.addCurrency` теперь обновляет `Currency` с тем же id на месте, `PeriodFilterState.onCurrenciesReloaded` поднимает ревизию и заменяет удалённую валюту эквивалента. Тест — `CurrencyReloadInPlaceTest`. Перепроверить 4.6 на устройстве.
 
 ## 5. Пикеры эквивалента
 
