@@ -7,7 +7,7 @@
 # скрипта (машина с
 # двойной загрузкой, устройство одно на обе ОС). ANDROID_SERIAL — переменная,
 # которую понимают И adb, И Android Gradle Plugin внутри gradlew
-# installDebug — так они оба выбирают нужное устройство, если подключено
+# install<Flavor>Debug — так они оба выбирают нужное устройство, если подключено
 # несколько (второй телефон, эмулятор), без ручного "adb -s <serial> install".
 #
 # Если сериал Pixel сменится (переподключили как другое USB-устройство,
@@ -15,6 +15,11 @@
 # файл не нужно, просто передать сериал первым аргументом:
 #   ./deploy-debug.sh <serial>
 # Список подключенных устройств и их сериалов: adb devices -l
+#
+# Вариант сборки (openspec android-flavors) — переменная FLAVOR:
+#   ./deploy-debug.sh              — prod (com.example.wallettransactions)
+#   FLAVOR=qa ./deploy-debug.sh    — qa   (com.example.wallettransactions.qa, test-контур)
+#   FLAVOR=all ./deploy-debug.sh   — оба
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,6 +27,14 @@ cd "$SCRIPT_DIR"
 
 DEFAULT_SERIAL=46281FDJG0015B
 export ANDROID_SERIAL="${1:-$DEFAULT_SERIAL}"
+
+FLAVOR="${FLAVOR:-prod}"
+case "$FLAVOR" in
+    prod) INSTALL_TASKS=(installProdDebug) ;;
+    qa)   INSTALL_TASKS=(installQaDebug) ;;
+    all)  INSTALL_TASKS=(installProdDebug installQaDebug) ;;
+    *)    echo "FLAVOR=$FLAVOR — допустимо prod, qa или all" >&2; exit 1 ;;
+esac
 
 # Android SDK — на этой машине НЕ из Android Studio/apt (их тут нет вовсе),
 # поставлен вручную sdkmanager'ом в ~/Android/Sdk (2026-09-14), теми же
@@ -58,12 +71,12 @@ fi
 # нет вовсе или он не тот — см. /run/media/ivan/OS/Users/<user>/.android/
 # debug.keystore на смонтированном разделе Windows, тот же alias/пароль
 # по умолчанию: androiddebugkey/android).
-echo "Собираю debug и ставлю на $ANDROID_SERIAL ..."
+echo "Собираю debug ($FLAVOR) и ставлю на $ANDROID_SERIAL ..."
 # "sh gradlew", а не "./gradlew" — этот каталог на NTFS-диске (ntfs-3g/fuseblk),
 # который не хранит бит на выполнение: chmod +x тут молча не сохраняется, и
 # "./gradlew" всегда падает с Permission denied. gradlew сам начинается с
 # "#!/bin/sh" — просто передаём его sh явным образом, бит на выполнение не нужен.
-sh gradlew installDebug --console=plain
+sh gradlew "${INSTALL_TASKS[@]}" --console=plain
 
 echo
-echo "Готово: app-debug.apk установлен на $ANDROID_SERIAL."
+echo "Готово: debug ($FLAVOR) установлен на $ANDROID_SERIAL."

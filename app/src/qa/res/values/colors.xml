@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Вариант qa (openspec android-flavors): фон adaptive-иконки (mipmap-anydpi-v26/main_icon.xml)
+     другого цвета — в лаунчере QA сразу отличается от prod (#7A8A5E).
+     Сам рисунок — app/src/qa/res/drawable/main_icon.png (оранжевая гамма + плашка «QA»),
+     сгенерирован tools/qa_icon.py из app/src/main/res/drawable/main_icon.png. -->
+<resources>
+    <color name="ic_launcher_background">#C2672E</color>
+</resources>

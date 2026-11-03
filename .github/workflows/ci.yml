@@ -35,9 +35,11 @@ jobs:
           cache: gradle
 
       # gradlew лежит в git без бита исполнения — запускаем через bash.
+      # Unit-тесты от варианта не зависят (openspec android-flavors, D3) — гоняем prod.
       - name: Unit tests
-        run: bash ./gradlew :app:testDebugUnitTest --console=plain --no-daemon
+        run: bash ./gradlew :app:testProdDebugUnitTest --console=plain --no-daemon
 
+      # assembleDebug — оба варианта: app-prod-debug.apk и app-qa-debug.apk.
       - name: Assemble debug APK
         run: bash ./gradlew :app:assembleDebug --console=plain --no-daemon
 
@@ -63,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.apk.outputs.name }}
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/*/debug/*.apk
           if-no-files-found: error
           retention-days: 14
 
@@ -72,5 +74,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-results
-          path: app/build/test-results/testDebugUnitTest/
+          path: app/build/test-results/testProdDebugUnitTest/
           if-no-files-found: ignore

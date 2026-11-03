@@ -1,4 +1,4 @@
-# Одноразовый образ для гонки Android unit-тестов (`./gradlew :app:testDebugUnitTest`)
+# Одноразовый образ для гонки Android unit-тестов (`./gradlew :app:testProdDebugUnitTest`)
 # вне Android Studio — сам Jenkins (BuildPlatform) тулчейна не несёт, каждый
 # job вызывает СВОИ инструменты вложенными `docker run` (см.
 # BuildPlatform/jenkins/README.md, "Зачем контейнеру Jenkins доступ к сокету

@@ -1,6 +1,6 @@
 # Android unit-тесты вне Android Studio
 
-`./gradlew :app:testDebugUnitTest` — чистая JVM (не Robolectric/эмулятор),
+`./gradlew :app:testProdDebugUnitTest` — чистая JVM (не Robolectric/эмулятор),
 но и ей нужны JDK17 (Gradle 7.5 не собирает build-скрипты на JDK21 — см.
 `Containerfile`) и Android SDK (`compileSdk 34`, `android.jar`), которых на
 произвольной машине/CI-хосте может не быть. `run_unit_tests.sh` гоняет их в
@@ -16,7 +16,9 @@ bash ci/run_unit_tests.sh
 образа кэшируется, Gradle-кэш — в именованном томе
 `wallettransactions-android-gradle-cache`, переживает отдельные прогоны).
 
-Результаты (JUnit XML) — `app/build/test-results/testDebugUnitTest/`.
+Результаты (JUnit XML) — `app/build/test-results/testProdDebugUnitTest/`.
+Тесты от варианта сборки не зависят, поэтому гоняется только `prod`
+(openspec `android-flavors`); `qa` — `testQaDebugUnitTest`, если нужно.
 
 ## Файлы
 
@@ -24,7 +26,7 @@ bash ci/run_unit_tests.sh
 ci/
   README.md            — этот файл
   Containerfile         — JDK17 + Android SDK (cmdline-tools, platform-34, build-tools 30.0.3)
-  run_unit_tests.sh     — сборка образа (кэшируется) + testDebugUnitTest против ТЕКУЩЕГО рабочего дерева
+  run_unit_tests.sh     — сборка образа (кэшируется) + testProdDebugUnitTest против ТЕКУЩЕГО рабочего дерева
 ```
 
 ## Jenkins

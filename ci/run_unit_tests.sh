@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Гоняет `./gradlew :app:testDebugUnitTest` (юнит-тесты — чистая JVM, без
+# Гоняет `./gradlew :app:testProdDebugUnitTest` (юнит-тесты — чистая JVM, без
 # эмулятора/устройства) ПРОТИВ ТЕКУЩЕГО рабочего дерева, в одноразовом
 # контейнере (см. Containerfile рядом) — на хосте, где эта штука реально
 # нужна (CI), нет ни нужного JDK17 (Gradle 7.5 не собирает build-скрипты на
@@ -44,4 +44,4 @@ echo "==> Образ сборки (кэшируется — пересобира
     -v "$ANDROID_DIR:/repo/Android" \
     -v wallettransactions-android-gradle-cache:/root/.gradle \
     "$IMAGE" \
-    ./gradlew :app:testDebugUnitTest --console=plain --no-daemon
+    ./gradlew :app:testProdDebugUnitTest --console=plain --no-daemon

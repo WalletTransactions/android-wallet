@@ -47,7 +47,23 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    // Два приложения рядом на одном телефоне (openspec android-flavors):
+    // prod — прежний applicationId, ставится поверх нынешнего приложения с
+    // данными; qa — отдельный пакет для test-контура, своя база и вход.
+    // Код общий, различаются только ресурсы (app/src/qa/res) и BuildConfig.
+    // Имя "test" нельзя — Gradle держит его под источники unit-тестов.
+    flavorDimensions "env"
     productFlavors {
+        prod {
+            dimension "env"
+            buildConfigField "String", "DEFAULT_SERVER_URL", "\"http://localhost:8090/\""
+        }
+        qa {
+            dimension "env"
+            applicationIdSuffix ".qa"
+            versionNameSuffix "-qa"
+            buildConfigField "String", "DEFAULT_SERVER_URL", "\"http://localhost:8091/\""
+        }
     }
     buildToolsVersion '29.0.3'
     compileOptions {
