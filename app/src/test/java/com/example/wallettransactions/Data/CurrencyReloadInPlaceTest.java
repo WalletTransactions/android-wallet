@@ -150,6 +150,39 @@ public class CurrencyReloadInPlaceTest {
         assertTrue(Singleton.instance.getCurrencyList(context).contains(eq));
     }
 
+    @Test
+    public void emptyDirectory_currencyEqIsPlaceholder_thenRealAfterReload() {
+        // Полная очистка без сида + смена сервера: валют нет, пока не пришёл синк.
+        db.execSQL("DELETE FROM currency");
+        AppSettings.setCurrencyEqIso(context, "GEL");
+        PeriodFilterState state = PeriodFilterState.get(context);
+
+        Currency eq = state.getCurrencyEq(context);
+        assertNotNull("экраны зовут getId() без проверки — null ронял приложение", eq);
+        assertTrue(PeriodFilterState.isPlaceholder(eq));
+        assertEquals("GEL", eq.getIso());
+
+        // Синк принёс справочник.
+        insertCurrency("Лари", "GEL", "₾", insertIcon("flag"));
+        Singleton.instance.reloadCurrencyList(context);
+
+        Currency real = state.getCurrencyEq(context);
+        assertFalse(PeriodFilterState.isPlaceholder(real));
+        assertSame(Singleton.instance.getCurrencyList(context).getCurrencyByISO("GEL"), real);
+    }
+
+    @Test
+    public void emptyDirectory_noSavedIso_fallsBackToFirstCurrency() {
+        db.execSQL("DELETE FROM currency");
+        PeriodFilterState state = PeriodFilterState.get(context);
+        assertTrue(PeriodFilterState.isPlaceholder(state.getCurrencyEq(context)));
+
+        insertCurrency("Тенге", "KZT", "₸", insertIcon("flag"));
+        Singleton.instance.reloadCurrencyList(context);
+
+        assertEquals("KZT", state.getCurrencyEq(context).getIso());
+    }
+
     // ── Вспомогательное ──────────────────────────────────────────────────────────
 
     private AccountOperatingItem gelWallet() {
