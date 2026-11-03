@@ -146,21 +146,24 @@ public class AdapterUtils {
 
 
         String aproxSign = isIncomplete ? "~" : isAprox ? "≈" : "";
+        // Валюты может не быть: кошелёк без строки account_operating (см.
+        // AccountList.getOperationAccounts) — сумму показываем без символа.
+        String symbol = currency != null ? currency.getSymbol() : "";
         switch (operation) {
             case expanse:
 
                 textView.setTextColor(ContextCompat.getColor(textView.getContext(), R.color.colorexpanse));
-                textView.setText(aproxSign + amText+ currency.getSymbol());
+                textView.setText(aproxSign + amText + symbol);
                 return;
 
             case deposit:
                 textView.setTextColor(ContextCompat.getColor(textView.getContext(), R.color.colorprofit));
-                textView.setText(aproxSign + amText+ currency.getSymbol());
+                textView.setText(aproxSign + amText + symbol);
                 return;
 
             case transfer:
                 textView.setTextColor(ContextCompat.getColor(textView.getContext(), R.color.colortransfer));
-                textView.setText(aproxSign + amText+ currency.getSymbol());
+                textView.setText(aproxSign + amText + symbol);
                 return;
 
         }

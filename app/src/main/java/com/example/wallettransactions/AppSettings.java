@@ -45,6 +45,7 @@ public final class AppSettings {
     private static final String PREF_REFERENCE_SYNC_SEQ = "referenceSyncSeq";
     private static final String PREF_SYNC_LEDGER_ID = "syncLedgerId";
     private static final String PREF_UUID_FORMAT_RESYNC_DONE = "uuidFormatResyncDone";
+    private static final String PREF_DEFERRED_ROWS_RESYNC_DONE = "deferredRowsResyncDone";
     private static final String PREF_LAST_SYNC_SUCCESS_AT = "lastSyncSuccessAt";
     private static final String PREF_AI_LAST_WALLET_UUID = "aiLastWalletUuid";
 
@@ -393,7 +394,13 @@ public final class AppSettings {
                 .putLong(PREF_REFERENCE_SYNC_SEQ, 0L)
                 .remove(PREF_SYNC_LEDGER_ID)
                 .apply();
+        // Отложенные строки pull (sync.PullDeferredRows) ждут родителей из
+        // старого леджера — для нового они чужие.
+        new java.io.File(ctx.getNoBackupFilesDir(), SYNC_PULL_DEFERRED_FILE).delete();
     }
+
+    /** Файл отложенных строк pull в {@code noBackupFilesDir} — см. {@code sync.PullDeferredRows}. */
+    public static final String SYNC_PULL_DEFERRED_FILE = "sync_pull_deferred.json";
 
     /**
      * Леджер сервера, к которому относится {@link #getLedgerSyncSeq} — из
@@ -421,6 +428,20 @@ public final class AppSettings {
 
     public static void setUuidFormatResyncDone(Context ctx) {
         prefs(ctx).edit().putBoolean(PREF_UUID_FORMAT_RESYNC_DONE, true).apply();
+    }
+
+    /**
+     * Одноразовая перекачка потоков с нуля после того, как pull научился
+     * откладывать строки с ещё не пришедшим родителем (SyncEngine,
+     * PullDeferredRows): до этого такие строки терялись — кошелёк оставался
+     * без account_operating, то есть без валюты.
+     */
+    public static boolean isDeferredRowsResyncDone(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_DEFERRED_ROWS_RESYNC_DONE, false);
+    }
+
+    public static void setDeferredRowsResyncDone(Context ctx) {
+        prefs(ctx).edit().putBoolean(PREF_DEFERRED_ROWS_RESYNC_DONE, true).apply();
     }
 
     /**
