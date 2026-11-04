@@ -49,7 +49,8 @@
 - [x] 4.5 Запрет смены кода валюты из пары (D8): проверка живых пар в `WalletDbCRUD` и ошибка «Код используется в валютной паре» в `onSave`; проверка — Robolectric-тест функции проверки (смена кода у валюты пары → отказ, смена только названия → разрешено) и вручную в форме
   Проверено вручную 2026-11-02 на Pixel 8 Pro (сборка main 1e5bc14, versionCode 93, контур test).
   Код — 5820568 (`WalletDbCRUD.IsIsoChangeBlocked`), тест `CurrencyFlagsDbTest.isoChange_blockedOnlyForCurrencyInLivePair` проходит; проверка на устройстве (форма).
-- [ ] 4.6 Правки валют с веба (D9): переименовать/создать/удалить свою валюту на вебе, синк на телефоне; проверка — вручную: список «Валюты» и пикеры показывают изменения без перезапуска — Тест: [android-wallet#5](https://github.com/WalletTransactions/android-wallet/issues/5)
+- [x] 4.6 Правки валют с веба (D9): переименовать/создать/удалить свою валюту на вебе, синк на телефоне; проверка — вручную: список «Валюты» и пикеры показывают изменения без перезапуска — Тест: [android-wallet#5](https://github.com/WalletTransactions/android-wallet/issues/5)
+  Проверено 2026-11-04 на Pixel 8 Pro (qa-сборка main 845cc5c, versionCode 102–103, контур test): CHF, созданная на вебе, появилась в списке «Валюты» сразу после синка, без перезапуска.
   Код — 5820568 (список «Валюты» перечитывает синглтон в `onResume`); проверка на устройстве.
   Баг [#8](https://github.com/WalletTransactions/android-wallet/issues/8) (2026-11-03): эквивалент на «Операциях» не обновлялся после синка — `CurrencyList.addCurrency` теперь обновляет `Currency` с тем же id на месте, `PeriodFilterState.onCurrenciesReloaded` поднимает ревизию и заменяет удалённую валюту эквивалента. Тест — `CurrencyReloadInPlaceTest`. Перепроверить 4.6 на устройстве.
 
@@ -63,7 +64,8 @@
 
 ## 6. Интеграция
 
-- [ ] 6.1 Сквозная проверка с wallet-api из `wallet-api: currency-ui-tweaks`: снять флаг на телефоне → синк → `/api/reports/currencies` отдаёт `show_in_equivalent: false`, веб-пикер её не показывает; удалить пару на телефоне → на вебе в «Курсы валют» её нет; проверка — вручную на эмуляторе и в браузере — Тест: [android-wallet#5](https://github.com/WalletTransactions/android-wallet/issues/5)
+- [x] 6.1 Сквозная проверка с wallet-api из `wallet-api: currency-ui-tweaks`: снять флаг на телефоне → синк → `/api/reports/currencies` отдаёт `show_in_equivalent: false`, веб-пикер её не показывает; удалить пару на телефоне → на вебе в «Курсы валют» её нет; проверка — вручную на эмуляторе и в браузере — Тест: [android-wallet#5](https://github.com/WalletTransactions/android-wallet/issues/5)
+  Проверено 2026-11-02 по логам гейтвея и базе test (android-wallet#5): снятый на телефоне флаг KES ушёл на сервер, веб перечитал справочник; удалённая на телефоне пара ALL/TZS пропала на вебе.
   Код — 2b97709, 5820568; проверка на устройстве (нужен wallet-api из WalletTransactions/wallet-api#2).
 
 ## 7. Экраны счетов (только телефон)
