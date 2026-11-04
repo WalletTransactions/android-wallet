@@ -411,10 +411,6 @@ public class TransactionActivity extends AppCompatActivity {
 
         renderKind();
 
-        // Disable save until something changes
-        mBtnSave.setEnabled(false);
-        mBtnSave.setAlpha(0.4f);
-
         if (mIsEdit) {
             // Capture originals after all setters
             mOrigAccFromId = mAccFrom != null ? mAccFrom.getId() : 0;
@@ -432,6 +428,11 @@ public class TransactionActivity extends AppCompatActivity {
             mOrigCommissionAmount = mEditCommissionAmount.getText().toString();
             mOrigCommissionFromDest = mRadioCommissionFromDest.isChecked();
         }
+
+        // Состояние кнопки — по тем же правилам, что и при любой правке: у правки
+        // ничего ещё не изменилось, и она погашена, а новая операция, которую
+        // заполнили заранее (ИИ, уведомление), сохраняется сразу, без лишнего касания.
+        updateSaveButton();
 
         TextWatcher watcher = new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
