@@ -48,6 +48,7 @@
         </activity>
         <activity android:name=".Activities.AccountItemActivity"
                 android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
                 android:exported="false">
         </activity>
         <activity
@@ -64,6 +65,7 @@
         <activity
                 android:name=".Activities.CurrencyFormActivity"
                 android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
                 android:exported="false"/>
         <activity
                 android:name=".Activities.IconPickerActivity"
@@ -75,10 +77,12 @@
         </activity>
         <activity android:name=".Activities.AddCategoryActivity"
                 android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
                 android:exported="false">
         </activity>
         <activity android:name=".Activities.AddWalletActivity"
                 android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
                 android:exported="false">
         </activity>
         <activity android:name=".Activities.SettingsActivity"
