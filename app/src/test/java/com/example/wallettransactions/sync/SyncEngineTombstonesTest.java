@@ -20,6 +20,7 @@ import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyPairL
 import com.example.wallettransactions.Singleton;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -368,6 +369,36 @@ public class SyncEngineTombstonesTest {
         assertFalse(AppSettings.isFullReloadPending(context));
         assertEquals(0, count(WalletDbHelper.SYNC_RELOAD_SEEN_TABLE));
         assertTrue(log.toDisplayText().contains("Сервер очистил старые удаления"));
+    }
+
+    @Test
+    public void secondServerResetInOnePass_failsInsteadOfLooping() throws Exception {
+        syncedLedger();
+        AppSettings.setSyncLedgerId(context, LEDGER);
+        AppSettings.setLedgerSyncSeq(context, 40L);
+        AppSettings.setReferenceSyncSeq(context, 5L);
+
+        // Сервер без исправления: граница первой страницы (13) ниже purged_seq —
+        // на каждый ненулевой курсор снова "purged".
+        ScriptedApi api = new ScriptedApi(context);
+        JSONObject accounts = changes("account", accountRow("a", false), accountRow("b", false));
+        for (int i = 0; i < 100; i++) {
+            api.steps.add((l, r) -> l == 0
+                    ? ScriptedApi.page(13, accounts, 0)
+                    : ScriptedApi.reset("purged", new JSONObject(), 13));
+        }
+
+        try {
+            SyncEngine.pullAll(db, api, context, new SyncLog());
+            fail("ожидалась ошибка на втором сбросе");
+        } catch (JSONException expected) {
+            assertTrue(expected.getMessage().contains("повторно сбросил"));
+        }
+        // 40 -> сброс, 0 -> страница до 13, 13 -> второй сброс: стоп.
+        assertEquals(3, api.calls.size());
+        // Ничего не вычищено: загрузка не дошла до конца и продолжится.
+        assertTrue(exists("operation", "op-gone-on-server"));
+        assertTrue(AppSettings.isFullReloadPending(context));
     }
 
     @Test

@@ -853,6 +853,12 @@ final class SyncEngine {
         if (ledgerSeq == 0) log.fullReload();
         PullDeferredRows deferred = PullDeferredRows.load(ctx);
         Set<String> touched = new HashSet<>();
+        // Сброс от сервера за проход — не больше одного: после него оба курсора
+        // идут с нуля, и второй сброс значит, что сервер не даёт догрузить поток
+        // (ручная проверка на test 2026-11-04: граница страницы ниже purged_seq
+        // -> "purged" -> снова 0 — 2170 pull за 20 минут). Проход кончается
+        // ошибкой, а не крутит сеть до капа на страницы.
+        boolean serverResetSeen = false;
 
         // Кап на число страниц — защита от бага в курсорах/ответе сервера,
         // который иначе крутил бы цикл вечно (условие выхода ниже опирается
@@ -900,6 +906,11 @@ final class SyncEngine {
                         ? "Сервер очистил старые удаления — загружаю данные заново"
                         : "Позиция синхронизации разошлась с сервером — загружаю данные заново");
                 if (ledgerSeq != 0 || referenceSeq != 0) {
+                    if (serverResetSeen) {
+                        throw new JSONException("сервер повторно сбросил курсор за один проход (ledger="
+                                + ledgerSeq + " " + result.ledger.resetReason + ") — загрузка с нуля не идёт");
+                    }
+                    serverResetSeen = true;
                     log.fullReload();
                     startFullReload(db, ctx);
                     reloadPending = true;
