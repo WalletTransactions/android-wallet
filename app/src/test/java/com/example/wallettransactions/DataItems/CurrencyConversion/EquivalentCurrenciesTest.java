@@ -75,4 +75,12 @@ public class EquivalentCurrenciesTest {
         Currency gone = cur(9, "XXX", false);
         assertEquals(Arrays.asList("RUB", "USD", "EUR", "XXX"), isos(EquivalentCurrencies.filter(all, gone)));
     }
+
+    /** Новая валюта: флаг выключен, кроме первой в справочнике. */
+    @Test
+    public void newCurrencyFlagOffExceptFirst() {
+        assertEquals(true, EquivalentCurrencies.defaultForNew(new ArrayList<>()));
+        assertEquals(false, EquivalentCurrencies.defaultForNew(Arrays.asList(rub)));
+        assertEquals(false, EquivalentCurrencies.defaultForNew(all));
+    }
 }

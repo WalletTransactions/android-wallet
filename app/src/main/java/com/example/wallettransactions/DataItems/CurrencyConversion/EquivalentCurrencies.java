@@ -35,6 +35,14 @@ public final class EquivalentCurrencies {
         return result;
     }
 
+    /**
+     * Флаг «В эквиваленте» у новой валюты (equivalent-picker-by-flag): выключен, кроме
+     * самой первой валюты справочника — иначе пикеры эквивалента остались бы пустыми.
+     */
+    public static boolean defaultForNew(List<Currency> directory) {
+        return directory == null || directory.isEmpty();
+    }
+
     private static boolean anyFlagged(List<Currency> currencies) {
         for (Currency c : currencies) if (c.isShowInEquivalent()) return true;
         return false;
