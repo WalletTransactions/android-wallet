@@ -17,6 +17,7 @@ import android.widget.Toast;
 import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.Data.WalletDbHelper;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
+import com.example.wallettransactions.DataItems.CurrencyConversion.EquivalentCurrencies;
 import com.example.wallettransactions.DataItems.Icon;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
@@ -74,6 +75,8 @@ public class CurrencyFormActivity extends AppCompatActivity {
         } else {
             ((TextView) findViewById(R.id.formTitle)).setText("Новая валюта");
             iconId = Singleton.instance.getIconList(this).getUnknownIcon().getId();
+            showInEquivalent = EquivalentCurrencies.defaultForNew(
+                    Singleton.instance.getCurrencyList(this));
         }
 
         renderIcon();
