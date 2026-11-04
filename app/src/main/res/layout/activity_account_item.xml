@@ -160,26 +160,29 @@
             android:textSize="15sp"
             android:layout_marginBottom="24dp"/>
 
-        <!-- Save -->
-        <Button
-            android:id="@+id/btnSave"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:background="@drawable/bg_pill_primary"
-            android:stateListAnimator="@null"
-            android:text="Сохранить"
-            android:textAllCaps="false"
-            android:textColor="@color/colorSurface"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:onClick="btnSaveClick"
-            android:layout_marginBottom="10dp"/>
+    </LinearLayout>
+</ScrollView>
+
+    <!-- Кнопки — вне ScrollView: с adjustResize (манифест) панель стоит над
+         клавиатурой, до «Сохранить» не надо докручивать. -->
+    <LinearLayout
+        android:id="@+id/formActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorBackground"
+        android:orientation="horizontal"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp">
 
         <!-- Delete (visible only if no operations) -->
         <Button
             android:id="@+id/btnDelete"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="52dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="9dp"
             android:background="@drawable/bg_pill_outline_expanse"
             android:stateListAnimator="@null"
             android:text="Удалить"
@@ -190,6 +193,18 @@
             android:onClick="btnDeleteClick"
             android:visibility="gone"/>
 
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_primary"
+            android:stateListAnimator="@null"
+            android:text="Сохранить"
+            android:textAllCaps="false"
+            android:textColor="@color/colorSurface"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:onClick="btnSaveClick"/>
     </LinearLayout>
-</ScrollView>
 </LinearLayout>
