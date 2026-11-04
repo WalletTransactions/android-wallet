@@ -167,9 +167,36 @@ public final class SyncRunner {
 
         SQLiteDatabase db = Singleton.instance.getWritableDatabase(ctx);
         SyncApiClient api = new SyncApiClient(ctx, TokenStore.getAccessToken(ctx));
+        return runSteps(new Steps() {
+            @Override public void push(SyncLog l) throws IOException, JSONException { SyncEngine.pushDirty(db, api, l); }
+            @Override public void pull(SyncLog l) throws IOException, JSONException { SyncEngine.pullAll(db, api, ctx, l); }
+            @Override public void purge() { SyncEngine.purgeTombstones(db); }
+        }, log);
+    }
+
+    /** Шаги прохода после входа — подменяются в тестах (SyncRunnerTest). */
+    interface Steps {
+        void push(SyncLog log) throws IOException, JSONException;
+        void pull(SyncLog log) throws IOException, JSONException;
+        void purge();
+    }
+
+    /**
+     * push → pull → чистка отправленных удалений (openspec purge-synced-tombstones,
+     * spec sync-run «Состав прохода»). Чистка — только после успешного pull: без
+     * сети или при ошибке загрузки до неё не доходит, и строку, ссылку на которую
+     * принесла бы незагруженная страница, она не трогает. Ошибка чистки исход не
+     * меняет — данные уже синхронизированы, удалённое повторится следующим проходом.
+     */
+    static Outcome runSteps(Steps steps, SyncLog log) {
         try {
-            SyncEngine.pushDirty(db, api, log);
-            SyncEngine.pullAll(db, api, ctx, log);
+            steps.push(log);
+            steps.pull(log);
+            try {
+                steps.purge();
+            } catch (RuntimeException e) {
+                android.util.Log.w("SyncRunner", "чистка удалённых строк не удалась — повторится в следующий раз", e);
+            }
             if (!log.getProblems().isEmpty()) {
                 // Push/pull прошли, но часть строк осталась dirty (например,
                 // нет иконки-заместителя — см. SyncEngine.PushIconRefs) —

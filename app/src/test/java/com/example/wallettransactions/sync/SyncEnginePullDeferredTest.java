@@ -287,7 +287,7 @@ public class SyncEnginePullDeferredTest {
         }
 
         @Override
-        PullResult pull(long ledgerSeq, long referenceSeq, int limit) {
+        PullResult pull(long ledgerSeq, long referenceSeq, int limit, String ledgerId) {
             calls.add(new long[]{ledgerSeq, referenceSeq});
             for (java.util.Map.Entry<Long, JSONObject> e : pages.entrySet()) {
                 if (e.getKey() > ledgerSeq) {

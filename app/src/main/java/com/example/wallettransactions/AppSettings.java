@@ -46,6 +46,7 @@ public final class AppSettings {
     private static final String PREF_SYNC_LEDGER_ID = "syncLedgerId";
     private static final String PREF_UUID_FORMAT_RESYNC_DONE = "uuidFormatResyncDone";
     private static final String PREF_DEFERRED_ROWS_RESYNC_DONE = "deferredRowsResyncDone";
+    private static final String PREF_FULL_RELOAD_PENDING = "syncFullReloadPending";
     private static final String PREF_LAST_SYNC_SUCCESS_AT = "lastSyncSuccessAt";
     private static final String PREF_AI_LAST_WALLET_UUID = "aiLastWalletUuid";
 
@@ -445,6 +446,32 @@ public final class AppSettings {
 
     public static void setDeferredRowsResyncDone(Context ctx) {
         prefs(ctx).edit().putBoolean(PREF_DEFERRED_ROWS_RESYNC_DONE, true).apply();
+    }
+
+    /**
+     * Идёт загрузка синка с нуля при уже синкнутых локальных строках (openspec
+     * purge-synced-tombstones, design п. 4): {@code SyncEngine.pullAll} отмечает
+     * uuid пришедших строк в {@code sync_reload_seen} и, когда оба потока
+     * догнаны, удаляет синкнутые строки без отметки. Флаг живёт между проходами:
+     * прерванная загрузка продолжается с сохранённого курсора, вычистка — в
+     * проходе, который догнал потоки. Пишется синхронно ({@code commit}), вместе
+     * с обнулением курсоров: курсоры 0 без флага означали бы загрузку без вычистки.
+     */
+    public static boolean isFullReloadPending(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_FULL_RELOAD_PENDING, false);
+    }
+
+    /** Начать загрузку с нуля: флаг и оба курсора 0 — одной записью. */
+    public static void startFullReload(Context ctx) {
+        prefs(ctx).edit()
+                .putBoolean(PREF_FULL_RELOAD_PENDING, true)
+                .putLong(PREF_LEDGER_SYNC_SEQ, 0L)
+                .putLong(PREF_REFERENCE_SYNC_SEQ, 0L)
+                .commit();
+    }
+
+    public static void clearFullReloadPending(Context ctx) {
+        prefs(ctx).edit().putBoolean(PREF_FULL_RELOAD_PENDING, false).commit();
     }
 
     /**

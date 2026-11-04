@@ -3,12 +3,14 @@ package com.example.wallettransactions.sync;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.util.Log;
 
 import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.Data.WalletContract;
+import com.example.wallettransactions.Data.WalletDbHelper;
 import com.example.wallettransactions.Singleton;
 
 import org.json.JSONArray;
@@ -19,6 +21,7 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -828,14 +831,25 @@ final class SyncEngine {
         // PullDeferredRows): до неё они терялись — например, account_operating
         // кошелька, чью валюту недавно правили, и кошелёк оставался без валюты.
         if (!AppSettings.isUuidFormatResyncDone(ctx) || !AppSettings.isDeferredRowsResyncDone(ctx)) {
-            AppSettings.setLedgerSyncSeq(ctx, 0L);
-            AppSettings.setReferenceSyncSeq(ctx, 0L);
+            startFullReload(db, ctx);
             AppSettings.setUuidFormatResyncDone(ctx);
             AppSettings.setDeferredRowsResyncDone(ctx);
             log.healed("Повторная загрузка с сервера — подтягиваю пропущенные данные");
         }
         long ledgerSeq = AppSettings.getLedgerSyncSeq(ctx);
         long referenceSeq = AppSettings.getReferenceSyncSeq(ctx);
+        // Поток с нуля при уже синкнутых строках (вход в другой аккаунт,
+        // resetSyncCursors) — тоже загрузка с вычисткой (purge-synced-tombstones,
+        // design п. 4): иначе строки, которых на сервере больше нет, остались бы.
+        // Оба курсора с нуля — локально не различить, какой поток принёс строку.
+        if (!AppSettings.isFullReloadPending(ctx) && (ledgerSeq == 0 || referenceSeq == 0)
+                && hasSyncedRows(db)) {
+            startFullReload(db, ctx);
+            ledgerSeq = 0;
+            referenceSeq = 0;
+        }
+        boolean reloadPending = AppSettings.isFullReloadPending(ctx);
+        boolean caughtUp = false;
         if (ledgerSeq == 0) log.fullReload();
         PullDeferredRows deferred = PullDeferredRows.load(ctx);
         Set<String> touched = new HashSet<>();
@@ -844,7 +858,8 @@ final class SyncEngine {
         // который иначе крутил бы цикл вечно (условие выхода ниже опирается
         // на то, что курсор реально продвигается).
         for (int page = 0; page < 10_000; page++) {
-            SyncApiClient.PullResult result = api.pull(ledgerSeq, referenceSeq, 500);
+            SyncApiClient.PullResult result = api.pull(ledgerSeq, referenceSeq, 500,
+                    AppSettings.getSyncLedgerId(ctx));
 
             // Леджер сменился (другой user_id при том же email, инвайт) —
             // курсор от старого леджера может оказаться и МЕНЬШЕ головы
@@ -858,30 +873,50 @@ final class SyncEngine {
                     Log.w(TAG, "pull: леджер сменился на " + ledgerId + " — курсор " + ledgerSeq + " сброшен");
                     log.healed("Сервер сменил кошелёк — загружаю его заново");
                     log.fullReload();
-                    ledgerSeq = 0;
                     // Отложенное ждало строк старого леджера — их уже не будет.
                     deferred.clear();
                     deferred.save();
-                    AppSettings.setLedgerSyncSeq(ctx, 0L);
+                    // Строки старого кошелька, которых нет в новом, уйдут при вычистке.
+                    startFullReload(db, ctx);
+                    reloadPending = true;
+                    ledgerSeq = 0;
+                    referenceSeq = 0;
                     continue;
                 }
             }
             if (result.ledger.reset || result.reference.reset) {
-                // Курсор был дальше головы потока (реальный случай 2026-09-30:
-                // 146 при голове 13 — записи бота не доезжали). Сервер уже
-                // отдал поток с нуля — применяем как обычно.
-                Log.w(TAG, "pull: курсор впереди сервера (ledger=" + ledgerSeq + ", reference="
-                        + referenceSeq + ") — поток начат заново");
-                log.healed("Позиция синхронизации разошлась с сервером — загружаю данные заново");
-                // Операции — только в потоке леджера; заново пришедшие справочники
-                // (валюты, курсы, иконки) не делают «новыми» все операции.
-                if (result.ledger.reset) log.fullReload();
+                // Сервер сбросил курсор: он дальше головы потока ("ahead", реальный
+                // случай 2026-09-30: 146 при голове 13 — записи бота не доезжали)
+                // или сервер уже вычистил удаления, которых телефон не видел
+                // ("purged", purge-synced-tombstones). Строки, удалённые за это
+                // время, сервер больше не пришлёт — загрузка с вычисткой. Страницу
+                // выбрасываем и тянем оба потока с нуля: локально не различить,
+                // какой поток принёс строку. С курсорами 0 сброса не бывает.
+                boolean purged = "purged".equals(result.ledger.resetReason)
+                        || "purged".equals(result.reference.resetReason);
+                Log.w(TAG, "pull: сброс курсора (ledger=" + ledgerSeq + " " + result.ledger.resetReason
+                        + ", reference=" + referenceSeq + " " + result.reference.resetReason + ") — поток начат заново");
+                log.healed(purged
+                        ? "Сервер очистил старые удаления — загружаю данные заново"
+                        : "Позиция синхронизации разошлась с сервером — загружаю данные заново");
+                if (ledgerSeq != 0 || referenceSeq != 0) {
+                    log.fullReload();
+                    startFullReload(db, ctx);
+                    reloadPending = true;
+                    ledgerSeq = 0;
+                    referenceSeq = 0;
+                    continue;
+                }
             }
 
             boolean advanced = result.ledger.nextSeq != ledgerSeq || result.reference.nextSeq != referenceSeq;
-            if (!advanced) break; // догнали сервер — оба потока пусты
+            if (!advanced) {
+                caughtUp = true;
+                break; // догнали сервер — оба потока пусты
+            }
 
-            touched.addAll(applyPage(db, result.ledger.changes, result.reference.changes, api, log, deferred));
+            touched.addAll(applyPage(db, result.ledger.changes, result.reference.changes, api, log, deferred,
+                    reloadPending));
 
             // Сначала отложенное, потом курсоры: умрём между ними — страница
             // придёт снова, и её строки просто заменят свои отложенные копии.
@@ -903,6 +938,22 @@ final class SyncEngine {
             // то, чего нам не прислали. Не теряем: повторим на следующем синке.
             Log.w(TAG, "pull: строки без родителя после полной загрузки — " + deferred.summary());
             log.problem("Часть данных ждёт связанных записей с сервера (" + deferred.summary() + ")");
+        }
+
+        // Загрузка с нуля догнала оба потока — синкнутые строки, которых сервер
+        // не прислал, удаляются (неотправленные, dirty <> 0, остаются). Прервались
+        // раньше — ничего не трогаем, следующий проход продолжит с курсора.
+        if (reloadPending && caughtUp) {
+            Map<String, Integer> swept = sweepUnseen(db);
+            int total = 0;
+            for (Map.Entry<String, Integer> e : swept.entrySet()) {
+                total += e.getValue();
+                if (e.getValue() > 0) touched.add(e.getKey());
+            }
+            db.delete(WalletDbHelper.SYNC_RELOAD_SEEN_TABLE, null, null);
+            AppSettings.clearFullReloadPending(ctx);
+            Log.i(TAG, "pull: загрузка с нуля завершена, удалено строк без пары на сервере: " + swept);
+            if (total > 0) log.healed("Удалено записей, которых больше нет на сервере: " + total);
         }
 
         boolean touchedAccounts = touched.contains("account") || touched.contains("account_operating");
@@ -965,6 +1016,18 @@ final class SyncEngine {
     static Set<String> applyPage(SQLiteDatabase db, JSONObject ledgerChanges, JSONObject referenceChanges,
                                   SyncApiClient api, SyncLog log, PullDeferredRows deferred)
             throws JSONException, IOException {
+        return applyPage(db, ledgerChanges, referenceChanges, api, log, deferred, false);
+    }
+
+    /**
+     * @param markSeen идёт загрузка с нуля ({@code AppSettings.isFullReloadPending}):
+     *                 uuid всех строк страницы — применённых, отложенных, удалений —
+     *                 пишутся в {@code sync_reload_seen} в той же транзакции, см.
+     *                 {@link #sweepUnseen}
+     */
+    static Set<String> applyPage(SQLiteDatabase db, JSONObject ledgerChanges, JSONObject referenceChanges,
+                                  SyncApiClient api, SyncLog log, PullDeferredRows deferred, boolean markSeen)
+            throws JSONException, IOException {
         Map<String, JSONArray> merged = mergeChanges(ledgerChanges, referenceChanges);
         PullDeferredRows stillDeferred = PullDeferredRows.inMemory();
         Set<String> appliedTables = new HashSet<>();
@@ -997,6 +1060,7 @@ final class SyncEngine {
                     }
                 }
             }
+            if (markSeen) markSeen(db, merged);
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
@@ -1033,6 +1097,7 @@ final class SyncEngine {
         for (int i = 0; i < iconRows.length(); i++) {
             JSONObject row = iconRows.getJSONObject(i);
             if (localUuid(db, "icon", row.getString("uuid")) != null) continue;
+            if (rowIsDeleted(row)) continue; // удаление неизвестной иконки не применяется (см. applyRow)
             String sha256 = row.getString("content_sha256");
             if (cache.containsKey(sha256)) continue;
             if (!rowIsDeleted(row)) {
@@ -1052,6 +1117,13 @@ final class SyncEngine {
     private static boolean applyRow(SQLiteDatabase db, String table, JSONObject row,
                                      Map<String, byte[]> newIconBlobs, PullIconGuard iconGuard,
                                      SyncLog log) throws JSONException {
+        // Удаление строки, которой здесь нет (загрузка с нуля приносит старые
+        // удаления): не создаём строку только затем, чтобы чистка её удалила, и не
+        // пишем «Удалено» про то, чего пользователь не видел (purge-synced-tombstones).
+        // Обработана, не отложена: родитель удалённой строки может не прийти вовсе.
+        if (isSyncTable(table) && rowIsDeleted(row) && localUuid(db, table, row.optString("uuid", null)) == null) {
+            return true;
+        }
         switch (table) {
             case "currency": return applyCurrency(db, row, log, iconGuard);
             case "currency_pair": return applyCurrencyPair(db, row, log);
@@ -1437,6 +1509,179 @@ final class SyncEngine {
     }
 
     // ── Общие мелочи ─────────────────────────────────────────────────────────
+
+    // ── ЧИСТКА УДАЛЁННЫХ (openspec purge-synced-tombstones) ────────────────────
+
+    /**
+     * Порядок физического удаления — от листьев к корням: строка удаляется раньше
+     * тех, на которые ссылается, так что в одном проходе удалённая операция
+     * освобождает свой удалённый счёт. Тот же состав, что {@link #TABLE_ORDER}.
+     */
+    static final List<String> PURGE_ORDER = Arrays.asList(
+            "operation_link", "operation", "account_operating", "account", "currency_conversion",
+            "currency_pair_rate", "currency_pair", "currency", "icon");
+
+    static boolean isSyncTable(String table) {
+        return PURGE_ORDER.contains(table);
+    }
+
+    /**
+     * Ссылки с {@code ON DELETE CASCADE} ошибкой внешнего ключа не остановить —
+     * удаление молча унесло бы ссылающиеся строки. Проверяем их явно: связка
+     * проводок на операцию и правило повторяющейся операции (локальная таблица
+     * без синка) на счёт. Остальные ссылки — {@code NO ACTION}, их ловит
+     * {@link SQLiteConstraintException} в {@link #deleteRowByRow}.
+     */
+    private static String cascadeGuard(String table) {
+        switch (table) {
+            case "operation":
+                return " AND NOT EXISTS (SELECT 1 FROM " + WalletContract.OperationLinkEntry.TABLE_NAME + " l"
+                        + " WHERE l." + WalletContract.OperationLinkEntry.COLUMN_MAIN_ID + " = t._id"
+                        + " OR l." + WalletContract.OperationLinkEntry.COLUMN_LINK_ID + " = t._id)";
+            case "account":
+                return " AND NOT EXISTS (SELECT 1 FROM " + WalletContract.RecurringOperationEntry.TABLE_NAME + " r"
+                        + " WHERE r." + WalletContract.RecurringOperationEntry.COLUMN_FROM + " = t._id"
+                        + " OR r." + WalletContract.RecurringOperationEntry.COLUMN_TO + " = t._id)";
+            default:
+                return "";
+        }
+    }
+
+    /**
+     * Удаляет строки таблицы, подходящие под {@code where} (алиас {@code t}),
+     * построчно: строка, на которую ещё ссылаются, даёт {@link SQLiteConstraintException}
+     * — откатывается только этот оператор, строка остаётся до следующего раза.
+     * {@code recheck} повторяется в самом DELETE (без алиаса): между выборкой и
+     * удалением строку мог изменить UI.
+     */
+    private static int deleteRowByRow(SQLiteDatabase db, String table, String where, String[] args,
+                                      String recheck) {
+        List<String> uuids = new ArrayList<>();
+        Cursor c = db.rawQuery("SELECT t.uuid FROM " + table + " t WHERE " + where + cascadeGuard(table), args);
+        try {
+            while (c.moveToNext()) uuids.add(c.getString(0));
+        } finally {
+            c.close();
+        }
+        int deleted = 0;
+        for (String uuid : uuids) {
+            try {
+                deleted += db.delete(table, "uuid = ? AND " + recheck, new String[]{uuid});
+            } catch (SQLiteConstraintException e) {
+                Log.i(TAG, "purge " + table + " uuid=" + uuid + ": на строку ссылаются — остаётся");
+            }
+        }
+        return deleted;
+    }
+
+    /**
+     * Шаг прохода после успешного {@link #pullAll} (см. {@code SyncRunner}):
+     * физически удаляет строки с отметкой удаления и без неотправленных изменений
+     * ({@code dirty = 0}) — удаление уже у сервера, пришедшее — уже применено.
+     * Строку, на которую ссылаются, оставляет. Журнал синка не пишет: для
+     * пользователя ничего не меняется, удалённое и так не видно.
+     *
+     * @return сколько строк удалено
+     */
+    static int purgeTombstones(SQLiteDatabase db) {
+        int total = 0;
+        String condition = "deleted_at IS NOT NULL AND dirty = 0";
+        for (String table : PURGE_ORDER) {
+            total += deleteRowByRow(db, table, "t." + condition.replace(" AND ", " AND t."), null, condition);
+        }
+        if (total > 0) Log.i(TAG, "purge: удалено отправленных удалений: " + total);
+        return total;
+    }
+
+    /** uuid в форме отметки {@code sync_reload_seen}: нижний регистр, без дефисов. */
+    static String normalizeUuid(String uuid) {
+        return uuid == null ? null : uuid.toLowerCase(Locale.ROOT).replace("-", "");
+    }
+
+    /**
+     * Отметки загрузки с нуля для строк страницы. Курс у сервера ищется по
+     * (пара, дата), а не по uuid ({@code conflict_columns} в wallet-api): пришедший
+     * курс засчитывает и локальную строку той же пары и даты с другим uuid —
+     * иначе вычистка удалила бы её, а пришедшая не вставилась бы из-за
+     * уникальности (пара, дата).
+     */
+    private static void markSeen(SQLiteDatabase db, Map<String, JSONArray> merged) throws JSONException {
+        for (Map.Entry<String, JSONArray> e : merged.entrySet()) {
+            String table = e.getKey();
+            if (!isSyncTable(table)) continue;
+            JSONArray rows = e.getValue();
+            for (int i = 0; i < rows.length(); i++) {
+                JSONObject row = rows.getJSONObject(i);
+                insertSeen(db, table, row.optString("uuid", null));
+                if ("currency_pair_rate".equals(table)) {
+                    Long pairId = findIdByUuid(db, "currency_pair", row.optString("currency_pair_uuid", null));
+                    if (pairId == null) continue;
+                    Cursor c = db.rawQuery("SELECT uuid FROM currency_pair_rate WHERE currency_pair_id = ? AND date = ?",
+                            new String[]{String.valueOf(pairId), row.optString("date", "")});
+                    try {
+                        while (c.moveToNext()) insertSeen(db, table, c.getString(0));
+                    } finally {
+                        c.close();
+                    }
+                }
+            }
+        }
+    }
+
+    private static void insertSeen(SQLiteDatabase db, String table, String uuid) {
+        if (uuid == null) return;
+        db.execSQL("INSERT OR IGNORE INTO " + WalletDbHelper.SYNC_RELOAD_SEEN_TABLE + " (tbl, uuid) VALUES (?, ?)",
+                new Object[]{table, normalizeUuid(uuid)});
+    }
+
+    /**
+     * Иконки не отправляются (server-managed-icons), у своих ({@code origin = 1})
+     * {@code dirty = 0} всегда — «синкнутыми» считаются только иконки с сервера.
+     */
+    private static String syncedOnly(String table) {
+        return "icon".equals(table)
+                ? " AND t." + WalletContract.IconEntry.COLUMN_ORIGIN + " = " + WalletContract.IconEntry.ORIGIN_SERVER
+                : "";
+    }
+
+    /** Есть ли строки, уже бывшие на сервере — с ними загрузка с нуля идёт с вычисткой. */
+    static boolean hasSyncedRows(SQLiteDatabase db) {
+        for (String table : PURGE_ORDER) {
+            Cursor c = db.rawQuery("SELECT 1 FROM " + table + " t WHERE t.dirty = 0" + syncedOnly(table) + " LIMIT 1",
+                    null);
+            try {
+                if (c.moveToFirst()) return true;
+            } finally {
+                c.close();
+            }
+        }
+        return false;
+    }
+
+    /** Начало загрузки с нуля: флаг, оба курсора 0, отметки прошлой (прерванной) загрузки — прочь. */
+    private static void startFullReload(SQLiteDatabase db, Context ctx) {
+        db.delete(WalletDbHelper.SYNC_RELOAD_SEEN_TABLE, null, null);
+        AppSettings.startFullReload(ctx);
+    }
+
+    /**
+     * Конец загрузки с нуля (оба потока догнаны): удаляет синкнутые строки
+     * ({@code dirty = 0}), которых не было в загруженных потоках, — сервер их
+     * больше не хранит. Неотправленные ({@code dirty <> 0}) остаются, строка, на
+     * которую ссылаются, — тоже.
+     *
+     * @return сколько строк удалено, по таблицам
+     */
+    static Map<String, Integer> sweepUnseen(SQLiteDatabase db) {
+        Map<String, Integer> deleted = new LinkedHashMap<>();
+        for (String table : PURGE_ORDER) {
+            String where = "t.dirty = 0" + syncedOnly(table)
+                    + " AND replace(lower(t.uuid), '-', '') NOT IN (SELECT uuid FROM "
+                    + WalletDbHelper.SYNC_RELOAD_SEEN_TABLE + " WHERE tbl = ?)";
+            deleted.put(table, deleteRowByRow(db, table, where, new String[]{table}, "dirty = 0"));
+        }
+        return deleted;
+    }
 
     /**
      * Единый upsert "нашли по uuid — обновили, не нашли — вставили" для ВСЕХ
