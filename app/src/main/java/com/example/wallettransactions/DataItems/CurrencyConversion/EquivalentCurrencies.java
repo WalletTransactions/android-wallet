@@ -7,7 +7,8 @@ import java.util.List;
  * Какие валюты предлагать в пикерах валюты эквивалента (openspec currency-ui-tweaks,
  * spec currency-directory «Пикеры валюты эквивалента учитывают флаг», design D5).
  * Одно правило для шапки корневых экранов и для «Настроек»; без Activity — ради
- * юнит-теста.
+ * юнит-теста. Кошелёк в валюте не нужен: что предлагать, решает только флаг
+ * (equivalent-picker-by-flag — раньше шапка брала лишь валюты живых кошельков).
  * <p>
  * Текущую валюту сравниваем по id, а не по ссылке: после перечитывания списка
  * (синк, форма валюты) у неё уже другой экземпляр {@link Currency}.
@@ -35,11 +36,11 @@ public final class EquivalentCurrencies {
     }
 
     /**
-     * Пикер в шапке: валюты живых кошельков с флагом; если среди них с флагом нет ни
-     * одной — все валюты справочника с флагом (дальше то же правило, что {@link #filter}).
+     * Флаг «В эквиваленте» у новой валюты (equivalent-picker-by-flag): выключен, кроме
+     * самой первой валюты справочника — иначе пикеры эквивалента остались бы пустыми.
      */
-    public static List<Currency> forHeader(List<Currency> inUse, List<Currency> all, Currency current) {
-        return filter(anyFlagged(inUse) ? inUse : all, current);
+    public static boolean defaultForNew(List<Currency> directory) {
+        return directory == null || directory.isEmpty();
     }
 
     private static boolean anyFlagged(List<Currency> currencies) {

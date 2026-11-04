@@ -33,19 +33,14 @@ public class EquivalentCurrenciesTest {
     /** «Скрытая валюта не предлагается»: у BTC снят флаг, а кошелёк в BTC есть. */
     @Test
     public void hiddenCurrencyNotOffered() {
-        List<Currency> inUse = Arrays.asList(rub, btc);
-        assertEquals(Arrays.asList("RUB"), isos(EquivalentCurrencies.forHeader(inUse, all, rub)));
         assertEquals(Arrays.asList("RUB", "USD", "EUR"), isos(EquivalentCurrencies.filter(all, rub)));
     }
 
     /** «Текущая валюта скрыта»: BTC остаётся в пикере, пока выбрана; после смены пропадает. */
     @Test
     public void currentHiddenStaysUntilChanged() {
-        List<Currency> inUse = Arrays.asList(rub, btc);
-        assertEquals(Arrays.asList("RUB", "BTC"), isos(EquivalentCurrencies.forHeader(inUse, all, btc)));
         assertEquals(Arrays.asList("RUB", "USD", "BTC", "EUR"), isos(EquivalentCurrencies.filter(all, btc)));
 
-        assertEquals(Arrays.asList("RUB"), isos(EquivalentCurrencies.forHeader(inUse, all, rub)));
         assertEquals(Arrays.asList("RUB", "USD", "EUR"), isos(EquivalentCurrencies.filter(all, rub)));
     }
 
@@ -61,20 +56,31 @@ public class EquivalentCurrenciesTest {
     public void allHiddenShowsEverything() {
         List<Currency> hidden = Arrays.asList(cur(1, "RUB", false), cur(3, "BTC", false));
         assertEquals(Arrays.asList("RUB", "BTC"), isos(EquivalentCurrencies.filter(hidden, hidden.get(1))));
-        assertEquals(Arrays.asList("RUB", "BTC"), isos(EquivalentCurrencies.forHeader(hidden, hidden, null)));
     }
 
-    /** Шапка: у живых кошельков с флагом нет ни одной — все валюты справочника с флагом. */
+    /**
+     * Валюта с флагом без кошелька предлагается и в шапке (equivalent-picker-by-flag):
+     * шапка зовёт тот же {@code filter} по всему справочнику, что и «Настройки».
+     */
     @Test
-    public void headerFallsBackToAllFlagged() {
-        List<Currency> inUse = Arrays.asList(btc);
-        assertEquals(Arrays.asList("RUB", "USD", "EUR"), isos(EquivalentCurrencies.forHeader(inUse, all, usd)));
+    public void flaggedCurrencyWithoutWalletOffered() {
+        Currency noWallet = cur(5, "ГГГГ", true);
+        List<Currency> directory = Arrays.asList(rub, btc, noWallet);
+        assertEquals(Arrays.asList("RUB", "ГГГГ"), isos(EquivalentCurrencies.filter(directory, rub)));
     }
 
-    /** Текущая не среди кошельков — всё равно показывается (в конце). */
+    /** Текущая, которой нет среди кандидатов, всё равно показывается (в конце). */
     @Test
     public void currentOutsideCandidatesAppended() {
-        List<Currency> inUse = Arrays.asList(rub, usd);
-        assertEquals(Arrays.asList("RUB", "USD", "EUR"), isos(EquivalentCurrencies.forHeader(inUse, all, eur)));
+        Currency gone = cur(9, "XXX", false);
+        assertEquals(Arrays.asList("RUB", "USD", "EUR", "XXX"), isos(EquivalentCurrencies.filter(all, gone)));
+    }
+
+    /** Новая валюта: флаг выключен, кроме первой в справочнике. */
+    @Test
+    public void newCurrencyFlagOffExceptFirst() {
+        assertEquals(true, EquivalentCurrencies.defaultForNew(new ArrayList<>()));
+        assertEquals(false, EquivalentCurrencies.defaultForNew(Arrays.asList(rub)));
+        assertEquals(false, EquivalentCurrencies.defaultForNew(all));
     }
 }
