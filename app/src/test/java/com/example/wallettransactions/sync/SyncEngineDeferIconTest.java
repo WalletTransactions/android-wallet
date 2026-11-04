@@ -72,7 +72,7 @@ public class SyncEngineDeferIconTest {
         }
 
         @Override
-        PullResult pull(long ledgerSeq, long referenceSeq, int limit) {
+        PullResult pull(long ledgerSeq, long referenceSeq, int limit, String ledgerId) {
             throw new AssertionError("pull в этом тесте не вызывается");
         }
     }

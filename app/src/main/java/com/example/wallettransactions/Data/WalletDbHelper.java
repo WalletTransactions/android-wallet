@@ -23,7 +23,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 86;
+    private static final int DATABASE_VERSION = 87;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -65,6 +65,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         CreateAccountOperatingEntry(db);
         CreateRate(db);
         CreateRecurringOperation(db);
+        createSyncReloadSeen(db);
 
         createPartialUniqueIndexes(db);
         createUuidIndexes(db);
@@ -1230,6 +1231,10 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
                 // v86: признак происхождения иконки, иконки больше не отправляются (server-managed-icons).
                 markIconOriginV86(db);
             }
+            if (oldVersion < 87) {
+                // v87: отметки загрузки синка с нуля (purge-synced-tombstones), данные не меняются.
+                createSyncReloadSeen(db);
+            }
             return;
         }
         // Full recreate for pre-68 databases
@@ -1275,6 +1280,22 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
                 + WalletContract.OperationEntry.TABLE_NAME + " (" + WalletContract.OperationEntry._ID
                 + ") ON DELETE CASCADE);");
     }
+
+    /**
+     * Отметки загрузки синка с нуля (openspec purge-synced-tombstones, design п. 4):
+     * пока поднят {@code AppSettings.isFullReloadPending}, каждая применённая
+     * страница pull пишет сюда uuid своих строк (в нижнем регистре без дефисов —
+     * локально uuid бывает в обоих написаниях, см. {@code SyncEngine.localUuid}).
+     * Когда оба потока догнаны, синкнутые строки ({@code dirty = 0}) без отметки
+     * удаляются, таблица очищается. Не синкается, без триггера dirty.
+     * {@code IF NOT EXISTS} — вызывается и из onCreate, и из шага v87.
+     */
+    public static void createSyncReloadSeen(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + SYNC_RELOAD_SEEN_TABLE
+                + " (tbl TEXT NOT NULL, uuid TEXT NOT NULL, PRIMARY KEY (tbl, uuid)) WITHOUT ROWID");
+    }
+
+    public static final String SYNC_RELOAD_SEEN_TABLE = "sync_reload_seen";
 
     /**
      * Правила повторяющихся операций — см. {@link WalletContract.RecurringOperationEntry}.

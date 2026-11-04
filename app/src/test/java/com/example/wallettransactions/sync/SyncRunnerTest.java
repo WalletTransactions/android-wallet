@@ -121,4 +121,49 @@ public class SyncRunnerTest {
         SyncRunner.runOnce(ctx);
         assertEquals(42L, AppSettings.getLastSyncSuccessAt(ctx));
     }
+
+    // ── Чистка отправленных удалений (openspec purge-synced-tombstones) ──────
+
+    private static final class RecordingSteps implements SyncRunner.Steps {
+        final java.util.List<String> order = new java.util.ArrayList<>();
+        java.io.IOException pullFailure;
+        RuntimeException purgeFailure;
+
+        @Override public void push(SyncLog log) { order.add("push"); }
+        @Override public void pull(SyncLog log) throws java.io.IOException {
+            order.add("pull");
+            if (pullFailure != null) throw pullFailure;
+        }
+        @Override public void purge() {
+            order.add("purge");
+            if (purgeFailure != null) throw purgeFailure;
+        }
+    }
+
+    @Test
+    public void steps_purgeRunsAfterSuccessfulPull() {
+        release.countDown();
+        RecordingSteps steps = new RecordingSteps();
+        SyncRunner.Outcome outcome = SyncRunner.runSteps(steps, new SyncLog());
+        assertEquals(java.util.Arrays.asList("push", "pull", "purge"), steps.order);
+        assertEquals(SyncRunner.Status.OK, outcome.status);
+    }
+
+    @Test
+    public void steps_pullFailed_noPurge() {
+        release.countDown();
+        RecordingSteps steps = new RecordingSteps();
+        steps.pullFailure = new java.io.IOException("нет сети");
+        SyncRunner.Outcome outcome = SyncRunner.runSteps(steps, new SyncLog());
+        assertEquals(java.util.Arrays.asList("push", "pull"), steps.order);
+        assertEquals(SyncRunner.Status.NETWORK_ERROR, outcome.status);
+    }
+
+    @Test
+    public void steps_purgeFailure_doesNotChangeOutcome() {
+        release.countDown();
+        RecordingSteps steps = new RecordingSteps();
+        steps.purgeFailure = new IllegalStateException("база занята");
+        assertEquals(SyncRunner.Status.OK, SyncRunner.runSteps(steps, new SyncLog()).status);
+    }
 }

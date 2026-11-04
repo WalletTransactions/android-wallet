@@ -8,6 +8,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -98,22 +100,35 @@ class SyncApiClient {
     static final class PullStream {
         final long nextSeq;
         final JSONObject changes;
-        /** Курсор был дальше головы потока — сервер отдал поток с нуля (см. openapi.yaml wallet-api, syncPull). */
+        /** Сервер отдал поток с нуля — курсор впереди головы или отстал от чистки (см. {@link #resetReason}). */
         final boolean reset;
         /** Леджер потока; {@code null} — у потока reference и у старого сервера без этого поля. */
         final String ledgerId;
+        /**
+         * Причина сброса: {@code "ahead"} — курсор дальше головы, {@code "purged"} —
+         * сервер вычистил удаления, которых телефон ещё не видел (openspec
+         * purge-synced-tombstones). {@code null} — без сброса или старый сервер.
+         * Поведение для любой причины одно, поле — для журнала.
+         */
+        final String resetReason;
 
         PullStream(long nextSeq, JSONObject changes, boolean reset, String ledgerId) {
+            this(nextSeq, changes, reset, ledgerId, null);
+        }
+
+        PullStream(long nextSeq, JSONObject changes, boolean reset, String ledgerId, String resetReason) {
             this.nextSeq = nextSeq;
             this.changes = changes;
             this.reset = reset;
             this.ledgerId = ledgerId;
+            this.resetReason = resetReason;
         }
 
         static PullStream fromJson(JSONObject json) throws JSONException {
             return new PullStream(json.getLong("next_seq"), json.getJSONObject("changes"),
                     json.optBoolean("reset", false),
-                    json.isNull("ledger_id") ? null : json.getString("ledger_id"));
+                    json.isNull("ledger_id") ? null : json.getString("ledger_id"),
+                    json.isNull("reset_reason") ? null : json.getString("reset_reason"));
         }
     }
 
@@ -125,13 +140,38 @@ class SyncApiClient {
             this.ledger = ledger;
             this.reference = reference;
         }
+
+        static PullResult fromJson(JSONObject json) throws JSONException {
+            return new PullResult(PullStream.fromJson(json.getJSONObject("ledger")),
+                    PullStream.fromJson(json.getJSONObject("reference")));
+        }
     }
 
-    PullResult pull(long ledgerSeq, long referenceSeq, int limit) throws IOException, JSONException {
+    /**
+     * Адрес {@code GET /sync/pull}. {@code ledgerId} — леджер, к которому относится
+     * {@code ledgerSeq} ({@code AppSettings.getSyncLedgerId}); сервер записывает
+     * курсоры запроса как подтверждение устройства и по {@code ledger_id} решает,
+     * засчитывать ли курсор потока леджера (openspec purge-synced-tombstones).
+     * {@code null} — леджер ещё не известен, параметр не передаётся. Старый сервер
+     * лишний параметр игнорирует.
+     */
+    static String pullUrl(String baseUrl, long ledgerSeq, long referenceSeq, int limit, String ledgerId) {
         String url = baseUrl + "sync/pull?ledger_seq=" + ledgerSeq
                 + "&reference_seq=" + referenceSeq + "&limit=" + limit;
+        if (ledgerId != null && !ledgerId.isEmpty()) {
+            try {
+                url += "&ledger_id=" + URLEncoder.encode(ledgerId, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                throw new IllegalStateException(e); // UTF-8 есть всегда
+            }
+        }
+        return url;
+    }
+
+    PullResult pull(long ledgerSeq, long referenceSeq, int limit, String ledgerId)
+            throws IOException, JSONException {
         Request request = new Request.Builder()
-                .url(url)
+                .url(pullUrl(baseUrl, ledgerSeq, referenceSeq, limit, ledgerId))
                 .header("Authorization", "Bearer " + accessToken)
                 .get()
                 .build();
@@ -141,10 +181,7 @@ class SyncApiClient {
             if (!response.isSuccessful()) {
                 throw new IOException("GET /sync/pull -> HTTP " + response.code() + " " + body);
             }
-            JSONObject json = new JSONObject(body);
-            JSONObject ledgerJson = json.getJSONObject("ledger");
-            JSONObject referenceJson = json.getJSONObject("reference");
-            return new PullResult(PullStream.fromJson(ledgerJson), PullStream.fromJson(referenceJson));
+            return PullResult.fromJson(new JSONObject(body));
         }
     }
 }
