@@ -15,7 +15,6 @@ import com.example.wallettransactions.Data.RecurringOperationsDb;
 import com.example.wallettransactions.Data.WalletDbLoader;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
-import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.DataItems.CurrencyConversion.EquivalentCurrencies;
 import com.example.wallettransactions.DataItems.DataFilter;
@@ -334,10 +333,11 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         // Заглушка пустого справочника — не валюта, в списке ей не место.
         if (PeriodFilterState.isPlaceholder(currencyEq)) currencyEq = null;
 
-        // Только валюты с флагом «Показывать в эквиваленте» + текущая (currency-ui-tweaks).
+        // Все валюты с флагом «Показывать в эквиваленте» + текущая — как в «Настройках»;
+        // кошелёк в валюте не нужен (equivalent-picker-by-flag).
         List<Currency> allCurrencies = new ArrayList<>(Singleton.instance.getCurrencyList(this));
         int idx = 0;
-        for (Currency currency : EquivalentCurrencies.forHeader(currenciesInUse(), allCurrencies, currencyEq)) {
+        for (Currency currency : EquivalentCurrencies.filter(allCurrencies, currencyEq)) {
             MenuItem menuItem = popup.getMenu().add(R.id.checkgroup, currency.getId(), idx,
                     currency.getIso() + " (" + currency.getSymbol() + ")");
             menuItem.setCheckable(true);
@@ -355,21 +355,6 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         });
 
         popup.show();
-    }
-
-    /** Валюты живых кошельков; если их нет — весь список, иначе выбирать было бы не из чего. */
-    private List<Currency> currenciesInUse() {
-        List<Currency> currencies = new ArrayList<>();
-
-        for (AccountOperatingItem account : Singleton.instance.getAccounts(this).getOperationAccounts()) {
-            if (account.getIsArchived()) continue;
-            if (!currencies.contains(account.getCurrency())) currencies.add(account.getCurrency());
-        }
-
-        if (currencies.isEmpty()) {
-            for (Currency currency : Singleton.instance.getCurrencyList(this)) currencies.add(currency);
-        }
-        return currencies;
     }
 
     public void btnOperationAdd(View view) {
