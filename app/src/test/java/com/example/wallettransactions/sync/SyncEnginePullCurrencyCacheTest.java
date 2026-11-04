@@ -147,7 +147,7 @@ public class SyncEnginePullCurrencyCacheTest {
         }
 
         @Override
-        PullResult pull(long ledgerSeq, long referenceSeq, int limit) throws IOException {
+        PullResult pull(long ledgerSeq, long referenceSeq, int limit, String ledgerId) throws IOException {
             Step step = steps.poll();
             if (step == null) return page(ledgerSeq, new JSONObject(), referenceSeq);
             try {
