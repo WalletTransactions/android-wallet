@@ -416,6 +416,20 @@ public class WalletFillData {
         }
     }
 
+    /**
+     * Заводит иконку-заглушку "unknown", если её нет (см. Singleton.loadIconList, issue #18).
+     * Только её, а не все {@link #SeedDefaultCategoryIcons}: пользователь, очистивший базу без
+     * пересева, справочников не просил — заглушка нужна коду, а не ему.
+     *
+     * @return true — иконку пришлось завести.
+     */
+    public static boolean EnsureUnknownIcon(SQLiteDatabase db, Context context) {
+        Resources = context.getResources();
+        PackageName = context.getPackageName();
+        if (GetIconIdByName(db, "unknown") >= 0) return false;
+        return InsertIconEntry(db, "unknown", ICO_CATEGORY_ACCOUNT, "unknown") > 0;
+    }
+
     public static void InsertFirstDictionary(SQLiteDatabase db, Context context){
         Resources = context.getResources();
         PackageName = context.getPackageName();

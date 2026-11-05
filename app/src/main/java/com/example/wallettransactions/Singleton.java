@@ -8,6 +8,7 @@ import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyPairL
 import com.example.wallettransactions.DataItems.IconList;
 import com.example.wallettransactions.Data.WalletDbHelper;
 import com.example.wallettransactions.Data.WalletDbLoader;
+import com.example.wallettransactions.Data.WalletFillData;
 
 public class Singleton {
     public static final Singleton instance = new Singleton();
@@ -38,9 +39,7 @@ public class Singleton {
 
     public IconList getIconList(Context context){
         if (iconList == null) {
-            iconList = new IconList();
-
-            WalletDbLoader.LoadIcons(getReadableDatabase(context), iconList);
+            iconList = loadIconList(context);
         }
 
         return iconList;
@@ -48,9 +47,27 @@ public class Singleton {
 
     public void reloadIconList(Context context) {
         if (iconList != null) {
-            iconList = new IconList();
-            WalletDbLoader.LoadIcons(getReadableDatabase(context), iconList);
+            iconList = loadIconList(context);
         }
+    }
+
+    /**
+     * Иконки из БД плюс гарантия заглушки "unknown": её {@link IconList#getUnknownIcon}
+     * берут экраны для пустого слота (TransactionActivity.bindSlot и др.) и пишут её
+     * {@code _id} в {@code icon_id} новых счетов/валют. Без неё в {@code icon} — после
+     * «Удалить ВСЁ» без пересева справочников — getUnknownIcon() отдавал null и экран
+     * новой операции падал NPE (issue #18). Заводим её в БД, а не только в памяти: id
+     * должен проходить FK. Своя (ORIGIN_LOCAL) — синк её не дублирует, см. SyncEngine.applyIcon.
+     */
+    private IconList loadIconList(Context context) {
+        IconList list = new IconList();
+        WalletDbLoader.LoadIcons(getReadableDatabase(context), list);
+        if (list.getUnknownIcon() == null
+                && WalletFillData.EnsureUnknownIcon(getWritableDatabase(context), context)) {
+            list = new IconList();
+            WalletDbLoader.LoadIcons(getReadableDatabase(context), list);
+        }
+        return list;
     }
 
 
