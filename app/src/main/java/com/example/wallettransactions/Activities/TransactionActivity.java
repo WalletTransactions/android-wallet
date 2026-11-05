@@ -411,10 +411,6 @@ public class TransactionActivity extends AppCompatActivity {
 
         renderKind();
 
-        // Disable save until something changes
-        mBtnSave.setEnabled(false);
-        mBtnSave.setAlpha(0.4f);
-
         if (mIsEdit) {
             // Capture originals after all setters
             mOrigAccFromId = mAccFrom != null ? mAccFrom.getId() : 0;
@@ -432,6 +428,12 @@ public class TransactionActivity extends AppCompatActivity {
             mOrigCommissionAmount = mEditCommissionAmount.getText().toString();
             mOrigCommissionFromDest = mRadioCommissionFromDest.isChecked();
         }
+
+        // Кнопку считаем по тем же правилам, что и при любой правке поля. Правка ещё
+        // ничего не поменяла — погашена; новая операция, заполненная заранее (черновик
+        // из ИИ), сохраняется сразу. Слушатели полей ниже вешаются уже после префилла,
+        // поэтому сами они начального состояния не задают.
+        updateSaveButton();
 
         TextWatcher watcher = new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
