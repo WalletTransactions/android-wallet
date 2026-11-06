@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Беларусь: круглый флаг 64x64, как flag_georgia.xml (seed.json, new-user-default-set). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+  <group>
+    <clip-path android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z"/>
+    <path android:fillColor="#C8313E" android:pathData="M0,0 H64 V42.67 H0Z"/>
+    <path android:fillColor="#4AA657" android:pathData="M0,42.67 H64 V64 H0Z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M0,0 H12 V64 H0Z"/>
+    <path android:fillColor="#C8313E" android:pathData="M6,4 L10,8 L6,12 L2,8Z"/>
+    <path android:fillColor="#C8313E" android:pathData="M6,14 L10,18 L6,22 L2,18Z"/>
+    <path android:fillColor="#C8313E" android:pathData="M6,24 L10,28 L6,32 L2,28Z"/>
+    <path android:fillColor="#C8313E" android:pathData="M6,34 L10,38 L6,42 L2,38Z"/>
+    <path android:fillColor="#C8313E" android:pathData="M6,44 L10,48 L6,52 L2,48Z"/>
+    <path android:fillColor="#C8313E" android:pathData="M6,54 L10,58 L6,62 L2,58Z"/>
+  </group>
+  <path android:fillColor="#CCCCCC" android:fillAlpha="0.4"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z M4,32 A28,28 0 1 1 60,32 A28,28 0 1 1 4,32Z"/>
+</vector>

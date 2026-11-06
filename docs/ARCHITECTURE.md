@@ -352,7 +352,9 @@ round(vccr.rate * (coalesce(opt.amount_to, 0) - coalesce(opf.amount_fr, 0)), 2) 
 
 ## Миграции
 
-`DATABASE_VERSION = 87` в `WalletDbHelper` (v87 — таблица `sync_reload_seen`, см.
+`DATABASE_VERSION = 88` в `WalletDbHelper` (v88 — `from_seed` у `account`, `currency`,
+`currency_pair`, см. «Синхронизация» → «Встроенный набор и подключение к кошельку»;
+v87 — таблица `sync_reload_seen`, см.
 «Синхронизация» → «Удалённые строки»; v86 — `icon.origin`, см. «Иконки с
 сервера и свои»; v85 — `currency.show_in_equivalent`, `currency.is_shared`,
 `currency_pair.is_shared`, см. «Свои и общие валюты и пары»).
@@ -495,6 +497,42 @@ Binder-транзакции (~500 КБ), из-за чего extras приход�
   `Status.STILL_RUNNING`; проход не прерывается и доходит до конца в фоне.
 
 Время последнего прохода с исходом `OK`/`PARTIAL` — `AppSettings.getLastSyncSuccessAt`.
+
+### Встроенный набор и подключение к кошельку (v88)
+
+Пустая база заполняется из `assets/seed.json` (`WalletFillData.InsertFirstDictionary`,
+openspec `new-user-default-set`): общие категории с именами `{ru, en}` (язык — по
+языку телефона при посеве, `CurrencyNames.seedLanguage`), системные `Transfer` /
+`Transfer commission`, иконки, валюты с флагами (название — от Android по коду ISO),
+пары. Кошельков и курсов нет. Строки набора помечены `from_seed = 1` у `account`,
+`currency`, `currency_pair`; правка имени, иконки, кода или символа снимает метку
+(`WalletDbCRUD`). Метка локальная, в push не входит. Апгрейд v88 добавляет колонку с 0 —
+старые базы ничего «из набора» не имеют.
+
+Общая валюта показывается названием Android на текущем языке (`Currency.getName`),
+своя — сохранённым.
+
+**Подключение** — первый проход после входа на базе без строк, бывших на сервере
+(чистая установка, переустановка, полная очистка). Признак
+`AppSettings.isLedgerConnectionPending` ставит `SyncRunner.startConnectionIfFresh`, снимает
+проход с прошедшей отправкой или «Удалить с телефона». Порядок прохода другой:
+
+```
+ refresh -> pull (adopt by key) -> connection step -> push -> purge
+                                          |
+                                          +-- question -> Status.AWAITING_DECISION, no push
+```
+
+- Загрузка подключения (`SyncEngine.adoptLocalByKey`): пришедшая валюта (код), пара
+  (символ) или счёт (имя по правилу `AccountNames`), совпавшая с неотправленной локальной
+  строкой, заменяет её — локальная строка берёт uuid и поля серверной
+  (`LedgerConnection.adoptByKey`). Связи по `_id`, поэтому операции и кошельки
+  переклеивать не нужно.
+- Шаг после загрузки (`LedgerConnection.afterPull`): если на телефоне есть счёт с
+  сервера, нетронутые строки набора без ссылок удаляются (системные — нет); если
+  остались неотправленные операции и «Перенести» не нажато — вопрос.
+- Вопрос «Операции без входа» показывает главный экран (`LedgerConnectionDialog`):
+  «Перенести» — проход с отправкой; «Удалить с телефона» — `LedgerConnection.discardOffline`.
 
 ### Удалённые строки
 

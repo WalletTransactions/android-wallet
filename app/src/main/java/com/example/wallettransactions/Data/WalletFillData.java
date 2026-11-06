@@ -79,10 +79,15 @@ public class WalletFillData {
      *                    "icon": "Flag Euro", "icon_resource": "flag_eur", "precision": 2}],
      *   "currency_pairs": [{"symbol": "EURUSD", "base": "EUR", "quote": "USD"}],
      *   "rates": [{"symbol": "EURUSD", "date": "2020-08-20", "rate": 1.18023}],
-     *   "accounts": [{"name": "Тинькофф Usd", "comment": "...", "icon": "Tinkoff",
-     *                  "currency_iso": "USD"}]
+     *   "accounts": [{"names": {"ru": "Такси", "en": "Taxi"}, "icon": "Taxi"},
+     *                {"name": "Transfer", "icon": "Transfer"}]
      * }
      * </pre>
+     * Штатный набор (openspec new-user-default-set, spec starter-set) — без кошельков,
+     * курсов и личных названий; "rates" и "accounts[].currency_iso" поддерживаются, но в
+     * файле не используются. Категория — пара имён "names", язык — {@link
+     * CurrencyNames#seedLanguage}; название валюты — {@link CurrencyNames#displayName} по
+     * коду, "name" — запасное. Каждая строка набора — с меткой {@code from_seed = 1}.
      * "resource"/"icon_resource" — имя файла в {@code res/drawable} без расширения,
      * разрешается в id через {@link #ResolveDrawableId} (не {@code R.drawable.*} — иначе
      * добавление иконки снова требовало бы правки Java). "accounts[].currency_iso" ссылается
@@ -167,10 +172,7 @@ public class WalletFillData {
         return InsertIconEntry(db, name, iconType, ResolveDrawableId(resourceName));
     }
 
-    private static long InsertCurrencyEntry(SQLiteDatabase db, String curName, String isoName, String symbol, Long iconId) {
-        return InsertCurrencyEntry(db, curName, isoName, symbol, iconId, 2);
-    }
-
+    /** Валюта набора — с меткой «из набора» (new-user-default-set, design D3). */
     private static long InsertCurrencyEntry(SQLiteDatabase db, String curName, String isoName, String symbol, Long iconId, int precision) {
         ContentValues values = new ContentValues();
         values.put(WalletContract.CurrencyEntry.COLUMN_NAME, curName);
@@ -178,15 +180,18 @@ public class WalletFillData {
         values.put(WalletContract.CurrencyEntry.COLUMN_ICON_ID, iconId);
         values.put(WalletContract.CurrencyEntry.COLUMN_SYMBOL, symbol);
         values.put(WalletContract.CurrencyEntry.COLUMN_PRECISION, precision);
+        values.put(WalletContract.CurrencyEntry.COLUMN_FROM_SEED, 1);
         return db.insert(WalletContract.CurrencyEntry.TABLE_NAME, null, values);
     }
 
 
+    /** Счёт набора — с меткой «из набора» (new-user-default-set, design D3). */
     private static long InsertAccountEntry(SQLiteDatabase db, String accName, String accComment, long accIconId) {
         ContentValues values = new ContentValues();
         values.put(WalletContract.AccountEntry.COLUMN_NAME, accName);
         values.put(WalletContract.AccountEntry.COLUMN_COMMENT, accComment);
         values.put(WalletContract.AccountEntry.COLUMN_ICON_ID, accIconId);
+        values.put(WalletContract.AccountEntry.COLUMN_FROM_SEED, 1);
         return db.insert(WalletContract.AccountEntry.TABLE_NAME, null, values);
     }
 
@@ -324,13 +329,16 @@ public class WalletFillData {
     public static void FillCurrenis(SQLiteDatabase db, Context context) {
         JSONArray currencies = LoadSeed(context).optJSONArray("currencies");
         if (currencies == null) return;
+        // Название — от Android по коду на языке посева, "name" из файла — запасное (design D10).
+        java.util.Locale locale = new java.util.Locale(CurrencyNames.seedLanguage(context));
 
         for (int i = 0; i < currencies.length(); i++) {
             try {
                 JSONObject c = currencies.getJSONObject(i);
                 long iconId = InsertIconEntry(db, c.getString("icon"), ICO_CATEGORY_FLAGS, c.getString("icon_resource"));
-                InsertCurrencyEntry(db, c.getString("name"), c.getString("iso"), c.getString("symbol"),
-                        iconId, c.optInt("precision", 2));
+                String iso = c.getString("iso");
+                InsertCurrencyEntry(db, CurrencyNames.displayName(iso, c.getString("name"), locale), iso,
+                        c.getString("symbol"), iconId, c.optInt("precision", 2));
             } catch (JSONException e) {
                 Log.e("WalletFillData", "seed.json currencies#" + i, e);
             }
@@ -373,7 +381,10 @@ public class WalletFillData {
             for (int i = 0; i < pairs.length(); i++) {
                 try {
                     JSONObject p = pairs.getJSONObject(i);
-                    InsertCurrencyPair(db, p.getString("symbol"), p.getString("base"), p.getString("quote"));
+                    String symbol = p.getString("symbol");
+                    if (InsertCurrencyPair(db, symbol, p.getString("base"), p.getString("quote")) > 0) {
+                        markPairFromSeed(db, symbol);
+                    }
                 } catch (JSONException e) {
                     Log.e("WalletFillData", "seed.json currency_pairs#" + i, e);
                 }
@@ -394,6 +405,20 @@ public class WalletFillData {
         }
     }
 
+
+    /**
+     * Метка «из набора» у только что заведённой пары. {@link #InsertCurrencyPair} общий с
+     * JSON-импортом, поэтому метку ставит не он. Строка новая ({@code dirty = 1}), так что
+     * триггер {@code trg_currency_pair_dirty} ничего не меняет.
+     */
+    private static void markPairFromSeed(SQLiteDatabase db, String symbol) {
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.CurrencyPairEntry.COLUMN_FROM_SEED, 1);
+        db.update(WalletContract.CurrencyPairEntry.TABLE_NAME, cv,
+                WalletContract.CurrencyPairEntry.COLUMN_SYMBOL + "=? AND "
+                        + WalletContract.CurrencyPairEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{symbol});
+    }
 
     /**
      * Дефолтные иконки категорий (плюс "unknown") — вынесено из {@link #InsertFirstDictionary}
@@ -474,11 +499,12 @@ public class WalletFillData {
     private static void InsertSeedAccounts(SQLiteDatabase db, Context context) {
         JSONArray accounts = LoadSeed(context).optJSONArray("accounts");
         if (accounts == null) return;
+        String language = CurrencyNames.seedLanguage(context);
 
         for (int i = 0; i < accounts.length(); i++) {
             try {
                 JSONObject a = accounts.getJSONObject(i);
-                String accName = a.getString("name").trim();
+                String accName = seedAccountName(a, language).trim();
                 if (accName.isEmpty()) continue;
 
                 // Живой (deleted_at IS NULL) счёт с этим именем уже есть — пропускаем: голый
@@ -522,6 +548,19 @@ public class WalletFillData {
                 Log.e("WalletFillData", "seed.json accounts#" + i, e);
             }
         }
+    }
+
+    /**
+     * Имя счёта набора: {@code names[language]}, иначе {@code names.en}, иначе {@code name}
+     * (системные Transfer/Transfer commission — одно имя на всех языках, design D2/D10).
+     */
+    static String seedAccountName(JSONObject account, String language) throws JSONException {
+        JSONObject names = account.optJSONObject("names");
+        if (names != null) {
+            String localized = names.optString(language, "");
+            return localized.isEmpty() ? names.getString("en") : localized;
+        }
+        return account.getString("name");
     }
 
     /** uuid только что вставленного/существующего account по его _id — см. InsertSeedAccounts. */

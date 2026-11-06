@@ -17,7 +17,15 @@ public class Currency {
 
     public int getId() { return id; }
     public String getIso() { return iso; }
-    public String getName() { return name; }
+    /**
+     * Показываемое имя: у общей валюты — название Android по коду на текущем языке
+     * телефона (иначе с сервера), у своей — сохранённое, чтобы «Доллары нал» с кодом USD
+     * не стали «US Dollar» (spec currency-directory, new-user-default-set design D10).
+     * Хранимое имя общей валюты не меняется и на телефоне не правится.
+     */
+    public String getName() {
+        return shared ? com.example.wallettransactions.Data.CurrencyNames.sharedDisplayName(iso, name) : name;
+    }
     public Icon getIcon() { return icon; }
     public String getSymbol() { return symbol; }
     public int getPrecision() { return precision; }
