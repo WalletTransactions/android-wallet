@@ -230,7 +230,7 @@ public class LockActivity extends AppCompatActivity {
                 firstPin = null;
                 entered.setLength(0);
                 render();
-                fail("Коды не совпали — придумайте код заново");
+                fail(getString(R.string.lock_pins_mismatch));
                 return;
             }
             runInBackground(() -> { AppLockStore.setPin(this, pin); return true; });
@@ -279,18 +279,17 @@ public class LockActivity extends AppCompatActivity {
             // (Фаза 4); до неё — только очистка данных приложения в настройках телефона.
             keyLost = true;
             dimKeypad(true);
-            showMessage("Ключ проверки кода на телефоне пропал, код не проверить. "
-                    + "Нажмите «Забыли код?».", true);
+            showMessage(getString(R.string.lock_key_lost), true);
             return;
         }
         if (mode == MODE_SET) {
-            fail("Не удалось сохранить код");
+            fail(getString(R.string.lock_save_failed));
         } else if (lockoutRemaining() > 0) {
             shake();
             renderLockout();
         } else {
             int left = AppLockStore.FREE_ATTEMPTS - AppLockStore.getFailedAttempts(this);
-            fail(left > 0 && left <= 3 ? "Неверный код. Попыток до паузы: " + left : "Неверный код");
+            fail(left > 0 && left <= 3 ? getString(R.string.lock_wrong_attempts_left, left) : getString(R.string.lock_wrong));
         }
     }
 
@@ -304,15 +303,15 @@ public class LockActivity extends AppCompatActivity {
     private void render() {
         switch (mode) {
             case MODE_SET:
-                title.setText(firstPin == null ? "Придумайте код" : "Повторите код");
-                showMessage(firstPin == null ? "От 4 до 6 цифр, затем «ОК»" : "", false);
+                title.setText(firstPin == null ? R.string.lock_title_create : R.string.lock_title_repeat);
+                showMessage(firstPin == null ? getString(R.string.lock_hint_length) : "", false);
                 break;
             case MODE_VERIFY:
-                title.setText("Введите текущий код");
+                title.setText(R.string.lock_title_current);
                 showMessage("", false);
                 break;
             default:
-                title.setText("Введите код");
+                title.setText(R.string.lock_title_enter);
                 showMessage("", false);
         }
         boolean bio = isBiometricOn();
@@ -355,8 +354,7 @@ public class LockActivity extends AppCompatActivity {
         }
         long sec = (remaining + 999) / 1000;
         dimKeypad(true);
-        showMessage(String.format(Locale.US, "Слишком много попыток. Повторите через %d:%02d",
-                sec / 60, sec % 60), true);
+        showMessage(getString(R.string.lock_lockout, sec / 60, sec % 60), true);
         main.postDelayed(lockoutTick, 1000);
     }
 
@@ -387,13 +385,13 @@ public class LockActivity extends AppCompatActivity {
             // пальца, добавленного в телефон: включать заново — только из настроек.
             AppLockStore.setBiometricOn(this, false);
             render();
-            showMessage(BiometricErrors.KEY_INVALIDATED, true);
+            showMessage(BiometricErrors.keyInvalidated(this), true);
             return;
         }
         promptForReset = false;
         BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Вход в приложение")
-                .setNegativeButtonText("Ввести код")
+                .setTitle(getString(R.string.lock_biometric_title))
+                .setNegativeButtonText(getString(R.string.lock_biometric_use_pin))
                 .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
                 .build();
         biometricPrompt.authenticate(info, new BiometricPrompt.CryptoObject(cipher));
@@ -410,7 +408,7 @@ public class LockActivity extends AppCompatActivity {
                     }
                     BiometricPrompt.CryptoObject crypto = result.getCryptoObject();
                     if (!BiometricKey.confirm(crypto != null ? crypto.getCipher() : null)) {
-                        showMessage(BiometricErrors.lockScreenMessage(-1), true);
+                        showMessage(BiometricErrors.lockScreenMessage(LockActivity.this, -1), true);
                         return;
                     }
                     AppLockStore.resetFailures(LockActivity.this);
@@ -425,7 +423,7 @@ public class LockActivity extends AppCompatActivity {
                         promptForReset = false;
                         return;
                     }
-                    String text = BiometricErrors.lockScreenMessage(errorCode);
+                    String text = BiometricErrors.lockScreenMessage(LockActivity.this, errorCode);
                     if (text != null) showMessage(text, true);
                 }
             };
@@ -435,18 +433,16 @@ public class LockActivity extends AppCompatActivity {
     /** Работает и во время паузы после ошибок, и когда ключ проверки кода пропал. */
     public void onForgotPin(View view) {
         if (busy) return;
-        AlertDialog.Builder dialog = new AlertDialog.Builder(this).setTitle("Забыли код?");
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this).setTitle(R.string.lock_forgot_title);
         if (ForgotPin.isDeviceSecure(this)) {
-            dialog.setMessage("Код приложения можно снять, подтвердив код блокировки телефона. "
-                            + "Данные останутся, новый код можно будет задать в настройках.")
-                    .setPositiveButton("Код телефона", (d, w) -> confirmDeviceCredential())
-                    .setNeutralButton("Стереть данные", (d, w) -> confirmWipe())
-                    .setNegativeButton("Отмена", null);
+            dialog.setMessage(R.string.lock_forgot_secure)
+                    .setPositiveButton(R.string.lock_forgot_device_pin, (d, w) -> confirmDeviceCredential())
+                    .setNeutralButton(R.string.lock_forgot_wipe, (d, w) -> confirmWipe())
+                    .setNegativeButton(R.string.action_cancel, null);
         } else {
-            dialog.setMessage("На телефоне нет блокировки экрана — подтвердить, что это вы, нечем. "
-                            + "Снять код можно только вместе со всеми данными приложения.")
-                    .setPositiveButton("Стереть данные", (d, w) -> confirmWipe())
-                    .setNegativeButton("Отмена", null);
+            dialog.setMessage(R.string.lock_forgot_insecure)
+                    .setPositiveButton(R.string.lock_forgot_wipe, (d, w) -> confirmWipe())
+                    .setNegativeButton(R.string.action_cancel, null);
         }
         dialog.show();
     }
@@ -454,8 +450,8 @@ public class LockActivity extends AppCompatActivity {
     /** Только код телефона, без отпечатка: отпечаток члена семьи не должен снимать код. */
     @SuppressWarnings("deprecation")
     private void confirmDeviceCredential() {
-        String title = "Снять код приложения";
-        String subtitle = "Подтвердите кодом блокировки телефона";
+        String title = getString(R.string.lock_reset_title);
+        String subtitle = getString(R.string.lock_reset_subtitle);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // BiometricPrompt умеет «только код телефона» лишь с API 30.
             promptForReset = true;
@@ -469,7 +465,7 @@ public class LockActivity extends AppCompatActivity {
         KeyguardManager km = getSystemService(KeyguardManager.class);
         Intent intent = km != null ? km.createConfirmDeviceCredentialIntent(title, subtitle) : null;
         if (intent == null) {
-            Toast.makeText(this, "Не удалось открыть экран блокировки телефона", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.lock_reset_no_keyguard, Toast.LENGTH_SHORT).show();
             return;
         }
         startActivityForResult(intent, REQUEST_DEVICE_CREDENTIAL);
@@ -483,23 +479,22 @@ public class LockActivity extends AppCompatActivity {
 
     private void onDeviceCredentialConfirmed() {
         ForgotPin.resetAndUnlock(this);
-        Toast.makeText(this, "Код приложения снят. Задать новый — Настройки → Код доступа",
-                Toast.LENGTH_LONG).show();
+        Toast.makeText(this, R.string.lock_reset_done, Toast.LENGTH_LONG).show();
         finishQuietly();
     }
 
     /** Два подтверждения: стирание не отменить. */
     private void confirmWipe() {
         new AlertDialog.Builder(this)
-                .setTitle("Стереть данные приложения?")
-                .setMessage(ForgotPin.wipeWarning(ForgotPin.isLinkedToServer(this)))
-                .setPositiveButton("Стереть", (d, w) -> new AlertDialog.Builder(this)
-                        .setTitle("Это нельзя отменить")
-                        .setMessage("Стереть все данные приложения на этом телефоне?")
-                        .setPositiveButton("Стереть всё", (d2, w2) -> wipe())
-                        .setNegativeButton("Отмена", null)
+                .setTitle(R.string.wipe_title)
+                .setMessage(ForgotPin.wipeWarning(this, ForgotPin.isLinkedToServer(this)))
+                .setPositiveButton(R.string.wipe_confirm, (d, w) -> new AlertDialog.Builder(this)
+                        .setTitle(R.string.wipe_irreversible_title)
+                        .setMessage(R.string.wipe_irreversible_message)
+                        .setPositiveButton(R.string.wipe_confirm_all, (d2, w2) -> wipe())
+                        .setNegativeButton(R.string.action_cancel, null)
                         .show())
-                .setNegativeButton("Отмена", null)
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 
@@ -507,8 +502,7 @@ public class LockActivity extends AppCompatActivity {
     private void wipe() {
         ActivityManager am = getSystemService(ActivityManager.class);
         if (am == null || !am.clearApplicationUserData()) {
-            Toast.makeText(this, "Не удалось стереть. Настройки телефона → Приложения → "
-                    + "хранилище → «Очистить»", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.wipe_failed, Toast.LENGTH_LONG).show();
         }
     }
 

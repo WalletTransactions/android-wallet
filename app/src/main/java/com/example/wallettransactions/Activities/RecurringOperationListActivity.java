@@ -53,7 +53,7 @@ public class RecurringOperationListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recurring_operation_list);
 
-        ((TextView) findViewById(R.id.screenTitle)).setText("Повторяющиеся операции");
+        ((TextView) findViewById(R.id.screenTitle)).setText(R.string.recurring_list_title);
 
         ListView list = findViewById(R.id.listRecurring);
         mEmpty = findViewById(R.id.emptyRecurring);
@@ -95,14 +95,14 @@ public class RecurringOperationListActivity extends AppCompatActivity {
 
     private void confirmDelete(RecurringOperation r) {
         new AlertDialog.Builder(this)
-                .setTitle("Удалить повтор?")
-                .setMessage("Уже созданные операции останутся, новые создаваться не будут.")
-                .setPositiveButton("Удалить", (d, w) -> {
+                .setTitle(R.string.recurring_delete_question)
+                .setMessage(R.string.recurring_delete_message)
+                .setPositiveButton(R.string.action_delete, (d, w) -> {
                     RecurringOperationsDb.delete(db(), r.id);
                     RecurringWorker.kick(this);
                     reload();
                 })
-                .setNegativeButton("Отмена", null)
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 
@@ -147,17 +147,20 @@ public class RecurringOperationListActivity extends AppCompatActivity {
 
             String title = r.comment != null && !r.comment.trim().isEmpty()
                     ? r.comment.trim()
-                    : (top != null ? top.getDisplayName() : "Счёт удалён");
+                    : (top != null ? top.getDisplayName() : getContext().getString(R.string.recurring_account_deleted));
             ((TextView) v.findViewById(R.id.recTitle)).setText(title);
             ((TextView) v.findViewById(R.id.recAccounts)).setText(nameOf(from) + " → " + nameOf(to));
 
-            StringBuilder schedule = new StringBuilder(r.describeSchedule());
-            if (r.endDate != null) schedule.append(" · до ").append(r.endDate.format(DATE_UI));
+            Context c = getContext();
+            StringBuilder schedule = new StringBuilder(r.describeSchedule(c));
+            if (r.endDate != null) schedule.append(c.getString(R.string.recurring_until, r.endDate.format(DATE_UI)));
             if (r.isActive) {
                 LocalDateTime next = r.nextOccurrence(LocalDateTime.now());
-                schedule.append(next != null ? "\nСледующая: " + next.format(DATE_UI) : "\nЗавершено");
+                schedule.append('\n').append(next != null
+                        ? c.getString(R.string.recurring_list_next, next.format(DATE_UI))
+                        : c.getString(R.string.recurring_list_finished));
             } else {
-                schedule.append("\nВыключено");
+                schedule.append('\n').append(c.getString(R.string.recurring_list_off));
             }
             ((TextView) v.findViewById(R.id.recSchedule)).setText(schedule);
 

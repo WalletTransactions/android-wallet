@@ -83,7 +83,7 @@ public class CurrencyPickerAdapter extends BaseAdapter implements Filterable {
                 .setVisibility(c.getIso().equals(selectedIso) ? View.VISIBLE : View.GONE);
 
         TextView tags = view.findViewById(R.id.currencyTags);
-        String tagText = tagsOf(c);
+        String tagText = tagsOf(context, c);
         tags.setText(tagText);
         tags.setVisibility(tagText.isEmpty() ? View.GONE : View.VISIBLE);
 
@@ -100,12 +100,12 @@ public class CurrencyPickerAdapter extends BaseAdapter implements Filterable {
     }
 
     /** Подписи строки (spec currency-directory «Пометка скрытой валюты в списке»). */
-    static String tagsOf(Currency c) {
+    static String tagsOf(Context context, Currency c) {
         StringBuilder sb = new StringBuilder();
-        if (c.isShared()) sb.append("общая");
+        if (c.isShared()) sb.append(context.getString(R.string.currency_tag_shared));
         if (!c.isShowInEquivalent()) {
             if (sb.length() > 0) sb.append(" · ");
-            sb.append("не в эквиваленте");
+            sb.append(context.getString(R.string.currency_tag_not_in_eq));
         }
         return sb.toString();
     }

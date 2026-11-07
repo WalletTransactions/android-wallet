@@ -118,7 +118,7 @@ public class RecurringOperationActivity extends AppCompatActivity {
         }
 
         ((TextView) findViewById(R.id.screenTitle)).setText(
-                mIsEdit ? "Изменение повтора" : "Новая повторяющаяся");
+                mIsEdit ? R.string.recurring_title_edit : R.string.recurring_title_new);
         findViewById(R.id.btnDelete).setVisibility(mIsEdit ? View.VISIBLE : View.GONE);
 
         mAccFrom = accountById(mRule.accFromId);
@@ -186,16 +186,16 @@ public class RecurringOperationActivity extends AppCompatActivity {
 
         switch (mKind) {
             case income:
-                mLabelSlotTop.setText("Статья дохода");
-                mLabelSlotBottom.setText("Кошелёк");
+                mLabelSlotTop.setText(R.string.operation_slot_income_category);
+                mLabelSlotBottom.setText(R.string.operation_slot_wallet);
                 break;
             case transfer:
-                mLabelSlotTop.setText("Откуда");
-                mLabelSlotBottom.setText("Куда");
+                mLabelSlotTop.setText(R.string.operation_slot_from);
+                mLabelSlotBottom.setText(R.string.operation_slot_to);
                 break;
             default:
-                mLabelSlotTop.setText("Статья расхода");
-                mLabelSlotBottom.setText("Кошелёк");
+                mLabelSlotTop.setText(R.string.operation_slot_expense_category);
+                mLabelSlotBottom.setText(R.string.operation_slot_wallet);
                 break;
         }
 
@@ -237,13 +237,13 @@ public class RecurringOperationActivity extends AppCompatActivity {
 
     private void renderNextOccurrence() {
         if (!mRule.isActive) {
-            mTvNextOccurrence.setText("Повтор выключен — операции создаваться не будут.");
+            mTvNextOccurrence.setText(R.string.recurring_off);
             return;
         }
         LocalDateTime next = mRule.nextOccurrence(LocalDateTime.now());
         mTvNextOccurrence.setText(next != null
-                ? "Следующая операция: " + next.format(DATE_UI) + ", " + next.format(TIME_UI)
-                : "Повторов больше не будет — дата окончания уже прошла.");
+                ? getString(R.string.recurring_next, next.format(DATE_UI), next.format(TIME_UI))
+                : getString(R.string.recurring_ended));
     }
 
     private void paintChip(ViewGroup chip, boolean active) {
@@ -265,7 +265,7 @@ public class RecurringOperationActivity extends AppCompatActivity {
             text.setTextColor(ContextCompat.getColor(this, R.color.colorTextPrimary));
         } else {
             img.setImageBitmap(Singleton.instance.getIconList(this).getUnknownIcon().getBitmap());
-            text.setText("Выберите");
+            text.setText(R.string.recurring_choose);
             text.setTextColor(ContextCompat.getColor(this, R.color.colorTextHint));
         }
     }
@@ -405,14 +405,9 @@ public class RecurringOperationActivity extends AppCompatActivity {
         popup.show();
     }
 
-    private static String intervalLabel(int weeks) {
-        switch (weeks) {
-            case 1: return "Каждую неделю";
-            case 2: return "Каждые 2 недели";
-            case 3: return "Каждые 3 недели";
-            case 4: return "Каждые 4 недели";
-            default: return "Каждые " + weeks + " нед.";
-        }
+    private String intervalLabel(int weeks) {
+        return weeks == 1 ? getString(R.string.recurring_every_week)
+                : getResources().getQuantityString(R.plurals.recurring_every_weeks, weeks, weeks);
     }
 
     private void onDayClick(View view) {
@@ -478,26 +473,25 @@ public class RecurringOperationActivity extends AppCompatActivity {
 
     public void onSaveClick(View view) {
         if (mAccFrom == null) {
-            Toast.makeText(this, "Выберите счёт списания средств", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.operation_error_no_source, Toast.LENGTH_SHORT).show();
             return;
         }
         if (mAccTo == null) {
-            Toast.makeText(this, "Выберите счёт зачисления средств", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.operation_error_no_target, Toast.LENGTH_SHORT).show();
             return;
         }
         if (mAccFrom.getId().equals(mAccTo.getId())) {
-            Toast.makeText(this, "Счета списания и зачисления должны различаться", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.recurring_error_same_accounts, Toast.LENGTH_SHORT).show();
             return;
         }
         AccountOperatingItem from = asWallet(mAccFrom);
         AccountOperatingItem to = asWallet(mAccTo);
         if (from == null && to == null) {
-            Toast.makeText(this, "Хотя бы один счёт должен быть кошельком", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.recurring_error_no_wallet, Toast.LENGTH_LONG).show();
             return;
         }
         if (from != null && to != null && from.getCurrency().getId() != to.getCurrency().getId()) {
-            Toast.makeText(this, "Перевод между кошельками в разных валютах повторять нельзя — "
-                    + "сумма зачисления зависит от курса на дату", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.recurring_error_cross_currency, Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -508,15 +502,15 @@ public class RecurringOperationActivity extends AppCompatActivity {
             amount = 0;
         }
         if (amount <= 0) {
-            Toast.makeText(this, "Сумма должна быть больше нуля", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.recurring_error_amount, Toast.LENGTH_SHORT).show();
             return;
         }
         if (mRule.frequency == RecurringOperation.Frequency.WEEKLY && mRule.weekDays == 0) {
-            Toast.makeText(this, "Отметьте хотя бы один день недели", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.recurring_error_no_days, Toast.LENGTH_SHORT).show();
             return;
         }
         if (mRule.endDate != null && mRule.endDate.isBefore(mRule.startDate.toLocalDate())) {
-            Toast.makeText(this, "Дата окончания раньше даты начала", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.recurring_error_end_before_start, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -533,35 +527,26 @@ public class RecurringOperationActivity extends AppCompatActivity {
                 : java.util.Collections.emptyList();
         if (!missed.isEmpty()) {
             new AlertDialog.Builder(this)
-                    .setTitle("Пропущенные повторы")
-                    .setMessage("По этому правилу уже наступило " + missed.size() + " "
-                            + operationsWord(missed.size()) + " (с "
-                            + missed.get(0).format(DATE_UI) + "). Создать их сейчас?")
-                    .setPositiveButton("Создать", (d, w) -> persist())
-                    .setNeutralButton("Только будущие", (d, w) -> {
+                    .setTitle(R.string.recurring_missed_title)
+                    .setMessage(getResources().getQuantityString(R.plurals.recurring_missed_message,
+                            missed.size(), missed.size(), missed.get(0).format(DATE_UI)))
+                    .setPositiveButton(R.string.recurring_missed_create, (d, w) -> persist())
+                    .setNeutralButton(R.string.recurring_missed_future_only, (d, w) -> {
                         mRule.lastDate = missed.get(missed.size() - 1);
                         persist();
                     })
-                    .setNegativeButton("Отмена", null)
+                    .setNegativeButton(R.string.action_cancel, null)
                     .show();
             return;
         }
         persist();
     }
 
-    private static String operationsWord(int n) {
-        int mod100 = n % 100, mod10 = n % 10;
-        if (mod100 >= 11 && mod100 <= 14) return "операций";
-        if (mod10 == 1) return "операция";
-        if (mod10 >= 2 && mod10 <= 4) return "операции";
-        return "операций";
-    }
-
     private void persist() {
         SQLiteDatabase db = db();
         long result = mIsEdit ? RecurringOperationsDb.update(db, mRule) : RecurringOperationsDb.insert(db, mRule);
         if (result <= 0) {
-            Toast.makeText(this, "Не удалось сохранить", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.recurring_error_save, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -569,7 +554,7 @@ public class RecurringOperationActivity extends AppCompatActivity {
         RecurringWorker.kick(this);
         if (created > 0) {
             PeriodFilterState.get(this).markDataChanged();
-            Toast.makeText(this, "Создано операций: " + created, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.recurring_created, created), Toast.LENGTH_SHORT).show();
         }
         setResult(RESULT_OK);
         finish();
@@ -577,15 +562,15 @@ public class RecurringOperationActivity extends AppCompatActivity {
 
     public void onDeleteClick(View view) {
         new AlertDialog.Builder(this)
-                .setTitle("Удалить повтор?")
-                .setMessage("Уже созданные операции останутся, новые создаваться не будут.")
-                .setPositiveButton("Удалить", (d, w) -> {
+                .setTitle(R.string.recurring_delete_question)
+                .setMessage(R.string.recurring_delete_message)
+                .setPositiveButton(R.string.action_delete, (d, w) -> {
                     RecurringOperationsDb.delete(db(), mRule.id);
                     RecurringWorker.kick(this);
                     setResult(RESULT_OK);
                     finish();
                 })
-                .setNegativeButton("Отмена", null)
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 

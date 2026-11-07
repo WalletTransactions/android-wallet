@@ -154,7 +154,7 @@ public class RateChartView extends View {
     protected void onDraw(Canvas canvas) {
         if (data.size() < 2) {
             textPaint.setTextAlign(Paint.Align.CENTER);
-            canvas.drawText("Нет данных", getWidth() / 2f, getHeight() / 2f, textPaint);
+            canvas.drawText(getContext().getString(com.example.wallettransactions.R.string.rates_chart_no_data), getWidth() / 2f, getHeight() / 2f, textPaint);
             return;
         }
 

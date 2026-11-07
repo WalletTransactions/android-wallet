@@ -124,17 +124,17 @@ public class ReminderWorker extends Worker {
 
     /** null — показывать. */
     private static String skipReason(Context ctx, long lateMillis) {
-        if (lateMillis > MAX_LATE.toMillis()) return "опоздали на " + lateMillis / 60_000 + " мин";
+        if (lateMillis > MAX_LATE.toMillis()) return "опоздали на " + lateMillis / 60_000 + " мин"; // not UI: в лог
         if (ProcessLifecycleOwner.get().getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
-            return "приложение на экране";
+            return "приложение на экране"; // not UI: в лог
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 && ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.POST_NOTIFICATIONS)
                         != PackageManager.PERMISSION_GRANTED) {
-            return "нет разрешения POST_NOTIFICATIONS";
+            return "нет разрешения POST_NOTIFICATIONS"; // not UI: в лог
         }
         if (hasEnteredToday(Singleton.instance.getReadableDatabase(ctx), LocalDate.now())) {
-            return "сегодня операции уже вносили";
+            return "сегодня операции уже вносили"; // not UI: в лог
         }
         return null;
     }
@@ -166,7 +166,7 @@ public class ReminderWorker extends Worker {
         NotificationManager manager = ctx.getSystemService(NotificationManager.class);
         if (manager == null) return;
         manager.createNotificationChannel(new NotificationChannel(
-                CHANNEL_ID, "Напоминания", NotificationManager.IMPORTANCE_DEFAULT));
+                CHANNEL_ID, ctx.getString(R.string.reminder_channel), NotificationManager.IMPORTANCE_DEFAULT));
 
         // Тап — сразу экран новой операции поверх ленты (MainActivity.EXTRA_ADD_OPERATION).
         Intent intent = new Intent(ctx, MainActivity.class)
@@ -178,8 +178,8 @@ public class ReminderWorker extends Worker {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(ctx, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.main_icon)
-                .setContentTitle("Не забудьте внести операции")
-                .setContentText("Что сегодня потратили или получили?")
+                .setContentTitle(ctx.getString(R.string.reminder_title))
+                .setContentText(ctx.getString(R.string.reminder_text))
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
         NotificationManagerCompat.from(ctx).notify(NOTIFICATION_ID, builder.build());
