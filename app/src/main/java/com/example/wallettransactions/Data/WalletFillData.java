@@ -71,12 +71,13 @@ public class WalletFillData {
      * только этот JSON (плюс сам файл иконки в {@code res/drawable}, если он новый) и
      * пересобираешь; менять код в этом классе для этого больше не нужно.
      * <p>
-     * Схема (все пять секций опциональны, но в штатном файле присутствуют все):
+     * Схема (все секции опциональны, но в штатном файле присутствуют все):
      * <pre>
      * {
      *   "category_icons": [{"name": "Bar", "resource": "acc_beer"}],
      *   "currencies": [{"name": "Euro", "iso": "EUR", "symbol": "€",
      *                    "icon": "Flag Euro", "icon_resource": "flag_eur", "precision": 2}],
+     *   "flag_icons": [{"name": "Flag ALL", "resource": "flag_albania"}],
      *   "currency_pairs": [{"symbol": "EURUSD", "base": "EUR", "quote": "USD"}],
      *   "rates": [{"symbol": "EURUSD", "date": "2020-08-20", "rate": 1.18023}],
      *   "accounts": [{"names": {"ru": "Такси", "en": "Taxi"}, "icon": "Taxi"},
@@ -343,6 +344,25 @@ public class WalletFillData {
                 Log.e("WalletFillData", "seed.json currencies#" + i, e);
             }
         }
+        InsertSpareFlagIcons(db, context);
+    }
+
+    /**
+     * Флаги без валюты из секции "flag_icons" {@code seed.json}: валюты нет в наборе, а флаг
+     * остаётся в списке иконок для своих валют. Имена — прежние ("Flag ALL" и др.), по ним
+     * телефон сопоставляет иконку с одноимённой серверной (icon-sync).
+     */
+    private static void InsertSpareFlagIcons(SQLiteDatabase db, Context context) {
+        JSONArray flags = LoadSeed(context).optJSONArray("flag_icons");
+        if (flags == null) return;
+        for (int i = 0; i < flags.length(); i++) {
+            try {
+                JSONObject f = flags.getJSONObject(i);
+                InsertIconEntry(db, f.getString("name"), ICO_CATEGORY_FLAGS, f.getString("resource"));
+            } catch (JSONException e) {
+                Log.e("WalletFillData", "seed.json flag_icons#" + i, e);
+            }
+        }
     }
 
     /**
@@ -366,6 +386,7 @@ public class WalletFillData {
                 Log.e("WalletFillData", "seed.json currencies#" + i, e);
             }
         }
+        InsertSpareFlagIcons(db, context);
     }
 
     /**

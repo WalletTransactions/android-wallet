@@ -68,6 +68,13 @@ public class StarterSetTest {
     }
 
     @Test
+    public void cleanInstall_spareFlagsWithoutCurrency() {
+        assertEquals(1, count("SELECT count(*) FROM icon WHERE name = 'Flag ALL' AND icon_type = 1"));
+        assertEquals(1, count("SELECT count(*) FROM icon WHERE name = 'Croatian flag'"));
+        assertEquals(0, count("SELECT count(*) FROM currency WHERE iso_code IN ('ALL', 'HRK', 'TZS')"));
+    }
+
+    @Test
     @Config(qualifiers = "ru")
     public void cleanInstall_noPersonalRowsOfOldSeed() {
         List<String> names = accountNames();
@@ -148,6 +155,11 @@ public class StarterSetTest {
         JSONArray currencies = seed.getJSONArray("currencies");
         for (int i = 0; i < currencies.length(); i++) {
             String res = currencies.getJSONObject(i).getString("icon_resource");
+            if (drawableId(res) == 0) missing.add(res);
+        }
+        JSONArray flags = seed.getJSONArray("flag_icons");
+        for (int i = 0; i < flags.length(); i++) {
+            String res = flags.getJSONObject(i).getString("resource");
             if (drawableId(res) == 0) missing.add(res);
         }
         assertTrue("нет drawable: " + missing, missing.isEmpty());
