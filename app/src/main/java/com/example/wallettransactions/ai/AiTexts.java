@@ -65,6 +65,7 @@ public final class AiTexts {
             case NETWORK_ERROR:
             case ERROR:
             case STILL_RUNNING:
+            case AWAITING_DECISION:
                 return outcome.errorMessage != null ? outcome.errorMessage : outcome.status.name();
             case OK:
             default:

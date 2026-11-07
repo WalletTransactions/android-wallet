@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Турция: круглый флаг 64x64, как flag_georgia.xml (seed.json, new-user-default-set). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+  <group>
+    <clip-path android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z"/>
+    <path android:fillColor="#E30A17" android:pathData="M0,0 H64 V64 H0Z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M12,32 A14,14 0 1 0 40,32 A14,14 0 1 0 12,32Z"/>
+    <path android:fillColor="#E30A17" android:pathData="M18.3,32 A11.2,11.2 0 1 0 40.7,32 A11.2,11.2 0 1 0 18.3,32Z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M35.00,32.00 L38.80,30.77 L38.80,26.77 L41.15,30.00 L44.95,28.77 L42.60,32.00 L44.95,35.23 L41.15,34.00 L38.80,37.23 L38.80,33.23Z"/>
+  </group>
+  <path android:fillColor="#CCCCCC" android:fillAlpha="0.4"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z M4,32 A28,28 0 1 1 60,32 A28,28 0 1 1 4,32Z"/>
+</vector>

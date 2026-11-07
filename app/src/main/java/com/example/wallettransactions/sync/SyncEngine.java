@@ -106,6 +106,15 @@ final class SyncEngine {
 
     private static final String TAG = "SyncEngine";
 
+    /**
+     * Идёт загрузка подключения (openspec new-user-default-set, design D6): пришедшая
+     * валюта, пара или счёт заменяет неотправленную локальную строку с тем же ключом
+     * ({@link LedgerConnection#adoptByKey}), а не пропускается на уникальном индексе.
+     * Ставит и снимает {@code SyncRunner} вокруг загрузки подключения; проход синка в
+     * процессе один, поэтому статического флага достаточно.
+     */
+    static volatile boolean adoptLocalByKey;
+
     /** См. javadoc класса, "Порядок применения pull" — icon первым: на него ссылаются account/currency. */
     private static final String[] TABLE_ORDER = {
             "icon", "currency", "currency_pair", "currency_pair_rate", "currency_conversion",
@@ -1714,6 +1723,9 @@ final class SyncEngine {
             boolean exists = local != null;
             if (exists) {
                 updateFromServer(db, table, cv, local);
+            } else if (adoptLocalByKey && cv.get("deleted_at") == null
+                    && LedgerConnection.adoptByKey(db, table, uuid, cv)) {
+                return false; // своя строка с тем же ключом стала этой — «Изменено»
             } else {
                 cv.put("uuid", uuid);
                 db.insertOrThrow(table, null, cv);

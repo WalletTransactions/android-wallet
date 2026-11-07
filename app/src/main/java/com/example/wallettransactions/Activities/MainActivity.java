@@ -125,6 +125,23 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
         if (!com.example.wallettransactions.WalletApplication.hadCrash(this)) openAddOperationIfAsked(intent);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        showConnectionQuestion();
+    }
+
+    /**
+     * Вопрос «Операции без входа», пока подключение к кошельку его ждёт (openspec
+     * new-user-default-set, spec ledger-connection). Не поверх диалога аварийного завершения.
+     */
+    private void showConnectionQuestion() {
+        if (com.example.wallettransactions.WalletApplication.hadCrash(this)) return;
+        runOnUiThread(() -> {
+            if (!isFinishing() && !isDestroyed()) LedgerConnectionDialog.showIfAsked(this);
+        });
+    }
+
     private void openAddOperationIfAsked(Intent intent) {
         if (intent == null || !intent.getBooleanExtra(EXTRA_ADD_OPERATION, false)) return;
         // Снять флаг: иначе пересоздание активности открыло бы экран операции ещё раз.
@@ -170,6 +187,8 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
 
         TranAdapter.setCurrencyEq(getCurrencyEq());
         AdapterUtils.setListViewHeightBasedOnChildren(listView);
+        // Данные поменял проход синка — он мог закончиться «ждёт решения».
+        showConnectionQuestion();
     }
 
     @Override

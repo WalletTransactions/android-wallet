@@ -456,6 +456,11 @@ public class IntegrationsActivity extends AppCompatActivity {
                 title = "Сервер недоступен";
                 body = outcome.errorMessage;
                 break;
+            case AWAITING_DECISION:
+                title = "Синхронизация ждёт решения";
+                body = "На телефоне есть операции, внесённые до входа. Ответьте на вопрос «"
+                        + "Операции без входа» на главном экране.";
+                break;
             case PARTIAL:
                 title = "Синхронизация прошла не полностью";
                 body = outcome.errorMessage + "\n\n" + outcome.log.toDisplayText();

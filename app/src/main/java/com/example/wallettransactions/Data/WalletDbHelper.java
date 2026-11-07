@@ -23,7 +23,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 87;
+    private static final int DATABASE_VERSION = 88;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -109,6 +109,8 @@ public class WalletDbHelper extends SQLiteOpenHelper {
              // v76 — явный признак «кошелёк или категория», см. javadoc
              // AccountItem.Kind и шаг v76 в onUpgrade ниже.
              + WalletContract.AccountEntry.COLUMN_KIND + " INT NOT NULL DEFAULT 0,\n"
+             // v88 — см. addFromSeedV88.
+             + WalletContract.AccountEntry.COLUMN_FROM_SEED + " INTEGER NOT NULL DEFAULT 0,\n"
              + SYNC_COLUMNS_DDL + ",\n"
              + " CONSTRAINT fk_account_icon_id FOREIGN KEY ("
              + WalletContract.AccountEntry.COLUMN_ICON_ID
@@ -126,6 +128,8 @@ public class WalletDbHelper extends SQLiteOpenHelper {
              // v85 — см. addCurrencyFlagsV85.
              + WalletContract.CurrencyEntry.COLUMN_SHOW_IN_EQUIVALENT + " INTEGER NOT NULL DEFAULT 1, \n"
              + WalletContract.CurrencyEntry.COLUMN_IS_SHARED + " INTEGER NOT NULL DEFAULT 0, \n"
+             // v88 — см. addFromSeedV88.
+             + WalletContract.CurrencyEntry.COLUMN_FROM_SEED + " INTEGER NOT NULL DEFAULT 0, \n"
              + SYNC_COLUMNS_DDL + ", \n"
              + " CONSTRAINT fk_currency_icon_id FOREIGN KEY ("
              + WalletContract.CurrencyEntry.COLUMN_ICON_ID
@@ -141,6 +145,8 @@ public class WalletDbHelper extends SQLiteOpenHelper {
              + WalletContract.CurrencyPairEntry.COLUMN_PRECISION + " INTEGER NOT NULL DEFAULT 5, \n"
              // v85 — см. addCurrencyFlagsV85.
              + WalletContract.CurrencyPairEntry.COLUMN_IS_SHARED + " INTEGER NOT NULL DEFAULT 0, \n"
+             // v88 — см. addFromSeedV88.
+             + WalletContract.CurrencyPairEntry.COLUMN_FROM_SEED + " INTEGER NOT NULL DEFAULT 0, \n"
              + SYNC_COLUMNS_DDL + ", \n"
              + " CONSTRAINT fk_currency_pair_base_currency_id FOREIGN KEY ("
              + WalletContract.CurrencyPairEntry.COLUMN_BASE_CURRECNCY_ID
@@ -377,6 +383,23 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         db.execSQL("UPDATE " + table + " SET " + origin + " = " + WalletContract.IconEntry.ORIGIN_LOCAL
                 + " WHERE " + dirty + " = 1");
         db.execSQL("UPDATE " + table + " SET " + dirty + " = 0 WHERE " + dirty + " <> 0");
+    }
+
+    /**
+     * v88 (openspec new-user-default-set, design D3): {@code from_seed} у {@code account},
+     * {@code currency}, {@code currency_pair} — 1 у строк, заведённых из встроенного набора
+     * и не тронутых пользователем. Только {@code ADD COLUMN} с 0: существующие строки (в том
+     * числе прежний личный сид) из набора не считаются, и при подключении к кошельку ни одна
+     * не удалится как нетронутая строка набора. Без {@code UPDATE} — иначе триггер
+     * {@code trg_<table>_dirty} отправил бы все строки в push.
+     */
+    static void addFromSeedV88(SQLiteDatabase db) {
+        addColumnIfMissing(db, WalletContract.AccountEntry.TABLE_NAME,
+                WalletContract.AccountEntry.COLUMN_FROM_SEED, "INTEGER NOT NULL DEFAULT 0");
+        addColumnIfMissing(db, WalletContract.CurrencyEntry.TABLE_NAME,
+                WalletContract.CurrencyEntry.COLUMN_FROM_SEED, "INTEGER NOT NULL DEFAULT 0");
+        addColumnIfMissing(db, WalletContract.CurrencyPairEntry.TABLE_NAME,
+                WalletContract.CurrencyPairEntry.COLUMN_FROM_SEED, "INTEGER NOT NULL DEFAULT 0");
     }
 
     private static void addColumnIfMissing(SQLiteDatabase db, String table, String column, String ddl) {
@@ -1234,6 +1257,10 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             if (oldVersion < 87) {
                 // v87: отметки загрузки синка с нуля (purge-synced-tombstones), данные не меняются.
                 createSyncReloadSeen(db);
+            }
+            if (oldVersion < 88) {
+                // v88: метка «из набора» (new-user-default-set), у существующих строк 0.
+                addFromSeedV88(db);
             }
             return;
         }

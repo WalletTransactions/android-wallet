@@ -124,7 +124,7 @@ public class SyncRunnerTest {
 
     // ── Чистка отправленных удалений (openspec purge-synced-tombstones) ──────
 
-    private static final class RecordingSteps implements SyncRunner.Steps {
+    private static class RecordingSteps implements SyncRunner.Steps {
         final java.util.List<String> order = new java.util.ArrayList<>();
         java.io.IOException pullFailure;
         RuntimeException purgeFailure;
@@ -165,5 +165,53 @@ public class SyncRunnerTest {
         RecordingSteps steps = new RecordingSteps();
         steps.purgeFailure = new IllegalStateException("база занята");
         assertEquals(SyncRunner.Status.OK, SyncRunner.runSteps(steps, new SyncLog()).status);
+    }
+
+    // ── Подключение к кошельку (openspec new-user-default-set, design D5) ────
+
+    /** Шаги подключения: загрузка подключения, шаг, отправка, отметка конца. */
+    private static final class ConnectingSteps extends RecordingSteps {
+        LedgerConnection.Step step = LedgerConnection.Step.PUSH;
+
+        @Override public boolean connecting() { return true; }
+        @Override public void connectionPull(SyncLog log) throws java.io.IOException {
+            order.add("connectionPull");
+            if (pullFailure != null) throw pullFailure;
+        }
+        @Override public LedgerConnection.Step connect() {
+            order.add("connect");
+            return step;
+        }
+        @Override public void connectionDone() { order.add("done"); }
+    }
+
+    @Test
+    public void connecting_pullBeforePush() {
+        release.countDown();
+        ConnectingSteps steps = new ConnectingSteps();
+        SyncRunner.Outcome outcome = SyncRunner.runSteps(steps, new SyncLog());
+        assertEquals(java.util.Arrays.asList("connectionPull", "connect", "push", "done", "purge"), steps.order);
+        assertEquals(SyncRunner.Status.OK, outcome.status);
+    }
+
+    @Test
+    public void connecting_askedQuestion_noPush_awaitingDecision() {
+        release.countDown();
+        ConnectingSteps steps = new ConnectingSteps();
+        steps.step = LedgerConnection.Step.ASK;
+        SyncRunner.Outcome outcome = SyncRunner.runSteps(steps, new SyncLog());
+        assertEquals(java.util.Arrays.asList("connectionPull", "connect"), steps.order);
+        assertEquals(SyncRunner.Status.AWAITING_DECISION, outcome.status);
+        assertEquals(SyncRunner.AWAITING_DECISION_MESSAGE, outcome.errorMessage);
+    }
+
+    @Test
+    public void connecting_pullFailed_nothingDroppedNorSent_connectionStays() {
+        release.countDown();
+        ConnectingSteps steps = new ConnectingSteps();
+        steps.pullFailure = new java.io.IOException("нет сети");
+        SyncRunner.Outcome outcome = SyncRunner.runSteps(steps, new SyncLog());
+        assertEquals(java.util.Collections.singletonList("connectionPull"), steps.order);
+        assertEquals(SyncRunner.Status.NETWORK_ERROR, outcome.status);
     }
 }

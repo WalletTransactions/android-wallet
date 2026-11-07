@@ -48,6 +48,9 @@ public final class AppSettings {
     private static final String PREF_DEFERRED_ROWS_RESYNC_DONE = "deferredRowsResyncDone";
     private static final String PREF_FULL_RELOAD_PENDING = "syncFullReloadPending";
     private static final String PREF_LAST_SYNC_SUCCESS_AT = "lastSyncSuccessAt";
+    private static final String PREF_LEDGER_CONNECTION_PENDING = "ledgerConnectionPending";
+    private static final String PREF_LEDGER_CONNECTION_DECISION = "ledgerConnectionDecision";
+    private static final String PREF_LEDGER_CONNECTION_OFFLINE_OPS = "ledgerConnectionOfflineOps";
     private static final String PREF_AI_LAST_WALLET_UUID = "aiLastWalletUuid";
 
     /** См. {@link #getAutoConnectIntervalMinutes} — минимум, который вообще
@@ -472,6 +475,58 @@ public final class AppSettings {
 
     public static void clearFullReloadPending(Context ctx) {
         prefs(ctx).edit().putBoolean(PREF_FULL_RELOAD_PENDING, false).commit();
+    }
+
+    /**
+     * Идёт подключение телефона к кошельку на сервере (openspec new-user-default-set,
+     * spec ledger-connection, design D4): ставит {@code SyncRunner} в начале прохода, если
+     * есть вход и на телефоне нет строк, бывших на сервере; снимается после прохода, где
+     * отправка прошла, или после «Удалить с телефона». Отдельный флаг, а не
+     * {@code SyncEngine.hasSyncedRows}: после прерванной загрузки часть строк уже принята,
+     * а подключение ещё не закончено. Пишется синхронно — от него зависит порядок прохода.
+     */
+    public static boolean isLedgerConnectionPending(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_LEDGER_CONNECTION_PENDING, false);
+    }
+
+    public static void setLedgerConnectionPending(Context ctx, boolean pending) {
+        SharedPreferences.Editor e = prefs(ctx).edit().putBoolean(PREF_LEDGER_CONNECTION_PENDING, pending);
+        if (!pending) {
+            e.remove(PREF_LEDGER_CONNECTION_DECISION).remove(PREF_LEDGER_CONNECTION_OFFLINE_OPS);
+        }
+        e.commit();
+    }
+
+    /** Решение по операциям без входа (spec ledger-connection, «Вопрос об операциях без входа»). */
+    public enum ConnectionDecision {
+        /** Вопрос не задавался. */
+        NONE,
+        /** Вопрос задан, ответа нет — главный экран показывает диалог, push не идёт. */
+        ASKED,
+        /** «Перенести» — следующий проход подключения отправляет операции. */
+        TRANSFER
+    }
+
+    public static ConnectionDecision getConnectionDecision(Context ctx) {
+        String v = prefs(ctx).getString(PREF_LEDGER_CONNECTION_DECISION, null);
+        if (v == null) return ConnectionDecision.NONE;
+        try {
+            return ConnectionDecision.valueOf(v);
+        } catch (IllegalArgumentException e) {
+            return ConnectionDecision.NONE;
+        }
+    }
+
+    /** {@code offlineOps} — число операций для текста диалога (только для {@link ConnectionDecision#ASKED}). */
+    public static void setConnectionDecision(Context ctx, ConnectionDecision decision, int offlineOps) {
+        prefs(ctx).edit()
+                .putString(PREF_LEDGER_CONNECTION_DECISION, decision.name())
+                .putInt(PREF_LEDGER_CONNECTION_OFFLINE_OPS, offlineOps)
+                .commit();
+    }
+
+    public static int getConnectionOfflineOps(Context ctx) {
+        return prefs(ctx).getInt(PREF_LEDGER_CONNECTION_OFFLINE_OPS, 0);
     }
 
     /**
