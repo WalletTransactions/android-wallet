@@ -58,7 +58,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="Доллар США"
+            android:text="@string/currency_picker_item_layout_currency_name_text"
             android:textSize="13.5sp"
             android:textColor="@color/colorTextSecondary"/>
 

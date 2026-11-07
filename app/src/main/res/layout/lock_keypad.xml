@@ -46,7 +46,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
-                android:text="ОК"
+                android:text="@string/lock_keypad_lock_key_ok_text"
                 android:textSize="17sp"
                 android:textStyle="bold"
                 android:textColor="@color/colorPrimary"/>
@@ -56,7 +56,7 @@
                 android:layout_height="match_parent"
                 android:padding="14dp"
                 android:scaleType="fitCenter"
-                android:contentDescription="Вход по отпечатку"
+                android:contentDescription="@string/lock_keypad_lock_key_bio_content_description"
                 android:src="@drawable/ic_fingerprint"/>
         </FrameLayout>
         <TextView style="@style/LockKey" android:tag="0" android:text="0"/>
@@ -64,7 +64,7 @@
             style="@style/LockKey"
             android:padding="16dp"
             android:scaleType="fitCenter"
-            android:contentDescription="Стереть"
+            android:contentDescription="@string/lock_keypad_content_description_1"
             android:src="@drawable/ic_backspace"
             android:tag="del"/>
     </LinearLayout>

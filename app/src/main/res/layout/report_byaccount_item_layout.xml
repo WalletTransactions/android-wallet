@@ -34,7 +34,7 @@
             android:layout_marginStart="10dp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="Категория"
+            android:text="@string/report_byaccount_item_layout_text_name_text"
             android:textColor="@color/colorTextPrimary"
             android:textSize="13.5sp"
             android:textStyle="bold"/>

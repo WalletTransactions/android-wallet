@@ -41,7 +41,7 @@
                 android:orientation="vertical"
                 android:padding="14dp">
 
-                <TextView style="@style/SettingsGroupLabel" android:text="Счета"/>
+                <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_import_text_1"/>
 
                 <fragment
                     android:id="@+id/fragmentCSVFileAccount"
@@ -59,13 +59,13 @@
                     android:background="@drawable/bg_pill_primary_state"
                     android:onClick="ImportAccountClick"
                     android:stateListAnimator="@null"
-                    android:text="Импортировать счета"
+                    android:text="@string/activity_import_btn_import_account_text"
                     android:textAllCaps="false"
                     android:textColor="@color/colorSurface"
                     android:textSize="14sp"
                     android:textStyle="bold"/>
 
-                <TextView style="@style/SettingsGroupLabel" android:text="Операции"/>
+                <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_import_text_2"/>
 
                 <fragment
                     android:id="@+id/fragmentCSVFileOperation"
@@ -83,13 +83,13 @@
                     android:background="@drawable/bg_pill_primary_state"
                     android:onClick="ImportOperationClick"
                     android:stateListAnimator="@null"
-                    android:text="Импортировать операции"
+                    android:text="@string/activity_import_btn_import_operation_text"
                     android:textAllCaps="false"
                     android:textColor="@color/colorSurface"
                     android:textSize="14sp"
                     android:textStyle="bold"/>
 
-                <TextView style="@style/SettingsGroupLabel" android:text="Курсы валютных пар"/>
+                <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_import_text_3"/>
 
                 <fragment
                     android:id="@+id/fragmentCSVFileCurrencyPairRate"
@@ -106,7 +106,7 @@
                     android:background="@drawable/bg_pill_primary_state"
                     android:onClick="ImportCurrencyPairRateClick"
                     android:stateListAnimator="@null"
-                    android:text="Импортировать курсы"
+                    android:text="@string/activity_import_btn_import_rate_text"
                     android:textAllCaps="false"
                     android:textColor="@color/colorSurface"
                     android:textSize="14sp"
@@ -125,7 +125,7 @@
                 android:padding="14dp">
 
                 <TextView style="@style/SettingsGroupLabel"
-                    android:text="Операции (с переводами и комиссией), а также счета, валютные пары и курсы — одним файлом"/>
+                    android:text="@string/activity_import_text_4"/>
 
                 <fragment
                     android:id="@+id/fragmentJSONFileOperation"
@@ -142,7 +142,7 @@
                     android:background="@drawable/bg_pill_primary_state"
                     android:onClick="ImportOperationJsonClick"
                     android:stateListAnimator="@null"
-                    android:text="Импортировать из JSON"
+                    android:text="@string/activity_import_btn_import_operation_json_text"
                     android:textAllCaps="false"
                     android:textColor="@color/colorSurface"
                     android:textSize="14sp"

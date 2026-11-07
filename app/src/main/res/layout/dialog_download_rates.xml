@@ -10,14 +10,14 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Загрузка котировок"
+        android:text="@string/dialog_download_rates_text_1"
         android:textSize="21sp"
         android:textStyle="bold"
         android:fontFamily="@font/caprasimo"
         android:textColor="@color/colorTextPrimary"
         android:layout_marginBottom="16dp"/>
 
-    <TextView style="@style/SettingsGroupLabel" android:text="ИСТОЧНИК"/>
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/dialog_download_rates_text_2"/>
     <LinearLayout
         android:id="@+id/rowSource"
         android:layout_width="match_parent"
@@ -35,7 +35,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="ЦБ РФ"
+            android:text="@string/dialog_download_rates_source_value_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/colorTextPrimary"/>
@@ -43,7 +43,7 @@
         <ImageView android:layout_width="12dp" android:layout_height="12dp" android:src="@drawable/ic_chevron_right" android:rotation="90"/>
     </LinearLayout>
 
-    <TextView style="@style/SettingsGroupLabel" android:text="ПЕРИОД"/>
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/dialog_download_rates_text_3"/>
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="46dp"
@@ -58,7 +58,7 @@
             android:layout_weight="1"
             android:background="@drawable/bg_input_pill"
             android:gravity="center"
-            android:hint="с"
+            android:hint="@string/dialog_download_rates_input_from_hint"
             android:textSize="13.5sp"
             android:textStyle="bold"/>
 
@@ -77,12 +77,12 @@
             android:layout_weight="1"
             android:background="@drawable/bg_input_pill"
             android:gravity="center"
-            android:hint="по"
+            android:hint="@string/dialog_download_rates_input_to_hint"
             android:textSize="13.5sp"
             android:textStyle="bold"/>
     </LinearLayout>
 
-    <TextView style="@style/SettingsGroupLabel" android:text="ОБЪЁМ"/>
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/dialog_download_rates_text_4"/>
     <RadioGroup
         android:id="@+id/radioGroupFreq"
         android:layout_width="match_parent"
@@ -93,18 +93,18 @@
         <RadioButton
             android:id="@+id/radioDay"
             style="@style/PillRadioRow"
-            android:text="Каждый день"
+            android:text="@string/dialog_download_rates_radio_day_text"
             android:checked="true"/>
 
         <RadioButton
             android:id="@+id/radioMonday"
             style="@style/PillRadioRow"
-            android:text="Каждый понедельник"/>
+            android:text="@string/dialog_download_rates_radio_monday_text"/>
 
         <RadioButton
             android:id="@+id/radioMonth"
             style="@style/PillRadioRow"
-            android:text="Каждый месяц"/>
+            android:text="@string/dialog_download_rates_radio_month_text"/>
     </RadioGroup>
 
     <LinearLayout
@@ -120,7 +120,7 @@
             android:layout_marginEnd="9dp"
             android:background="@drawable/bg_pill_outline"
             android:gravity="center"
-            android:text="Отмена"
+            android:text="@string/dialog_download_rates_btn_cancel_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/colorTextPrimary"
@@ -133,7 +133,7 @@
             android:layout_weight="1"
             android:background="@drawable/bg_pill_primary"
             android:gravity="center"
-            android:text="Скачать"
+            android:text="@string/dialog_download_rates_btn_download_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/colorSurface"

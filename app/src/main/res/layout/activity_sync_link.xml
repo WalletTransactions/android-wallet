@@ -13,7 +13,7 @@
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Связь с Google аккаунтом"
+            android:text="@string/activity_sync_link_text_1"
             android:textSize="20sp"
             android:textStyle="bold"
             android:fontFamily="@font/caprasimo"
@@ -23,7 +23,7 @@
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Войдите тем же Google-аккаунтом, под которым сервер уже знает ваши данные."
+            android:text="@string/activity_sync_link_text_2"
             android:textSize="13sp"
             android:textColor="@color/colorTextSecondary"
             android:paddingBottom="20dp"/>
@@ -32,7 +32,7 @@
             android:id="@+id/buttonSignIn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Войти через Google"/>
+            android:text="@string/activity_sync_link_button_sign_in_text"/>
 
     <ScrollView
             android:layout_width="match_parent"

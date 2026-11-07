@@ -25,7 +25,7 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="@drawable/bg_pill_secondary"
-            android:contentDescription="Назад"
+            android:contentDescription="@string/activity_currency_form_btn_up_content_description"
             android:padding="11dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_nav_back"
@@ -38,7 +38,7 @@
             android:layout_weight="1"
             android:layout_marginStart="12dp"
             android:fontFamily="@font/caprasimo"
-            android:text="Новая валюта"
+            android:text="@string/activity_currency_form_form_title_text"
             android:textColor="@color/colorTextPrimary"
             android:textSize="20sp"/>
     </LinearLayout>
@@ -64,12 +64,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="14dp"
-                android:text="Общая валюта — изменить нельзя"
+                android:text="@string/activity_currency_form_shared_note_text"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="13sp"
                 android:visibility="gone"/>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="Иконка"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_currency_form_text_1"/>
 
             <ImageView
                 android:id="@+id/imgCurrencyIcon"
@@ -78,20 +78,20 @@
                 android:layout_marginBottom="18dp"
                 android:background="@drawable/bg_icon_circle"
                 android:clickable="true"
-                android:contentDescription="Иконка валюты"
+                android:contentDescription="@string/activity_currency_form_img_currency_icon_content_description"
                 android:focusable="true"
                 android:padding="14dp"
                 android:onClick="onPickIcon"/>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="Название"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_currency_form_text_2"/>
 
             <EditText
                 android:id="@+id/editCurrencyName"
                 style="@style/FormInputPill"
-                android:hint="Например, Доллар США"
+                android:hint="@string/activity_currency_form_edit_currency_name_hint"
                 android:inputType="textCapSentences"/>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="ISO-код"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_currency_form_text_3"/>
 
             <EditText
                 android:id="@+id/editCurrencyIso"
@@ -100,7 +100,7 @@
                 android:inputType="textCapCharacters"
                 android:maxLength="8"/>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="Символ"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_currency_form_text_4"/>
 
             <EditText
                 android:id="@+id/editCurrencySymbol"
@@ -108,7 +108,7 @@
                 android:hint="$"
                 android:maxLength="8"/>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="Точность (знаков после запятой)"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_currency_form_text_5"/>
 
             <EditText
                 android:id="@+id/editCurrencyPrecision"
@@ -133,7 +133,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Показывать в эквиваленте"
+                    android:text="@string/activity_currency_form_text_6"
                     android:textColor="@color/colorTextPrimary"
                     android:textSize="14.5sp"
                     android:textStyle="bold"/>
@@ -177,7 +177,7 @@
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center"
-                    android:text="Удалить"
+                    android:text="@string/activity_currency_form_btn_delete_text"
                     android:textColor="@color/colorexpanse"
                     android:textSize="14sp"
                     android:textStyle="bold"
@@ -194,7 +194,7 @@
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center"
-                    android:text="Отмена"
+                    android:text="@string/activity_currency_form_btn_cancel_text"
                     android:textColor="@color/colorTextPrimary"
                     android:textSize="14sp"
                     android:textStyle="bold"
@@ -209,7 +209,7 @@
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center"
-                    android:text="Сохранить"
+                    android:text="@string/activity_currency_form_btn_save_text"
                     android:textColor="@color/colorSurface"
                     android:textSize="14sp"
                     android:textStyle="bold"

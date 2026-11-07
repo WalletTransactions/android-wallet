@@ -28,7 +28,7 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="@drawable/bg_pill_secondary"
-            android:contentDescription="Назад"
+            android:contentDescription="@string/activity_recurring_operation_btn_up_content_description"
             android:padding="11dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_nav_back"
@@ -52,7 +52,7 @@
             android:layout_height="40dp"
             android:layout_marginStart="8dp"
             android:background="@drawable/bg_pill_secondary"
-            android:contentDescription="Удалить"
+            android:contentDescription="@string/activity_recurring_operation_btn_delete_content_description"
             android:padding="10dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_delete_forever_black_24dp"
@@ -87,7 +87,7 @@
                     android:focusable="true"
                     android:onClick="onKindClick">
                     <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_expense"/>
-                    <TextView style="@style/FilterChipIconLabel" android:text="Расход"/>
+                    <TextView style="@style/FilterChipIconLabel" android:text="@string/activity_recurring_operation_text_1"/>
                 </LinearLayout>
 
                 <LinearLayout
@@ -97,7 +97,7 @@
                     android:focusable="true"
                     android:onClick="onKindClick">
                     <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_income"/>
-                    <TextView style="@style/FilterChipIconLabel" android:text="Доход"/>
+                    <TextView style="@style/FilterChipIconLabel" android:text="@string/activity_recurring_operation_text_2"/>
                 </LinearLayout>
 
                 <LinearLayout
@@ -108,11 +108,11 @@
                     android:focusable="true"
                     android:onClick="onKindClick">
                     <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_transfer"/>
-                    <TextView style="@style/FilterChipIconLabel" android:text="Перевод"/>
+                    <TextView style="@style/FilterChipIconLabel" android:text="@string/activity_recurring_operation_text_3"/>
                 </LinearLayout>
             </LinearLayout>
 
-            <TextView android:id="@+id/labelSlotTop" style="@style/SettingsGroupLabel" android:text="Статья расхода"/>
+            <TextView android:id="@+id/labelSlotTop" style="@style/SettingsGroupLabel" android:text="@string/activity_recurring_operation_label_slot_top_text"/>
             <LinearLayout
                 android:id="@+id/rowSlotTop"
                 style="@style/RecurringPickerRow"
@@ -122,7 +122,7 @@
                 <ImageView style="@style/MoreRowChevron"/>
             </LinearLayout>
 
-            <TextView android:id="@+id/labelSlotBottom" style="@style/SettingsGroupLabel" android:text="Кошелёк"/>
+            <TextView android:id="@+id/labelSlotBottom" style="@style/SettingsGroupLabel" android:text="@string/activity_recurring_operation_label_slot_bottom_text"/>
             <LinearLayout
                 android:id="@+id/rowSlotBottom"
                 style="@style/RecurringPickerRow"
@@ -132,7 +132,7 @@
                 <ImageView style="@style/MoreRowChevron"/>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="Сумма"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_recurring_operation_text_4"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
@@ -166,21 +166,21 @@
                     android:textStyle="bold"/>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="Комментарий"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_recurring_operation_text_5"/>
             <EditText
                 android:id="@+id/editComment"
                 style="@style/FormInputPill"
-                android:hint="Необязательно"
+                android:hint="@string/activity_recurring_operation_edit_comment_hint"
                 android:inputType="textCapSentences"/>
 
             <!-- ── Расписание ── -->
-            <TextView style="@style/SettingsGroupLabel" android:text="Повторять"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_recurring_operation_text_6"/>
             <LinearLayout
                 android:id="@+id/rowFrequency"
                 style="@style/RecurringPickerRow"
                 android:onClick="onPickFrequency">
                 <TextView android:id="@+id/tvFrequency" style="@style/RecurringPickerValue"
-                    android:paddingStart="0dp" android:text="Ежемесячно"/>
+                    android:paddingStart="0dp" android:text="@string/activity_recurring_operation_tv_frequency_text"/>
                 <ImageView style="@style/MoreRowChevron"/>
             </LinearLayout>
 
@@ -192,35 +192,35 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <TextView style="@style/SettingsGroupLabel" android:text="Дни недели"/>
+                <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_recurring_operation_text_7"/>
                 <LinearLayout
                     android:id="@+id/weekDays"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     android:orientation="horizontal">
-                    <TextView style="@style/RecurringDayChip" android:tag="1" android:text="Пн"/>
-                    <TextView style="@style/RecurringDayChip" android:tag="2" android:text="Вт"/>
-                    <TextView style="@style/RecurringDayChip" android:tag="3" android:text="Ср"/>
-                    <TextView style="@style/RecurringDayChip" android:tag="4" android:text="Чт"/>
-                    <TextView style="@style/RecurringDayChip" android:tag="5" android:text="Пт"/>
-                    <TextView style="@style/RecurringDayChip" android:tag="6" android:text="Сб"/>
-                    <TextView style="@style/RecurringDayChip" android:tag="7" android:text="Вс"
+                    <TextView style="@style/RecurringDayChip" android:tag="1" android:text="@string/activity_recurring_operation_text_8"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="2" android:text="@string/activity_recurring_operation_text_9"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="3" android:text="@string/activity_recurring_operation_text_10"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="4" android:text="@string/activity_recurring_operation_text_11"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="5" android:text="@string/activity_recurring_operation_text_12"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="6" android:text="@string/activity_recurring_operation_text_13"/>
+                    <TextView style="@style/RecurringDayChip" android:tag="7" android:text="@string/activity_recurring_operation_text_14"
                         android:layout_marginEnd="0dp"/>
                 </LinearLayout>
 
-                <TextView style="@style/SettingsGroupLabel" android:text="Через сколько недель"/>
+                <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_recurring_operation_text_15"/>
                 <LinearLayout
                     android:id="@+id/rowInterval"
                     style="@style/RecurringPickerRow"
                     android:onClick="onPickInterval">
                     <TextView android:id="@+id/tvInterval" style="@style/RecurringPickerValue"
-                        android:paddingStart="0dp" android:text="Каждую неделю"/>
+                        android:paddingStart="0dp" android:text="@string/activity_recurring_operation_tv_interval_text"/>
                     <ImageView style="@style/MoreRowChevron"/>
                 </LinearLayout>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="С какой даты"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_recurring_operation_text_16"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
@@ -272,7 +272,7 @@
                     android:textStyle="bold"/>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="До какой даты"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_recurring_operation_text_17"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -292,7 +292,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Всегда"
+                        android:text="@string/activity_recurring_operation_text_18"
                         android:textColor="@color/colorTextPrimary"
                         android:textSize="14.5sp"
                         android:textStyle="bold"/>
@@ -357,7 +357,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Повтор включён"
+                    android:text="@string/activity_recurring_operation_text_19"
                     android:textColor="@color/colorTextPrimary"
                     android:textSize="14.5sp"
                     android:textStyle="bold"/>
@@ -393,7 +393,7 @@
                 android:focusable="true"
                 android:gravity="center"
                 android:onClick="onSaveClick"
-                android:text="Сохранить"
+                android:text="@string/activity_recurring_operation_text_20"
                 android:textColor="@color/colorSurface"
                 android:textSize="15sp"
                 android:textStyle="bold"/>

@@ -43,7 +43,7 @@
         android:layout_weight="1"
         android:paddingStart="12dp"
         android:paddingEnd="8dp"
-        android:text="Кошелёк"
+        android:text="@string/account_picker_item_layout_picker_name_text"
         android:textSize="15sp"
         android:textStyle="bold"
         android:textColor="@color/colorTextPrimary"/>
