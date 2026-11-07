@@ -780,6 +780,9 @@ public class TransactionActivity extends AppCompatActivity {
         // Подпись под суммой занята результатом, пока там выражение.
         updateAmountPreview();
 
+        // «⇅» между строками — только у перевода: у расхода и дохода стороны разного рода.
+        findViewById(R.id.btnSwapSlots).setVisibility(mKind == Kind.transfer ? View.VISIBLE : View.GONE);
+
         // Минус — только у расхода, и только как подпись: сама сумма всегда без знака.
         mAmountSign.setVisibility(mKind == Kind.expense ? View.VISIBLE : View.GONE);
 
@@ -819,6 +822,31 @@ public class TransactionActivity extends AppCompatActivity {
 
         updateCrossCurrencyUI();
         updateCommissionCurrency();
+    }
+
+    /**
+     * «⇅» у перевода: «Откуда» и «Куда» меняются местами. У разновалютного перевода вместе
+     * с ними меняются и суммы — каждая остаётся при своём кошельке; зачисление после этого
+     * считается введённым вручную, чтобы курс не переписал его.
+     */
+    public void onSwapSlots(View view) {
+        if (mKind != Kind.transfer) return;
+        boolean wasCross = isCrossCurrencyActive();
+        String amountFrom = mAmount.getText().toString();
+        String amountTo = mEditAmountTo.getText().toString();
+
+        AccountItem from = mAccFrom;
+        mAccFrom = mAccTo;
+        mAccTo = from;
+
+        boolean swapAmounts = wasCross && isCrossCurrencyActive() && !amountTo.isEmpty();
+        if (swapAmounts) mAmountToUserEdited = true;
+        renderSlots();
+        if (swapAmounts) {
+            mAmount.setText(amountTo);
+            setAmountToProgrammatically(amountFrom);
+        }
+        updateSaveButton();
     }
 
     private AccountOperatingItem asWallet(AccountItem item) {

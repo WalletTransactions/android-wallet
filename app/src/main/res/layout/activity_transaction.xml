@@ -371,6 +371,25 @@
                     android:textSize="15sp"/>
             </LinearLayout>
 
+            <!-- «Поменять местами» «Откуда» и «Куда» — только у перевода (TransactionActivity.onSwapSlots) -->
+            <ImageView
+                android:id="@+id/btnSwapSlots"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="-2dp"
+                android:padding="8dp"
+                android:background="@drawable/bg_icon_circle"
+                android:src="@drawable/ic_kind_transfer"
+                android:rotation="90"
+                android:tint="@color/colorPrimary"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/operation_swap_accounts"
+                android:onClick="onSwapSlots"
+                android:visibility="gone"/>
+
             <!-- Нижний слот: кошелёк, для перевода — «Куда» -->
             <LinearLayout
                 android:id="@+id/rowSlotBottom"

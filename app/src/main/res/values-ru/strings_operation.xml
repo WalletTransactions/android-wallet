@@ -45,4 +45,5 @@
     <string name="picker_sort_usage">По частоте</string>
 
     <string name="calendar_today">Сегодня</string>
+    <string name="operation_swap_accounts">Поменять «Откуда» и «Куда» местами</string>
 </resources>

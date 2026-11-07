@@ -116,6 +116,35 @@ public class TransactionSaveButtonTest {
         assertEquals("обратно в расход — снова кошелёк снизу", wallet.getDisplayName(), bottom.getText().toString());
     }
 
+    @Test
+    public void transfer_swap_button_swaps_from_and_to() {
+        android.database.sqlite.SQLiteDatabase db = Singleton.instance.getWritableDatabase(context);
+        android.database.Cursor c = db.rawQuery("SELECT _id FROM currency WHERE deleted_at IS NULL LIMIT 1", null);
+        c.moveToFirst();
+        int cur = c.getInt(0);
+        c.close();
+        int a0 = (int) com.example.wallettransactions.Data.WalletDbCRUD.InsertOperatingAccount(db, "Swap A", "", 1, cur);
+        int b = (int) com.example.wallettransactions.Data.WalletDbCRUD.InsertOperatingAccount(db, "Swap B", "", 1, cur);
+        Singleton.instance.reloadAccounts(context);
+        Intent in = prefilledExpense(100.0)
+                .putExtra(TransactionActivity.cFrom, a0)
+                .putExtra(TransactionActivity.cTo, b)
+                .putExtra(TransactionActivity.cKind, "transfer");
+        open(in);
+        TransactionActivity a = controller.get();
+        android.widget.TextView top = a.findViewById(R.id.editSlotTop);
+        android.widget.TextView bottom = a.findViewById(R.id.editSlotBottom);
+        assertEquals(View.VISIBLE, a.findViewById(R.id.btnSwapSlots).getVisibility());
+        assertEquals("Swap A", top.getText().toString());
+
+        a.onSwapSlots(null);
+        assertEquals("Swap B", top.getText().toString());
+        assertEquals("Swap A", bottom.getText().toString());
+
+        a.onKindClick(a.findViewById(R.id.kindExpense));
+        assertEquals("у расхода кнопки нет", View.GONE, a.findViewById(R.id.btnSwapSlots).getVisibility());
+    }
+
     /** Те же extras, что кладёт AiActivity для черновика из ИИ. */
     private Intent prefilledExpense(double amount) {
         AccountItem wallet = null;
