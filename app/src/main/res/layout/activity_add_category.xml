@@ -25,7 +25,7 @@
             android:orientation="vertical"
             android:padding="18dp">
 
-            <TextView style="@style/SettingsGroupLabel" android:text="Иконка"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_add_category_text_1"/>
 
             <FrameLayout
                 android:id="@+id/iconPickerContainer"
@@ -65,21 +65,21 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="Нажмите для выбора иконки"
+                        android:text="@string/activity_add_category_text_2"
                         android:textColor="@color/colorTextSecondary"
                         android:textSize="12sp"/>
                 </LinearLayout>
             </FrameLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="Название"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_add_category_text_3"/>
 
             <EditText
                 android:id="@+id/editCategoryName"
                 style="@style/FormInputPill"
-                android:hint="Например, Продукты"
+                android:hint="@string/activity_add_category_edit_category_name_hint"
                 android:inputType="textCapSentences"/>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="Комментарий"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_add_category_text_4"/>
 
             <EditText
                 android:id="@+id/editCategoryComment"
@@ -87,7 +87,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 android:background="@drawable/bg_input_pill"
-                android:hint="Необязательно"
+                android:hint="@string/activity_add_category_edit_category_comment_hint"
                 android:inputType="textMultiLine"
                 android:minHeight="64dp"
                 android:paddingLeft="18dp"
@@ -122,7 +122,7 @@
             android:focusable="true"
             android:gravity="center"
             android:onClick="btnSaveClick"
-            android:text="Сохранить"
+            android:text="@string/activity_add_category_btn_save_text"
             android:textColor="@color/colorSurface"
             android:textSize="15sp"
             android:textStyle="bold"/>

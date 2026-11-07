@@ -33,7 +33,7 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="@drawable/bg_pill_secondary"
-            android:contentDescription="Назад"
+            android:contentDescription="@string/activity_transaction_btn_up_content_description"
             android:padding="11dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_nav_back"
@@ -46,7 +46,7 @@
             android:layout_weight="1"
             android:layout_marginStart="12dp"
             android:fontFamily="@font/caprasimo"
-            android:text="Новая операция"
+            android:text="@string/activity_transaction_screen_title_text"
             android:textColor="@color/colorTextPrimary"
             android:textSize="20sp"/>
 
@@ -57,7 +57,7 @@
             android:layout_height="40dp"
             android:layout_marginStart="8dp"
             android:background="@drawable/bg_pill_secondary"
-            android:contentDescription="Удалить операцию"
+            android:contentDescription="@string/activity_transaction_btn_delete_content_description"
             android:padding="10dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_delete_forever_black_24dp"
@@ -86,7 +86,7 @@
             android:onClick="onKindClick">
 
             <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_expense" android:tint="@color/colorSurface"/>
-            <TextView style="@style/FilterChipIconLabel" android:text="Расход" android:textColor="@color/colorSurface"/>
+            <TextView style="@style/FilterChipIconLabel" android:text="@string/activity_transaction_text_1" android:textColor="@color/colorSurface"/>
         </LinearLayout>
 
         <LinearLayout
@@ -97,7 +97,7 @@
             android:onClick="onKindClick">
 
             <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_income" android:tint="@color/colorTextSecondary"/>
-            <TextView style="@style/FilterChipIconLabel" android:text="Доход"/>
+            <TextView style="@style/FilterChipIconLabel" android:text="@string/activity_transaction_text_2"/>
         </LinearLayout>
 
         <LinearLayout
@@ -109,7 +109,7 @@
             android:onClick="onKindClick">
 
             <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_transfer" android:tint="@color/colorTextSecondary"/>
-            <TextView style="@style/FilterChipIconLabel" android:text="Перевод"/>
+            <TextView style="@style/FilterChipIconLabel" android:text="@string/activity_transaction_text_3"/>
         </LinearLayout>
     </LinearLayout>
 
@@ -255,7 +255,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:gravity="center"
-                android:text="Сколько потратили"
+                android:text="@string/activity_transaction_amount_hint_text"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="12sp"
                 android:textStyle="bold"/>
@@ -281,7 +281,7 @@
                     android:id="@+id/labelAmountTo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Сумма в валюте получателя"
+                    android:text="@string/activity_transaction_label_amount_to_text"
                     android:textColor="@color/colorTextSecondary"
                     android:textSize="12sp"
                     android:textStyle="bold"/>
@@ -356,7 +356,7 @@
                     android:layout_marginStart="12dp"
                     android:background="@null"
                     android:clickable="true"
-                    android:hint="Статья расхода"
+                    android:hint="@string/activity_transaction_edit_slot_top_hint"
                     android:textColor="@color/colorTextPrimary"
                     android:textColorHint="@color/colorTextHint"
                     android:textSize="14sp"
@@ -402,7 +402,7 @@
                     android:layout_marginStart="12dp"
                     android:background="@null"
                     android:clickable="true"
-                    android:hint="Кошелёк"
+                    android:hint="@string/activity_transaction_edit_slot_bottom_hint"
                     android:textColor="@color/colorTextPrimary"
                     android:textColorHint="@color/colorTextHint"
                     android:textSize="14sp"
@@ -439,7 +439,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Комиссия за перевод"
+                    android:text="@string/activity_transaction_text_4"
                     android:textColor="@color/colorTextPrimary"
                     android:textSize="14sp"
                     android:textStyle="bold"/>
@@ -498,7 +498,7 @@
                         android:background="@null"
                         android:clickable="false"
                         android:focusable="false"
-                        android:hint="Счёт списания комиссии"
+                        android:hint="@string/activity_transaction_edit_commission_account_hint"
                         android:textColor="@color/colorTextPrimary"
                         android:textColorHint="@color/colorTextHint"
                         android:textSize="14sp"
@@ -529,7 +529,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Размер комиссии"
+                        android:text="@string/activity_transaction_text_5"
                         android:textColor="@color/colorTextSecondary"
                         android:textSize="13sp"/>
 
@@ -563,7 +563,7 @@
                     android:layout_marginLeft="18dp"
                     android:layout_marginRight="18dp"
                     android:layout_marginTop="8dp"
-                    android:text="Комиссия списывается со счёта"
+                    android:text="@string/activity_transaction_text_6"
                     android:textColor="@color/colorTextSecondary"
                     android:textSize="12sp"
                     android:textStyle="bold"/>
@@ -581,13 +581,13 @@
                         android:id="@+id/radioCommissionFromSource"
                         style="@style/PillRadioRow"
                         android:checked="true"
-                        android:text="Со счёта отправителя (откуда)"
+                        android:text="@string/activity_transaction_radio_commission_from_source_text"
                         android:onClick="onCommissionSideChanged"/>
 
                     <RadioButton
                         android:id="@+id/radioCommissionFromDest"
                         style="@style/PillRadioRow"
-                        android:text="Со счёта получателя (куда)"
+                        android:text="@string/activity_transaction_radio_commission_from_dest_text"
                         android:onClick="onCommissionSideChanged"/>
                 </RadioGroup>
 
@@ -596,7 +596,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginLeft="18dp"
                     android:layout_marginRight="18dp"
-                    android:text="Комиссия пока не сохраняется в базу — см. план работ."
+                    android:text="@string/activity_transaction_text_7"
                     android:textColor="@color/colorTextHint"
                     android:textSize="11sp"/>
             </LinearLayout>
@@ -610,7 +610,7 @@
                 android:layout_marginRight="18dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_input_pill"
-                android:hint="Комментарий"
+                android:hint="@string/activity_transaction_edit_comment_hint"
                 android:inputType="textCapSentences|textMultiLine"
                 android:maxLines="3"
                 android:minHeight="46dp"
@@ -718,7 +718,7 @@
                 style="@style/KeypadKeyIcon"
                 android:layout_width="match_parent"
                 android:layout_weight="0"
-                android:contentDescription="Стереть"
+                android:contentDescription="@string/activity_transaction_keypad_del_content_description"
                 android:src="@drawable/ic_backspace"
                 android:tag="del"
                 android:onClick="onKeypadKey"/>

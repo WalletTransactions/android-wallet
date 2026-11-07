@@ -70,7 +70,10 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
         CBR_CODES.put("CZK", "R01235"); // placeholder fallback
     }
 
-    private static final String[] RATE_SOURCES = {"Yahoo Finance", "Frankfurter (ECB)", "ЦБ РФ"};
+    /** Источники курсов по индексу SOURCE_*; имена собственные, переводится только «ЦБ РФ». */
+    private String[] rateSources() {
+        return new String[]{"Yahoo Finance", "Frankfurter (ECB)", getString(R.string.rates_source_cbr)};
+    }
     private static final int SOURCE_YAHOO = 0;
     private static final int SOURCE_FRANKFURTER = 1;
     private static final int SOURCE_CBR = 2;
@@ -219,7 +222,7 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
         // Let the user pick the source, pre-selecting a sensible default for this pair
         // (CBR is only meaningful for RUB pairs; otherwise Yahoo/Frankfurter cover it).
         downloadSourceIndex = defaultSourceIndex(pair);
-        sourceValue.setText(RATE_SOURCES[downloadSourceIndex]);
+        sourceValue.setText(rateSources()[downloadSourceIndex]);
 
         // Pre-populate dates from current filter
         downloadDateFrom.setTime(fragmentDatePeriod.getDateFrom());
@@ -251,10 +254,10 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
     /** rowSource tap target (dialog_download_rates.xml android:onClick). */
     public void onPickSource(View view) {
         new AlertDialog.Builder(this)
-                .setTitle("Источник")
-                .setItems(RATE_SOURCES, (d, which) -> {
+                .setTitle(R.string.rates_source_title)
+                .setItems(rateSources(), (d, which) -> {
                     downloadSourceIndex = which;
-                    ((TextView) downloadDlgView.findViewById(R.id.sourceValue)).setText(RATE_SOURCES[which]);
+                    ((TextView) downloadDlgView.findViewById(R.id.sourceValue)).setText(rateSources()[which]);
                 })
                 .show();
     }
@@ -279,14 +282,14 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
         final int sourceIndex = downloadSourceIndex;
 
         if (downloadDialog != null) downloadDialog.dismiss();
-        Toast.makeText(this, "Загрузка…", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.rates_loading, Toast.LENGTH_SHORT).show();
 
         new Thread(() -> {
             try {
                 Map<String, Double> rates = downloadRates(pair, dateFrom, dateTo, sourceIndex);
                 if (rates.isEmpty()) {
                     runOnUiThread(() ->
-                            Toast.makeText(this, "Нет данных за указанный период", Toast.LENGTH_LONG).show());
+                            Toast.makeText(this, R.string.rates_no_data, Toast.LENGTH_LONG).show());
                     return;
                 }
 
@@ -308,12 +311,12 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
 
                 final int inserted = count;
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "Готово: загружено " + inserted + " записей", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getResources().getQuantityString(R.plurals.rates_loaded, inserted, inserted), Toast.LENGTH_SHORT).show();
                     reloadAll();
                 });
 
             } catch (Exception ex) {
-                runOnUiThread(() -> Toast.makeText(this, "Ошибка: " + ex.getMessage(), Toast.LENGTH_LONG).show());
+                runOnUiThread(() -> Toast.makeText(this, getString(R.string.error_with_reason, ex.getMessage()), Toast.LENGTH_LONG).show());
             }
         }).start();
     }
@@ -385,7 +388,7 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
     /** Returns map {yyyy-MM-dd → rate}, downloaded from the user-selected source. */
     private Map<String, Double> downloadRates(CurrencyPair pair, Date dateFrom, Date dateTo, int sourceIndex)
             throws Exception {
-        if (pair == null) throw new Exception("Валютная пара не найдена");
+        if (pair == null) throw new Exception(getString(R.string.rates_error_no_pair));
 
         String base = pair.getBaseCurrency().getIso();
         String quote = pair.getQuoteCurrency().getIso();
@@ -393,7 +396,7 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
         switch (sourceIndex) {
             case SOURCE_CBR:
                 if (!"RUB".equals(base) && !"RUB".equals(quote))
-                    throw new Exception("ЦБ РФ котирует только пары с RUB");
+                    throw new Exception(getString(R.string.rates_error_cbr_rub_only));
                 return downloadFromCBR(base, quote, dateFrom, dateTo);
             case SOURCE_FRANKFURTER:
                 return downloadFromFrankfurter(base, quote, dateFrom, dateTo);
@@ -434,7 +437,7 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
 
         String cbrCode = CBR_CODES.get(foreign);
         if (cbrCode == null)
-            throw new Exception("Валюта " + foreign + " не поддерживается ЦБ РФ");
+            throw new Exception(getString(R.string.rates_error_cbr_unsupported, foreign));
 
         SimpleDateFormat cbrFmt = new SimpleDateFormat("dd/MM/yyyy", Locale.US);
         SimpleDateFormat dbFmt  = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
@@ -510,7 +513,7 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
         if (result.isEmpty())
             result = fetchYahooSymbol(quote + base + "=X", period1, period2, true);
         if (result.isEmpty())
-            throw new Exception("Yahoo Finance не располагает котировками " + base + "/" + quote);
+            throw new Exception(getString(R.string.rates_error_yahoo_none, base + "/" + quote));
         return result;
     }
 
@@ -635,7 +638,7 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
             rateDelta.setText("");
             chartFrom.setText("");
             chartTo.setText("");
-            chartMinMax.setText("нет курсов за период");
+            chartMinMax.setText(R.string.rates_chart_empty);
             return;
         }
 
@@ -662,7 +665,7 @@ public class CurrencyPairRateListActivity extends AppCompatActivity {
         Date oldest = items.get(items.size() - 1).first;
         chartFrom.setText(String.format("%1$td.%1$tm.%1$ty", oldest));
         chartTo.setText(String.format("%1$td.%1$tm.%1$ty", latest.first));
-        chartMinMax.setText("мин " + format.format(min) + " · макс " + format.format(max));
+        chartMinMax.setText(getString(R.string.rates_chart_min_max, format.format(min), format.format(max)));
     }
 
     private void setupToolbarTitle() {

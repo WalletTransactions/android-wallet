@@ -72,8 +72,8 @@ public class AiActivity extends AppCompatActivity {
     private static final String STATE_SYNC_STATUS = "ai.syncStatus";
     private static final String STATE_SYNC_MESSAGE = "ai.syncMessage";
 
-    private static final String LOGIN_TEXT = "Войдите, чтобы пользоваться ИИ";
-    private static final String NO_NETWORK_TEXT = "Нет связи с сервером";
+    private String loginText() { return getString(R.string.more_ai_sign_in); }
+    private String noNetworkText() { return getString(R.string.more_ai_no_server); }
 
     private EditText editText;
     private TextView tvCounter;
@@ -132,7 +132,7 @@ public class AiActivity extends AppCompatActivity {
         if (savedInstanceState != null) restoreDraft(savedInstanceState);
         takeSharedText(getIntent());
         sessionMissing = !AiApiClient.hasSession(this);
-        if (sessionMissing) showMessage(LOGIN_TEXT, true);
+        if (sessionMissing) showMessage(loginText(), true);
         updateInputState();
     }
 
@@ -171,12 +171,12 @@ public class AiActivity extends AppCompatActivity {
                 && !editText.getText().toString().trim().isEmpty());
     }
 
-    private static Intent speechIntent() {
+    private Intent speechIntent() {
         return new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU")
                 .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-                .putExtra(RecognizerIntent.EXTRA_PROMPT, "Скажите трату");
+                .putExtra(RecognizerIntent.EXTRA_PROMPT, getString(R.string.ai_speech_prompt));
     }
 
     public void onMic(View view) {
@@ -217,7 +217,7 @@ public class AiActivity extends AppCompatActivity {
         messageBox.setVisibility(View.GONE);
         tvDone.setVisibility(View.GONE);
         tvWarning.setVisibility(View.GONE);
-        showProgress("Синхронизирую…");
+        showProgress(getString(R.string.ai_syncing));
         updateInputState();
 
         final Context app = getApplicationContext();
@@ -225,7 +225,7 @@ public class AiActivity extends AppCompatActivity {
             SyncRunner.Outcome sync = SyncRunner.runOnceShared(app, SYNC_WAIT_MS);
             if (gen != generation) return;
             if (sync.status == SyncRunner.Status.NO_SESSION || sync.status == SyncRunner.Status.NEEDS_RELINK) {
-                runOnUiThread(() -> finishWithMessage(gen, LOGIN_TEXT, true));
+                runOnUiThread(() -> finishWithMessage(gen, loginText(), true));
                 return;
             }
             runOnUiThread(() -> {
@@ -235,7 +235,7 @@ public class AiActivity extends AppCompatActivity {
                     tvWarning.setText(AiTexts.syncWarning(sync));
                     tvWarning.setVisibility(View.VISIBLE);
                 }
-                tvProgress.setText("Разбираю…");
+                tvProgress.setText(R.string.ai_parsing);
             });
             parse(gen, app, text);
         }).start();
@@ -246,11 +246,11 @@ public class AiActivity extends AppCompatActivity {
         try {
             AiApiClient.SessionState session = AiApiClient.refreshSession(app);
             if (session == AiApiClient.SessionState.NO_SESSION || session == AiApiClient.SessionState.NEEDS_RELINK) {
-                runOnUiThread(() -> finishWithMessage(gen, LOGIN_TEXT, true));
+                runOnUiThread(() -> finishWithMessage(gen, loginText(), true));
                 return;
             }
             if (session == AiApiClient.SessionState.NETWORK_ERROR) {
-                runOnUiThread(() -> finishWithMessage(gen, NO_NETWORK_TEXT, true));
+                runOnUiThread(() -> finishWithMessage(gen, noNetworkText(), true));
                 return;
             }
             AiApiClient client = AiApiClient.create(app);
@@ -266,20 +266,20 @@ public class AiActivity extends AppCompatActivity {
         } catch (AiApiClient.HttpError e) {
             runOnUiThread(() -> finishWithMessage(gen, httpErrorText(e), e.code != 429 && e.code != 404));
         } catch (IOException e) {
-            runOnUiThread(() -> finishWithMessage(gen, NO_NETWORK_TEXT, true));
+            runOnUiThread(() -> finishWithMessage(gen, noNetworkText(), true));
         } catch (JSONException e) {
-            runOnUiThread(() -> finishWithMessage(gen, "Некорректный ответ сервера", true));
+            runOnUiThread(() -> finishWithMessage(gen, getString(R.string.ai_bad_response), true));
         }
     }
 
-    private static String httpErrorText(AiApiClient.HttpError e) {
+    private String httpErrorText(AiApiClient.HttpError e) {
         switch (e.code) {
-            case 429: return "ИИ занят, попробуйте через минуту";
-            case 503: return "ИИ сейчас выключен";
-            case 404: return "Результат потерялся, попробуйте ещё раз";
-            case 401: return LOGIN_TEXT;
-            case 403: return "Нет доступа к ИИ для этого аккаунта";
-            default: return "Сервер ответил ошибкой (HTTP " + e.code + ")";
+            case 429: return getString(R.string.ai_busy);
+            case 503: return getString(R.string.more_ai_off);
+            case 404: return getString(R.string.ai_result_lost);
+            case 401: return loginText();
+            case 403: return getString(R.string.ai_http_forbidden);
+            default: return getString(R.string.ai_http_error, e.code);
         }
     }
 
@@ -297,7 +297,7 @@ public class AiActivity extends AppCompatActivity {
         endBusy();
         if ("cancelled".equals(job.status)) return;
         if ("failed".equals(job.status) || job.result == null) {
-            showMessage("ИИ не ответил вовремя", true);
+            showMessage(getString(R.string.ai_timeout), true);
             return;
         }
         ParseExpenseResult r = job.result;
@@ -306,7 +306,7 @@ public class AiActivity extends AppCompatActivity {
         } else if (ParseExpenseResult.REJECTED.equals(r.outcome)) {
             showMessage(AiTexts.rejected(r.reasons), true);
         } else {
-            showMessage("Не нашёл тут трату", true);
+            showMessage(getString(R.string.ai_no_expense), true);
         }
     }
 
@@ -440,7 +440,7 @@ public class AiActivity extends AppCompatActivity {
         if (busy || draft == null) return;
         busy = true;
         final int gen = generation;
-        showProgress("Синхронизирую…");
+        showProgress(getString(R.string.ai_syncing));
         updateInputState();
         final Context app = getApplicationContext();
         new Thread(() -> {
@@ -499,9 +499,9 @@ public class AiActivity extends AppCompatActivity {
             if (wallet != null) AppSettings.setAiLastWalletUuid(this, serverUuid(db, wallet.getId()));
             String symbol = wallet instanceof AccountOperatingItem
                     ? " " + ((AccountOperatingItem) wallet).getCurrency().getSymbol() : "";
-            return "Записано: " + amount.toPlainString() + symbol
-                    + " · " + (other != null ? other.getName() : "")
-                    + " · " + (wallet != null ? wallet.getName() : "");
+            return getString(R.string.ai_written, amount.toPlainString() + symbol
+                    + " · " + (other != null ? other.getDisplayName() : "")
+                    + " · " + (wallet != null ? wallet.getDisplayName() : ""));
         } finally {
             c.close();
         }

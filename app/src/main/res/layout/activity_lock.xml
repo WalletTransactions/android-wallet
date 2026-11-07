@@ -59,7 +59,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="18dp"
         android:padding="8dp"
-        android:text="Забыли код?"
+        android:text="@string/activity_lock_lock_forgot_text"
         android:textSize="14sp"
         android:textStyle="bold"
         android:textColor="@color/colorPrimary"

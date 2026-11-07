@@ -202,7 +202,7 @@ public class SyncRunnerTest {
         SyncRunner.Outcome outcome = SyncRunner.runSteps(steps, new SyncLog());
         assertEquals(java.util.Arrays.asList("connectionPull", "connect"), steps.order);
         assertEquals(SyncRunner.Status.AWAITING_DECISION, outcome.status);
-        assertEquals(SyncRunner.AWAITING_DECISION_MESSAGE, outcome.errorMessage);
+        assertEquals(SyncRunner.awaitingDecisionMessage(), outcome.errorMessage);
     }
 
     @Test

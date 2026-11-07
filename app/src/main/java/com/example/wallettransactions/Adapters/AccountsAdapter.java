@@ -110,7 +110,7 @@ public class AccountsAdapter extends ArrayAdapter<AccountItem> {
             textEquivalent.setVisibility(View.GONE);
         }
 
-        tvName.setText(account.getName());
+        tvName.setText(account.getDisplayName());
         tvDescr.setText(account.getComment());
         img.setImageBitmap(account.getIcon().getBitmap());
 

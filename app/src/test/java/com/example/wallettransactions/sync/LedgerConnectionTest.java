@@ -314,9 +314,9 @@ public class LedgerConnectionTest {
                 LedgerConnection.questionText(2));
         assertEquals("Удалить 7 операций с телефона? Отменить это нельзя.", LedgerConnection.confirmDiscardText(7));
         assertEquals("Удалить 1 операцию с телефона? Отменить это нельзя.", LedgerConnection.confirmDiscardText(1));
-        assertEquals("операций", LedgerConnection.plural(11, "операция", "операции", "операций"));
-        assertEquals("операция", LedgerConnection.plural(21, "операция", "операции", "операций"));
-        assertEquals("операции", LedgerConnection.plural(34, "операция", "операции", "операций"));
+        assertEquals("Удалить 11 операций с телефона? Отменить это нельзя.", LedgerConnection.confirmDiscardText(11));
+        assertEquals("Удалить 21 операцию с телефона? Отменить это нельзя.", LedgerConnection.confirmDiscardText(21));
+        assertEquals("Удалить 34 операции с телефона? Отменить это нельзя.", LedgerConnection.confirmDiscardText(34));
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

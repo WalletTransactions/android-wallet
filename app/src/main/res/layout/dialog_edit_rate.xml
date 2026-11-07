@@ -15,14 +15,14 @@
         android:id="@+id/dialogTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Добавить курс"
+        android:text="@string/dialog_edit_rate_dialog_title_text"
         android:textSize="21sp"
         android:textStyle="bold"
         android:fontFamily="@font/caprasimo"
         android:textColor="@color/colorTextPrimary"
         android:layout_marginBottom="16dp"/>
 
-    <TextView style="@style/SettingsGroupLabel" android:text="ДАТА"/>
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/dialog_edit_rate_text_1"/>
     <!-- Дата не набирается с клавиатуры: тап открывает наш календарь
          (CalendarPicker), поэтому поле не фокусируется и без курсора. -->
     <EditText
@@ -33,14 +33,14 @@
         android:clickable="true"
         android:cursorVisible="false"
         android:focusable="false"
-        android:hint="дд.мм.гггг"
+        android:hint="@string/dialog_edit_rate_input_date_hint"
         android:paddingLeft="18dp"
         android:paddingRight="18dp"
         android:textSize="14sp"
         android:textStyle="bold"
         android:layout_marginBottom="16dp"/>
 
-    <TextView style="@style/SettingsGroupLabel" android:text="КУРС"/>
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/dialog_edit_rate_text_2"/>
     <EditText
         android:id="@+id/inputRate"
         android:layout_width="match_parent"
@@ -67,7 +67,7 @@
             android:layout_marginEnd="9dp"
             android:background="@drawable/bg_pill_outline_expanse"
             android:gravity="center"
-            android:text="Удалить"
+            android:text="@string/dialog_edit_rate_btn_delete_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/colorexpanse"
@@ -81,7 +81,7 @@
             android:layout_marginEnd="9dp"
             android:background="@drawable/bg_pill_outline"
             android:gravity="center"
-            android:text="Отмена"
+            android:text="@string/dialog_edit_rate_btn_cancel_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/colorTextPrimary"
@@ -94,7 +94,7 @@
             android:layout_weight="1"
             android:background="@drawable/bg_pill_primary"
             android:gravity="center"
-            android:text="Сохранить"
+            android:text="@string/dialog_edit_rate_btn_save_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/colorSurface"

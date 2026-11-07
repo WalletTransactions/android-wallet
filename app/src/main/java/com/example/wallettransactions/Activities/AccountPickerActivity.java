@@ -116,7 +116,7 @@ public class AccountPickerActivity extends AppCompatActivity {
     /** Справочник «Кошельки и категории»: оба списка, переключатель, правка по тапу. */
     public static Intent buildCatalogIntent(Context ctx) {
         Intent intent = new Intent(ctx, AccountPickerActivity.class);
-        intent.putExtra(cTitle, "Кошельки и категории");
+        intent.putExtra(cTitle, ctx.getString(R.string.picker_catalog_title));
         intent.putExtra(cAccountSelectedType, cSelectedTypeALL);
         intent.putExtra(cCatalogMode, true);
         return intent;
@@ -230,8 +230,8 @@ public class AccountPickerActivity extends AppCompatActivity {
     /** Тот же выбор, что на табе «Кошельки»: справочник — второе место, где счета заводят. */
     public void onAddAccount(View view) {
         new AlertDialog.Builder(this)
-                .setTitle("Добавить")
-                .setItems(new String[]{"Кошелёк", "Категория"}, (d, which) -> {
+                .setTitle(R.string.picker_add_title)
+                .setItems(new String[]{getString(R.string.picker_add_wallet), getString(R.string.picker_add_category)}, (d, which) -> {
                     if (which == 0) {
                         startActivityForResult(new Intent(this, AddWalletActivity.class), REQUEST_ADD_WALLET);
                     } else {
@@ -288,7 +288,7 @@ public class AccountPickerActivity extends AppCompatActivity {
 
         mVisibleRows.clear();
         for (Row row : (mShowWallets ? mWalletRows : mCategoryRows)) {
-            if (query.isEmpty() || row.account.getName().toLowerCase().contains(query))
+            if (query.isEmpty() || row.account.getDisplayName().toLowerCase().contains(query))
                 mVisibleRows.add(row);
         }
 
@@ -361,7 +361,7 @@ public class AccountPickerActivity extends AppCompatActivity {
     }
 
     private void paintSortButton() {
-        mBtnSort.setText("⇅ " + currentSort().getTitle());
+        mBtnSort.setText("⇅ " + currentSort().getTitle(this));
     }
 
     private void sortRows() {
@@ -377,7 +377,7 @@ public class AccountPickerActivity extends AppCompatActivity {
     }
 
     private Comparator<Row> comparator(PickerSort sort) {
-        Comparator<Row> byName = (a, b) -> a.account.getName().compareToIgnoreCase(b.account.getName());
+        Comparator<Row> byName = (a, b) -> a.account.getDisplayName().compareToIgnoreCase(b.account.getDisplayName());
 
         switch (sort) {
             case BALANCE:
@@ -489,7 +489,7 @@ public class AccountPickerActivity extends AppCompatActivity {
             }
 
             boolean archived = Boolean.TRUE.equals(row.account.getIsArchived());
-            tvName.setText(archived ? row.account.getName() + " · в архиве" : row.account.getName());
+            tvName.setText(archived ? convertView.getContext().getString(R.string.picker_archived_name, row.account.getDisplayName()) : row.account.getDisplayName());
 
             int nameColor = R.color.colorTextPrimary;
             if (archived) nameColor = R.color.colorTextHint;

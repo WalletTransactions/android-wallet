@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English: operation window, account picker, calendar (openspec android-i18n, task 3.1). -->
+<resources>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+
+    <string name="operation_title_new">New operation</string>
+    <string name="operation_title_edit">Edit operation</string>
+    <string name="operation_delete_title">Delete operation</string>
+    <string name="operation_delete_question">Delete this operation?</string>
+    <string name="operation_delete_commission">Delete the fee</string>
+    <string name="operation_delete_whole">Delete the whole operation</string>
+
+    <string name="operation_slot_income_category">Income category</string>
+    <string name="operation_slot_expense_category">Expense category</string>
+    <string name="operation_slot_wallet">Wallet</string>
+    <string name="operation_slot_from">From</string>
+    <string name="operation_slot_to">To</string>
+    <string name="operation_amount_income">How much did you get</string>
+    <string name="operation_amount_expense">How much did you spend</string>
+    <string name="operation_amount_transfer">How much are you transferring</string>
+
+    <string name="operation_error_no_source">Choose the account to take money from</string>
+    <string name="operation_error_no_target">Choose the account to put money to</string>
+    <string name="operation_error_two_categories">An operation can\'t go between two categories — at least one side must be a wallet</string>
+    <string name="operation_error_amount_to">Enter the amount in the receiving account\'s currency</string>
+    <string name="operation_error_amount_zero">The amount must be greater than zero</string>
+    <string name="operation_error_update">Couldn\'t save the changes</string>
+    <string name="operation_error_no_account">No account was returned</string>
+    <string name="operation_commission_account">Account to charge the fee</string>
+    <string name="operation_commission_amount">fee %1$s</string>
+    <string name="operation_rate_not_found">No rate for %1$s — enter the amount yourself</string>
+    <string name="operation_rate_info">Rate on %1$s: 1 %2$s = %3$s %4$s</string>
+
+    <string name="picker_catalog_title">Wallets and categories</string>
+    <string name="picker_add_title">Add</string>
+    <string name="picker_add_wallet">Wallet</string>
+    <string name="picker_add_category">Category</string>
+    <string name="picker_archived_name">%1$s · archived</string>
+    <string name="picker_selected_of">%1$d of %2$d</string>
+    <string name="picker_select_all">Select all</string>
+    <string name="picker_unselect_all">Clear all</string>
+    <string name="picker_sort_name">Alphabetical</string>
+    <string name="picker_sort_balance">By balance</string>
+    <string name="picker_sort_usage">By frequency</string>
+
+    <string name="calendar_today">Today</string>
+</resources>

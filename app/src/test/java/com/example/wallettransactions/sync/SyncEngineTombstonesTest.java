@@ -392,7 +392,7 @@ public class SyncEngineTombstonesTest {
             SyncEngine.pullAll(db, api, context, new SyncLog());
             fail("ожидалась ошибка на втором сбросе");
         } catch (JSONException expected) {
-            assertTrue(expected.getMessage().contains("повторно сбросил"));
+            assertTrue(expected.getMessage().contains("reset the cursor twice"));
         }
         // 40 -> сброс, 0 -> страница до 13, 13 -> второй сброс: стоп.
         assertEquals(3, api.calls.size());

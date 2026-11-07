@@ -188,12 +188,12 @@ public class StatementImportLogicTest {
 
     @Test
     public void texts_fromSpec() {
-        assertEquals("Файл больше 5 МБ — разбейте выписку по месяцам", AiTexts.STATEMENT_FILE_TOO_BIG);
+        assertEquals("Файл больше 5 МБ — разбейте выписку по месяцам", AiTexts.statementFileTooBig());
         assertEquals("В PDF нет текста — это скан. Нужна выписка с текстовым слоем", AiTexts.statementFailure("no_text"));
         assertEquals("В файле не нашлось операций", AiTexts.statementFailure("no_operations"));
         assertEquals("Уже разбирается другая выписка", AiTexts.statementHttpError(429, "import_in_progress"));
         assertEquals("ИИ сейчас выключен", AiTexts.statementHttpError(503, "unavailable"));
-        assertEquals("Нет связи с сервером — список недоступен", AiTexts.STATEMENT_NO_NETWORK);
+        assertEquals("Нет связи с сервером — список недоступен", AiTexts.statementNoNetwork());
         assertEquals("Разбираю выписку: 2 из 6", AiTexts.statementProgress(progress(null)));
         assertEquals("Разбор на паузе: ИИ недоступен", AiTexts.statementProgress(progress("2026-10-24T10:00:00Z")));
         assertEquals("Добавлена", AiTexts.statementRowState(Kind.ADDED, null));

@@ -30,7 +30,7 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="@drawable/bg_pill_secondary"
-            android:contentDescription="Назад"
+            android:contentDescription="@string/activity_account_picker_btn_up_content_description"
             android:padding="11dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_nav_back"
@@ -43,7 +43,7 @@
             android:layout_weight="1"
             android:layout_marginStart="12dp"
             android:fontFamily="@font/caprasimo"
-            android:text="Выберите счёт"
+            android:text="@string/activity_account_picker_picker_title_text"
             android:textColor="@color/colorTextPrimary"
             android:textSize="20sp"/>
 
@@ -80,14 +80,14 @@
         <TextView
             android:id="@+id/kindCategories"
             style="@style/FilterChip"
-            android:text="Категории"
+            android:text="@string/activity_account_picker_kind_categories_text"
             android:onClick="onKindFilterClick"/>
 
         <TextView
             android:id="@+id/kindWallets"
             style="@style/FilterChip"
             android:layout_marginEnd="0dp"
-            android:text="Кошельки"
+            android:text="@string/activity_account_picker_kind_wallets_text"
             android:onClick="onKindFilterClick"/>
     </LinearLayout>
 
@@ -99,7 +99,7 @@
         android:layout_marginRight="18dp"
         android:layout_marginBottom="10dp"
         android:background="@drawable/bg_input_pill"
-        android:hint="Поиск по названию"
+        android:hint="@string/activity_account_picker_search_input_hint"
         android:inputType="text"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
@@ -112,7 +112,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:gravity="center"
-        android:text="Ничего не найдено"
+        android:text="@string/activity_account_picker_empty_state_text"
         android:textColor="@color/colorTextHint"
         android:textSize="13sp"
         android:visibility="gone"/>
@@ -143,7 +143,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="+ Добавить кошелёк или категорию"
+            android:text="@string/activity_account_picker_text_1"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/colorexpanse"/>

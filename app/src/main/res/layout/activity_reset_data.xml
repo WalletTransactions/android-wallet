@@ -33,11 +33,11 @@
                 android:layout_marginBottom="18dp"
                 android:background="@drawable/bg_card"
                 android:padding="16dp"
-                android:text="Действие необратимо. Отметьте, что удалить, и нажмите «Удалить» внизу."
+                android:text="@string/activity_reset_data_text_1"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="14sp"/>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="Что удалить"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_reset_data_text_2"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -51,7 +51,7 @@
                     android:id="@+id/chkOperations"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Операции и счета (кроме системных категорий)"
+                    android:text="@string/activity_reset_data_chk_operations_text"
                     android:textColor="@color/colorTextPrimary"
                     android:textSize="15sp"
                     android:buttonTint="@color/colorPrimary"
@@ -61,7 +61,7 @@
                     android:id="@+id/chkIcons"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Иконки"
+                    android:text="@string/activity_reset_data_chk_icons_text"
                     android:textColor="@color/colorTextPrimary"
                     android:textSize="15sp"
                     android:buttonTint="@color/colorPrimary"
@@ -71,13 +71,13 @@
                     android:id="@+id/chkCurrencyPairs"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Валютные пары и курсы"
+                    android:text="@string/activity_reset_data_chk_currency_pairs_text"
                     android:textColor="@color/colorTextPrimary"
                     android:textSize="15sp"
                     android:buttonTint="@color/colorPrimary"/>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="После удаления"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_reset_data_text_3"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -91,7 +91,7 @@
                     android:id="@+id/chkReseed"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Создать дефолтный набор для отмеченного выше (счета, иконки, пары и курсы)"
+                    android:text="@string/activity_reset_data_chk_reseed_text"
                     android:textColor="@color/colorTextPrimary"
                     android:textSize="15sp"
                     android:buttonTint="@color/colorPrimary"/>
@@ -105,7 +105,7 @@
                 android:background="@drawable/bg_pill_outline_expanse"
                 android:onClick="onConfirmReset"
                 android:stateListAnimator="@null"
-                android:text="Удалить"
+                android:text="@string/activity_reset_data_btn_confirm_reset_text"
                 android:textAllCaps="false"
                 android:textColor="@color/colorexpanse"
                 android:textSize="15sp"
@@ -132,7 +132,7 @@
                 android:layout_marginTop="28dp" android:layout_marginBottom="18dp"
                 android:background="@color/colorDivider"/>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="Полная очистка базы"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_reset_data_text_4"/>
 
             <TextView
                 android:layout_width="match_parent"
@@ -140,7 +140,7 @@
                 android:layout_marginBottom="14dp"
                 android:background="@drawable/bg_card"
                 android:padding="16dp"
-                android:text="Физически стирает все таблицы базы данных (а не помечает записи удалёнными). Изменение НЕ синхронизируется с сервером — при следующей синхронизации данные могут вернуться обратно с сервера."
+                android:text="@string/activity_reset_data_text_5"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="14sp"/>
 
@@ -157,7 +157,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:text="Создать дефолтный набор после очистки (как при первой установке)"
+                    android:text="@string/activity_reset_data_chk_hard_reseed_text"
                     android:textColor="@color/colorTextPrimary"
                     android:textSize="15sp"
                     android:buttonTint="@color/colorPrimary"/>
@@ -170,7 +170,7 @@
                 android:background="@drawable/bg_pill_outline_expanse"
                 android:onClick="onHardWipe"
                 android:stateListAnimator="@null"
-                android:text="Удалить ВСЁ безвозвратно"
+                android:text="@string/activity_reset_data_btn_hard_wipe_text"
                 android:textAllCaps="false"
                 android:textColor="@color/colorexpanse"
                 android:textSize="15sp"

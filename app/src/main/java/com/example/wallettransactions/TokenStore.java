@@ -44,7 +44,7 @@ public final class TokenStore {
             // повреждённый keystore и т.п.) — без него безопасно хранить
             // токены всё равно нельзя, поэтому не пытаемся притвориться,
             // что ничего не произошло.
-            throw new RuntimeException("Не удалось открыть зашифрованное хранилище токенов", e);
+            throw new RuntimeException("cannot open the encrypted token store", e);
         }
     }
 

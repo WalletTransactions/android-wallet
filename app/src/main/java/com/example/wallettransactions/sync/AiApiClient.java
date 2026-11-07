@@ -259,7 +259,7 @@ public final class AiApiClient {
                 throw new HttpError(what, response.code(), json.optString("error", ""),
                         json.optString("import_id", ""));
             }
-            if (body.isEmpty()) throw new JSONException(what + ": пустой ответ");
+            if (body.isEmpty()) throw new JSONException(what + ": empty response");
             return new JSONObject(body);
         }
     }

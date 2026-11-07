@@ -27,7 +27,7 @@
         android:paddingRight="18dp"
         android:paddingTop="14dp"
         android:paddingBottom="14dp"
-        android:text="Двигайте изображение пальцем, щипком меняйте масштаб. Всё, что за кругом, станет прозрачным."
+        android:text="@string/activity_icon_crop_crop_hint_text"
         android:textColor="@color/colorTextSecondary"
         android:textSize="13sp"/>
 
@@ -49,7 +49,7 @@
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:text="Отмена"
+            android:text="@string/activity_icon_crop_btn_cancel_text"
             android:textColor="@color/colorTextPrimary"
             android:textSize="14sp"
             android:textStyle="bold"
@@ -64,7 +64,7 @@
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:text="Готово"
+            android:text="@string/activity_icon_crop_btn_apply_text"
             android:textColor="@color/colorSurface"
             android:textSize="14sp"
             android:textStyle="bold"

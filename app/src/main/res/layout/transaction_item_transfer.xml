@@ -91,7 +91,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Mastercard → Тинькофф"
+                    android:text="@string/transaction_item_transfer_transfer_route_text"
                     android:textSize="13.5sp"
                     android:textStyle="bold"
                     android:textColor="@color/colorTextPrimary"

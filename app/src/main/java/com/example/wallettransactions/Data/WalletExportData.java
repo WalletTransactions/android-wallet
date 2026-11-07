@@ -33,15 +33,15 @@ public class WalletExportData {
     /** Единственный источник правды для формы полей — см. её же в {@link WalletImportData}. */
     private static JSONObject buildSchemaComment() throws JSONException {
         JSONObject c = new JSONObject();
-        c.put("_", "Разделы опциональны, но присутствуют всегда (даже пустыми) — ниже форма их элементов.");
+        c.put("_", "Разделы опциональны, но присутствуют всегда (даже пустыми) — ниже форма их элементов."); // not UI: описание формата внутри файла
         c.put("accounts", "{\"name\": str, \"comment\"?: str (=name), \"icon\"?: str (=\"unknown\"), " +
                 "\"currency\"?: {\"name\"?: str (=iso), \"iso\": str, \"icon\"?: str}} " +
-                "— без \"currency\" это счёт-категория (без своего баланса).");
-        c.put("currency_pairs", "{\"symbol\": str, \"base\": str (ISO валюты), \"quote\": str (ISO валюты)}");
-        c.put("rates", "{\"symbol\": str (как в currency_pairs), \"date\": \"YYYY-MM-DD\", \"rate\": number}");
-        c.put("operations", "{\"date\": \"YYYY-MM-DD\", \"from\": str (имя счёта), \"to\": str (имя счёта), " +
+                "— без \"currency\" это счёт-категория (без своего баланса)."); // not UI
+        c.put("currency_pairs", "{\"symbol\": str, \"base\": str (ISO валюты), \"quote\": str (ISO валюты)}"); // not UI
+        c.put("rates", "{\"symbol\": str (как в currency_pairs), \"date\": \"YYYY-MM-DD\", \"rate\": number}"); // not UI
+        c.put("operations", "{\"date\": \"YYYY-MM-DD\", \"from\": str (имя счёта), \"to\": str (имя счёта), " + // not UI
                 "\"amount\": number, \"comment\"?: str, " +
-                "\"leg\"?: {\"amount\": number} — вторая нога разновалютного перевода, " +
+                "\"leg\"?: {\"amount\": number} — вторая нога разновалютного перевода, " + // not UI
                 "\"commission\"?: {\"amount\": number, \"from\"?: \"source\"|\"dest\" (=\"source\"), " +
                 "\"category\"?: str (=\"Transfer commission\")}}");
         return c;
@@ -196,7 +196,7 @@ public class WalletExportData {
         // main_id -> [(link_id, type), ...] — см. OperationLinkEntry.COLUMN_TYPE
         // (0=LinkType.LEG, 1=LinkType.COMMISSION, OperationItem.LinkType).
         Map<Long, List<long[]>> linksByMain = new HashMap<>();
-        Set<Long> linkedIds = new HashSet<>(); // проводки-"ноги"/комиссии — не самостоятельные записи
+        Set<Long> linkedIds = new HashSet<>(); // проводки-«ноги»/комиссии — не самостоятельные записи
         Cursor lc = db.rawQuery(
                 "SELECT " + WalletContract.OperationLinkEntry.COLUMN_MAIN_ID + "," +
                         " " + WalletContract.OperationLinkEntry.COLUMN_LINK_ID + "," +

@@ -6,31 +6,31 @@ package com.example.wallettransactions;
  * остатка у категории нет, поэтому {@link #BALANCE} ей не предлагается.
  */
 public enum PickerSort {
-    NAME("По алфавиту"),
+    NAME(R.string.picker_sort_name),
     /** По эквиваленту остатка, крупные сверху — как в отчёте «Кошельки». */
-    BALANCE("По остатку"),
+    BALANCE(R.string.picker_sort_balance),
     /**
      * По числу операций. Для категории считаются сначала операции с кошельком из
      * второго слота операции, ниже — общая частота (WalletDbLoader.LoadAccountUsage).
      */
-    USAGE("По частоте");
+    USAGE(R.string.picker_sort_usage);
 
     public static final PickerSort[] WALLET_MODES = {BALANCE, USAGE, NAME};
     public static final PickerSort[] CATEGORY_MODES = {USAGE, NAME};
 
-    private final String mTitle;
+    private final int mTitle;
 
-    PickerSort(String title) {
+    PickerSort(int title) {
         mTitle = title;
     }
 
-    public String getTitle() {
-        return mTitle;
+    public String getTitle(android.content.Context context) {
+        return context.getString(mTitle);
     }
 
-    public static String[] titles(PickerSort[] modes) {
+    public static String[] titles(android.content.Context context, PickerSort[] modes) {
         String[] result = new String[modes.length];
-        for (int i = 0; i < modes.length; i++) result[i] = modes[i].getTitle();
+        for (int i = 0; i < modes.length; i++) result[i] = modes[i].getTitle(context);
         return result;
     }
 

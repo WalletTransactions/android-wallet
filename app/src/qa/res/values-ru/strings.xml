@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Вариант qa (openspec android-flavors): название в лаунчере, чтобы не спутать с prod.
+     «QA» в начале — лаунчер обрезает длинные подписи с конца. -->
+<resources>
+    <string name="app_name">QA Посчитай и сбереги</string>
+</resources>

@@ -1,5 +1,8 @@
 package com.example.wallettransactions.Data;
 
+import com.example.wallettransactions.R;
+import com.example.wallettransactions.Texts;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -39,19 +42,18 @@ public class WalletImportData {
 
         private static final int MAX_REPORTED = 10;
 
-        /** @param rowName что считаем, напр. «операций» */
-        public String describe(String rowName) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Импортировано ").append(imported).append(" ").append(rowName);
+        /** @param countPlural что считаем — {@code <plurals>} «Импортировано N операций» и т.п. */
+        public String describe(int countPlural) {
+            StringBuilder sb = new StringBuilder(Texts.plural(countPlural, imported));
 
             if (skipped.isEmpty())
                 return sb.toString();
 
-            sb.append(", пропущено ").append(skipped.size()).append(":\n");
+            sb.append(Texts.get(R.string.import_skipped, skipped.size())).append("\n");
             for (int i = 0; i < Math.min(skipped.size(), MAX_REPORTED); i++)
                 sb.append("• ").append(skipped.get(i)).append("\n");
             if (skipped.size() > MAX_REPORTED)
-                sb.append("…и ещё ").append(skipped.size() - MAX_REPORTED);
+                sb.append(Texts.get(R.string.import_and_more, skipped.size() - MAX_REPORTED));
 
             return sb.toString();
         }
@@ -66,20 +68,17 @@ public class WalletImportData {
 
     private static String headerMismatchMessage(String expected, String actual) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Неверный заголовок файла.\n");
-        sb.append("Ожидается: ").append(expected).append("\n");
-        sb.append("В файле:   ").append(actual).append("\n");
+        sb.append(Texts.get(R.string.import_header_wrong)).append("\n");
+        sb.append(Texts.get(R.string.import_header_expected, expected)).append("\n");
+        sb.append(Texts.get(R.string.import_header_actual, actual)).append("\n");
         if (actual != null && !actual.isEmpty()) {
             char first = actual.charAt(0);
             if (first != expected.charAt(0)) {
-                sb.append(String.format(
-                        "Первый символ в файле: U+%04X (код %d) — возможно BOM или другой разделитель\n",
-                        (int) first, (int) first));
+                sb.append(Texts.get(R.string.import_header_first_char, (int) first, (int) first)).append("\n");
             }
             // Detect semicolon delimiter
             if (actual.contains(";") && !actual.contains(",")) {
-                sb.append("Похоже, файл использует ';' как разделитель (региональные настройки Excel).\n");
-                sb.append("Откройте файл в Excel и сохраните как CSV UTF-8 (с разделителями-запятыми).");
+                sb.append(Texts.get(R.string.import_header_semicolon));
             }
         }
         return sb.toString();
@@ -149,9 +148,9 @@ public class WalletImportData {
         }
 
         if (missing.length() == 0)
-            return line + " — строка не вставлена";
+            return Texts.get(R.string.import_row_not_inserted, line);
 
-        return line + " — нет счёта: " + missing;
+        return Texts.get(R.string.import_row_no_account, line, missing);
     }
 
 
@@ -478,7 +477,7 @@ public class WalletImportData {
             missing.append(accToName);
         }
         if (missing.length() > 0)
-            return dateStr + " " + accFromName + "→" + accToName + " — нет счёта: " + missing;
+            return Texts.get(R.string.import_row_no_account, dateStr + " " + accFromName + "→" + accToName, missing);
 
         JSONObject leg = obj.optJSONObject("leg");
         long mainId;
@@ -490,17 +489,17 @@ public class WalletImportData {
             int bridgeId = WalletDbCRUD.GetOrCreateSystemCategory(db,
                     AccountItem.SystemKind.TRANSFER.getValue(),
                     AccountItem.SYSTEM_TRANSFER_NAME, AccountItem.SYSTEM_TRANSFER_NAME);
-            if (bridgeId <= 0) return dateStr + " — не удалось завести категорию Transfer";
+            if (bridgeId <= 0) return Texts.get(R.string.import_row_no_transfer, dateStr);
 
             mainId = WalletDbCRUD.InsertOperation(db, dtStr, fromId, bridgeId, amount, comment);
             long legId = WalletDbCRUD.InsertOperation(db, dtStr, bridgeId, toId, leg.getDouble("amount"), comment);
             if (mainId <= 0 || legId <= 0)
-                return dateStr + " " + accFromName + "→" + accToName + " — нога не вставлена";
+                return Texts.get(R.string.import_row_leg_not_inserted, dateStr + " " + accFromName + "→" + accToName);
             WalletDbCRUD.LinkOperations(db, mainId, legId, OperationItem.LinkType.LEG);
         } else {
             mainId = WalletDbCRUD.InsertOperation(db, dtStr, fromId, toId, amount, comment);
             if (mainId <= 0)
-                return dateStr + " " + accFromName + "→" + accToName + " — строка не вставлена";
+                return Texts.get(R.string.import_row_not_inserted, dateStr + " " + accFromName + "→" + accToName);
         }
 
         JSONObject commission = obj.optJSONObject("commission");
@@ -516,11 +515,11 @@ public class WalletImportData {
                     ? WalletDbCRUD.GetOrCreateSystemCategory(db, AccountItem.SystemKind.TRANSFER_COMMISSION.getValue(),
                             AccountItem.SYSTEM_COMMISSION_NAME, AccountItem.SYSTEM_TRANSFER_NAME)
                     : WalletDbCRUD.GetOrCreateCategory(db, categoryName, AccountItem.SYSTEM_TRANSFER_NAME);
-            if (categoryId <= 0) return dateStr + " — не удалось завести категорию комиссии";
+            if (categoryId <= 0) return Texts.get(R.string.import_row_no_commission_category, dateStr);
 
             long commissionId = WalletDbCRUD.InsertOperation(db, dtStr, sideId, categoryId,
                     commission.getDouble("amount"), comment);
-            if (commissionId <= 0) return dateStr + " — комиссия не вставлена";
+            if (commissionId <= 0) return Texts.get(R.string.import_row_commission_not_inserted, dateStr);
             WalletDbCRUD.LinkOperations(db, mainId, commissionId, OperationItem.LinkType.COMMISSION);
         }
 
@@ -556,7 +555,7 @@ public class WalletImportData {
 
         int affected = WalletFillData.InsertCurrencyPairRate(db, symbol, dt, rate);
         if (affected == 0)
-            return symbol + " " + dateStr + " — нет валютной пары с symbol=" + symbol;
+            return Texts.get(R.string.import_row_no_pair, symbol + " " + dateStr, symbol);
         return null;
     }
 

@@ -1,5 +1,6 @@
 package com.example.wallettransactions.DataItems.Operations;
 
+import com.example.wallettransactions.R;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,15 +24,16 @@ public class RecurringOperation {
 
     /** Значения хранятся в {@code recurring_operation.frequency} — код существующего менять нельзя. */
     public enum Frequency {
-        DAILY(0, "Ежедневно"),
-        WEEKLY(1, "Еженедельно"),
-        MONTHLY(2, "Ежемесячно"),
-        YEARLY(3, "Ежегодно");
+        DAILY(0, R.string.recurring_daily),
+        WEEKLY(1, R.string.recurring_weekly),
+        MONTHLY(2, R.string.recurring_monthly),
+        YEARLY(3, R.string.recurring_yearly);
 
         private final int value;
-        private final String title;
+        /** Ресурс подписи (openspec android-i18n): TextView.setText(int) и Menu.add принимают его. */
+        private final int title;
 
-        Frequency(int value, String title) {
+        Frequency(int value, int title) {
             this.value = value;
             this.title = title;
         }
@@ -40,7 +42,7 @@ public class RecurringOperation {
             return value;
         }
 
-        public String getTitle() {
+        public int getTitle() {
             return title;
         }
 
@@ -188,42 +190,43 @@ public class RecurringOperation {
     }
 
     /** Человекочитаемое описание расписания: «Каждые 2 недели: пн, ср», «Ежемесячно, 15-го». */
-    public String describeSchedule() {
+    public String describeSchedule(android.content.Context c) {
         switch (frequency) {
             case DAILY:
-                return "Ежедневно";
+                return c.getString(R.string.recurring_daily);
             case WEEKLY: {
                 StringBuilder days = new StringBuilder();
                 int mask = startDate != null ? effectiveWeekDays() : weekDays;
                 for (DayOfWeek d : DayOfWeek.values()) {
                     if ((mask & dayBit(d)) == 0) continue;
                     if (days.length() > 0) days.append(", ");
-                    days.append(shortDayName(d));
+                    days.append(shortDayName(c, d));
                 }
-                String head = interval <= 1 ? "Еженедельно" : "Каждые " + interval + " нед.";
+                String head = interval <= 1 ? c.getString(R.string.recurring_weekly)
+                        : c.getResources().getQuantityString(R.plurals.recurring_every_weeks, interval, interval);
                 return days.length() > 0 ? head + ": " + days : head;
             }
             case MONTHLY:
                 return startDate != null
-                        ? "Ежемесячно, " + startDate.getDayOfMonth() + "-го"
-                        : "Ежемесячно";
+                        ? c.getString(R.string.recurring_monthly_on, startDate.getDayOfMonth())
+                        : c.getString(R.string.recurring_monthly);
             case YEARLY:
             default:
                 return startDate != null
-                        ? String.format("Ежегодно, %02d.%02d", startDate.getDayOfMonth(), startDate.getMonthValue())
-                        : "Ежегодно";
+                        ? c.getString(R.string.recurring_yearly_on, startDate.getDayOfMonth(), startDate.getMonthValue())
+                        : c.getString(R.string.recurring_yearly);
         }
     }
 
-    public static String shortDayName(DayOfWeek day) {
+    public static String shortDayName(android.content.Context c, DayOfWeek day) {
         switch (day) {
-            case MONDAY:    return "пн";
-            case TUESDAY:   return "вт";
-            case WEDNESDAY: return "ср";
-            case THURSDAY:  return "чт";
-            case FRIDAY:    return "пт";
-            case SATURDAY:  return "сб";
-            default:        return "вс";
+            case MONDAY:    return c.getString(R.string.day_short_mon);
+            case TUESDAY:   return c.getString(R.string.day_short_tue);
+            case WEDNESDAY: return c.getString(R.string.day_short_wed);
+            case THURSDAY:  return c.getString(R.string.day_short_thu);
+            case FRIDAY:    return c.getString(R.string.day_short_fri);
+            case SATURDAY:  return c.getString(R.string.day_short_sat);
+            default:        return c.getString(R.string.day_short_sun);
         }
     }
 }

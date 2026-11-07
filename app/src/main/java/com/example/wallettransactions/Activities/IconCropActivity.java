@@ -47,7 +47,7 @@ public class IconCropActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_icon_crop);
 
-        ((TextView) findViewById(R.id.screenTitle)).setText("Обрезка иконки");
+        ((TextView) findViewById(R.id.screenTitle)).setText(R.string.icon_crop_title);
         cropView = findViewById(R.id.cropView);
 
         outputSize = getIntent().getIntExtra(EXTRA_OUTPUT_SIZE, 256);
@@ -55,14 +55,14 @@ public class IconCropActivity extends AppCompatActivity {
         if (source == null) source = getIntent().getData();
 
         if (source == null) {
-            failWith("Изображение не передано");
+            failWith(getString(R.string.icon_crop_no_image));
             return;
         }
 
         try {
             cropView.setImage(decodeForPreview(source));
         } catch (Exception | OutOfMemoryError e) {
-            failWith("Не удалось открыть изображение: " + e.getMessage());
+            failWith(getString(R.string.icon_crop_open_failed, e.getMessage()));
         }
     }
 
@@ -77,7 +77,7 @@ public class IconCropActivity extends AppCompatActivity {
             if (probe != null) probe.close();
         }
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0)
-            throw new IllegalArgumentException("формат не распознан");
+            throw new IllegalArgumentException(getString(R.string.icon_crop_unknown_format));
 
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
@@ -93,7 +93,7 @@ public class IconCropActivity extends AppCompatActivity {
         } finally {
             if (in != null) in.close();
         }
-        if (bitmap == null) throw new IllegalArgumentException("декодер вернул пусто");
+        if (bitmap == null) throw new IllegalArgumentException(getString(R.string.icon_crop_decode_empty));
 
         return applyExifOrientation(uri, bitmap);
     }
@@ -134,7 +134,7 @@ public class IconCropActivity extends AppCompatActivity {
 
     public void onApplyCrop(View view) {
         if (!cropView.hasImage()) {
-            failWith("Изображение не загружено");
+            failWith(getString(R.string.icon_crop_not_loaded));
             return;
         }
 
@@ -155,7 +155,7 @@ public class IconCropActivity extends AppCompatActivity {
             setResult(RESULT_OK, new Intent().putExtra(EXTRA_RESULT_FILE, out.getAbsolutePath()));
             finish();
         } catch (Exception | OutOfMemoryError e) {
-            failWith("Не удалось обрезать: " + e.getMessage());
+            failWith(getString(R.string.icon_crop_failed, e.getMessage()));
         }
     }
 

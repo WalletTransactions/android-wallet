@@ -50,7 +50,7 @@ public class ExportActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_export);
 
-        ((TextView) findViewById(R.id.screenTitle)).setText("Экспорт базы");
+        ((TextView) findViewById(R.id.screenTitle)).setText(R.string.export_title);
 
         btnExportDb     = findViewById(R.id.btnExportDb);
         btnExportJson   = findViewById(R.id.btnExportJson);
@@ -74,23 +74,23 @@ public class ExportActivity extends AppCompatActivity {
         btnExportDb.setEnabled(false);
         btnShare.setEnabled(false);
         progressExport.setVisibility(View.VISIBLE);
-        tvExportStatus.setText("Экспортирование…");
+        tvExportStatus.setText(R.string.export_busy);
 
         new Thread(() -> {
             try {
                 File exportedFile = exportDatabase();
                 lastExportedFile = exportedFile;
-                String result = "Готово!\n" + exportedFile.getAbsolutePath();
+                String result = getString(R.string.export_done_path, exportedFile.getAbsolutePath());
 
                 runOnUiThread(() -> {
                     progressExport.setVisibility(View.GONE);
                     tvExportStatus.setText(result);
                     btnExportDb.setEnabled(true);
                     btnShare.setEnabled(true);
-                    Toast.makeText(ExportActivity.this, "Экспорт успешно завершен", Toast.LENGTH_LONG).show();
+                    Toast.makeText(ExportActivity.this, R.string.export_db_done, Toast.LENGTH_LONG).show();
                 });
             } catch (Exception e) {
-                String error = "Ошибка: " + e.getMessage();
+                String error = getString(R.string.error_with_reason, e.getMessage());
                 runOnUiThread(() -> {
                     progressExport.setVisibility(View.GONE);
                     tvExportStatus.setText(error);
@@ -112,13 +112,13 @@ public class ExportActivity extends AppCompatActivity {
         btnExportJson.setEnabled(false);
         btnShare.setEnabled(false);
         progressExport.setVisibility(View.VISIBLE);
-        tvExportStatus.setText("Экспортирование…");
+        tvExportStatus.setText(R.string.export_busy);
 
         new Thread(() -> {
             try {
                 File exportedFile = exportJson();
                 lastExportedFile = exportedFile;
-                String result = "Готово!\n" + exportedFile.getAbsolutePath();
+                String result = getString(R.string.export_done_path, exportedFile.getAbsolutePath());
 
                 runOnUiThread(() -> {
                     progressExport.setVisibility(View.GONE);
@@ -126,10 +126,10 @@ public class ExportActivity extends AppCompatActivity {
                     btnExportDb.setEnabled(true);
                     btnExportJson.setEnabled(true);
                     btnShare.setEnabled(true);
-                    Toast.makeText(ExportActivity.this, "Экспорт в JSON завершён", Toast.LENGTH_LONG).show();
+                    Toast.makeText(ExportActivity.this, R.string.export_json_done, Toast.LENGTH_LONG).show();
                 });
             } catch (Exception e) {
-                String error = "Ошибка: " + e.getMessage();
+                String error = getString(R.string.error_with_reason, e.getMessage());
                 runOnUiThread(() -> {
                     progressExport.setVisibility(View.GONE);
                     tvExportStatus.setText(error);
@@ -143,7 +143,7 @@ public class ExportActivity extends AppCompatActivity {
 
     public void ShareDatabaseClick(View view) {
         if (lastExportedFile == null || !lastExportedFile.exists()) {
-            Toast.makeText(this, "Сначала экспортируйте БД", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.export_first, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -161,7 +161,7 @@ public class ExportActivity extends AppCompatActivity {
         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
         com.example.wallettransactions.security.AppLock.allowNextLeave();
-        startActivity(Intent.createChooser(shareIntent, isJson ? "Поделиться JSON-экспортом" : "Поделиться файлом БД"));
+        startActivity(Intent.createChooser(shareIntent, getString(isJson ? R.string.export_share_json : R.string.export_share_db)));
     }
 
     private File getDownloadsDir() throws IOException {
@@ -175,7 +175,7 @@ public class ExportActivity extends AppCompatActivity {
         }
 
         if (downloadsDir == null || (!downloadsDir.exists() && !downloadsDir.mkdirs())) {
-            throw new IOException("Не удалось создать папку Downloads");
+            throw new IOException(getString(R.string.export_no_downloads));
         }
         return downloadsDir;
     }
@@ -188,7 +188,7 @@ public class ExportActivity extends AppCompatActivity {
         // Source: app's database file
         File dbFile = getDatabasePath("wallet.db");
         if (!dbFile.exists()) {
-            throw new IOException("Файл базы данных не найден");
+            throw new IOException(getString(R.string.export_no_db_file));
         }
 
         File exportFile = new File(getDownloadsDir(), "wallet_android_" + timestamp() + ".db");

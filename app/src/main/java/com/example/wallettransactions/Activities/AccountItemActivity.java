@@ -91,13 +91,13 @@ public class AccountItemActivity extends AppCompatActivity {
         checkIsArchive.setChecked(account.getIsArchived());
 
         if (account instanceof AccountOperatingItem) {
-            setScreenTitle("Кошелёк");
+            setScreenTitle(getString(R.string.account_title_wallet));
             selectedCurrency = ((AccountOperatingItem) account).getCurrency();
             originalCurrencyId = selectedCurrency.getId();
             operatingGroup.setVisibility(View.VISIBLE);
             refreshCurrencyUI();
         } else {
-            setScreenTitle("Категория");
+            setScreenTitle(getString(R.string.account_title_category));
             operatingGroup.setVisibility(View.GONE);
         }
 
@@ -111,10 +111,8 @@ public class AccountItemActivity extends AppCompatActivity {
             // считать удалением: правило обошли бы в один шаг.
             editAccName.setEnabled(false);
             editComment.setHint(account.isSystemCommission()
-                    ? "Системная категория — на неё по умолчанию уходит комиссия за перевод, "
-                            + "поэтому её нельзя удалить или переименовать"
-                    : "Системная категория — переводы между разными валютами "
-                            + "проходят через неё, поэтому её нельзя удалить или переименовать");
+                    ? R.string.account_system_commission_hint
+                    : R.string.account_system_transfer_hint);
         }
 
         // Save is disabled until something changes
@@ -154,7 +152,8 @@ public class AccountItemActivity extends AppCompatActivity {
 
     /** Справочник иконок вместо галереи — см. AddCategoryActivity.pickIconClick. */
     public void pickIconClick(View view) {
-        String title = account instanceof AccountOperatingItem ? "Иконка кошелька" : "Иконка категории";
+        String title = getString(account instanceof AccountOperatingItem
+                ? R.string.icon_title_wallet : R.string.icon_title_category);
         startActivityForResult(
                 IconPickerActivity.buildIntent(this, title, Icon.IconType.CATEGORY, selectedIconId),
                 REQUEST_PICK_ICON);
@@ -168,7 +167,7 @@ public class AccountItemActivity extends AppCompatActivity {
             items[i] = c.getIso() + "  —  " + c.getName();
         }
         new AlertDialog.Builder(this)
-                .setTitle("Выберите валюту")
+                .setTitle(R.string.account_choose_currency)
                 .setItems(items, (dialog, which) -> {
                     selectedCurrency = currencies.get(which);
                     refreshCurrencyUI();
@@ -191,7 +190,7 @@ public class AccountItemActivity extends AppCompatActivity {
 
     public void btnSaveClick(View view) {
         String name = editAccName.getText().toString().trim();
-        if (name.isEmpty()) { editAccName.setError("Введите название"); return; }
+        if (name.isEmpty()) { editAccName.setError(getString(R.string.account_error_name_empty)); return; }
 
         // Поле имени у системного счёта отключено, но исходное имя всё равно
         // навязываем: правило опознаёт системность именно по нему.
@@ -199,7 +198,7 @@ public class AccountItemActivity extends AppCompatActivity {
 
         SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
         if (WalletDbCRUD.IsAccountNameTaken(db, name, account.getId())) {
-            editAccName.setError("Такое название уже есть");
+            editAccName.setError(getString(R.string.account_error_name_taken));
             return;
         }
 
@@ -224,10 +223,10 @@ public class AccountItemActivity extends AppCompatActivity {
      */
     public void btnDeleteClick(View view) {
         new AlertDialog.Builder(this)
-                .setTitle("Удалить")
-                .setMessage("Удалить «" + account.getName() + "»?")
-                .setPositiveButton("Удалить", (d, w) -> deleteAccount())
-                .setNegativeButton("Отмена", null)
+                .setTitle(R.string.action_delete)
+                .setMessage(getString(R.string.account_delete_question, account.getDisplayName()))
+                .setPositiveButton(R.string.action_delete, (d, w) -> deleteAccount())
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 
@@ -248,10 +247,9 @@ public class AccountItemActivity extends AppCompatActivity {
     private String deleteRefusedMessage(WalletDbCRUD.DeleteAccountResult result) {
         // Системным бывает только счёт из двух зашитых по имени, а это категории.
         if (result == WalletDbCRUD.DeleteAccountResult.systemAccount) {
-            return "«" + account.getName() + "» — системная категория, её нельзя удалить";
+            return getString(R.string.account_delete_refused_system, account.getDisplayName());
         }
-        return "По «" + account.getName() + "» есть операции — удалить нельзя, "
-                + "иначе они пропадут вместе с ней";
+        return getString(R.string.account_delete_refused_operations, account.getDisplayName());
     }
 
     private void refreshCurrencyUI() {

@@ -76,7 +76,7 @@ public class CurrencyPairListAdapter extends ArrayAdapter<CurrencyPair> {
         List<Pair<Date, Double>> rates = WalletDbLoader.LoadCurrencyPairRateList(db, cp.getSymbol());
 
         if (rates.isEmpty()) {
-            holder.pairDate.setText("Нет курса");
+            holder.pairDate.setText(R.string.pair_no_rate);
             holder.pairRate.setText("—");
             holder.pairDelta.setText("");
         } else {

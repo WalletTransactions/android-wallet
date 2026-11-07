@@ -99,8 +99,8 @@ public class IconEditDialog {
         View btnDelete = view.findViewById(R.id.btnDelete);
 
         ((TextView) view.findViewById(R.id.dialogTitle))
-                .setText(isNew ? "Добавить иконку" : "Редактировать иконку");
-        btnSelect.setText(isNew ? "Выбрать изображение" : "Изменить изображение");
+                .setText(isNew ? R.string.icon_dialog_add : R.string.icon_dialog_edit);
+        btnSelect.setText(isNew ? R.string.icon_dialog_pick_image : R.string.icon_dialog_change_image);
         btnDelete.setVisibility(isNew ? View.GONE : View.VISIBLE);
 
         if (!isNew) {
@@ -141,7 +141,7 @@ public class IconEditDialog {
      * картинки, «Удалить» и «Сохранить» нет.
      */
     private void showReadOnly(View view) {
-        ((TextView) view.findViewById(R.id.dialogTitle)).setText("Иконка");
+        ((TextView) view.findViewById(R.id.dialogTitle)).setText(R.string.icon_dialog_title);
         TextView name = view.findViewById(R.id.txtIconNameReadOnly);
         name.setText(icon.getName());
         name.setVisibility(View.VISIBLE);
@@ -152,7 +152,7 @@ public class IconEditDialog {
         }
         imgPreview.setClickable(false);
         TextView close = view.findViewById(R.id.btnCancel);
-        close.setText("Закрыть");
+        close.setText(R.string.action_close);
         ((android.widget.LinearLayout.LayoutParams) close.getLayoutParams()).setMarginEnd(0);
     }
 
@@ -207,8 +207,7 @@ public class IconEditDialog {
             com.example.wallettransactions.security.AppLock.allowNextLeave();
             ((Activity) context).startActivityForResult(intent, REQUEST_GALLERY);
         } catch (Exception e) {
-            Toast.makeText(context, "Не найдено приложение для выбора изображения",
-                    Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, R.string.icon_dialog_no_gallery, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -252,7 +251,7 @@ public class IconEditDialog {
         try {
             Bitmap cropped = BitmapFactory.decodeFile(file.getAbsolutePath());
             if (cropped == null) {
-                Toast.makeText(context, "Обрезка не читается", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, R.string.icon_dialog_crop_unreadable, Toast.LENGTH_SHORT).show();
                 return;
             }
             selectedBitmap = cropped;
@@ -272,7 +271,7 @@ public class IconEditDialog {
     private void saveNewIcon() {
         String name = edtName.getText().toString().trim();
         if (name.isEmpty() || selectedBitmap == null) {
-            Toast.makeText(context, "Заполните все поля и выберите иконку", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, R.string.icon_dialog_fill_all, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -299,17 +298,17 @@ public class IconEditDialog {
                 Icon newIcon = new Icon((int) id, name, selectedBitmap, selectedType);
                 listener.onIconSaved(newIcon);
                 if (dialog != null) dialog.dismiss();
-                Toast.makeText(context, "Иконка добавлена", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, R.string.icon_dialog_added, Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
-            Toast.makeText(context, "Ошибка при сохранении: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, context.getString(R.string.icon_dialog_save_failed, e.getMessage()), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void updateIcon() {
         String name = edtName.getText().toString().trim();
         if (name.isEmpty()) {
-            Toast.makeText(context, "Введите имя иконки", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, R.string.icon_dialog_name_empty, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -335,9 +334,9 @@ public class IconEditDialog {
                     selectedBitmap != null ? selectedBitmap : icon.getBitmap(), selectedType);
             listener.onIconSaved(updated);
             if (dialog != null) dialog.dismiss();
-            Toast.makeText(context, "Иконка обновлена", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, R.string.icon_dialog_updated, Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Toast.makeText(context, "Ошибка при обновлении: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, context.getString(R.string.icon_dialog_update_failed, e.getMessage()), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -347,9 +346,9 @@ public class IconEditDialog {
         // включает PRAGMA foreign_keys = ON, и delete ниже упадёт с
         // SQLiteConstraintException, если иконка ещё где-то используется.
         new AlertDialog.Builder(context)
-                .setTitle("Удалить иконку?")
+                .setTitle(R.string.icon_dialog_delete_question)
                 .setMessage(icon.getName())
-                .setPositiveButton("Удалить", (d, w) -> {
+                .setPositiveButton(R.string.action_delete, (d, w) -> {
                     SQLiteDatabase dbWrite = new WalletDbHelper(context).getWritableDatabase();
                     try {
                         dbWrite.delete(WalletContract.IconEntry.TABLE_NAME,
@@ -361,16 +360,14 @@ public class IconEditDialog {
 
                         listener.onIconDeleted(icon.getId());
                         if (dialog != null) dialog.dismiss();
-                        Toast.makeText(context, "Иконка удалена", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, R.string.icon_dialog_deleted, Toast.LENGTH_SHORT).show();
                     } catch (SQLiteConstraintException e) {
-                        Toast.makeText(context,
-                                "Иконка используется в счетах или валютах. Удаление невозможно",
-                                Toast.LENGTH_LONG).show();
+                        Toast.makeText(context, R.string.icon_dialog_in_use, Toast.LENGTH_LONG).show();
                     } finally {
                         dbWrite.close();
                     }
                 })
-                .setNegativeButton("Отмена", null)
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 }

@@ -29,6 +29,9 @@ else
     exit 1
 fi
 
+echo "==> Зашитые тексты интерфейса (openspec android-i18n)"
+bash "$SCRIPT_DIR/check_hardcoded_text.sh"
+
 echo "==> Образ сборки (кэшируется — пересобирается, только если правился Containerfile)"
 "$ENGINE" build -t "$IMAGE" -f "$SCRIPT_DIR/Containerfile" "$SCRIPT_DIR"
 

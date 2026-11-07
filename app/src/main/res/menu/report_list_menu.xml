@@ -3,7 +3,7 @@
 
 
     <item  android:id="@+id/action_change_currency_eq"
-           android:title="Валюта отображения"
+           android:title="@string/report_list_menu_action_change_currency_eq_title"
     >
         <menu>
             <group android:checkableBehavior="single" android:id="@+id/checkgroup">

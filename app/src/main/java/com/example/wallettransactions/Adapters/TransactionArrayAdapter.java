@@ -288,8 +288,8 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
         }
 
         if (tran.LinkedCommission != null) {
-            holder.tvCommission.setText("комиссия "
-                    + formatAmount(tran.LinkedCommission.Amount, tran.LinkedCommission.getCurrency()));
+            holder.tvCommission.setText(getContext().getString(R.string.operation_commission_amount,
+                    formatAmount(tran.LinkedCommission.Amount, tran.LinkedCommission.getCurrency())));
             holder.tvCommission.setVisibility(View.VISIBLE);
         } else {
             holder.tvCommission.setVisibility(View.GONE);
@@ -393,7 +393,7 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
 
         holder.imgFrom.setImageBitmap(tran.AccFrom.getIcon().getBitmap());
         holder.imgTo.setImageBitmap(accTo.getIcon().getBitmap());
-        holder.tvRoute.setText(tran.AccFrom.getName() + " → " + accTo.getName());
+        holder.tvRoute.setText(tran.AccFrom.getDisplayName() + " → " + accTo.getDisplayName());
 
         // Пустой комментарий занимал бы целую строку высоты ни за чем.
         boolean hasComment = tran.Comment != null && !tran.Comment.trim().isEmpty();
@@ -413,8 +413,8 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
         }
 
         if (tran.LinkedCommission != null) {
-            holder.tvFee.setText("комиссия "
-                    + formatAmount(tran.LinkedCommission.Amount, tran.LinkedCommission.getCurrency()));
+            holder.tvFee.setText(getContext().getString(R.string.operation_commission_amount,
+                    formatAmount(tran.LinkedCommission.Amount, tran.LinkedCommission.getCurrency())));
             holder.tvFee.setVisibility(View.VISIBLE);
         } else {
             holder.tvFee.setVisibility(View.GONE);
@@ -464,7 +464,7 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
         if (tran.isOperatingAccountFrom()) {
             AdapterUtils.setAmountExpanseText(holder.tvAmount, tran.Amount, tran.getCurrency());
 
-            holder.tvAccountToName.setText(tran.AccTo.getName());
+            holder.tvAccountToName.setText(tran.AccTo.getDisplayName());
             holder.imgAcc.setImageBitmap(tran.AccTo.getIcon().getBitmap());
             holder.imgFrom.setImageBitmap(tran.AccFrom.getIcon().getBitmap());
         }
@@ -472,7 +472,7 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
         {
             AdapterUtils.setAmountDepositText(holder.tvAmount, tran.Amount, tran.getCurrency());
 
-            holder.tvAccountToName.setText(tran.AccFrom.getName());
+            holder.tvAccountToName.setText(tran.AccFrom.getDisplayName());
             holder.imgAcc.setImageBitmap(tran.AccFrom.getIcon().getBitmap());
             holder.imgFrom.setImageBitmap(tran.AccTo.getIcon().getBitmap());
         }

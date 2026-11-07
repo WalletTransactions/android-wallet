@@ -19,7 +19,7 @@
         android:paddingRight="18dp"
         android:paddingTop="10dp"
         android:paddingBottom="12dp"
-        android:text="Ещё"
+        android:text="@string/activity_more_title_text"
         android:textSize="25sp"
         android:textStyle="bold"
         android:fontFamily="@font/caprasimo"
@@ -49,14 +49,14 @@
 
                 <LinearLayout android:id="@+id/rowAccounts" style="@style/MoreRow" android:onClick="onMoreAccounts">
                     <TextView style="@style/MoreRowGlyph" android:text="▤"/>
-                    <TextView style="@style/MoreRowLabel" android:text="Кошельки и категории"/>
+                    <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_1"/>
                     <ImageView style="@style/MoreRowChevron"/>
                 </LinearLayout>
                 <View style="@style/MoreRowDivider"/>
 
                 <LinearLayout android:id="@+id/rowRecurring" style="@style/MoreRow" android:onClick="onMoreRecurring">
                     <TextView style="@style/MoreRowGlyph" android:text="↻"/>
-                    <TextView style="@style/MoreRowLabel" android:text="Повторяющиеся операции"/>
+                    <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_2"/>
                     <ImageView style="@style/MoreRowChevron"/>
                 </LinearLayout>
             </LinearLayout>
@@ -83,7 +83,7 @@
                             style="@style/MoreRowLabel"
                             android:layout_width="match_parent"
                             android:layout_weight="0"
-                            android:text="ИИ"/>
+                            android:text="@string/activity_more_text_3"/>
                         <TextView
                             android:id="@+id/rowAiHint"
                             android:layout_width="match_parent"
@@ -91,7 +91,7 @@
                             android:paddingStart="13dp"
                             android:textSize="12.5sp"
                             android:textColor="@color/colorTextSecondary"
-                            android:text="Трата своими словами"/>
+                            android:text="@string/activity_more_row_ai_hint_text"/>
                     </LinearLayout>
                     <ImageView style="@style/MoreRowChevron"/>
                 </LinearLayout>
@@ -109,7 +109,7 @@
 
                 <LinearLayout android:id="@+id/rowIntegrations" style="@style/MoreRow" android:onClick="onMoreIntegrations">
                     <TextView style="@style/MoreRowGlyph" android:text="⇄"/>
-                    <TextView style="@style/MoreRowLabel" android:text="Интеграции"/>
+                    <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_4"/>
                     <ImageView style="@style/MoreRowChevron"/>
                 </LinearLayout>
             </LinearLayout>
@@ -126,28 +126,28 @@
                      Последняя строка группы без нижнего разделителя. -->
                 <LinearLayout android:id="@+id/rowRates" style="@style/MoreRow" android:onClick="onMoreRates">
                     <TextView style="@style/MoreRowGlyph" android:text="⇅"/>
-                    <TextView style="@style/MoreRowLabel" android:text="Курсы валют"/>
+                    <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_5"/>
                     <ImageView style="@style/MoreRowChevron"/>
                 </LinearLayout>
                 <View style="@style/MoreRowDivider"/>
 
                 <LinearLayout android:id="@+id/rowIcons" style="@style/MoreRow" android:onClick="onMoreIcons">
                     <TextView style="@style/MoreRowGlyph" android:text="▦"/>
-                    <TextView style="@style/MoreRowLabel" android:text="Иконки и категории"/>
+                    <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_6"/>
                     <ImageView style="@style/MoreRowChevron"/>
                 </LinearLayout>
                 <View style="@style/MoreRowDivider"/>
 
                 <LinearLayout android:id="@+id/rowImport" style="@style/MoreRow" android:onClick="onMoreImport">
                     <TextView style="@style/MoreRowGlyph" android:text="↧"/>
-                    <TextView style="@style/MoreRowLabel" android:text="Импорт из файла"/>
+                    <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_7"/>
                     <ImageView style="@style/MoreRowChevron"/>
                 </LinearLayout>
                 <View style="@style/MoreRowDivider"/>
 
                 <LinearLayout android:id="@+id/rowSettings" style="@style/MoreRow" android:onClick="onMoreSettings">
                     <TextView style="@style/MoreRowGlyph" android:text="⛭"/>
-                    <TextView style="@style/MoreRowLabel" android:text="Настройки"/>
+                    <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_8"/>
                     <ImageView style="@style/MoreRowChevron"/>
                 </LinearLayout>
             </LinearLayout>

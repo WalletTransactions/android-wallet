@@ -73,7 +73,7 @@ public class CurrencyFormActivity extends AppCompatActivity {
             Currency currency = Singleton.instance.getCurrencyList(this).getCurrencyById(currencyId);
             if (currency != null) fillFrom(currency);
         } else {
-            ((TextView) findViewById(R.id.formTitle)).setText("Новая валюта");
+            ((TextView) findViewById(R.id.formTitle)).setText(R.string.currency_new);
             iconId = Singleton.instance.getIconList(this).getUnknownIcon().getId();
             showInEquivalent = EquivalentCurrencies.defaultForNew(
                     Singleton.instance.getCurrencyList(this));
@@ -144,7 +144,7 @@ public class CurrencyFormActivity extends AppCompatActivity {
 
     public void onPickIcon(View view) {
         startActivityForResult(
-                IconPickerActivity.buildIntent(this, "Иконка валюты", Icon.IconType.FLAG, iconId),
+                IconPickerActivity.buildIntent(this, getString(R.string.currency_icon_title), Icon.IconType.FLAG, iconId),
                 REQUEST_PICK_ICON);
     }
 
@@ -163,12 +163,12 @@ public class CurrencyFormActivity extends AppCompatActivity {
         String iso = editIso.getText().toString().trim().toUpperCase(Locale.ROOT);
         String symbol = editSymbol.getText().toString().trim();
 
-        if (name.isEmpty()) { editName.setError("Введите название"); return; }
-        if (iso.isEmpty()) { editIso.setError("Введите ISO-код"); return; }
+        if (name.isEmpty()) { editName.setError(getString(R.string.account_error_name_empty)); return; }
+        if (iso.isEmpty()) { editIso.setError(getString(R.string.currency_error_iso_empty)); return; }
 
         Currency clash = Singleton.instance.getCurrencyList(this).getCurrencyByISO(iso);
         if (clash != null && clash.getId() != currencyId) {
-            editIso.setError("Валюта с таким кодом уже есть");
+            editIso.setError(getString(R.string.currency_error_iso_taken));
             return;
         }
 
@@ -179,7 +179,7 @@ public class CurrencyFormActivity extends AppCompatActivity {
         SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
         // Код валюты из живой пары не меняется (design D8) — пара осталась бы со старым символом.
         if (WalletDbCRUD.IsIsoChangeBlocked(db, currencyId, iso)) {
-            editIso.setError("Код используется в валютной паре");
+            editIso.setError(getString(R.string.currency_error_iso_in_pair));
             return;
         }
 
@@ -193,7 +193,7 @@ public class CurrencyFormActivity extends AppCompatActivity {
         }
 
         if (!ok) {
-            Toast.makeText(this, "Не удалось сохранить валюту", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.currency_error_save, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -217,17 +217,15 @@ public class CurrencyFormActivity extends AppCompatActivity {
         SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
 
         if (WalletDbCRUD.IsCurrencyInUse(db, currencyId)) {
-            Toast.makeText(this,
-                    "Валюта используется кошельком или валютной парой — сначала уберите её оттуда",
-                    Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.currency_error_in_use, Toast.LENGTH_LONG).show();
             return;
         }
 
         new AlertDialog.Builder(this)
-                .setTitle("Удалить валюту?")
+                .setTitle(R.string.currency_delete_question)
                 .setMessage(editName.getText().toString())
-                .setNegativeButton("Отмена", null)
-                .setPositiveButton("Удалить", (d, w) -> {
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.action_delete, (d, w) -> {
                     WalletDbCRUD.DeleteCurrency(db, currencyId);
                     reloadCurrencies();
                     setResult(RESULT_OK);

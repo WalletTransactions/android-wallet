@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:fontFamily="@font/caprasimo"
-        android:text="Добавить иконку"
+        android:text="@string/dialog_add_edit_icon_dialog_title_text"
         android:textColor="@color/colorTextPrimary"
         android:textSize="21sp"
         android:textStyle="bold"/>
@@ -45,7 +45,7 @@
                 android:layout_marginBottom="14dp"
                 android:background="@drawable/bg_icon_circle"
                 android:clickable="true"
-                android:contentDescription="Изображение иконки"
+                android:contentDescription="@string/dialog_add_edit_icon_img_icon_preview_content_description"
                 android:focusable="true"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_nav_add"
@@ -61,7 +61,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center"
-                android:text="Выбрать изображение"
+                android:text="@string/dialog_add_edit_icon_btn_select_icon_text"
                 android:textColor="@color/colorTextPrimary"
                 android:textSize="14sp"
                 android:textStyle="bold"/>
@@ -84,7 +84,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
                 android:gravity="center_horizontal"
-                android:text="Иконка с сервера — изменить или удалить её может администратор на сайте."
+                android:text="@string/dialog_add_edit_icon_txt_server_icon_hint_text"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="14sp"
                 android:visibility="gone"/>
@@ -92,18 +92,18 @@
             <TextView
                 android:id="@+id/lblIconName"
                 style="@style/SettingsGroupLabel"
-                android:text="НАЗВАНИЕ"/>
+                android:text="@string/dialog_add_edit_icon_lbl_icon_name_text"/>
 
             <EditText
                 android:id="@+id/edtIconName"
                 style="@style/FormInputPill"
-                android:hint="Например, Продукты"
+                android:hint="@string/dialog_add_edit_icon_edt_icon_name_hint"
                 android:inputType="textCapSentences"/>
 
             <TextView
                 android:id="@+id/lblIconType"
                 style="@style/SettingsGroupLabel"
-                android:text="ТИП"/>
+                android:text="@string/dialog_add_edit_icon_lbl_icon_type_text"/>
 
             <LinearLayout
                 android:id="@+id/iconTypeChips"
@@ -115,13 +115,13 @@
                 <TextView
                     android:id="@+id/chipCategory"
                     style="@style/FilterChip"
-                    android:text="Категория"/>
+                    android:text="@string/dialog_add_edit_icon_chip_category_text"/>
 
                 <TextView
                     android:id="@+id/chipFlag"
                     style="@style/FilterChip"
                     android:layout_marginEnd="0dp"
-                    android:text="Флаг"/>
+                    android:text="@string/dialog_add_edit_icon_chip_flag_text"/>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
@@ -141,7 +141,7 @@
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:text="Удалить"
+            android:text="@string/dialog_add_edit_icon_btn_delete_text"
             android:textColor="@color/colorexpanse"
             android:textSize="14sp"
             android:textStyle="bold"
@@ -157,7 +157,7 @@
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:text="Отмена"
+            android:text="@string/dialog_add_edit_icon_btn_cancel_text"
             android:textColor="@color/colorTextPrimary"
             android:textSize="14sp"
             android:textStyle="bold"/>
@@ -171,7 +171,7 @@
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:text="Сохранить"
+            android:text="@string/dialog_add_edit_icon_btn_save_text"
             android:textColor="@color/colorSurface"
             android:textSize="14sp"
             android:textStyle="bold"/>

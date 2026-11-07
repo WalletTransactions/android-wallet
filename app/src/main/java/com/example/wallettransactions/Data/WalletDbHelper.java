@@ -677,8 +677,8 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                         pairCol + " = ? AND substr(" + dateCol + ", 1, 10) = ? AND rowid <> ?",
                         new String[]{String.valueOf(pairId), day, String.valueOf(survivorRowId)});
                 Log.i(LOG_TAG, "dedupeCurrencyPairRateDuplicates: пара _id=" + pairId + ", дата " + day
-                        + " — удалено дублей: " + deleted + ", оставлена rowid=" + survivorRowId
-                        + " (была date=" + survivorDate + ")");
+                        + " — удалено дублей: " + deleted + ", оставлена rowid=" + survivorRowId // not UI: лог
+                        + " (была date=" + survivorDate + ")"); // not UI: лог
 
                 ContentValues cv = new ContentValues();
                 cv.put(dateCol, day); // нормализуем до чистой даты, без времени

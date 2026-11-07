@@ -54,7 +54,7 @@
                 android:layout_marginLeft="24dp"
                 android:layout_marginRight="24dp"
                 android:layout_marginTop="20dp"
-                android:text="Расходы"/>
+                android:text="@string/activity_report_caption_expanses_text"/>
 
             <LinearLayout
                 android:id="@+id/cardExpanses"
@@ -82,7 +82,7 @@
                 android:layout_marginLeft="24dp"
                 android:layout_marginRight="24dp"
                 android:layout_marginTop="20dp"
-                android:text="Доходы"/>
+                android:text="@string/activity_report_caption_incomes_text"/>
 
             <LinearLayout
                 android:id="@+id/cardIncomes"

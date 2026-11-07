@@ -1,6 +1,8 @@
 package com.example.wallettransactions.security;
 
 import android.content.Context;
+
+import com.example.wallettransactions.R;
 import android.content.SharedPreferences;
 import android.util.Base64;
 
@@ -22,7 +24,14 @@ public final class AppLockStore {
 
     /** «Блокировать»: сразу / через 1 мин (по умолчанию) / через 5 мин. */
     public static final long[] TIMEOUTS_MS = {0, 60_000, 5 * 60_000};
-    public static final String[] TIMEOUT_TITLES = {"Сразу", "Через 1 минуту", "Через 5 минут"};
+    /** Подписи {@link #TIMEOUTS_MS} — ресурсы (openspec android-i18n). */
+    public static final int[] TIMEOUT_TITLES = {R.string.lock_timeout_now, R.string.lock_timeout_1min, R.string.lock_timeout_5min};
+
+    public static String[] timeoutTitles(Context ctx) {
+        String[] titles = new String[TIMEOUT_TITLES.length];
+        for (int i = 0; i < titles.length; i++) titles[i] = ctx.getString(TIMEOUT_TITLES[i]);
+        return titles;
+    }
     private static final long DEFAULT_TIMEOUT_MS = 60_000;
 
     /** Ошибок до первой паузы; дальше пауза удваивается с каждой ошибкой до потолка. */
@@ -194,8 +203,8 @@ public final class AppLockStore {
 
     public static String getTimeoutTitle(Context ctx) {
         long ms = getTimeoutMs(ctx);
-        for (int i = 0; i < TIMEOUTS_MS.length; i++) if (TIMEOUTS_MS[i] == ms) return TIMEOUT_TITLES[i];
-        return TIMEOUT_TITLES[1];
+        for (int i = 0; i < TIMEOUTS_MS.length; i++) if (TIMEOUTS_MS[i] == ms) return ctx.getString(TIMEOUT_TITLES[i]);
+        return ctx.getString(TIMEOUT_TITLES[1]);
     }
 
     private static String b64(byte[] b) {

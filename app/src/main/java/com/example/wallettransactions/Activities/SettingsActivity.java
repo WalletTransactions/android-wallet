@@ -22,6 +22,7 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.example.wallettransactions.AppLanguage;
 import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.BuildConfig;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
@@ -60,6 +61,7 @@ public class SettingsActivity extends AppCompatActivity {
     private static final int REQUEST_PIN_CHANGE_SET = 4;
 
     private TextView mainCurrencyValue;
+    private TextView languageValue;
     private TextView chipThemeLight;
     private TextView chipThemeDark;
     private TextView chipThemeSystem;
@@ -89,6 +91,7 @@ public class SettingsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_settings);
 
         mainCurrencyValue = findViewById(R.id.mainCurrencyValue);
+        languageValue = findViewById(R.id.languageValue);
         chipThemeLight = findViewById(R.id.chipThemeLight);
         chipThemeDark = findViewById(R.id.chipThemeDark);
         chipThemeSystem = findViewById(R.id.chipThemeSystem);
@@ -120,6 +123,7 @@ public class SettingsActivity extends AppCompatActivity {
         buildDateValue.setText(BuildConfig.BUILD_TIME);
 
         applyThemeChips(AppSettings.getThemeMode(this));
+        languageValue.setText(languageTitles()[languageIndex()]);
 
         String savedIso = AppSettings.getCurrencyEqIso(this);
         Currency saved = savedIso != null
@@ -169,6 +173,32 @@ public class SettingsActivity extends AppCompatActivity {
                 selected ? R.color.colorSurface : R.color.colorTextSecondary));
     }
 
+    /** Язык приложения (AppLanguage): язык телефона, English, Русский. */
+    public void onPickLanguage(View view) {
+        int checked = languageIndex();
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.settings_language)
+                .setSingleChoiceItems(languageTitles(), checked, (d, which) -> {
+                    d.dismiss();
+                    // Экраны AppCompat пересоздаются сами на новом языке.
+                    if (which != checked) AppLanguage.set(AppLanguage.TAGS[which]);
+                })
+                .show();
+    }
+
+    private String[] languageTitles() {
+        return new String[]{getString(R.string.settings_language_system),
+                getString(R.string.settings_language_en), getString(R.string.settings_language_ru)};
+    }
+
+    private static int languageIndex() {
+        String tag = AppLanguage.current();
+        for (int i = 0; i < AppLanguage.TAGS.length; i++) {
+            if (AppLanguage.TAGS[i].equals(tag)) return i;
+        }
+        return 0;
+    }
+
     public void onPickMainCurrency(View view) {
         CurrencyList currencyList = Singleton.instance.getCurrencyList(this);
         String currentIso = AppSettings.getCurrencyEqIso(this);
@@ -185,7 +215,7 @@ public class SettingsActivity extends AppCompatActivity {
         }
 
         new AlertDialog.Builder(this)
-                .setTitle("Валюта эквивалента")
+                .setTitle(R.string.settings_currency_eq)
                 .setSingleChoiceItems(items, checked, (d, which) -> {
                     Currency chosen = shown.get(which);
                     mainCurrencyValue.setText(chosen.getIso() + " — " + chosen.getName());
@@ -217,7 +247,8 @@ public class SettingsActivity extends AppCompatActivity {
         if (versionTapCount < HIDDEN_MENU_TAPS) {
             int left = HIDDEN_MENU_TAPS - versionTapCount;
             if (versionTapCount >= 3) {
-                Toast.makeText(this, "Ещё " + left + " " + tapsWord(left) + "…", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getResources().getQuantityString(R.plurals.settings_taps_left, left, left),
+                        Toast.LENGTH_SHORT).show();
             }
             return;
         }
@@ -226,10 +257,6 @@ public class SettingsActivity extends AppCompatActivity {
         startActivity(new Intent(this, ResetDataActivity.class));
     }
 
-    private String tapsWord(int n) {
-        if (n == 1) return "тап";
-        return "тапа";
-    }
 
     // ── Код доступа ───────────────────────────────────────────────────────────
 
@@ -253,8 +280,8 @@ public class SettingsActivity extends AppCompatActivity {
             if (AppLockStore.TIMEOUTS_MS[i] == current) checked = i;
         }
         new AlertDialog.Builder(this)
-                .setTitle("Блокировать")
-                .setSingleChoiceItems(AppLockStore.TIMEOUT_TITLES, checked, (d, which) -> {
+                .setTitle(R.string.settings_lock_after)
+                .setSingleChoiceItems(AppLockStore.timeoutTitles(this), checked, (d, which) -> {
                     AppLockStore.setTimeoutMs(this, AppLockStore.TIMEOUTS_MS[which]);
                     paintSecurity();
                     d.dismiss();
@@ -268,19 +295,19 @@ public class SettingsActivity extends AppCompatActivity {
         if (resultCode != RESULT_OK) return;
         switch (requestCode) {
             case REQUEST_PIN_ENABLE:
-                Toast.makeText(this, "Код доступа включён", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.settings_pin_on, Toast.LENGTH_SHORT).show();
                 break;
             case REQUEST_PIN_DISABLE:
                 AppLockStore.clearPin(this);
                 AppLock.unlock();
-                Toast.makeText(this, "Код доступа выключен", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.settings_pin_off, Toast.LENGTH_SHORT).show();
                 break;
             case REQUEST_PIN_CHANGE_VERIFY:
                 // Старый код остаётся, пока новый не подтверждён: отмена на любом шаге ничего не меняет.
                 startActivityForResult(LockActivity.setIntent(this), REQUEST_PIN_CHANGE_SET);
                 return;
             case REQUEST_PIN_CHANGE_SET:
-                Toast.makeText(this, "Код изменён", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.settings_pin_changed, Toast.LENGTH_SHORT).show();
                 break;
             default:
                 return;
@@ -302,14 +329,14 @@ public class SettingsActivity extends AppCompatActivity {
         lockTimeoutValue.setText(AppLockStore.getTimeoutTitle(this));
         applySwitchState(switchHideRecents, AppLockStore.getHideInRecentsSetting(this));
         hideRecentsHint.setText(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                ? "превью приложения в списке недавних"
-                : "превью в списке недавних; скриншоты в приложении тоже будут запрещены");
+                ? R.string.settings_hide_recents_hint
+                : R.string.settings_hide_recents_hint_screenshots);
 
         // Ключ инвалидирован (отпечатки в телефоне изменились) — тумблер не должен врать.
         if (AppLockStore.isBiometricOn(this) && BiometricKey.cipherOrNull() == null) {
             AppLockStore.setBiometricOn(this, false);
         }
-        boolean available = BiometricErrors.unavailableReason(pinSet, canAuthenticate()) == null;
+        boolean available = BiometricErrors.unavailableReason(this, pinSet, canAuthenticate()) == null;
         applySwitchState(switchBiometric, AppLockStore.isBiometricOn(this));
         labelBiometric.setTextColor(ContextCompat.getColor(this,
                 available ? R.color.colorTextPrimary : R.color.colorTextHint));
@@ -337,13 +364,13 @@ public class SettingsActivity extends AppCompatActivity {
         }
         boolean pinSet = AppLockStore.isPinSet(this);
         int can = canAuthenticate();
-        String reason = BiometricErrors.unavailableReason(pinSet, can);
+        String reason = BiometricErrors.unavailableReason(this, pinSet, can);
         if (reason != null) {
             if (BiometricErrors.canEnroll(pinSet, can)) {
                 new AlertDialog.Builder(this)
                         .setMessage(reason)
-                        .setPositiveButton("Открыть настройки", (d, w) -> openBiometricEnroll())
-                        .setNegativeButton("Отмена", null)
+                        .setPositiveButton(R.string.settings_open_phone_settings, (d, w) -> openBiometricEnroll())
+                        .setNegativeButton(R.string.action_cancel, null)
                         .show();
             } else {
                 Toast.makeText(this, reason, Toast.LENGTH_SHORT).show();
@@ -359,13 +386,13 @@ public class SettingsActivity extends AppCompatActivity {
             cipher = null;
         }
         if (cipher == null) {
-            Toast.makeText(this, "Не удалось подготовить вход по отпечатку", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.settings_biometric_prepare_failed, Toast.LENGTH_SHORT).show();
             return;
         }
         BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Вход по отпечатку")
-                .setSubtitle("Приложите палец, чтобы включить")
-                .setNegativeButtonText("Отмена")
+                .setTitle(getString(R.string.settings_biometric_title))
+                .setSubtitle(getString(R.string.settings_biometric_subtitle))
+                .setNegativeButtonText(getString(R.string.action_cancel))
                 .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
                 .build();
         biometricPrompt.authenticate(info, new BiometricPrompt.CryptoObject(cipher));
@@ -378,7 +405,7 @@ public class SettingsActivity extends AppCompatActivity {
                     BiometricPrompt.CryptoObject crypto = result.getCryptoObject();
                     if (BiometricKey.confirm(crypto != null ? crypto.getCipher() : null)) {
                         AppLockStore.setBiometricOn(SettingsActivity.this, true);
-                        Toast.makeText(SettingsActivity.this, "Вход по отпечатку включён", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SettingsActivity.this, R.string.settings_biometric_on, Toast.LENGTH_SHORT).show();
                     } else {
                         BiometricKey.delete();
                     }
@@ -433,11 +460,11 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     public void onPickWalletSort(View view) {
-        pickSort(true, "Сортировка кошельков");
+        pickSort(true, getString(R.string.settings_sort_wallets));
     }
 
     public void onPickCategorySort(View view) {
-        pickSort(false, "Сортировка категорий");
+        pickSort(false, getString(R.string.settings_sort_categories));
     }
 
     private void pickSort(boolean wallets, String title) {
@@ -446,7 +473,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         new AlertDialog.Builder(this)
                 .setTitle(title)
-                .setSingleChoiceItems(PickerSort.titles(modes), checked, (d, which) -> {
+                .setSingleChoiceItems(PickerSort.titles(this, modes), checked, (d, which) -> {
                     AppSettings.setPickerSort(this, wallets, modes[which]);
                     paintSortValues();
                     d.dismiss();
@@ -455,8 +482,8 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void paintSortValues() {
-        walletSortValue.setText(AppSettings.getPickerSort(this, true).getTitle());
-        categorySortValue.setText(AppSettings.getPickerSort(this, false).getTitle());
+        walletSortValue.setText(AppSettings.getPickerSort(this, true).getTitle(this));
+        categorySortValue.setText(AppSettings.getPickerSort(this, false).getTitle(this));
     }
 
     public void onPickRemindTime(View view) {
@@ -469,7 +496,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void paintRemindTime() {
-        rowRemindTime.setText(String.format(Locale.getDefault(), "каждый день в %02d:%02d",
+        rowRemindTime.setText(getString(R.string.settings_remind_time,
                 AppSettings.getRemindHour(this), AppSettings.getRemindMinute(this)));
     }
 

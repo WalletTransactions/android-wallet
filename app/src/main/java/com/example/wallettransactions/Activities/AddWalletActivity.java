@@ -41,7 +41,7 @@ public class AddWalletActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_wallet);
 
-        ((TextView) findViewById(R.id.screenTitle)).setText("Новый кошелёк");
+        ((TextView) findViewById(R.id.screenTitle)).setText(R.string.account_new_wallet);
 
         imgIconPreview  = findViewById(R.id.imgIconPreview);
         iconPickerHint  = findViewById(R.id.iconPickerHint);
@@ -56,7 +56,7 @@ public class AddWalletActivity extends AppCompatActivity {
         int current = selectedIconId > 0 ? selectedIconId
                 : Singleton.instance.getIconList(this).getUnknownIcon().getId();
         startActivityForResult(
-                IconPickerActivity.buildIntent(this, "Иконка кошелька", Icon.IconType.CATEGORY, current),
+                IconPickerActivity.buildIntent(this, getString(R.string.icon_title_wallet), Icon.IconType.CATEGORY, current),
                 REQUEST_PICK_ICON);
     }
 
@@ -68,7 +68,7 @@ public class AddWalletActivity extends AppCompatActivity {
             items[i] = c.getIso() + "  —  " + c.getName();
         }
         new AlertDialog.Builder(this)
-                .setTitle("Выберите валюту")
+                .setTitle(R.string.account_choose_currency)
                 .setItems(items, (dialog, which) -> {
                     selectedCurrency = currencies.get(which);
                     imgCurrencyFlag.setImageBitmap(selectedCurrency.getIcon().getBitmap());
@@ -103,15 +103,15 @@ public class AddWalletActivity extends AppCompatActivity {
 
     public void btnSaveClick(View view) {
         String name = editName.getText().toString().trim();
-        if (name.isEmpty()) { editName.setError("Введите название"); return; }
+        if (name.isEmpty()) { editName.setError(getString(R.string.account_error_name_empty)); return; }
         if (selectedCurrency == null) {
-            Toast.makeText(this, "Выберите валюту", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.account_choose_currency, Toast.LENGTH_SHORT).show();
             return;
         }
 
         SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
         if (WalletDbCRUD.IsAccountNameTaken(db, name, -1)) {
-            editName.setError("Такое название уже есть");
+            editName.setError(getString(R.string.account_error_name_taken));
             return;
         }
 

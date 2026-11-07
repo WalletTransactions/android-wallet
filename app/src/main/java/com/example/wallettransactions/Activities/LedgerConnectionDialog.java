@@ -41,13 +41,13 @@ public final class LedgerConnectionDialog {
         }
         showingOn = activity;
         new AlertDialog.Builder(activity)
-                .setTitle(LedgerConnection.DIALOG_TITLE)
+                .setTitle(com.example.wallettransactions.R.string.connection_title)
                 .setMessage(LedgerConnection.questionText(n))
-                .setPositiveButton(LedgerConnection.BUTTON_TRANSFER, (d, w) -> {
+                .setPositiveButton(com.example.wallettransactions.R.string.connection_transfer, (d, w) -> {
                     AppSettings.setConnectionDecision(activity, AppSettings.ConnectionDecision.TRANSFER, 0);
                     startSync(activity);
                 })
-                .setNegativeButton(LedgerConnection.BUTTON_DISCARD, (d, w) -> confirmDiscard(activity, n))
+                .setNegativeButton(com.example.wallettransactions.R.string.connection_discard, (d, w) -> confirmDiscard(activity, n))
                 .setOnDismissListener(d -> showingOn = null)
                 .show();
     }
@@ -55,7 +55,7 @@ public final class LedgerConnectionDialog {
     private static void confirmDiscard(Activity activity, int n) {
         AlertDialog confirm = new AlertDialog.Builder(activity)
                 .setMessage(LedgerConnection.confirmDiscardText(n))
-                .setPositiveButton(LedgerConnection.BUTTON_DELETE, (d, w) -> {
+                .setPositiveButton(com.example.wallettransactions.R.string.action_delete, (d, w) -> {
                     showingOn = null;
                     LedgerConnection.discardOffline(db(activity));
                     AppSettings.setLedgerConnectionPending(activity, false);
@@ -65,7 +65,7 @@ public final class LedgerConnectionDialog {
                     PeriodFilterState.get(activity).markDataChanged();
                     startSync(activity);
                 })
-                .setNegativeButton(LedgerConnection.BUTTON_CANCEL, (d, w) -> {
+                .setNegativeButton(com.example.wallettransactions.R.string.action_cancel, (d, w) -> {
                     showingOn = null;
                     showIfAsked(activity);
                 })

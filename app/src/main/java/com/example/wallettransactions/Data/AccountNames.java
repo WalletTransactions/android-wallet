@@ -24,7 +24,7 @@ public final class AccountNames {
      * строится только здесь.
      */
     public static String keySql(String expr) {
-        return "replace(lower(" + expr + "), 'ё', 'е')";
+        return "replace(lower(" + expr + "), 'ё', 'е')"; // not UI: SQL
     }
 
     /** Условие WHERE «имя в колонке совпадает с параметром ?» по правилу выше. */

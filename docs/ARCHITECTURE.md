@@ -73,6 +73,32 @@ Singleton.instance.reloadIconList(context);     // сбрасывает и пе�
 Поэтому `CurrencyPairList.clear()` обязателен внутри загрузчика, иначе список
 дублируется. Расхождение с остальными геттерами намеренным не выглядит.
 
+## Тексты и языки
+
+openspec `android-i18n`, spec `ui-language`. Все тексты интерфейса — ресурсы:
+`res/values/` — английский (базовый: любой язык телефона, кроме русского),
+`res/values-ru/` — русский. Файлы по экранам: `strings.xml` (тексты layout/menu),
+`strings_main.xml`, `strings_operation.xml`, `strings_accounts.xml`,
+`strings_currency.xml`, `strings_recurring.xml`, `strings_settings.xml`,
+`strings_import.xml`, `strings_sync.xml`, `strings_ai.xml`. Числа — `<plurals>`.
+На Android 13+ язык приложения выбирается в системных настройках
+(`res/xml/locales_config.xml`, `android:localeConfig`).
+
+- Экраны берут строки через `getString`. Классы без экрана (журнал синка, отчёт
+  импорта, `AiTexts`) — через `Texts`: контекст приложения ставит
+  `WalletApplication.onCreate`.
+- Не переводятся: логи, технические детали исключений (по-английски), SQL, данные в
+  файлах экспорта и строки, уходящие на сервер, — такие литералы с кириллицей помечены
+  `// not UI`.
+- Системные категории хранятся и синкаются как `Transfer` / `Transfer commission`, а
+  показываются `AccountItem.getDisplayName()` на языке интерфейса; `getName()` — для
+  правки, поиска по имени и синка.
+- `ci/check_hardcoded_text.sh` (GitHub CI и `ci/run_unit_tests.sh`) не пускает кириллицу
+  в литералах Java и атрибутах layout/menu; `UiLanguageTest` проверяет, что в `values/`
+  и `values-ru/` одни и те же ключи и подстановки.
+- Robolectric-тесты идут на русском (`src/test/resources/robolectric.properties`,
+  `qualifiers=ru`); английский — явным `@Config(qualifiers = "en")`.
+
 ## Общая шапка корневых экранов
 
 Четыре таба нижней панели — «Операции» (`MainActivity`), «Кошельки»

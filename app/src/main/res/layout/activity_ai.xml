@@ -32,7 +32,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="ИИ"
+            android:text="@string/activity_ai_text_1"
             android:textSize="20sp"
             android:textStyle="bold"
             android:fontFamily="@font/caprasimo"
@@ -60,7 +60,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Трата своими словами"
+                    android:text="@string/activity_ai_text_2"
                     android:textSize="14.5sp"
                     android:textStyle="bold"
                     android:textColor="@color/colorTextPrimary"/>
@@ -74,7 +74,7 @@
                     android:paddingTop="10dp"
                     android:paddingBottom="10dp"
                     android:inputType="textMultiLine|textCapSentences"
-                    android:hint="Например: вчера такси 450 с тинькоффа"/>
+                    android:hint="@string/activity_ai_edit_text_hint"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -98,14 +98,14 @@
                         android:layout_height="40dp"
                         android:background="@drawable/bg_pill_secondary"
                         android:src="@android:drawable/ic_btn_speak_now"
-                        android:contentDescription="Надиктовать"
+                        android:contentDescription="@string/activity_ai_btn_mic_content_description"
                         android:onClick="onMic"/>
                 </LinearLayout>
 
                 <Button
                     android:id="@+id/btnParse"
                     style="@style/AiButtonPrimary"
-                    android:text="Разобрать"
+                    android:text="@string/activity_ai_btn_parse_text"
                     android:onClick="onParse"/>
 
                 <TextView android:id="@+id/tvWarning" style="@style/AiWarning"/>
@@ -126,7 +126,7 @@
 
                 <Button
                     style="@style/AiButtonOutline"
-                    android:text="Отменить"
+                    android:text="@string/activity_ai_text_3"
                     android:onClick="onCancel"/>
             </LinearLayout>
 
@@ -146,7 +146,7 @@
                 <Button
                     android:id="@+id/btnManual"
                     style="@style/AiButtonOutline"
-                    android:text="Заполнить вручную"
+                    android:text="@string/activity_ai_btn_manual_text"
                     android:onClick="onManual"/>
             </LinearLayout>
 
@@ -183,12 +183,12 @@
 
                 <Button
                     style="@style/AiButtonOutline"
-                    android:text="Синхронизировать и повторить"
+                    android:text="@string/activity_ai_text_4"
                     android:onClick="onSyncRetry"/>
 
                 <Button
                     style="@style/AiButtonOutline"
-                    android:text="Открыть операцию"
+                    android:text="@string/activity_ai_text_5"
                     android:onClick="onOpenOperation"/>
             </LinearLayout>
 
@@ -201,13 +201,13 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Разбор не записан"
+                    android:text="@string/activity_ai_text_6"
                     android:textSize="14.5sp"
                     android:textColor="@color/colorTextPrimary"/>
 
                 <Button
                     style="@style/AiButtonOutline"
-                    android:text="Открыть снова"
+                    android:text="@string/activity_ai_text_7"
                     android:onClick="onOpenOperation"/>
             </LinearLayout>
 
@@ -217,7 +217,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Выписка из банка"
+                    android:text="@string/activity_ai_text_8"
                     android:textSize="14.5sp"
                     android:textStyle="bold"
                     android:textColor="@color/colorTextPrimary"/>
@@ -226,13 +226,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="PDF или CSV из приложения банка — ИИ разберёт операции и подберёт категории, вы проверите и запишете"
+                    android:text="@string/activity_ai_text_9"
                     android:textSize="12.5sp"
                     android:textColor="@color/colorTextSecondary"/>
 
                 <Button
                     style="@style/AiButtonOutline"
-                    android:text="Загрузить выписку"
+                    android:text="@string/activity_ai_text_10"
                     android:onClick="onStatementImport"/>
             </LinearLayout>
         </LinearLayout>

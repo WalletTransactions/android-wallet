@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Настройки, код доступа, отпечаток, удаление данных (openspec android-i18n, задача 2.6). -->
+<resources>
+    <string name="settings_currency_eq">Валюта эквивалента</string>
+    <plurals name="settings_taps_left">
+        <item quantity="one">Ещё %d тап…</item>
+        <item quantity="few">Ещё %d тапа…</item>
+        <item quantity="many">Ещё %d тапов…</item>
+        <item quantity="other">Ещё %d тапа…</item>
+    </plurals>
+    <string name="settings_lock_after">Блокировать</string>
+    <string name="settings_pin_on">Код доступа включён</string>
+    <string name="settings_pin_off">Код доступа выключен</string>
+    <string name="settings_pin_changed">Код изменён</string>
+    <string name="settings_hide_recents_hint">превью приложения в списке недавних</string>
+    <string name="settings_hide_recents_hint_screenshots">превью в списке недавних; скриншоты в приложении тоже будут запрещены</string>
+    <string name="settings_open_phone_settings">Открыть настройки</string>
+    <string name="settings_biometric_prepare_failed">Не удалось подготовить вход по отпечатку</string>
+    <string name="settings_biometric_title">Вход по отпечатку</string>
+    <string name="settings_biometric_subtitle">Приложите палец, чтобы включить</string>
+    <string name="settings_biometric_on">Вход по отпечатку включён</string>
+    <string name="settings_sort_wallets">Сортировка кошельков</string>
+    <string name="settings_sort_categories">Сортировка категорий</string>
+    <string name="settings_remind_time">каждый день в %1$02d:%2$02d</string>
+
+    <string name="lock_timeout_now">Сразу</string>
+    <string name="lock_timeout_1min">Через 1 минуту</string>
+    <string name="lock_timeout_5min">Через 5 минут</string>
+    <string name="lock_pins_mismatch">Коды не совпали — придумайте код заново</string>
+    <string name="lock_key_lost">Ключ проверки кода на телефоне пропал, код не проверить. Нажмите «Забыли код?».</string>
+    <string name="lock_save_failed">Не удалось сохранить код</string>
+    <string name="lock_wrong">Неверный код</string>
+    <string name="lock_wrong_attempts_left">Неверный код. Попыток до паузы: %1$d</string>
+    <string name="lock_title_create">Придумайте код</string>
+    <string name="lock_title_repeat">Повторите код</string>
+    <string name="lock_hint_length">От 4 до 6 цифр, затем «ОК»</string>
+    <string name="lock_title_current">Введите текущий код</string>
+    <string name="lock_title_enter">Введите код</string>
+    <string name="lock_lockout">Слишком много попыток. Повторите через %1$d:%2$02d</string>
+    <string name="lock_biometric_title">Вход в приложение</string>
+    <string name="lock_biometric_use_pin">Ввести код</string>
+    <string name="lock_forgot_title">Забыли код?</string>
+    <string name="lock_forgot_secure">Код приложения можно снять, подтвердив код блокировки телефона. Данные останутся, новый код можно будет задать в настройках.</string>
+    <string name="lock_forgot_insecure">На телефоне нет блокировки экрана — подтвердить, что это вы, нечем. Снять код можно только вместе со всеми данными приложения.</string>
+    <string name="lock_forgot_device_pin">Код телефона</string>
+    <string name="lock_forgot_wipe">Стереть данные</string>
+    <string name="lock_reset_title">Снять код приложения</string>
+    <string name="lock_reset_subtitle">Подтвердите кодом блокировки телефона</string>
+    <string name="lock_reset_no_keyguard">Не удалось открыть экран блокировки телефона</string>
+    <string name="lock_reset_done">Код приложения снят. Задать новый — Настройки → Код доступа</string>
+
+    <string name="wipe_title">Стереть данные приложения?</string>
+    <string name="wipe_confirm">Стереть</string>
+    <string name="wipe_irreversible_title">Это нельзя отменить</string>
+    <string name="wipe_irreversible_message">Стереть все данные приложения на этом телефоне?</string>
+    <string name="wipe_confirm_all">Стереть всё</string>
+    <string name="wipe_failed">Не удалось стереть. Настройки телефона → Приложения → хранилище → «Очистить»</string>
+    <string name="wipe_warning_linked">Все данные приложения на этом телефоне будут удалены. Операции, ещё не отправленные на сервер, пропадут; остальное вернётся после входа через «Связь с Google аккаунтом».</string>
+    <string name="wipe_warning_offline">Все данные приложения будут удалены: операции, кошельки, категории, настройки. Телефон не связан с сервером — восстановить их будет неоткуда.</string>
+
+    <string name="biometric_key_invalidated">Отпечатки на телефоне изменились — вход по отпечатку выключен. Включите заново в настройках.</string>
+    <string name="biometric_need_pin">Сначала включите код доступа</string>
+    <string name="biometric_none_enrolled">Добавьте отпечаток в настройках телефона</string>
+    <string name="biometric_security_update">Датчику отпечатков нужно обновление безопасности телефона</string>
+    <string name="biometric_hw_unavailable">Датчик отпечатков сейчас недоступен</string>
+    <string name="biometric_no_hardware">На телефоне нет подходящего датчика отпечатков</string>
+    <string name="biometric_lockout">Отпечаток временно недоступен — введите код</string>
+    <string name="biometric_failed">Отпечаток не сработал — введите код</string>
+
+    <string name="reset_title">Удалить данные</string>
+    <string name="reset_nothing_checked">Отметьте хотя бы один пункт</string>
+    <string name="reset_question">Удалить отмеченное?</string>
+    <string name="reset_irreversible">Действие необратимо.</string>
+    <string name="reset_irreversible_reseed">Действие необратимо. После удаления будет создан дефолтный набор для отмеченного.</string>
+    <string name="reset_busy">Удаление…</string>
+    <string name="reset_done">Готово</string>
+    <string name="reset_finished">Удаление завершено</string>
+    <string name="reset_hard_question">Удалить ВСЁ безвозвратно?</string>
+    <string name="reset_hard_message">Все таблицы базы будут физически очищены. Это НЕ обычное «мягкое» удаление — изменение не уйдёт на сервер, и следующая синхронизация может вернуть эти же данные обратно. Отменить нельзя.</string>
+    <string name="reset_hard_confirm">Удалить всё</string>
+    <string name="reset_hard_busy">Очистка базы…</string>
+    <string name="reset_hard_done">База полностью очищена</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_language_system">Как на телефоне</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_ru">Русский</string>
+</resources>

@@ -11,14 +11,14 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Новая валютная пара"
+        android:text="@string/dialog_new_pair_text_1"
         android:textSize="21sp"
         android:textStyle="bold"
         android:fontFamily="@font/caprasimo"
         android:textColor="@color/colorTextPrimary"
         android:layout_marginBottom="16dp"/>
 
-    <TextView style="@style/SettingsGroupLabel" android:text="БАЗОВАЯ ВАЛЮТА"/>
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/dialog_new_pair_text_2"/>
     <LinearLayout
         android:id="@+id/rowBase"
         android:layout_width="match_parent"
@@ -36,7 +36,7 @@
         <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
     </LinearLayout>
 
-    <TextView style="@style/SettingsGroupLabel" android:text="КОТИРУЕМАЯ ВАЛЮТА"/>
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/dialog_new_pair_text_3"/>
     <LinearLayout
         android:id="@+id/rowQuote"
         android:layout_width="match_parent"
@@ -54,7 +54,7 @@
         <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
     </LinearLayout>
 
-    <TextView style="@style/SettingsGroupLabel" android:text="ТОЧНОСТЬ (ЗНАКОВ ПОСЛЕ ЗАПЯТОЙ)"/>
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/dialog_new_pair_text_4"/>
     <EditText
         android:id="@+id/inputPrecision"
         android:layout_width="match_parent"
@@ -82,7 +82,7 @@
             android:layout_marginEnd="9dp"
             android:background="@drawable/bg_pill_outline"
             android:gravity="center"
-            android:text="Отмена"
+            android:text="@string/dialog_new_pair_btn_cancel_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/colorTextPrimary"
@@ -95,7 +95,7 @@
             android:layout_weight="1"
             android:background="@drawable/bg_pill_primary"
             android:gravity="center"
-            android:text="Создать"
+            android:text="@string/dialog_new_pair_btn_create_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/colorSurface"

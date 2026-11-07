@@ -107,7 +107,7 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
 
         setContentView(R.layout.activity_transaction_list);
         assignComponents();
-        initTabScreen(R.id.navOps, "Операции");
+        initTabScreen(R.id.navOps, getString(R.string.tab_operations));
 
         if (com.example.wallettransactions.WalletApplication.hadCrash(this)) {
             showCrashRecoveryDialog();
@@ -152,27 +152,28 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
     private void showCrashRecoveryDialog() {
         String log = com.example.wallettransactions.WalletApplication.getLastCrashLog(this);
         new AlertDialog.Builder(this)
-                .setTitle("Приложение аварийно завершилось")
-                .setMessage("В базе данных могут быть некорректные записи.\nВыберите действие:")
+                .setTitle(R.string.crash_title)
+                .setMessage(R.string.crash_message)
                 .setCancelable(false)
-                .setPositiveButton("Авторемонт", (d, w) -> {
+                .setPositiveButton(R.string.crash_repair, (d, w) -> {
                     com.example.wallettransactions.WalletApplication.clearCrashFlag(this);
                     SQLiteDatabase db = getWritableDatabase();
                     java.util.List<Integer> removed =
                             com.example.wallettransactions.Data.WalletDbCRUD.repairDatabase(db);
                     String msg = removed.isEmpty()
-                            ? "Повреждённых записей не найдено"
-                            : "Удалено " + removed.size() + " некорректных транзакций: " + removed;
+                            ? getString(R.string.crash_repair_nothing)
+                            : getResources().getQuantityString(R.plurals.crash_repair_removed,
+                                    removed.size(), removed.size(), removed.toString());
                     Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                     reloadSharedAndTabData();
                 })
-                .setNeutralButton("Отчёт об ошибке", (d, w) -> {
+                .setNeutralButton(R.string.crash_report, (d, w) -> {
                     ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
                     cm.setPrimaryClip(ClipData.newPlainText("crash_log", log));
-                    Toast.makeText(this, "Лог скопирован в буфер обмена", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.crash_log_copied, Toast.LENGTH_SHORT).show();
                     showCrashRecoveryDialog(); // re-show main dialog
                 })
-                .setNegativeButton("Игнорировать", (d, w) -> {
+                .setNegativeButton(R.string.crash_ignore, (d, w) -> {
                     com.example.wallettransactions.WalletApplication.clearCrashFlag(this);
                     reloadSharedAndTabData();
                 })
@@ -297,11 +298,11 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
         btnGroupBy.setText(groupingTitle(groupBy));
     }
 
-    private static String groupingTitle(TransactionArrayAdapter.GroupByTime groupBy) {
+    private String groupingTitle(TransactionArrayAdapter.GroupByTime groupBy) {
         switch (groupBy) {
-            case week:  return "По неделям";
-            case month: return "По месяцам";
-            default:    return "По дате";
+            case week:  return getString(R.string.group_by_week);
+            case month: return getString(R.string.group_by_month);
+            default:    return getString(R.string.group_by_date);
         }
     }
 }

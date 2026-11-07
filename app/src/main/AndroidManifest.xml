@@ -29,6 +29,7 @@
          см. открытый вопрос в плане. -->
     <application
             android:name=".WalletApplication"
+            android:localeConfig="@xml/locales_config"
             android:allowBackup="true"
             android:fullBackupContent="@xml/backup_rules"
             android:dataExtractionRules="@xml/data_extraction_rules"
@@ -221,6 +222,17 @@
         <activity android:name=".Activities.SyncLinkActivity"
                 android:theme="@style/AppTheme.NoActionBar"
                 android:exported="false"/>
+
+        <!-- Язык из «Настроек» приложения на Android до 13 хранит AppCompat (AppLanguage);
+             на 13+ — система, тот же выбор, что в «Языках приложений». -->
+        <service
+                android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+                android:enabled="false"
+                android:exported="false">
+            <meta-data
+                    android:name="autoStoreLocales"
+                    android:value="true"/>
+        </service>
 
         <provider
                 android:name="androidx.core.content.FileProvider"

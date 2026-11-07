@@ -31,7 +31,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="Интеграции"
+            android:text="@string/activity_integrations_text_1"
             android:textSize="20sp"
             android:textStyle="bold"
             android:fontFamily="@font/caprasimo"
@@ -73,7 +73,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:singleLine="true"
-                        android:text="Адрес сервера"
+                        android:text="@string/activity_integrations_text_2"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -115,7 +115,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:singleLine="true"
-                        android:text="Связь с Google аккаунтом"
+                        android:text="@string/activity_integrations_text_3"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -129,7 +129,7 @@
                         android:gravity="end"
                         android:singleLine="true"
                         android:ellipsize="middle"
-                        android:text="Не подключено"
+                        android:text="@string/activity_integrations_link_status_value_text"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextSecondary"
@@ -159,7 +159,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:singleLine="true"
-                        android:text="Подключение к Telegram"
+                        android:text="@string/activity_integrations_text_4"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -201,7 +201,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Открыть веб-версию"
+                        android:text="@string/activity_integrations_text_5"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -209,7 +209,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="в браузере"
+                        android:text="@string/activity_integrations_text_6"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextSecondary"
@@ -239,7 +239,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Автоматическая синхронизация"
+                            android:text="@string/activity_integrations_text_7"
                             android:textSize="14.5sp"
                             android:textStyle="bold"
                             android:textColor="@color/colorTextPrimary"/>
@@ -249,7 +249,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="3dp"
-                            android:text="раз в час"
+                            android:text="@string/activity_integrations_row_auto_connect_interval_text"
                             android:textSize="12.5sp"
                             android:textStyle="bold"
                             android:textColor="@color/colorexpanse"
@@ -287,7 +287,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Синхронизировать сейчас"
+                        android:text="@string/activity_integrations_text_8"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -328,7 +328,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Уведомлять о новых операциях"
+                            android:text="@string/activity_integrations_text_9"
                             android:textSize="14.5sp"
                             android:textStyle="bold"
                             android:textColor="@color/colorTextPrimary"/>
@@ -337,7 +337,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="3dp"
-                            android:text="периодические, из бота, веба и с других устройств"
+                            android:text="@string/activity_integrations_text_10"
                             android:textSize="12.5sp"
                             android:textColor="@color/colorTextSecondary"/>
                     </LinearLayout>

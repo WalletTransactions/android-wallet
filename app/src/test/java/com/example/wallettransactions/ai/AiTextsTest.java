@@ -8,6 +8,9 @@ import com.example.wallettransactions.sync.SyncLog;
 import com.example.wallettransactions.sync.SyncRunner;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -15,6 +18,8 @@ import java.util.Collections;
 import java.util.Date;
 
 /** Тексты экрана «ИИ» — дословно как в spec ai-expense-entry. */
+@RunWith(RobolectricTestRunner.class)
+@Config(qualifiers = "ru") // тексты — ресурсы (openspec android-i18n), сверяются по-русски
 public class AiTextsTest {
 
     @Test
