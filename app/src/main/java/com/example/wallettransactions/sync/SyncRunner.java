@@ -218,9 +218,16 @@ public final class SyncRunner {
      * Подключение начинается в проходе со входом, если на телефоне нет строк, бывших на
      * сервере (spec ledger-connection, design D4), и длится до прохода с прошедшей
      * отправкой — даже если загрузка прерывалась и часть строк уже принята.
+     * <p>
+     * Загрузка подключения — с нуля: курсоры синка сбрасываются при старте. Иначе после
+     * «Удалить всё безвозвратно» при живом входе курсоры остались бы на прежней позиции,
+     * загрузка не вернула бы кошелёк, он выглядел бы пустым, и набор ушёл бы в него
+     * дублями категорий. Прерванное подключение курсоры не сбрасывает — продолжает.
      */
     static void startConnectionIfFresh(Context ctx, SQLiteDatabase db) {
         if (!AppSettings.isLedgerConnectionPending(ctx) && !SyncEngine.hasSyncedRows(db)) {
+            AppSettings.setLedgerSyncSeq(ctx, 0);
+            AppSettings.setReferenceSyncSeq(ctx, 0);
             AppSettings.setLedgerConnectionPending(ctx, true);
         }
     }
