@@ -41,8 +41,12 @@ public final class AppLanguage {
      * Контекст для текстов вне экранов ({@link Texts}, имена системных категорий). На
      * Android 13+ система сама переводит ресурсы приложения на выбранный язык; на старых
      * AppCompat меняет язык только экранам, и контекст приложения остался бы на языке телефона.
+     * <p>
+     * Версию проверяем до {@link AppCompatDelegate#getApplicationLocales}: на 13+ это вызов
+     * system_server (~10 мс), а метод зовётся на каждую строку списка — старт висел минутами.
      */
     public static Context localized(Context app) {
+        if (Build.VERSION.SDK_INT >= 33) return app;
         return localized(app, AppCompatDelegate.getApplicationLocales(), Build.VERSION.SDK_INT);
     }
 

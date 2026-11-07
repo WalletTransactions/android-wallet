@@ -187,7 +187,7 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
                 getCurrencyEq(), getDataFilter());
 
         TranAdapter.setCurrencyEq(getCurrencyEq());
-        AdapterUtils.setListViewHeightBasedOnChildren(listView);
+        TranAdapter.notifyDataSetChanged();
         // Данные поменял проход синка — он мог закончиться «ждёт решения».
         showConnectionQuestion();
     }
@@ -259,7 +259,7 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
         refreshSummaryCard();
 
         TranAdapter.setCurrencyEq(getCurrencyEq());
-        AdapterUtils.setListViewHeightBasedOnChildren(listView);
+        TranAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -268,7 +268,9 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
     }
 
     public void btnUp(View view) {
-        ((ScrollView)findViewById(R.id.scrollable)).smoothScrollTo(0,0);
+        ((com.google.android.material.appbar.AppBarLayout) findViewById(R.id.summaryBar)).setExpanded(true, true);
+        listView.smoothScrollBy(0, 0); // гасит инерцию: иначе она перебивает setSelection
+        listView.setSelection(0);
     }
 
     // ── Группировка ленты ─────────────────────────────────────────────────────
@@ -282,7 +284,7 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
 
         popup.setOnMenuItemClickListener(item -> {
             setGrouping(TransactionArrayAdapter.GroupByTime.values()[item.getItemId()]);
-            AdapterUtils.setListViewHeightBasedOnChildren(listView);
+            TranAdapter.notifyDataSetChanged();
             return true;
         });
 

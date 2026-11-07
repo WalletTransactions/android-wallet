@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1151,8 +1152,99 @@ public abstract class WalletDbLoader {
         if (!childIds.isEmpty()) {
             transactions.removeIf(op -> childIds.contains(op.IdTran));
         }
+        if (transactions.isEmpty()) return;
 
-        for (OperationItem op : transactions) AttachLinksTo(db, op, accounts, toCurrency);
+        // Связи и дочерние проводки — двумя запросами на всю ленту, а не по паре на строку
+        // (AttachLinksTo): каждый запрос к v_operation_eq заново материализует
+        // v_currency_conversion_rate (~15–30 мс), и за период «с 2018» (8,6 тыс. строк,
+        // 274 связи) старт шёл ~5 с на главном потоке.
+        StringBuilder mainIds = new StringBuilder();
+        for (OperationItem op : transactions) {
+            if (mainIds.length() > 0) mainIds.append(",");
+            mainIds.append(op.IdTran);
+        }
+        Map<Integer, Map<Integer, OperationItem.LinkType>> linksByMain = new HashMap<>();
+        Set<Integer> linkedIds = new HashSet<>();
+        cursor = db.rawQuery("SELECT " + WalletContract.OperationLinkEntry.COLUMN_MAIN_ID
+                + ", " + WalletContract.OperationLinkEntry.COLUMN_LINK_ID
+                + ", " + WalletContract.OperationLinkEntry.COLUMN_TYPE
+                + " FROM " + WalletContract.OperationLinkEntry.TABLE_NAME
+                + " WHERE " + WalletContract.OperationLinkEntry.COLUMN_MAIN_ID + " IN (" + mainIds + ")", null);
+        try {
+            while (cursor.moveToNext()) {
+                linksByMain.computeIfAbsent(cursor.getInt(0), k -> new LinkedHashMap<>())
+                        .put(cursor.getInt(1), OperationItem.LinkType.fromValue(cursor.getInt(2)));
+                linkedIds.add(cursor.getInt(1));
+            }
+        } finally {
+            cursor.close();
+        }
+        Map<Integer, OperationItem> children = LoadOperationsByIds(db, linkedIds, accounts, toCurrency);
+
+        for (OperationItem op : transactions) {
+            op.LinkedLeg = null;
+            op.LinkedCommission = null;
+            Map<Integer, OperationItem.LinkType> links = linksByMain.get(op.IdTran);
+            if (links != null) attachLinks(op, links, children);
+        }
+    }
+
+    /** Роль связанной проводки — явный operation_link.type (v77), см. {@link OperationItem.LinkType}. */
+    private static void attachLinks(OperationItem op, Map<Integer, OperationItem.LinkType> links,
+                                    Map<Integer, OperationItem> children) {
+        for (Map.Entry<Integer, OperationItem.LinkType> e : links.entrySet()) {
+            OperationItem child = children.get(e.getKey());
+            if (child == null) continue;
+            if (e.getValue() == OperationItem.LinkType.LEG) op.LinkedLeg = child;
+            else op.LinkedCommission = child;
+        }
+    }
+
+    private static final String SELECT_OPERATION_EQ = "SELECT t." + WalletContract.OperationEntry._ID
+            + ", " + WalletContract.OperationEntry.COLUMN_DATE
+            + ", " + WalletContract.OperationEntry.COLUMN_FROM
+            + ", " + WalletContract.OperationEntry.COLUMN_TO
+            + ", " + WalletContract.OperationEntry.COLUMN_AMOUNT
+            + ", amount_eq"
+            + ", t." + WalletContract.OperationEntry.COLUMN_COMMENT
+            + " FROM v_operation_eq t";
+
+    /** Операции по id одним запросом — как {@link #LoadSingleOperation}, но пачкой. */
+    static Map<Integer, OperationItem> LoadOperationsByIds(SQLiteDatabase db, Set<Integer> ids,
+                                                           AccountList accounts, Currency toCurrency) {
+        Map<Integer, OperationItem> result = new HashMap<>();
+        if (ids.isEmpty()) return result;
+        StringBuilder in = new StringBuilder();
+        for (Integer id : ids) {
+            if (in.length() > 0) in.append(",");
+            in.append(id);
+        }
+        Cursor cursor = db.rawQuery(SELECT_OPERATION_EQ
+                + " WHERE t." + WalletContract.OperationEntry._ID + " IN (" + in + ")"
+                + " AND (nullIf(to_currency_id, " + toCurrency.getId() + ") is null)", null);
+        try {
+            while (cursor.moveToNext()) {
+                OperationItem op = readOperationEq(cursor, accounts);
+                result.put(op.IdTran, op);
+            }
+        } finally {
+            cursor.close();
+        }
+        return result;
+    }
+
+    /** Строка {@link #SELECT_OPERATION_EQ} → операция. */
+    private static OperationItem readOperationEq(Cursor cursor, AccountList accounts) {
+        int amountEqIdx = cursor.getColumnIndex("amount_eq");
+        Double amEq = cursor.isNull(amountEqIdx) ? null : cursor.getDouble(amountEqIdx);
+        return new OperationItem(
+                cursor.getInt(cursor.getColumnIndex(WalletContract.OperationEntry._ID)),
+                DateUtils.StrToDate(cursor.getString(cursor.getColumnIndex(WalletContract.OperationEntry.COLUMN_DATE))),
+                accounts.getAccountById(cursor.getInt(cursor.getColumnIndex(WalletContract.OperationEntry.COLUMN_FROM))),
+                accounts.getAccountById(cursor.getInt(cursor.getColumnIndex(WalletContract.OperationEntry.COLUMN_TO))),
+                cursor.getDouble(cursor.getColumnIndex(WalletContract.OperationEntry.COLUMN_AMOUNT)),
+                amEq,
+                cursor.getString(cursor.getColumnIndex(WalletContract.OperationEntry.COLUMN_COMMENT)));
     }
 
     /**
@@ -1165,43 +1257,18 @@ public abstract class WalletDbLoader {
         op.LinkedCommission = null;
 
         Map<Integer, OperationItem.LinkType> linkTypes = WalletDbCRUD.GetLinkedOperations(db, op.IdTran);
-        for (Map.Entry<Integer, OperationItem.LinkType> e : linkTypes.entrySet()) {
-            OperationItem child = LoadSingleOperation(db, e.getKey(), accounts, toCurrency);
-            if (child == null) continue;
-
-            // Роль связанной проводки — явный operation_link.type (v77), а не вывод по
-            // system_kind счёта-источника (а до него — по совпадению id с op.AccTo), см.
-            // javadoc OperationItem.LinkType.
-            if (e.getValue() == OperationItem.LinkType.LEG) op.LinkedLeg = child;
-            else op.LinkedCommission = child;
-        }
+        if (linkTypes.isEmpty()) return;
+        attachLinks(op, linkTypes,
+                LoadOperationsByIds(db, linkTypes.keySet(), accounts, toCurrency));
     }
 
     public static OperationItem LoadSingleOperation(SQLiteDatabase db, int tranId, AccountList accounts, Currency toCurrency) {
-        String sql_select = "SELECT t." + WalletContract.OperationEntry._ID
-                + ", " + WalletContract.OperationEntry.COLUMN_DATE
-                + ", " + WalletContract.OperationEntry.COLUMN_FROM
-                + ", " + WalletContract.OperationEntry.COLUMN_TO
-                + ", " + WalletContract.OperationEntry.COLUMN_AMOUNT
-                + ", amount_eq"
-                + ", t." + WalletContract.OperationEntry.COLUMN_COMMENT
-                + " FROM v_operation_eq t"
+        Cursor cursor = db.rawQuery(SELECT_OPERATION_EQ
                 + " WHERE t." + WalletContract.OperationEntry._ID + " = ?"
-                + " AND (nullIf(to_currency_id, " + toCurrency.getId() + ") is null)";
-
-        Cursor cursor = db.rawQuery(sql_select, new String[]{String.valueOf(tranId)});
+                + " AND (nullIf(to_currency_id, " + toCurrency.getId() + ") is null)",
+                new String[]{String.valueOf(tranId)});
         try {
-            if (!cursor.moveToFirst()) return null;
-            int amountEqIdx = cursor.getColumnIndex("amount_eq");
-            Double amEq = cursor.isNull(amountEqIdx) ? null : cursor.getDouble(amountEqIdx);
-            return new OperationItem(
-                    cursor.getInt(cursor.getColumnIndex(WalletContract.OperationEntry._ID)),
-                    DateUtils.StrToDate(cursor.getString(cursor.getColumnIndex(WalletContract.OperationEntry.COLUMN_DATE))),
-                    accounts.getAccountById(cursor.getInt(cursor.getColumnIndex(WalletContract.OperationEntry.COLUMN_FROM))),
-                    accounts.getAccountById(cursor.getInt(cursor.getColumnIndex(WalletContract.OperationEntry.COLUMN_TO))),
-                    cursor.getDouble(cursor.getColumnIndex(WalletContract.OperationEntry.COLUMN_AMOUNT)),
-                    amEq,
-                    cursor.getString(cursor.getColumnIndex(WalletContract.OperationEntry.COLUMN_COMMENT)));
+            return cursor.moveToFirst() ? readOperationEq(cursor, accounts) : null;
         } finally {
             cursor.close();
         }
