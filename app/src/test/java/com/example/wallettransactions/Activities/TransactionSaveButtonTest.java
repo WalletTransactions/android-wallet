@@ -98,6 +98,24 @@ public class TransactionSaveButtonTest {
         assertEquals("не «1.0E7»", "10000000", amount.getText().toString());
     }
 
+    @Test
+    public void expense_to_transfer_keeps_wallet_as_source() {
+        Intent in = prefilledExpense(150.0);
+        AccountItem wallet = Singleton.instance.getAccounts(context).getAccountById(in.getIntExtra(TransactionActivity.cFrom, 0));
+        open(in);
+        TransactionActivity a = controller.get();
+        android.widget.TextView top = a.findViewById(R.id.editSlotTop);
+        android.widget.TextView bottom = a.findViewById(R.id.editSlotBottom);
+        assertEquals("расход: кошелёк — нижняя строка", wallet.getDisplayName(), bottom.getText().toString());
+
+        a.onKindClick(a.findViewById(R.id.kindTransfer));
+        assertEquals("деньги уходили с кошелька — в переводе он «Откуда»", wallet.getDisplayName(), top.getText().toString());
+        assertEquals("", bottom.getText().toString());
+
+        a.onKindClick(a.findViewById(R.id.kindExpense));
+        assertEquals("обратно в расход — снова кошелёк снизу", wallet.getDisplayName(), bottom.getText().toString());
+    }
+
     /** Те же extras, что кладёт AiActivity для черновика из ИИ. */
     private Intent prefilledExpense(double amount) {
         AccountItem wallet = null;
