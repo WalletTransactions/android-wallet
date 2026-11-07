@@ -15,6 +15,35 @@ public class AccountOperatingItem extends AccountItem {
 
     public double CurrentBalance;
 
+    /**
+     * Признак капитального актива (openspec capital-assets, design п. 6): тип и «Учитывать во
+     * „Всего с капиталом“» из живой строки {@code account_asset}. {@code null} — обычный
+     * (ликвидный) кошелёк.
+     */
+    public static final class AssetInfo {
+        public final int type;
+        public final boolean includeInNetWorth;
+
+        public AssetInfo(int type, boolean includeInNetWorth) {
+            this.type = type;
+            this.includeInNetWorth = includeInNetWorth;
+        }
+    }
+
+    private AssetInfo asset;
+
+    public AssetInfo getAsset() {
+        return asset;
+    }
+
+    public void setAsset(AssetInfo asset) {
+        this.asset = asset;
+    }
+
+    public boolean isAsset() {
+        return asset != null;
+    }
+
     public AccountOperatingItem(Integer id, String name, String comment, Icon icon, boolean isArchived,
                                  Currency currency, AccountItem.SystemKind systemKind, AccountItem.Kind kind)
     {

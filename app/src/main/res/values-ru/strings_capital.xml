@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Russian: capital assets and revaluation (openspec capital-assets). -->
+<resources>
+    <string name="system_category_revaluation">Переоценка</string>
+    <string name="account_system_revaluation_hint">Системная категория — через неё проводится переоценка активов, поэтому её нельзя удалить или переименовать</string>
+    <string name="picker_asset_name">%1$s · %2$s</string>
+    <string name="asset_type_real_estate_short">недвижимость</string>
+    <string name="asset_type_vehicle_short">авто</string>
+    <string name="asset_type_other_short">прочее</string>
+    <string name="asset_type_real_estate">Недвижимость</string>
+    <string name="asset_type_vehicle">Авто</string>
+    <string name="asset_type_other">Прочее</string>
+    <string name="asset_is_capital">Капитальный актив</string>
+    <string name="asset_type_label">Тип актива</string>
+    <string name="asset_in_net_worth">Учитывать во «Всего с капиталом»</string>
+    <string name="asset_revalue">Переоценить</string>
+    <string name="asset_move_operations">Перенести операции в актив</string>
+    <string name="revaluation_title">Переоценка</string>
+    <string name="revaluation_date">ДАТА</string>
+    <string name="revaluation_new_value">НОВАЯ ОЦЕНКА</string>
+    <string name="revaluation_cancel">Отмена</string>
+    <string name="revaluation_save">Сохранить</string>
+    <string name="revaluation_current">Сейчас: %1$s</string>
+    <string name="revaluation_current_delta">Сейчас: %1$s · Разница: %2$s</string>
+    <string name="revaluation_enter_value">Введите оценку</string>
+    <string name="revaluation_negative">Оценка не может быть отрицательной</string>
+    <string name="revaluation_too_precise">Не больше %1$d знаков после точки</string>
+    <string name="revaluation_comment">Оценка: %1$s</string>
+    <string name="revaluation_unchanged">Оценка не изменилась</string>
+    <string name="revaluation_failed">Не удалось записать переоценку</string>
+    <string name="revaluation_saved">Переоценка записана</string>
+    <string name="row_revaluation">Переоценка</string>
+    <string name="row_revaluation_comment">Переоценка · %1$s</string>
+    <string name="move_pick_asset">В какой актив</string>
+    <string name="move_confirm_title">Перенести операции в актив</string>
+    <string name="move_confirm_message">Операций: %1$d. Они станут переводами в «%2$s», а категория «%3$s» уйдёт в архив.</string>
+    <string name="move_confirm_ok">Перенести</string>
+    <string name="move_confirm_cancel">Отмена</string>
+    <string name="move_failed">Не удалось перенести операции: %1$s</string>
+    <string name="move_skipped">Не перенесено операций: %1$d — нет курса на дату. Добавьте курс и повторите.</string>
+    <string name="move_skipped_ok">Понятно</string>
+    <string name="move_done">Перенесено операций: %1$d</string>
+    <string name="wallets_section_liquid">Ликвидные</string>
+    <string name="wallets_section_capital">Капитал</string>
+    <string name="summary_capital">Капитал</string>
+    <string name="summary_net_worth">Всего с капиталом</string>
+    <string name="sync_healed_ledger_reread">Повторная загрузка кошелька с сервера — подтягиваю признаки активов</string>
+</resources>

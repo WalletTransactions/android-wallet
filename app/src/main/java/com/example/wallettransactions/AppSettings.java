@@ -47,6 +47,7 @@ public final class AppSettings {
     private static final String PREF_UUID_FORMAT_RESYNC_DONE = "uuidFormatResyncDone";
     private static final String PREF_DEFERRED_ROWS_RESYNC_DONE = "deferredRowsResyncDone";
     private static final String PREF_FULL_RELOAD_PENDING = "syncFullReloadPending";
+    private static final String PREF_LEDGER_REREAD_PENDING = "syncLedgerRereadPending";
     private static final String PREF_LAST_SYNC_SUCCESS_AT = "lastSyncSuccessAt";
     private static final String PREF_LEDGER_CONNECTION_PENDING = "ledgerConnectionPending";
     private static final String PREF_LEDGER_CONNECTION_DECISION = "ledgerConnectionDecision";
@@ -475,6 +476,22 @@ public final class AppSettings {
 
     public static void clearFullReloadPending(Context ctx) {
         prefs(ctx).edit().putBoolean(PREF_FULL_RELOAD_PENDING, false).commit();
+    }
+
+    /**
+     * Перечитать поток ledger с начала (openspec capital-assets, design п. 2): поднимает
+     * шаг БД v89 — прежняя версия молча пропускала в pull строки {@code account_asset}, а
+     * курсор ledger уходил дальше. {@code SyncEngine.pullAll} при флаге начинает ledger с 0
+     * (reference и {@code ledger_id} не трогает) и снимает флаг после первой применённой
+     * страницы — обрыв дальше продолжает с сохранённого курсора. Свежая установка флага не
+     * получает: курсор и так 0. Пишется синхронно ({@code commit}).
+     */
+    public static boolean isLedgerRereadPending(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_LEDGER_REREAD_PENDING, false);
+    }
+
+    public static void setLedgerRereadPending(Context ctx, boolean pending) {
+        prefs(ctx).edit().putBoolean(PREF_LEDGER_REREAD_PENDING, pending).commit();
     }
 
     /**

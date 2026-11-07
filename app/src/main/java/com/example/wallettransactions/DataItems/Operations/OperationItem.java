@@ -71,6 +71,20 @@ public class OperationItem {
         return LinkedLeg != null;
     }
 
+    /**
+     * Переоценка капитального актива (openspec capital-assets): одна из сторон — системная
+     * категория «Переоценка». Тот же признак, что колонка {@code is_revaluation} вьюх.
+     */
+    public boolean isRevaluation() {
+        return (AccFrom != null && AccFrom.isSystemRevaluation())
+                || (AccTo != null && AccTo.isSystemRevaluation());
+    }
+
+    /** Переоценка вверх — зачисление на актив (категория → актив). */
+    public boolean isRevaluationUp() {
+        return isRevaluation() && AccFrom != null && AccFrom.isSystemRevaluation();
+    }
+
     /** Кошелёк-получатель: у валютного перевода он на второй ноге, а не в этой проводке. */
     public AccountItem getDestinationAccount() {
         return LinkedLeg != null ? LinkedLeg.AccTo : AccTo;
@@ -90,6 +104,8 @@ public class OperationItem {
      * а не «на эту часть меньше».
      */
     public Double getMovementAmountEq() {
+        // Переоценка актива (capital-assets) — не движение денег: в итог дня не входит.
+        if (isRevaluation()) return 0.0;
         Double total = AmountEq;
         total = addPart(total, LinkedLeg);
         total = addPart(total, LinkedCommission);

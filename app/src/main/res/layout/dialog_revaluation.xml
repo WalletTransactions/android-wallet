@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Нижний лист «Переоценка» капитального актива (openspec capital-assets, asset-revaluation):
+  дата (по умолчанию сегодня), новая оценка в валюте актива и строка «Сейчас: … ·
+  Разница: …», пересчитываемая при вводе. Открывается кнопкой «Переоценить» карточки
+  актива (RevaluationDialog).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_sheet_top"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/dialogTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/revaluation_title"
+        android:textSize="21sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/caprasimo"
+        android:textColor="@color/colorTextPrimary"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/revaluation_date"/>
+    <EditText
+        android:id="@+id/inputDate"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_input_pill"
+        android:clickable="true"
+        android:cursorVisible="false"
+        android:focusable="false"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/revaluation_new_value"/>
+    <EditText
+        android:id="@+id/inputValue"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_input_pill"
+        android:hint="0"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:inputType="numberDecimal|numberSigned"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView
+        android:id="@+id/textCurrentDelta"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="13sp"
+        android:textColor="@color/colorTextSecondary"
+        android:layout_marginBottom="20dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btnCancel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="9dp"
+            android:background="@drawable/bg_pill_outline"
+            android:gravity="center"
+            android:text="@string/revaluation_cancel"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorTextPrimary"/>
+
+        <TextView
+            android:id="@+id/btnSave"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_primary"
+            android:gravity="center"
+            android:text="@string/revaluation_save"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorSurface"/>
+    </LinearLayout>
+</LinearLayout>

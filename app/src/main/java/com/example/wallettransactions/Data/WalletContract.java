@@ -120,6 +120,32 @@ public class WalletContract {
         public final static String COLUMN_UPDATED_BY_DEVICE = "updated_by_device";
     }
 
+    /**
+     * Признак капитального актива у кошелька (v88, openspec capital-assets, design п. 1) —
+     * по образцу {@link AccountOperatingEntry}: общий первичный ключ с {@code account}
+     * ({@code _id} = {@code account._id}, {@code uuid} = {@code account.uuid}), строка есть
+     * только у кошелька. Снятие признака — мягкое удаление ({@code deleted_at}), повторная
+     * пометка оживляет ту же строку. Синхронизируется таблицей {@code account_asset}
+     * (wallet-api, миграция 000033).
+     */
+    public static final class AccountAssetEntry implements BaseColumns {
+        public final static String TABLE_NAME = "account_asset";
+        public final static String _ID = BaseColumns._ID;
+        /** 1 — недвижимость, 2 — авто, 3 — прочее (CHECK на сервере). */
+        public final static String COLUMN_ASSET_TYPE = "asset_type";
+        /** 1 — актив входит во «Всего с капиталом». */
+        public final static String COLUMN_INCLUDE_IN_NET_WORTH = "include_in_net_worth";
+        public final static String COLUMN_COMMENT = "comment";
+        public final static String COLUMN_UUID = "uuid";
+        public final static String COLUMN_DIRTY = "dirty";
+        public final static String COLUMN_DELETED_AT = "deleted_at";
+        public final static String COLUMN_UPDATED_BY_DEVICE = "updated_by_device";
+
+        public final static int TYPE_REAL_ESTATE = 1;
+        public final static int TYPE_VEHICLE = 2;
+        public final static int TYPE_OTHER = 3;
+    }
+
     public static final class CurrencyEntry implements BaseColumns {
         public final static String TABLE_NAME = "currency";
 

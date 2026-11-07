@@ -64,7 +64,9 @@ public class AccountActivity extends BaseTabActivity {
         // «Отчётах» (ReportActivity.treeViewClick) — фильтр общий, поэтому он же виден в
         // шапке и снимается «Сбросить». Правка кошелька живёт в справочнике «Ещё».
         listWallets.setOnItemClickListener((parent, view, position, id) -> {
-            state().setAccountIds(this, Collections.singletonList(walletRows.get(position).accountId));
+            WalletRow row = walletRows.get(position);
+            if (row.isHeader()) return;
+            state().setAccountIds(this, Collections.singletonList(row.accountId));
 
             startActivity(new Intent(this, MainActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
@@ -107,11 +109,15 @@ public class AccountActivity extends BaseTabActivity {
             double netEq     = netEqComputable ? close.balanceEq - openEq : 0;
             double netNative = close.balance - openBal;
 
-            result.add(new WalletRow(close.accountId, close.name, close.currencySymbol,
+            WalletRow row = new WalletRow(close.accountId, close.name, close.currencySymbol,
                     openBal, openEq, openHasEq, open != null && open.approx,
                     close.balance, close.balanceEq, close.hasEq, close.approx,
-                    netEq, netEqComputable, netNative));
+                    netEq, netEqComputable, netNative);
+            row.isAsset = close.isAsset();
+            result.add(row);
         }
+        boolean hasAssets = false;
+        for (WalletRow r : result) hasAssets |= r.isAsset;
 
         // Fattest wallet at the end of the period first. Wallets whose currency has no rate to
         // currencyEq at all are not comparable with the rest, so they sink below every wallet
@@ -124,7 +130,23 @@ public class AccountActivity extends BaseTabActivity {
                         b.closeHasEq ? b.closeEq : b.closeBal,
                         a.closeHasEq ? a.closeEq : a.closeBal)));
 
-        return result;
+        if (!hasAssets) return result;
+        // capital-assets: «Ликвидные», затем «Капитал» — каждая секция со своей суммой на
+        // конец периода; сортировка «самый толстый первым» — внутри секции. Секцию, которую
+        // фильтр опустошил, не показываем вовсе.
+        List<WalletRow> liquid = new ArrayList<>();
+        List<WalletRow> assets = new ArrayList<>();
+        for (WalletRow r : result) (r.isAsset ? assets : liquid).add(r);
+        List<WalletRow> sectioned = new ArrayList<>();
+        if (!liquid.isEmpty()) {
+            sectioned.add(WalletRow.header(getString(R.string.wallets_section_liquid), liquid));
+            sectioned.addAll(liquid);
+        }
+        if (!assets.isEmpty()) {
+            sectioned.add(WalletRow.header(getString(R.string.wallets_section_capital), assets));
+            sectioned.addAll(assets);
+        }
+        return sectioned;
     }
 
     /**
@@ -177,6 +199,27 @@ public class AccountActivity extends BaseTabActivity {
         final double netEq;
         final boolean netEqComputable;
         final double netNative;
+        /** Капитальный актив (capital-assets) — строка секции «Капитал». */
+        boolean isAsset;
+        /** Не null — это заголовок секции, а не кошелёк: closeEq/closeHasEq — сумма секции. */
+        String headerTitle;
+
+        boolean isHeader() {
+            return headerTitle != null;
+        }
+
+        /** Заголовок секции: сумма closeEq строк с курсом; строка без курса — сумма неполная. */
+        static WalletRow header(String title, List<WalletRow> rows) {
+            double sum = 0;
+            boolean complete = true, approx = false;
+            for (WalletRow r : rows) {
+                if (r.closeHasEq) sum += r.closeEq; else complete = false;
+                approx |= r.closeApprox;
+            }
+            WalletRow h = new WalletRow(0, title, "", 0, 0, true, false, 0, sum, complete, approx, 0, false, 0);
+            h.headerTitle = title;
+            return h;
+        }
 
         WalletRow(int accountId, String name, String currencySymbol,
                   double openBal, double openEq, boolean openHasEq, boolean openApprox,
@@ -214,12 +257,39 @@ public class AccountActivity extends BaseTabActivity {
         }
 
         @Override
+        public int getViewTypeCount() {
+            return 2;
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            return getItem(position).isHeader() ? 1 : 0;
+        }
+
+        @Override
+        public boolean isEnabled(int position) {
+            return !getItem(position).isHeader();
+        }
+
+        private View getHeaderView(WalletRow row, View convertView, ViewGroup parent) {
+            if (convertView == null)
+                convertView = LayoutInflater.from(getContext())
+                        .inflate(R.layout.wallet_section_header, parent, false);
+            ((TextView) convertView.findViewById(R.id.sectionTitle)).setText(row.headerTitle);
+            String prefix = !row.closeHasEq ? "~" : row.closeApprox ? "≈ " : "";
+            ((TextView) convertView.findViewById(R.id.sectionSum)).setText(prefix
+                    + AdapterUtils.getFormat(mCurrencyEq.getPrecision()).format(row.closeEq) + " " + mCurrencyEq.getSymbol());
+            return convertView;
+        }
+
+        @Override
         public View getView(int position, View convertView, ViewGroup parent) {
+            WalletRow row = getItem(position);
+            if (row.isHeader()) return getHeaderView(row, convertView, parent);
+
             if (convertView == null)
                 convertView = LayoutInflater.from(getContext())
                         .inflate(R.layout.wallet_balance_item_layout, parent, false);
-
-            WalletRow row = getItem(position);
 
             ImageView imgIcon = convertView.findViewById(R.id.walletIcon);
             ImageView imgFlag = convertView.findViewById(R.id.walletFlag);

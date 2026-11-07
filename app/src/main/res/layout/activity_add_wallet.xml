@@ -122,7 +122,11 @@
                     android:textSize="15sp"/>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_add_wallet_text_5"/>
+            <!-- Капитальный актив (capital-assets) — «Учитывать во „Всего с капиталом“»
+                 здесь скрыт: новый актив по умолчанию в итоге, менять — в карточке. -->
+            <include layout="@layout/view_asset_fields"/>
+
+                        <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_add_wallet_text_5"/>
 
             <EditText
                 android:id="@+id/editWalletComment"

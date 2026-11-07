@@ -29,6 +29,16 @@ public class AccountItem implements IFilterIsLike {
     public static final String SYSTEM_COMMISSION_NAME = "Transfer commission";
 
     /**
+     * Третья системная категория — «Переоценка» капитального актива (v88, openspec
+     * capital-assets, design п. 4): через неё проводится разница между новой оценкой актива и
+     * его балансом. Проводки с ней не входят ни в доход, ни в расход (колонка
+     * {@code is_revaluation} вьюх). Заводится лениво при первой переоценке; если обычная
+     * категория с этим именем уже есть, берётся {@link #SYSTEM_REVALUATION_FALLBACK_NAME}.
+     */
+    public static final String SYSTEM_REVALUATION_NAME = "Переоценка"; // not UI: хранимое имя, уходит в синк
+    public static final String SYSTEM_REVALUATION_FALLBACK_NAME = "Переоценка активов"; // not UI
+
+    /**
      * Явный признак системности счёта (v75, колонка {@code account.system_kind}) — заменяет
      * прежнее распознавание по имени ({@link #isSystemName}). Значения и их числовые коды
      * зафиксированы на сервере (see servers/), менять код существующего значения нельзя.
@@ -36,7 +46,8 @@ public class AccountItem implements IFilterIsLike {
     public enum SystemKind {
         NONE(0),
         TRANSFER(1),
-        TRANSFER_COMMISSION(2);
+        TRANSFER_COMMISSION(2),
+        REVALUATION(3);
 
         private final int value;
 
@@ -52,6 +63,7 @@ public class AccountItem implements IFilterIsLike {
         public static SystemKind fromValue(int value) {
             if (value == TRANSFER.value) return TRANSFER;
             if (value == TRANSFER_COMMISSION.value) return TRANSFER_COMMISSION;
+            if (value == REVALUATION.value) return REVALUATION;
             return NONE;
         }
     }
@@ -115,9 +127,14 @@ public class AccountItem implements IFilterIsLike {
         return systemKind != SystemKind.NONE;
     }
 
-    /** Системных категорий две, и объясняются они по-разному — см. AccountItemActivity. */
+    /** Системных категорий три, и объясняются они по-разному — см. AccountItemActivity. */
     public boolean isSystemCommission() {
         return systemKind == SystemKind.TRANSFER_COMMISSION;
+    }
+
+    /** Системная категория переоценки активов (capital-assets). */
+    public boolean isSystemRevaluation() {
+        return systemKind == SystemKind.REVALUATION;
     }
 
     public SystemKind getSystemKind() {
@@ -161,6 +178,10 @@ public class AccountItem implements IFilterIsLike {
                 return c.getString(com.example.wallettransactions.R.string.system_category_transfer);
             case TRANSFER_COMMISSION:
                 return c.getString(com.example.wallettransactions.R.string.system_category_transfer_commission);
+            case REVALUATION:
+                // Хранимое имя («Переоценка» или запасное «Переоценка активов») — данные
+                // синка; показ — на языке интерфейса, как у Transfer.
+                return c.getString(com.example.wallettransactions.R.string.system_category_revaluation);
             default:
                 return name;
         }

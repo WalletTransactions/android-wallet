@@ -127,7 +127,7 @@ final class SyncEngine {
     /** См. javadoc класса, "Порядок применения pull" — icon первым: на него ссылаются account/currency. */
     private static final String[] TABLE_ORDER = {
             "icon", "currency", "currency_pair", "currency_pair_rate", "currency_conversion",
-            "account", "account_operating", "operation", "operation_link",
+            "account", "account_operating", "account_asset", "operation", "operation_link",
     };
 
     /**
@@ -619,6 +619,20 @@ final class SyncEngine {
                     return row;
                 }));
 
+        putOrdered(byTable, "account_asset", collect(db,
+                // capital-assets: ключи — по TableSpec wallet-api (asset_type, include_in_net_worth,
+                // comment), сервер читает каждую колонку без дефолта. uuid — тот же, что у счёта.
+                "SELECT uuid, asset_type, include_in_net_worth, comment, deleted_at FROM account_asset WHERE dirty=1",
+                c -> {
+                    JSONObject row = new JSONObject();
+                    row.put("uuid", c.getString(0));
+                    row.put("asset_type", c.getInt(1));
+                    row.put("include_in_net_worth", c.getInt(2) != 0);
+                    row.put("comment", c.getString(3));
+                    row.put("deleted", !c.isNull(4));
+                    return row;
+                }));
+
         putOrdered(byTable, "operation", collect(db,
                 "SELECT uuid, date, acc_fr_id, acc_to_id, CAST(amount AS TEXT), comment, deleted_at FROM operation WHERE dirty=1",
                 c -> {
@@ -796,7 +810,7 @@ final class SyncEngine {
      * т.п.), не трогаем — они и так указывают на верную строку, меняется
      * только то, каким {@code uuid} она назовётся при следующей отправке.
      */
-    private static void resolveAccountConflicts(SQLiteDatabase db, JSONArray conflicts) throws JSONException {
+    static void resolveAccountConflicts(SQLiteDatabase db, JSONArray conflicts) throws JSONException {
         for (int i = 0; i < conflicts.length(); i++) {
             JSONObject conflict = conflicts.getJSONObject(i);
             if (!"account".equals(conflict.optString("table"))
@@ -824,6 +838,9 @@ final class SyncEngine {
             ContentValues cvOp = new ContentValues();
             cvOp.put("uuid", survivorUuid);
             db.update("account_operating", cvOp, "uuid=?", new String[]{ourUuid});
+            // account_asset.uuid — тот же инвариант (capital-assets), иначе признак актива
+            // ушёл бы со старым uuid несуществующего на сервере счёта.
+            db.update("account_asset", cvOp, "uuid=?", new String[]{ourUuid});
 
             Log.i(TAG, "account uuid " + ourUuid + " переклеен на существующий " + survivorUuid
                     + " (конфликт имени счёта)"); // not UI: лог
@@ -853,13 +870,23 @@ final class SyncEngine {
             AppSettings.setDeferredRowsResyncDone(ctx);
             log.healed(Texts.get(R.string.sync_healed_resync));
         }
+        // Однократный перечит ledger после шага БД v88 (capital-assets, design п. 2):
+        // прежняя версия пропускала строки account_asset, а курсор уходил дальше. Только
+        // ledger — reference и ledger_id не трогаем; флаг снимается после первой
+        // применённой страницы, дальше обрыв продолжает с сохранённого курсора. Это не
+        // загрузка с вычисткой: upsert по uuid идемпотентен, удалять нечего.
+        boolean ledgerReread = AppSettings.isLedgerRereadPending(ctx);
+        if (ledgerReread) {
+            AppSettings.setLedgerSyncSeq(ctx, 0);
+            log.healed(Texts.get(R.string.sync_healed_ledger_reread));
+        }
         long ledgerSeq = AppSettings.getLedgerSyncSeq(ctx);
         long referenceSeq = AppSettings.getReferenceSyncSeq(ctx);
         // Поток с нуля при уже синкнутых строках (вход в другой аккаунт,
         // resetSyncCursors) — тоже загрузка с вычисткой (purge-synced-tombstones,
         // design п. 4): иначе строки, которых на сервере больше нет, остались бы.
         // Оба курсора с нуля — локально не различить, какой поток принёс строку.
-        if (!AppSettings.isFullReloadPending(ctx) && (ledgerSeq == 0 || referenceSeq == 0)
+        if (!ledgerReread && !AppSettings.isFullReloadPending(ctx) && (ledgerSeq == 0 || referenceSeq == 0)
                 && hasSyncedRows(db)) {
             startFullReload(db, ctx);
             ledgerSeq = 0;
@@ -953,7 +980,13 @@ final class SyncEngine {
             referenceSeq = result.reference.nextSeq;
             AppSettings.setLedgerSyncSeq(ctx, ledgerSeq);
             AppSettings.setReferenceSyncSeq(ctx, referenceSeq);
+            if (ledgerReread) {
+                // Страница перечита применена и курсор сохранён — дальше обычная позиция.
+                AppSettings.setLedgerRereadPending(ctx, false);
+                ledgerReread = false;
+            }
         }
+        if (ledgerReread && caughtUp) AppSettings.setLedgerRereadPending(ctx, false); // поток ledger пуст
 
         // Новых страниц нет, а отложенное осталось (родитель пришёл в самой
         // последней странице или был применён в прошлом синке) — ещё один проход.
@@ -984,7 +1017,8 @@ final class SyncEngine {
             if (total > 0) log.healed(Texts.get(R.string.sync_healed_swept, total));
         }
 
-        boolean touchedAccounts = touched.contains("account") || touched.contains("account_operating");
+        boolean touchedAccounts = touched.contains("account") || touched.contains("account_operating")
+                || touched.contains("account_asset");
         boolean touchedIcons = touched.contains("icon");
         boolean touchedCurrencies = touched.contains("currency");
         boolean touchedCurrencyPairs = touched.contains("currency_pair") || touched.contains("currency_pair_rate");
@@ -1159,6 +1193,7 @@ final class SyncEngine {
             case "currency_conversion": return applyCurrencyConversion(db, row);
             case "account": return applyAccount(db, row, log, iconGuard);
             case "account_operating": return applyAccountOperating(db, row);
+            case "account_asset": return applyAccountAsset(db, row);
             case "operation": return applyOperation(db, row, log);
             case "operation_link": return applyOperationLink(db, row);
             case "icon": applyIcon(db, row, newIconBlobs, log); return true;
@@ -1497,6 +1532,38 @@ final class SyncEngine {
         return true;
     }
 
+    /**
+     * Признак капитального актива (capital-assets, design п. 3) — копия логики
+     * {@link #applyAccountOperating}: общий первичный ключ с {@code account}, родительский
+     * счёт ищется по тому же uuid. Счёта ещё нет — строка откладывается до его прихода.
+     */
+    private static boolean applyAccountAsset(SQLiteDatabase db, JSONObject row) throws JSONException {
+        String uuid = row.getString("uuid");
+        Long accountId = findIdByUuid(db, "account", uuid);
+        if (accountId == null) {
+            Log.w(TAG, "account_asset " + uuid + ": account ещё не применён — строка отложена");
+            return false;
+        }
+        ContentValues cv = new ContentValues();
+        cv.put("asset_type", row.getInt("asset_type"));
+        cv.put("include_in_net_worth", row.getBoolean("include_in_net_worth") ? 1 : 0);
+        cv.put("comment", row.optString("comment", ""));
+        applySyncColumns(cv, row);
+        try {
+            String local = localUuid(db, "account_asset", uuid);
+            if (local != null) {
+                updateFromServer(db, "account_asset", cv, local);
+            } else {
+                cv.put("_id", accountId);
+                cv.put("uuid", localUuid(db, "account", uuid));
+                db.insertOrThrow("account_asset", null, cv);
+            }
+        } catch (SQLiteException e) {
+            Log.w(TAG, "upsert account_asset uuid=" + uuid + " не удался: " + e.getMessage());
+        }
+        return true;
+    }
+
     private static boolean applyOperation(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
         String uuid = row.getString("uuid");
         Long accFr = findIdByUuid(db, "account", row.getString("acc_fr_uuid"));
@@ -1546,7 +1613,7 @@ final class SyncEngine {
      * освобождает свой удалённый счёт. Тот же состав, что {@link #TABLE_ORDER}.
      */
     static final List<String> PURGE_ORDER = Arrays.asList(
-            "operation_link", "operation", "account_operating", "account", "currency_conversion",
+            "operation_link", "operation", "account_asset", "account_operating", "account", "currency_conversion",
             "currency_pair_rate", "currency_pair", "currency", "icon");
 
     static boolean isSyncTable(String table) {

@@ -10,12 +10,13 @@ public class DataFilter {
      * Вид операции. Доход — с категории на кошелёк, расход — с кошелька на категорию;
      * ровно те же условия, по которым считают свои суммы отчёты «Доход»/«Расход»
      * (см. WalletDbLoader.GenerateIncomeReportByAccount). Перевод — операция между двумя
-     * кошельками, ни в один из этих отчётов не попадает.
+     * кошельками, ни в один из этих отчётов не попадает. Переоценка капитального актива
+     * ({@code is_revaluation = 1}, capital-assets) — ни доход, ни расход.
      */
     public enum OperationKind {
         all(""),
-        income(" AND acc_to_is_operating = 1 AND acc_from_is_operating = 0\n"),
-        expense(" AND acc_to_is_operating = 0 AND acc_from_is_operating = 1\n"),
+        income(" AND acc_to_is_operating = 1 AND acc_from_is_operating = 0 AND is_revaluation = 0\n"),
+        expense(" AND acc_to_is_operating = 0 AND acc_from_is_operating = 1 AND is_revaluation = 0\n"),
         transfer(" AND acc_to_is_operating = 1 AND acc_from_is_operating = 1\n");
 
         private final String sql;
@@ -110,9 +111,10 @@ public class DataFilter {
      * операции: после правки одной операции лента обновляется без перезапроса базы.
      */
     public boolean matchesKind(AccountItem accFrom, AccountItem accTo) {
+        boolean revaluation = accFrom.isSystemRevaluation() || accTo.isSystemRevaluation();
         switch (operationKind) {
-            case income:   return accTo.isOperatingAccount() && !accFrom.isOperatingAccount();
-            case expense:  return accFrom.isOperatingAccount() && !accTo.isOperatingAccount();
+            case income:   return accTo.isOperatingAccount() && !accFrom.isOperatingAccount() && !revaluation;
+            case expense:  return accFrom.isOperatingAccount() && !accTo.isOperatingAccount() && !revaluation;
             case transfer: return accFrom.isOperatingAccount() && accTo.isOperatingAccount();
             default:       return true;
         }

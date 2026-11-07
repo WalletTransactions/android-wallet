@@ -249,6 +249,27 @@ public abstract class BaseTabActivity extends AppCompatActivity {
                 currencyEq, AdapterUtils.Operation.deposit);
         AdapterUtils.setAmountText(findViewById(R.id.expenseSum), reportExpanse.getTotal(),
                 currencyEq, AdapterUtils.Operation.expanse);
+
+        refreshCapitalRow(db, currencyEq);
+    }
+
+    /**
+     * Строка «Капитал · Всего с капиталом» на конец периода (openspec capital-assets): итоги
+     * выше считают только ликвидные кошельки, капитал — отдельно, тем же запросом балансов.
+     * Без активов строки нет.
+     */
+    private void refreshCapitalRow(SQLiteDatabase db, Currency currencyEq) {
+        View row = findViewById(R.id.capitalRow);
+        if (row == null) return;
+        // Помеченный актив без операций тоже показывает строку (с нулём).
+        boolean hasAssets = com.example.wallettransactions.Data.WalletDbCRUD.HasAssets(db);
+        row.setVisibility(hasAssets ? View.VISIBLE : View.GONE);
+        if (!hasAssets) return;
+        WalletDbLoader.CapitalResult capital = WalletDbLoader.GenerateCapitalToDate(db, getDateTo(), currencyEq);
+        AdapterUtils.setAmountText(findViewById(R.id.capitalSum), capital.capital, currencyEq,
+                AdapterUtils.Operation.transfer);
+        AdapterUtils.setAmountText(findViewById(R.id.netWorthSum), capital.netWorth, currencyEq,
+                AdapterUtils.Operation.transfer);
     }
 
     protected void refreshFilterBanner() {

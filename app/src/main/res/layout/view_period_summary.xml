@@ -106,6 +106,61 @@
                 tools:text="592 794 ₽"/>
         </LinearLayout>
 
+        <!-- Капитал на конец периода (openspec capital-assets): видна, только если есть
+             хоть один актив. «На начало», «На конец» и «Итог» выше — только ликвидные
+             кошельки; эта строка объясняет, куда «ушли» деньги, вложенные в актив. -->
+        <LinearLayout
+            android:id="@+id/capitalRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:baselineAligned="true"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.07"
+                android:text="@string/summary_capital"
+                android:textAllCaps="true"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="10.5sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/capitalSum"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="12 000 000 ₽"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.07"
+                android:text="@string/summary_net_worth"
+                android:textAllCaps="true"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="10.5sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/netWorthSum"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="12 592 794 ₽"/>
+        </LinearLayout>
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

@@ -121,7 +121,13 @@ public final class LedgerConnection {
             ContentValues ao = new ContentValues();
             ao.put("uuid", serverUuid);
             replaceUuid(db, "account_operating", aoUuid, serverUuid, ao);
+            // Признак актива (capital-assets) — тот же uuid, что у счёта. Он свой,
+            // неотправленный: uuid меняем, dirty остаётся (поднимет триггер) — уйдёт push'ем.
+            ContentValues asset = new ContentValues();
+            asset.put("uuid", serverUuid);
+            db.update("account_asset", asset, "_id = ?", new String[]{Long.toString(accountId)});
         } else {
+            db.delete("account_asset", "_id = ?", new String[]{Long.toString(accountId)});
             db.delete("account_operating", "_id = ?", new String[]{Long.toString(accountId)});
         }
     }
@@ -201,6 +207,9 @@ public final class LedgerConnection {
         try {
             db.execSQL("PRAGMA defer_foreign_keys = ON");
             db.delete("operation", "dirty <> 0", null);
+            // Неотправленные признаки активов (capital-assets) — раньше счетов: account_asset
+            // ссылается на account, и удаление счёта упёрлось бы во внешний ключ.
+            db.delete("account_asset", "dirty <> 0", null);
             db.delete("account_operating", "dirty <> 0"
                     + " AND _id NOT IN (SELECT acc_fr_id FROM operation)"
                     + " AND _id NOT IN (SELECT acc_to_id FROM operation)", null);

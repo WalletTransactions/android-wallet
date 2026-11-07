@@ -35,11 +35,13 @@ public class AddWalletActivity extends AppCompatActivity {
     /** -1 — не выбрана: при сохранении подставим «неизвестную». */
     private int selectedIconId = -1;
     private Currency selectedCurrency;
+    private AssetFields assetFields;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_wallet);
+        assetFields = new AssetFields(this, null, false, null);
 
         ((TextView) findViewById(R.id.screenTitle)).setText(R.string.account_new_wallet);
 
@@ -118,8 +120,18 @@ public class AddWalletActivity extends AppCompatActivity {
         int iconId = selectedIconId > 0 ? selectedIconId
                 : Singleton.instance.getIconList(this).getUnknownIcon().getId();
 
-        WalletDbCRUD.InsertOperatingAccount(db, name,
-                editComment.getText().toString().trim(), iconId, selectedCurrency.getId());
+        // Кошелёк и признак актива — одной транзакцией (capital-assets).
+        db.beginTransaction();
+        try {
+            long id = WalletDbCRUD.InsertOperatingAccount(db, name,
+                    editComment.getText().toString().trim(), iconId, selectedCurrency.getId());
+            if (id > 0 && assetFields.isAsset()) {
+                WalletDbCRUD.SetAccountAsset(db, (int) id, assetFields.type(), assetFields.includeInNetWorth());
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
 
         SQLiteDatabase rdb = new WalletDbHelper(this).getReadableDatabase();
         WalletDbLoader.LoadIcons(rdb, Singleton.instance.getIconList(this));

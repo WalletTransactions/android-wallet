@@ -53,6 +53,9 @@ public class AccountItemActivity extends AppCompatActivity {
     private boolean originalArchived;
     private int originalCurrencyId = -1;
     private int originalIconId = -1;
+    /** Признак актива на входе (capital-assets); null — обычный кошелёк или категория. */
+    private AccountOperatingItem.AssetInfo originalAsset;
+    private AssetFields assetFields;
 
     public static final String ARG_ACCOUNT_ID = "AccountItemActivity.account_id";
 
@@ -96,6 +99,10 @@ public class AccountItemActivity extends AppCompatActivity {
             originalCurrencyId = selectedCurrency.getId();
             operatingGroup.setVisibility(View.VISIBLE);
             refreshCurrencyUI();
+            originalAsset = ((AccountOperatingItem) account).getAsset();
+            assetFields = new AssetFields(this, originalAsset, true, this::updateSaveButton);
+            // «Переоценить» — только у актива, сохранённого как актив (не у только что отмеченного).
+            findViewById(R.id.btnRevaluate).setVisibility(originalAsset != null ? View.VISIBLE : View.GONE);
         } else {
             setScreenTitle(getString(R.string.account_title_category));
             operatingGroup.setVisibility(View.GONE);
@@ -105,6 +112,9 @@ public class AccountItemActivity extends AppCompatActivity {
         if (!WalletDbCRUD.HasOperations(db, account.getId()) && !account.isSystem()) {
             btnDelete.setVisibility(View.VISIBLE);
         }
+        // Перенос операций в актив — у обычной категории, если активы вообще есть.
+        boolean canMove = !account.isOperatingAccount() && !account.isSystem() && WalletDbCRUD.HasAssets(db);
+        findViewById(R.id.btnMoveToAsset).setVisibility(canMove ? View.VISIBLE : View.GONE);
 
         if (account.isSystem()) {
             // Системный счёт опознаётся по имени, поэтому переименование пришлось бы
@@ -112,6 +122,8 @@ public class AccountItemActivity extends AppCompatActivity {
             editAccName.setEnabled(false);
             editComment.setHint(account.isSystemCommission()
                     ? R.string.account_system_commission_hint
+                    : account.isSystemRevaluation()
+                    ? R.string.account_system_revaluation_hint
                     : R.string.account_system_transfer_hint);
         }
 
@@ -145,7 +157,8 @@ public class AccountItemActivity extends AppCompatActivity {
                 || !editComment.getText().toString().trim().equals(originalComment)
                 || checkIsArchive.isChecked() != originalArchived
                 || selectedIconId != originalIconId
-                || (selectedCurrency != null && selectedCurrency.getId() != originalCurrencyId);
+                || (selectedCurrency != null && selectedCurrency.getId() != originalCurrencyId)
+                || (assetFields != null && assetFields.differsFrom(originalAsset));
         btnSave.setEnabled(changed);
         btnSave.setAlpha(changed ? 1f : 0.4f);
     }
@@ -204,11 +217,26 @@ public class AccountItemActivity extends AppCompatActivity {
 
         int iconId = selectedIconId > 0 ? selectedIconId : account.getIcon().getId();
 
-        WalletDbCRUD.UpdateAccount(db, account.getId(), name,
-                editComment.getText().toString().trim(), iconId, checkIsArchive.isChecked());
+        // Счёт, валюта и признак актива — одной транзакцией (capital-assets). Снятие
+        // признака операции кошелька не трогает.
+        db.beginTransaction();
+        try {
+            WalletDbCRUD.UpdateAccount(db, account.getId(), name,
+                    editComment.getText().toString().trim(), iconId, checkIsArchive.isChecked());
 
-        if (account instanceof AccountOperatingItem && selectedCurrency != null) {
-            WalletDbCRUD.UpdateAccountCurrency(db, account.getId(), selectedCurrency.getId());
+            if (account instanceof AccountOperatingItem && selectedCurrency != null) {
+                WalletDbCRUD.UpdateAccountCurrency(db, account.getId(), selectedCurrency.getId());
+            }
+            if (assetFields != null && assetFields.differsFrom(originalAsset)) {
+                if (assetFields.isAsset()) {
+                    WalletDbCRUD.SetAccountAsset(db, account.getId(), assetFields.type(), assetFields.includeInNetWorth());
+                } else {
+                    WalletDbCRUD.ClearAccountAsset(db, account.getId());
+                }
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
         }
 
         reloadSingleton();
@@ -250,6 +278,72 @@ public class AccountItemActivity extends AppCompatActivity {
             return getString(R.string.account_delete_refused_system, account.getDisplayName());
         }
         return getString(R.string.account_delete_refused_operations, account.getDisplayName());
+    }
+
+    /** Диалог «Переоценка» (capital-assets, asset-revaluation). */
+    public void btnRevaluateClick(View view) {
+        new RevaluationDialog(this, (AccountOperatingItem) account, () -> {
+            setResult(RESULT_OK);
+            Toast.makeText(this, R.string.revaluation_saved, Toast.LENGTH_SHORT).show();
+        }).show();
+    }
+
+    /**
+     * «Перенести операции в актив» (capital-assets): выбор актива, подтверждение с числом
+     * операций, перенос одной транзакцией ({@link WalletDbCRUD#MoveCategoryToAsset}), синк в
+     * фоне. Пропущенные без курса — отдельным сообщением, категория тогда остаётся.
+     */
+    public void btnMoveToAssetClick(View view) {
+        java.util.List<AccountOperatingItem> assets = new java.util.ArrayList<>();
+        for (AccountItem a : Singleton.instance.getAccounts(this).getAllAccounts()) {
+            if (a instanceof AccountOperatingItem && ((AccountOperatingItem) a).isAsset()
+                    && !Boolean.TRUE.equals(a.getIsArchived())) {
+                assets.add((AccountOperatingItem) a);
+            }
+        }
+        if (assets.isEmpty()) return;
+        String[] names = new String[assets.size()];
+        for (int i = 0; i < assets.size(); i++) names[i] = assets.get(i).getDisplayName();
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.move_pick_asset)
+                .setItems(names, (d, which) -> confirmMove(assets.get(which)))
+                .show();
+    }
+
+    private void confirmMove(AccountOperatingItem asset) {
+        SQLiteDatabase db = Singleton.instance.getWritableDatabase(this);
+        int count = WalletDbCRUD.CountCategoryWalletOperations(db, account.getId());
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.move_confirm_title)
+                .setMessage(getString(R.string.move_confirm_message, count, asset.getDisplayName(), account.getDisplayName()))
+                .setPositiveButton(R.string.move_confirm_ok, (d, w) -> moveTo(asset))
+                .setNegativeButton(R.string.move_confirm_cancel, null)
+                .show();
+    }
+
+    private void moveTo(AccountOperatingItem asset) {
+        SQLiteDatabase db = Singleton.instance.getWritableDatabase(this);
+        WalletDbCRUD.MoveResult result;
+        try {
+            result = WalletDbCRUD.MoveCategoryToAsset(db, account.getId(), asset.getId());
+        } catch (RuntimeException e) {
+            Toast.makeText(this, getString(R.string.move_failed, e.getMessage()), Toast.LENGTH_LONG).show();
+            return;
+        }
+        reloadSingleton();
+        com.example.wallettransactions.PeriodFilterState.get(this).markDataChanged();
+        android.content.Context app = getApplicationContext();
+        new Thread(() -> com.example.wallettransactions.sync.SyncRunner.runOnce(app)).start();
+        setResult(RESULT_OK);
+        if (result.skippedNoRate > 0) {
+            new AlertDialog.Builder(this)
+                    .setMessage(getString(R.string.move_skipped, result.skippedNoRate))
+                    .setPositiveButton(R.string.move_skipped_ok, (d, w) -> finish())
+                    .show();
+        } else {
+            Toast.makeText(this, getString(R.string.move_done, result.moved), Toast.LENGTH_SHORT).show();
+            finish();
+        }
     }
 
     private void refreshCurrencyUI() {

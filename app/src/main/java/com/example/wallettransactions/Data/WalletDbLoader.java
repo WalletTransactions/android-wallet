@@ -121,10 +121,24 @@ public abstract class WalletDbLoader {
         public final boolean hasEq;
         /** True whenever a conversion was applied, i.e. the wallet is not already in the target currency. */
         public final boolean approx;
+        /**
+         * Тип капитального актива (capital-assets) из живой строки {@code account_asset};
+         * {@code null} — обычный (ликвидный) кошелёк.
+         */
+        public final Integer assetType;
+        /** Входит ли актив во «Всего с капиталом»; у ликвидного кошелька всегда true. */
+        public final boolean includeInNetWorth;
 
         public WalletBalanceRow(int accountId, String name, double balance,
                                 String currencySymbol, double balanceEq,
                                 boolean hasEq, boolean approx) {
+            this(accountId, name, balance, currencySymbol, balanceEq, hasEq, approx, null, true);
+        }
+
+        public WalletBalanceRow(int accountId, String name, double balance,
+                                String currencySymbol, double balanceEq,
+                                boolean hasEq, boolean approx,
+                                Integer assetType, boolean includeInNetWorth) {
             this.accountId      = accountId;
             this.name           = name;
             this.balance        = balance;
@@ -132,6 +146,12 @@ public abstract class WalletDbLoader {
             this.balanceEq      = balanceEq;
             this.hasEq          = hasEq;
             this.approx         = approx;
+            this.assetType      = assetType;
+            this.includeInNetWorth = includeInNetWorth;
+        }
+
+        public boolean isAsset() {
+            return assetType != null;
         }
     }
 
@@ -149,9 +169,12 @@ public abstract class WalletDbLoader {
                 "round(coalesce(opt.amount_to, 0) - coalesce(opf.amount_fr, 0), c.precision) balance, " +
                 // No coalesce on the rate: a missing rate must leave balance_eq NULL rather
                 // than silently converting 1:1.
-                "round(vccr.rate * (coalesce(opt.amount_to, 0) - coalesce(opf.amount_fr, 0)), 2) balance_eq " +
+                "round(vccr.rate * (coalesce(opt.amount_to, 0) - coalesce(opf.amount_fr, 0)), 2) balance_eq, " +
+                // capital-assets: признак актива — тем же запросом, итоги разбиваются по нему.
+                "aa.asset_type, coalesce(aa.include_in_net_worth, 1) include_in_net_worth " +
                 "FROM v_account_operating vao " +
                 "JOIN currency c ON vao.currency_id = c._id " +
+                "LEFT JOIN account_asset aa ON aa._id = vao._id AND aa.deleted_at IS NULL " +
                 // deleted_at IS NULL — с v72 WalletDbCRUD.DeleteOperation стал мягким;
                 // без фильтра баланс продолжал бы учитывать удалённые проводки.
                 "LEFT JOIN (SELECT acc_to_id, round(sum(amount), 2) amount_to FROM operation " +
@@ -185,6 +208,8 @@ public abstract class WalletDbLoader {
             int colSymbol     = cursor.getColumnIndex("symbol");
             int colEq         = cursor.getColumnIndex("balance_eq");
             int colCurrencyId = cursor.getColumnIndex("currency_id");
+            int colAssetType  = cursor.getColumnIndex("asset_type");
+            int colInclude    = cursor.getColumnIndex("include_in_net_worth");
 
             while (cursor.moveToNext()) {
                 boolean hasEq  = !cursor.isNull(colEq);
@@ -197,7 +222,9 @@ public abstract class WalletDbLoader {
                         cursor.getString(colSymbol),
                         hasEq ? cursor.getDouble(colEq) : 0,
                         hasEq,
-                        approx
+                        approx,
+                        cursor.isNull(colAssetType) ? null : cursor.getInt(colAssetType),
+                        cursor.getInt(colInclude) != 0
                 ));
             }
         } finally {
@@ -286,6 +313,9 @@ public abstract class WalletDbLoader {
         double totalEq = 0;
         boolean hasAprox = false, incomplete = false;
         for (WalletBalanceRow row : rows) {
+            // capital-assets: итог карточки — только ликвидные кошельки, капитал —
+            // GenerateCapitalToDate из тех же строк.
+            if (row.isAsset()) continue;
             if (!row.hasEq) {
                 // No rate at all: converting 1:1 would inflate the total, so the wallet is
                 // left out and the sum is reported as incomplete rather than merely rounded.
@@ -297,6 +327,80 @@ public abstract class WalletDbLoader {
         }
 
         return new EquivalentResult(totalEq, hasAprox, incomplete);
+    }
+
+    /** Капитал и «всего с капиталом» на дату — см. {@link #GenerateCapitalToDate}. */
+    public static class CapitalResult {
+        /** Есть ли хоть один актив с операциями до даты; нет — строк «Капитал» не показывают. */
+        public final boolean hasAssets;
+        public final EquivalentResult capital;
+        public final EquivalentResult netWorth;
+
+        public CapitalResult(boolean hasAssets, EquivalentResult capital, EquivalentResult netWorth) {
+            this.hasAssets = hasAssets;
+            this.capital = capital;
+            this.netWorth = netWorth;
+        }
+    }
+
+    /**
+     * Капитал (все активы) и «Всего с капиталом» (ликвидные + активы с включённым
+     * «Учитывать во „Всего с капиталом“») на дату, в валюте эквивалента (openspec
+     * capital-assets, design п. 6). Строится из того же {@link #LoadBalancesPerWallet}, что и
+     * {@link #GenerateReportGetBalanceToDate}, с той же неполнотой: строка без курса не
+     * пересчитывается 1:1, а помечает сумму неполной.
+     */
+    public static CapitalResult GenerateCapitalToDate(SQLiteDatabase db, Date date, Currency currencyEq) {
+        List<WalletBalanceRow> rows = LoadBalancesPerWallet(db, date, date, currencyEq);
+        double capital = 0, netWorth = 0;
+        boolean capApprox = false, capIncomplete = false, nwApprox = false, nwIncomplete = false;
+        boolean hasAssets = false;
+        for (WalletBalanceRow row : rows) {
+            boolean inNetWorth = !row.isAsset() || row.includeInNetWorth;
+            if (row.isAsset()) {
+                hasAssets = true;
+                if (row.hasEq) {
+                    capital += row.balanceEq;
+                    if (row.approx) capApprox = true;
+                } else {
+                    capIncomplete = true;
+                }
+            }
+            if (inNetWorth) {
+                if (row.hasEq) {
+                    netWorth += row.balanceEq;
+                    if (row.approx) nwApprox = true;
+                } else {
+                    nwIncomplete = true;
+                }
+            }
+        }
+        return new CapitalResult(hasAssets,
+                new EquivalentResult(capital, capApprox, capIncomplete),
+                new EquivalentResult(netWorth, nwApprox, nwIncomplete));
+    }
+
+    /**
+     * Баланс счёта в его валюте по всем живым проводкам с датой не позже {@code dateInclusive}
+     * (строка формата базы, сравнение строк — как у остальных запросов). Для диалога
+     * переоценки: Δ = новая оценка − этот баланс на конец выбранного дня.
+     */
+    public static double LoadAccountBalanceAt(SQLiteDatabase db, int accountId, String dateInclusive) {
+        String id = String.valueOf(accountId);
+        Cursor c = db.rawQuery(
+                "SELECT coalesce(sum(CASE WHEN " + WalletContract.OperationEntry.COLUMN_TO + " = ? THEN "
+                        + WalletContract.OperationEntry.COLUMN_AMOUNT + " ELSE -" + WalletContract.OperationEntry.COLUMN_AMOUNT
+                        + " END), 0) FROM " + WalletContract.OperationEntry.TABLE_NAME
+                        + " WHERE (" + WalletContract.OperationEntry.COLUMN_FROM + " = ? OR "
+                        + WalletContract.OperationEntry.COLUMN_TO + " = ?)"
+                        + " AND " + WalletContract.OperationEntry.COLUMN_DATE + " <= ?"
+                        + " AND " + WalletContract.OperationEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{id, id, id, dateInclusive});
+        try {
+            return c.moveToFirst() ? c.getDouble(0) : 0;
+        } finally {
+            c.close();
+        }
     }
 
 
@@ -349,7 +453,9 @@ public abstract class WalletDbLoader {
         String sql_select = "select o.acc_fr_id, o.currency_id, round(sum(amount),2) amount,  round(sum(amount_eq),2) amount_eq\n" +
                 "from v_operation_eq o\n" +
                 "WHERE "+ WalletContract.OperationEntry.COLUMN_DATE + " BETWEEN '" + DateUtils.DateToStr(dateFrom) + "' AND '" +DateUtils.DateToStr(dateTo)+"'\n"+
-                "and (nullIf(to_currency_id,"+currencyEq.getId()+") is null) and acc_to_is_operating = 1 and acc_from_is_operating =0\n"
+                "and (nullIf(to_currency_id,"+currencyEq.getId()+") is null) and acc_to_is_operating = 1 and acc_from_is_operating =0\n" +
+                // capital-assets: переоценка (одна сторона — «Переоценка») — не доход.
+                "and is_revaluation = 0\n"
                 + reportFilterSql(dataFilter)
                 // Credit-нога валютного перевода (Transfer → кошелёк) исключена: она не
                 // самостоятельный доход, а половина перевода, см. GetTransferNetEq выше и
@@ -405,6 +511,8 @@ public abstract class WalletDbLoader {
                 "from v_operation_eq o\n" +
                 "WHERE "+ WalletContract.OperationEntry.COLUMN_DATE + " BETWEEN '" + DateUtils.DateToStr(dateFrom) + "' AND '" +DateUtils.DateToStr(dateTo)+"'\n"+
                 "AND (nullIf(to_currency_id,"+currencyEq.getId()+") is null) and acc_to_is_operating = 0 and acc_from_is_operating =1\n" +
+                // capital-assets: переоценка вниз — не расход.
+                "and is_revaluation = 0\n" +
                 reportFilterSql(dataFilter) +
                 // Debit-нога валютного перевода (кошелёк → Transfer) исключена: она не
                 // самостоятельный расход, а половина перевода, см. GetTransferNetEq выше и
@@ -801,11 +909,17 @@ public abstract class WalletDbLoader {
                 +", a."+ WalletContract.AccountEntry.COLUMN_KIND
 
                 +", ao."+ WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID
+                // Признак актива (capital-assets) — только живая строка и только у кошелька.
+                +", aa."+ WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE
+                +", aa."+ WalletContract.AccountAssetEntry.COLUMN_INCLUDE_IN_NET_WORTH
 
                 +" FROM "+ WalletContract.AccountEntry.TABLE_NAME
                 +" a left join "+ WalletContract.AccountOperatingEntry.TABLE_NAME
                 +" ao on a." +WalletContract.AccountEntry._ID + "=ao."+WalletContract.AccountOperatingEntry._ID
                 +" and ao." + WalletContract.AccountOperatingEntry.COLUMN_DELETED_AT + " is null"
+                +" left join "+ WalletContract.AccountAssetEntry.TABLE_NAME
+                +" aa on aa." + WalletContract.AccountAssetEntry._ID + "=ao." + WalletContract.AccountOperatingEntry._ID
+                +" and aa." + WalletContract.AccountAssetEntry.COLUMN_DELETED_AT + " is null"
                 +" left join "+ WalletContract.CurrencyEntry.TABLE_NAME
                 +" c on c." +WalletContract.CurrencyEntry._ID + "=ao."+WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID+"\n"
                 +" WHERE a." + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL";
@@ -825,6 +939,8 @@ public abstract class WalletDbLoader {
             int kindColumnIndex = cursor.getColumnIndex(WalletContract.AccountEntry.COLUMN_KIND);
 
             int curIdColumnIndex = cursor.getColumnIndex(WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID);
+            int assetTypeColumnIndex = cursor.getColumnIndex(WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE);
+            int includeColumnIndex = cursor.getColumnIndex(WalletContract.AccountAssetEntry.COLUMN_INCLUDE_IN_NET_WORTH);
 
 
             while (cursor.moveToNext()) {
@@ -843,16 +959,23 @@ public abstract class WalletDbLoader {
                         AccountItem.Kind.fromValue(cursor.getInt(kindColumnIndex));
 
 
+                AccountOperatingItem.AssetInfo asset = cursor.isNull(assetTypeColumnIndex) ? null
+                        : new AccountOperatingItem.AssetInfo(cursor.getInt(assetTypeColumnIndex),
+                                cursor.getInt(includeColumnIndex) != 0);
+
                 AccountItem account = accounts.getAccountById(currentID);
 
                 if (account == null) {
-                    if (curId != 0)
-                        accounts.put(currentID, new AccountOperatingItem(currentID, currentName, currentComment, icon, currentIsArchived, currencyList.getCurrencyById(curId), currentSystemKind, currentKind));
-                     else
+                    if (curId != 0) {
+                        AccountOperatingItem wallet = new AccountOperatingItem(currentID, currentName, currentComment, icon, currentIsArchived, currencyList.getCurrencyById(curId), currentSystemKind, currentKind);
+                        wallet.setAsset(asset);
+                        accounts.put(currentID, wallet);
+                    } else
                         accounts.put(currentID, new AccountItem(currentID, currentName, currentComment, icon, currentIsArchived, currentSystemKind, currentKind));
                 }
                 else {
                     account.update(currentName, currentComment, icon, currentIsArchived, currentSystemKind, currentKind);
+                    if (account instanceof AccountOperatingItem) ((AccountOperatingItem) account).setAsset(asset);
                 }
             }
             accounts.notifyObservers();
