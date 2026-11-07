@@ -35,14 +35,14 @@
 
 ## 3. Английский
 
-- [ ] 3.1 `values-en/strings.xml` — перевод всех строк и plurals; lint `MissingTranslation` — ошибка. Проверка: lint зелёный; Robolectric-тест с `qualifiers = "en"` — сценарии «Числа с окончаниями / Английский», «Журнал синка на английском»
+- [x] 3.1 `values-en/strings.xml` — перевод всех строк и plurals; lint `MissingTranslation` — ошибка. Проверка: lint зелёный; Robolectric-тест с `qualifiers = "en"` — сценарии «Числа с окончаниями / Английский», «Журнал синка на английском» — выполнено 2026-11-07: 833 ключа (все файлы `strings*.xml`), название приложения «Count & Save» (QA — «QA Count & Save»). Вместо lint — `UiLanguageTest.everyStringTranslated_withSamePlaceholders` (ключи и подстановки совпадают, идёт в CI; lint в CI не запускается); `plurals_english`, `syncJournal_english`
 - [ ] 3.2 Ручная проверка каждого экрана группы 2 на эмуляторе с английским языком: нет русского текста приложения, тексты влезают в кнопки и заголовки
 
 ## 4. Смена базового языка
 
-- [ ] 4.1 `values/` = английский, `values-ru/` = русский; `robolectric.properties` с `qualifiers=ru` (design D6). Проверка: все юнит-тесты зелёные без правок проверок текста; Robolectric-тест с `qualifiers = "de"` — интерфейс английский (сценарий «Немецкий телефон»)
-- [ ] 4.2 `res/xml/locales_config.xml` и `android:localeConfig` (design D7). Проверка: на эмуляторе Android 13+ приложение есть в «Языках приложений», выбор «English» при русском телефоне даёт английский интерфейс
-- [ ] 4.3 `docs/ARCHITECTURE.md`: раздел о текстах и языках (ресурсы, проверка D5, `// not UI`, показ системных категорий). Проверка: раздел есть, ссылки на скрипт и файлы верны
+- [x] 4.1 `values/` = английский, `values-ru/` = русский; `robolectric.properties` с `qualifiers=ru` (design D6). Проверка: все юнит-тесты зелёные без правок проверок текста; Robolectric-тест с `qualifiers = "de"` — интерфейс английский (сценарий «Немецкий телефон») — выполнено 2026-11-07: `robolectric.properties` понадобился уже на этапе 3 (с `values-en/` локаль en-US по умолчанию давала английский); все тесты зелёные, `UiLanguageTest.germanPhone_englishTexts`
+- [ ] 4.2 `res/xml/locales_config.xml` и `android:localeConfig` (design D7). Проверка: на эмуляторе Android 13+ приложение есть в «Языках приложений», выбор «English» при русском телефоне даёт английский интерфейс — код выполнен 2026-11-07 (`localeConfig` в итоговом манифесте, `assembleProdDebug`/`assembleQaDebug` зелёные); ручная проверка ждёт
+- [x] 4.3 `docs/ARCHITECTURE.md`: раздел о текстах и языках (ресурсы, проверка D5, `// not UI`, показ системных категорий). Проверка: раздел есть, ссылки на скрипт и файлы верны — выполнено 2026-11-07: «Тексты и языки»
 
 ## Workflow follow-up
 

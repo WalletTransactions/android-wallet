@@ -1,73 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Импорт и экспорт (openspec android-i18n, задача 2.7). Примеры в подсказках — данные:
-     имена столбцов и ключи JSON не переводятся. -->
+<!-- English: import and export (openspec android-i18n, task 3.1). Column names and JSON keys
+     in the hints are data and stay as they are. -->
 <resources>
-    <string name="action_copy">Копировать</string>
-    <string name="copied">Скопировано</string>
+    <string name="action_copy">Copy</string>
+    <string name="copied">Copied</string>
 
-    <string name="import_title">Импорт из файла</string>
-    <string name="import_choose_file">Пожалуйста, выберите файл</string>
-    <string name="import_format_accounts">Формат — счета</string>
-    <string name="import_format_operations">Формат — операции</string>
-    <string name="import_format_rates">Формат — курсы</string>
-    <string name="import_format_json">Формат — JSON</string>
-    <string name="import_busy_operations">Импорт операций…</string>
-    <string name="import_busy_json">Импорт (JSON)…</string>
-    <string name="import_busy_accounts">Импорт счетов…</string>
-    <string name="import_busy_rates">Импорт курсов…</string>
+    <string name="import_title">Import from file</string>
+    <string name="import_choose_file">Please choose a file</string>
+    <string name="import_format_accounts">Format — accounts</string>
+    <string name="import_format_operations">Format — operations</string>
+    <string name="import_format_rates">Format — rates</string>
+    <string name="import_format_json">Format — JSON</string>
+    <string name="import_busy_operations">Importing operations…</string>
+    <string name="import_busy_json">Importing (JSON)…</string>
+    <string name="import_busy_accounts">Importing accounts…</string>
+    <string name="import_busy_rates">Importing rates…</string>
 
-    <string name="import_hint_accounts">CSV для счетов:\nAccountName,AccountComment,AccountIconName,CurrencyName,CurrencyIso,CurrencyIconName\nElectronics,Electronics,unknown,,,\nНаличные евро,Кошелёк в евро,unknown,EUR,EUR,unknown</string>
-    <string name="import_hint_operations">CSV для операций:\nDate,AccountFr,AccountTo,Amount,Comment\n2020-09-26,Cash,Café,7,Попили чай в кафе \"Тарантино\"\n2020-09-01,Salary,Cash,1000000,Зарплата</string>
-    <string name="import_hint_rates">CSV для курсов:\nSymbol,Date,Rate\nEURRUB,2020-09-12,88.5101\nEURUSD,2020-08-20,1.18023\nEURUSD,2020-08-22,1.17544</string>
-    <string name="import_hint_json">Умеет переводы и комиссию — CSV этого не может, — а также счета\nс валютой, валютные пары и курсы одним файлом; все разделы опциональны:\n{\n  \"accounts\": [\n    {\"name\": \"Карта USD\", \"comment\": \"...\", \"icon\": \"Visa card\",\n     \"currency\": {\"name\": \"USD\", \"iso\": \"USD\", \"icon\": \"\"}}\n  ],\n  \"currency_pairs\": [{\"symbol\": \"EURUSD\", \"base\": \"EUR\", \"quote\": \"USD\"}],\n  \"rates\": [{\"symbol\": \"EURUSD\", \"date\": \"2020-08-20\", \"rate\": 1.18023}],\n  \"operations\": [\n    {\"date\": \"2020-08-26\", \"from\": \"Карта\", \"to\": \"Карта USD\",\n     \"amount\": 5000, \"comment\": \"\",\n     \"leg\": {\"amount\": 65.4},\n     \"commission\": {\"amount\": 50, \"from\": \"source\", \"category\": \"Transfer commission\"}},\n    {\"date\": \"2020-08-26\", \"from\": \"Groceries\", \"to\": \"Карта\",\n     \"amount\": 1200, \"comment\": \"\"}\n  ]\n}\n\nСтарый формат (голый массив — только операции) тоже читается.\n\"leg\"/\"commission\" опциональны; без них — обычная проводка, как в CSV.\n\"commission.from\" — \"source\" или \"dest\", по умолчанию \"source\".</string>
+    <string name="import_hint_accounts">CSV for accounts:\nAccountName,AccountComment,AccountIconName,CurrencyName,CurrencyIso,CurrencyIconName\nElectronics,Electronics,unknown,,,\nEuro cash,Cash in euros,unknown,EUR,EUR,unknown</string>
+    <string name="import_hint_operations">CSV for operations:\nDate,AccountFr,AccountTo,Amount,Comment\n2020-09-26,Cash,Café,7,Tea at \"Tarantino\" café\n2020-09-01,Salary,Cash,1000000,Salary</string>
+    <string name="import_hint_rates">CSV for rates:\nSymbol,Date,Rate\nEURRUB,2020-09-12,88.5101\nEURUSD,2020-08-20,1.18023\nEURUSD,2020-08-22,1.17544</string>
+    <string name="import_hint_json">Handles transfers and fees — CSV can\'t do that — as well as accounts\nwith a currency, currency pairs and rates in one file; all sections are optional:\n{\n  \"accounts\": [\n    {\"name\": \"USD card\", \"comment\": \"...\", \"icon\": \"Visa card\",\n     \"currency\": {\"name\": \"USD\", \"iso\": \"USD\", \"icon\": \"\"}}\n  ],\n  \"currency_pairs\": [{\"symbol\": \"EURUSD\", \"base\": \"EUR\", \"quote\": \"USD\"}],\n  \"rates\": [{\"symbol\": \"EURUSD\", \"date\": \"2020-08-20\", \"rate\": 1.18023}],\n  \"operations\": [\n    {\"date\": \"2020-08-26\", \"from\": \"Card\", \"to\": \"USD card\",\n     \"amount\": 5000, \"comment\": \"\",\n     \"leg\": {\"amount\": 65.4},\n     \"commission\": {\"amount\": 50, \"from\": \"source\", \"category\": \"Transfer commission\"}},\n    {\"date\": \"2020-08-26\", \"from\": \"Groceries\", \"to\": \"Card\",\n     \"amount\": 1200, \"comment\": \"\"}\n  ]\n}\n\nThe old format (a bare array — operations only) is read as well.\n\"leg\"/\"commission\" are optional; without them it\'s a plain entry, like in CSV.\n\"commission.from\" is \"source\" or \"dest\", \"source\" by default.</string>
 
     <plurals name="import_count_operations">
-        <item quantity="one">Импортирована %d операция</item>
-        <item quantity="few">Импортировано %d операции</item>
-        <item quantity="many">Импортировано %d операций</item>
-        <item quantity="other">Импортировано %d операций</item>
+        <item quantity="one">Imported %d operation</item>
+        <item quantity="other">Imported %d operations</item>
     </plurals>
     <plurals name="import_count_items">
-        <item quantity="one">Импортирован %d элемент</item>
-        <item quantity="few">Импортировано %d элемента</item>
-        <item quantity="many">Импортировано %d элементов</item>
-        <item quantity="other">Импортировано %d элементов</item>
+        <item quantity="one">Imported %d item</item>
+        <item quantity="other">Imported %d items</item>
     </plurals>
     <plurals name="import_count_accounts">
-        <item quantity="one">Импортирован или обновлён %d счёт</item>
-        <item quantity="few">Импортировано или обновлено %d счёта</item>
-        <item quantity="many">Импортировано или обновлено %d счетов</item>
-        <item quantity="other">Импортировано или обновлено %d счетов</item>
+        <item quantity="one">Imported or updated %d account</item>
+        <item quantity="other">Imported or updated %d accounts</item>
     </plurals>
     <plurals name="import_count_rates">
-        <item quantity="one">Импортирован или обновлён %d курс</item>
-        <item quantity="few">Импортировано или обновлено %d курса</item>
-        <item quantity="many">Импортировано или обновлено %d курсов</item>
-        <item quantity="other">Импортировано или обновлено %d курсов</item>
+        <item quantity="one">Imported or updated %d rate</item>
+        <item quantity="other">Imported or updated %d rates</item>
     </plurals>
-    <string name="import_skipped">, пропущено %1$d:</string>
-    <string name="import_and_more">…и ещё %1$d</string>
-    <string name="import_header_wrong">Неверный заголовок файла.</string>
-    <string name="import_header_expected">Ожидается: %1$s</string>
-    <string name="import_header_actual">В файле:   %1$s</string>
-    <string name="import_header_first_char">Первый символ в файле: U+%1$04X (код %2$d) — возможно BOM или другой разделитель</string>
-    <string name="import_header_semicolon">Похоже, файл использует \';\' как разделитель (региональные настройки Excel).\nОткройте файл в Excel и сохраните как CSV UTF-8 (с разделителями-запятыми).</string>
-    <string name="import_row_not_inserted">%1$s — строка не вставлена</string>
-    <string name="import_row_no_account">%1$s — нет счёта: %2$s</string>
-    <string name="import_row_no_transfer">%1$s — не удалось завести категорию Transfer</string>
-    <string name="import_row_leg_not_inserted">%1$s — нога не вставлена</string>
-    <string name="import_row_no_commission_category">%1$s — не удалось завести категорию комиссии</string>
-    <string name="import_row_commission_not_inserted">%1$s — комиссия не вставлена</string>
-    <string name="import_row_no_pair">%1$s — нет валютной пары с symbol=%2$s</string>
+    <string name="import_skipped">, skipped %1$d:</string>
+    <string name="import_and_more">…and %1$d more</string>
+    <string name="import_header_wrong">Wrong file header.</string>
+    <string name="import_header_expected">Expected: %1$s</string>
+    <string name="import_header_actual">In the file: %1$s</string>
+    <string name="import_header_first_char">First character in the file: U+%1$04X (code %2$d) — maybe a BOM or another separator</string>
+    <string name="import_header_semicolon">The file seems to use \';\' as the separator (Excel regional settings).\nOpen the file in Excel and save it as CSV UTF-8 (comma delimited).</string>
+    <string name="import_row_not_inserted">%1$s — row not inserted</string>
+    <string name="import_row_no_account">%1$s — no account: %2$s</string>
+    <string name="import_row_no_transfer">%1$s — couldn\'t create the Transfer category</string>
+    <string name="import_row_leg_not_inserted">%1$s — leg not inserted</string>
+    <string name="import_row_no_commission_category">%1$s — couldn\'t create the fee category</string>
+    <string name="import_row_commission_not_inserted">%1$s — fee not inserted</string>
+    <string name="import_row_no_pair">%1$s — no currency pair with symbol=%2$s</string>
 
-    <string name="export_title">Экспорт базы</string>
-    <string name="export_busy">Экспортирование…</string>
-    <string name="export_done_path">Готово!\n%1$s</string>
-    <string name="export_db_done">Экспорт успешно завершен</string>
-    <string name="export_json_done">Экспорт в JSON завершён</string>
-    <string name="export_first">Сначала экспортируйте БД</string>
-    <string name="export_share_json">Поделиться JSON-экспортом</string>
-    <string name="export_share_db">Поделиться файлом БД</string>
-    <string name="export_no_downloads">Не удалось создать папку Downloads</string>
-    <string name="export_no_db_file">Файл базы данных не найден</string>
+    <string name="export_title">Database export</string>
+    <string name="export_busy">Exporting…</string>
+    <string name="export_done_path">Done!\n%1$s</string>
+    <string name="export_db_done">Export completed</string>
+    <string name="export_json_done">JSON export completed</string>
+    <string name="export_first">Export the database first</string>
+    <string name="export_share_json">Share the JSON export</string>
+    <string name="export_share_db">Share the database file</string>
+    <string name="export_no_downloads">Couldn\'t create the Downloads folder</string>
+    <string name="export_no_db_file">Database file not found</string>
 </resources>

@@ -1,48 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Счета, категории, иконки (openspec android-i18n, задача 2.3). -->
+<!-- English: accounts, categories, icons (openspec android-i18n, task 3.1). -->
 <resources>
-    <string name="action_close">Закрыть</string>
+    <string name="action_close">Close</string>
 
-    <string name="account_title_wallet">Кошелёк</string>
-    <string name="account_title_category">Категория</string>
-    <string name="account_new_wallet">Новый кошелёк</string>
-    <string name="account_new_category">Новая категория</string>
-    <string name="account_system_commission_hint">Системная категория — на неё по умолчанию уходит комиссия за перевод, поэтому её нельзя удалить или переименовать</string>
-    <string name="account_system_transfer_hint">Системная категория — переводы между разными валютами проходят через неё, поэтому её нельзя удалить или переименовать</string>
-    <string name="account_choose_currency">Выберите валюту</string>
-    <string name="account_error_name_empty">Введите название</string>
-    <string name="account_error_name_taken">Такое название уже есть</string>
-    <string name="account_delete_question">Удалить «%1$s»?</string>
-    <string name="account_delete_refused_system">«%1$s» — системная категория, её нельзя удалить</string>
-    <string name="account_delete_refused_operations">По «%1$s» есть операции — удалить нельзя, иначе они пропадут вместе с ней</string>
+    <string name="account_title_wallet">Wallet</string>
+    <string name="account_title_category">Category</string>
+    <string name="account_new_wallet">New wallet</string>
+    <string name="account_new_category">New category</string>
+    <string name="account_system_commission_hint">System category — transfer fees go here by default, so it can\'t be deleted or renamed</string>
+    <string name="account_system_transfer_hint">System category — transfers between different currencies go through it, so it can\'t be deleted or renamed</string>
+    <string name="account_choose_currency">Choose a currency</string>
+    <string name="account_error_name_empty">Enter a name</string>
+    <string name="account_error_name_taken">This name is already taken</string>
+    <string name="account_delete_question">Delete “%1$s”?</string>
+    <string name="account_delete_refused_system">“%1$s” is a system category and can\'t be deleted</string>
+    <string name="account_delete_refused_operations">“%1$s” has operations — it can\'t be deleted, or they would be lost with it</string>
 
-    <string name="icon_title_wallet">Иконка кошелька</string>
-    <string name="icon_title_category">Иконка категории</string>
-    <string name="icon_type_category">Категория</string>
-    <string name="icon_type_flag">Флаг</string>
-    <string name="icon_manager_title">Иконки и категории</string>
-    <string name="icon_crop_title">Обрезка иконки</string>
-    <string name="icon_crop_no_image">Изображение не передано</string>
-    <string name="icon_crop_open_failed">Не удалось открыть изображение: %1$s</string>
-    <string name="icon_crop_unknown_format">формат не распознан</string>
-    <string name="icon_crop_decode_empty">декодер вернул пусто</string>
-    <string name="icon_crop_not_loaded">Изображение не загружено</string>
-    <string name="icon_crop_failed">Не удалось обрезать: %1$s</string>
+    <string name="icon_title_wallet">Wallet icon</string>
+    <string name="icon_title_category">Category icon</string>
+    <string name="icon_type_category">Category</string>
+    <string name="icon_type_flag">Flag</string>
+    <string name="icon_manager_title">Icons and categories</string>
+    <string name="icon_crop_title">Crop icon</string>
+    <string name="icon_crop_no_image">No image was passed</string>
+    <string name="icon_crop_open_failed">Couldn\'t open the image: %1$s</string>
+    <string name="icon_crop_unknown_format">unknown format</string>
+    <string name="icon_crop_decode_empty">the decoder returned nothing</string>
+    <string name="icon_crop_not_loaded">The image is not loaded</string>
+    <string name="icon_crop_failed">Couldn\'t crop: %1$s</string>
 
-    <string name="icon_dialog_title">Иконка</string>
-    <string name="icon_dialog_add">Добавить иконку</string>
-    <string name="icon_dialog_edit">Редактировать иконку</string>
-    <string name="icon_dialog_pick_image">Выбрать изображение</string>
-    <string name="icon_dialog_change_image">Изменить изображение</string>
-    <string name="icon_dialog_no_gallery">Не найдено приложение для выбора изображения</string>
-    <string name="icon_dialog_crop_unreadable">Обрезка не читается</string>
-    <string name="icon_dialog_fill_all">Заполните все поля и выберите иконку</string>
-    <string name="icon_dialog_added">Иконка добавлена</string>
-    <string name="icon_dialog_save_failed">Ошибка при сохранении: %1$s</string>
-    <string name="icon_dialog_name_empty">Введите имя иконки</string>
-    <string name="icon_dialog_updated">Иконка обновлена</string>
-    <string name="icon_dialog_update_failed">Ошибка при обновлении: %1$s</string>
-    <string name="icon_dialog_delete_question">Удалить иконку?</string>
-    <string name="icon_dialog_deleted">Иконка удалена</string>
-    <string name="icon_dialog_in_use">Иконка используется в счетах или валютах. Удаление невозможно</string>
+    <string name="icon_dialog_title">Icon</string>
+    <string name="icon_dialog_add">Add icon</string>
+    <string name="icon_dialog_edit">Edit icon</string>
+    <string name="icon_dialog_pick_image">Choose image</string>
+    <string name="icon_dialog_change_image">Change image</string>
+    <string name="icon_dialog_no_gallery">No app found to pick an image</string>
+    <string name="icon_dialog_crop_unreadable">The cropped image can\'t be read</string>
+    <string name="icon_dialog_fill_all">Fill in all fields and choose an icon</string>
+    <string name="icon_dialog_added">Icon added</string>
+    <string name="icon_dialog_save_failed">Couldn\'t save: %1$s</string>
+    <string name="icon_dialog_name_empty">Enter the icon name</string>
+    <string name="icon_dialog_updated">Icon updated</string>
+    <string name="icon_dialog_update_failed">Couldn\'t update: %1$s</string>
+    <string name="icon_dialog_delete_question">Delete this icon?</string>
+    <string name="icon_dialog_deleted">Icon deleted</string>
+    <string name="icon_dialog_in_use">The icon is used by accounts or currencies and can\'t be deleted</string>
 </resources>

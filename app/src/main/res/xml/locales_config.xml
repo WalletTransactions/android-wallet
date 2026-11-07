@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Языки приложения в «Настройки → Система → Языки → Языки приложений», Android 13+
+     (openspec android-i18n, design D7). -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en"/>
+    <locale android:name="ru"/>
+</locale-config>

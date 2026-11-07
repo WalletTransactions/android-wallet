@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Повторяющиеся операции и напоминания (openspec android-i18n, задача 2.5). -->
+<resources>
+    <string name="recurring_list_title">Повторяющиеся операции</string>
+    <string name="recurring_title_new">Новая повторяющаяся</string>
+    <string name="recurring_title_edit">Изменение повтора</string>
+    <string name="recurring_choose">Выберите</string>
+    <string name="recurring_off">Повтор выключен — операции создаваться не будут.</string>
+    <string name="recurring_next">Следующая операция: %1$s, %2$s</string>
+    <string name="recurring_ended">Повторов больше не будет — дата окончания уже прошла.</string>
+    <string name="recurring_account_deleted">Счёт удалён</string>
+    <string name="recurring_until">" · до %1$s"</string>
+    <string name="recurring_list_next">Следующая: %1$s</string>
+    <string name="recurring_list_finished">Завершено</string>
+    <string name="recurring_list_off">Выключено</string>
+
+    <string name="recurring_daily">Ежедневно</string>
+    <string name="recurring_weekly">Еженедельно</string>
+    <string name="recurring_monthly">Ежемесячно</string>
+    <string name="recurring_yearly">Ежегодно</string>
+    <string name="recurring_monthly_on">Ежемесячно, %1$d-го</string>
+    <string name="recurring_yearly_on">Ежегодно, %1$02d.%2$02d</string>
+    <string name="recurring_every_week">Каждую неделю</string>
+    <plurals name="recurring_every_weeks">
+        <item quantity="one">Каждую %d неделю</item>
+        <item quantity="few">Каждые %d недели</item>
+        <item quantity="many">Каждые %d недель</item>
+        <item quantity="other">Каждые %d недели</item>
+    </plurals>
+    <string name="day_short_mon">пн</string>
+    <string name="day_short_tue">вт</string>
+    <string name="day_short_wed">ср</string>
+    <string name="day_short_thu">чт</string>
+    <string name="day_short_fri">пт</string>
+    <string name="day_short_sat">сб</string>
+    <string name="day_short_sun">вс</string>
+
+    <string name="recurring_error_same_accounts">Счета списания и зачисления должны различаться</string>
+    <string name="recurring_error_no_wallet">Хотя бы один счёт должен быть кошельком</string>
+    <string name="recurring_error_cross_currency">Перевод между кошельками в разных валютах повторять нельзя — сумма зачисления зависит от курса на дату</string>
+    <string name="recurring_error_amount">Сумма должна быть больше нуля</string>
+    <string name="recurring_error_no_days">Отметьте хотя бы один день недели</string>
+    <string name="recurring_error_end_before_start">Дата окончания раньше даты начала</string>
+    <string name="recurring_error_save">Не удалось сохранить</string>
+    <string name="recurring_created">Создано операций: %1$d</string>
+    <string name="recurring_missed_title">Пропущенные повторы</string>
+    <plurals name="recurring_missed_message">
+        <item quantity="one">По этому правилу уже наступила %1$d операция (с %2$s). Создать её сейчас?</item>
+        <item quantity="few">По этому правилу уже наступило %1$d операции (с %2$s). Создать их сейчас?</item>
+        <item quantity="many">По этому правилу уже наступило %1$d операций (с %2$s). Создать их сейчас?</item>
+        <item quantity="other">По этому правилу уже наступило %1$d операций (с %2$s). Создать их сейчас?</item>
+    </plurals>
+    <string name="recurring_missed_create">Создать</string>
+    <string name="recurring_missed_future_only">Только будущие</string>
+    <string name="recurring_delete_question">Удалить повтор?</string>
+    <string name="recurring_delete_message">Уже созданные операции останутся, новые создаваться не будут.</string>
+
+    <string name="reminder_channel">Напоминания</string>
+    <string name="reminder_title">Не забудьте внести операции</string>
+    <string name="reminder_text">Что сегодня потратили или получили?</string>
+</resources>

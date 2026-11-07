@@ -1,50 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Главный экран, вкладки, «Ещё», фильтр (openspec android-i18n, задача 2.1). -->
+<!-- English: main screen, tabs, «More», filter (openspec android-i18n, task 3.1). -->
 <resources>
-    <string name="tab_operations">Операции</string>
-    <string name="tab_wallets">Кошельки</string>
-    <string name="tab_reports">Отчёты</string>
+    <string name="tab_operations">Operations</string>
+    <string name="tab_wallets">Wallets</string>
+    <string name="tab_reports">Reports</string>
 
-    <string name="group_by_week">По неделям</string>
-    <string name="group_by_month">По месяцам</string>
-    <string name="group_by_date">По дате</string>
+    <string name="group_by_week">By week</string>
+    <string name="group_by_month">By month</string>
+    <string name="group_by_date">By date</string>
 
-    <string name="crash_title">Приложение аварийно завершилось</string>
-    <string name="crash_message">В базе данных могут быть некорректные записи.\nВыберите действие:</string>
-    <string name="crash_repair">Авторемонт</string>
-    <string name="crash_repair_nothing">Повреждённых записей не найдено</string>
+    <string name="crash_title">The app crashed</string>
+    <string name="crash_message">The database may contain invalid records.\nChoose what to do:</string>
+    <string name="crash_repair">Auto-repair</string>
+    <string name="crash_repair_nothing">No damaged records found</string>
     <plurals name="crash_repair_removed">
-        <item quantity="one">Удалена %1$d некорректная транзакция: %2$s</item>
-        <item quantity="few">Удалено %1$d некорректные транзакции: %2$s</item>
-        <item quantity="many">Удалено %1$d некорректных транзакций: %2$s</item>
-        <item quantity="other">Удалено %1$d некорректных транзакций: %2$s</item>
+        <item quantity="one">Removed %1$d invalid transaction: %2$s</item>
+        <item quantity="other">Removed %1$d invalid transactions: %2$s</item>
     </plurals>
-    <string name="crash_report">Отчёт об ошибке</string>
-    <string name="crash_log_copied">Лог скопирован в буфер обмена</string>
-    <string name="crash_ignore">Игнорировать</string>
+    <string name="crash_report">Error report</string>
+    <string name="crash_log_copied">Log copied to clipboard</string>
+    <string name="crash_ignore">Ignore</string>
 
-    <string name="filter_banner">Фильтр · %1$s</string>
-    <string name="filter_only_income">Только доходы</string>
-    <string name="filter_only_expense">Только расходы</string>
-    <string name="filter_only_transfers">Только переводы</string>
-    <string name="filter_range_from">от %1$s</string>
-    <string name="filter_range_to">до %1$s</string>
-    <string name="filter_apply_count">Показать %1$d</string>
-    <string name="filter_eq_range_label">СУММА В ЭКВИВАЛЕНТЕ</string>
-    <string name="filter_eq_range_label_currency">СУММА В ЭКВИВАЛЕНТЕ, %1$s</string>
-    <string name="filter_picker_categories">Счёт затрат</string>
-    <string name="filter_picker_wallets">Кошелёк</string>
-    <string name="filter_all">Все</string>
+    <string name="filter_banner">Filter · %1$s</string>
+    <string name="filter_only_income">Income only</string>
+    <string name="filter_only_expense">Expenses only</string>
+    <string name="filter_only_transfers">Transfers only</string>
+    <string name="filter_range_from">from %1$s</string>
+    <string name="filter_range_to">up to %1$s</string>
+    <string name="filter_apply_count">Show %1$d</string>
+    <string name="filter_eq_range_label">AMOUNT IN EQUIVALENT</string>
+    <string name="filter_eq_range_label_currency">AMOUNT IN EQUIVALENT, %1$s</string>
+    <string name="filter_picker_categories">Expense category</string>
+    <string name="filter_picker_wallets">Wallet</string>
+    <string name="filter_all">All</string>
     <plurals name="filter_selected_count">
-        <item quantity="one">%d выбрано</item>
-        <item quantity="few">%d выбрано</item>
-        <item quantity="many">%d выбрано</item>
-        <item quantity="other">%d выбрано</item>
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
     </plurals>
 
-    <string name="more_ai_sign_in">Войдите, чтобы пользоваться ИИ</string>
-    <string name="more_ai_checking">Проверяю…</string>
-    <string name="more_ai_no_server">Нет связи с сервером</string>
-    <string name="more_ai_available">Трата своими словами</string>
-    <string name="more_ai_off">ИИ сейчас выключен</string>
+    <string name="more_ai_sign_in">Sign in to use AI</string>
+    <string name="more_ai_checking">Checking…</string>
+    <string name="more_ai_no_server">No connection to the server</string>
+    <string name="more_ai_available">Describe an expense in your own words</string>
+    <string name="more_ai_off">AI is turned off right now</string>
 </resources>

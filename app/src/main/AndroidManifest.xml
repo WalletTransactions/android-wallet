@@ -29,6 +29,7 @@
          см. открытый вопрос в плане. -->
     <application
             android:name=".WalletApplication"
+            android:localeConfig="@xml/locales_config"
             android:allowBackup="true"
             android:fullBackupContent="@xml/backup_rules"
             android:dataExtractionRules="@xml/data_extraction_rules"

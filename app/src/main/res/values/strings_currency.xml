@@ -1,57 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Валюты, пары и курсы (openspec android-i18n, задача 2.4). -->
+<!-- English: currencies, pairs, rates (openspec android-i18n, task 3.1). -->
 <resources>
-    <string name="error_with_reason">Ошибка: %1$s</string>
+    <string name="error_with_reason">Error: %1$s</string>
 
-    <string name="currency_list_title">Валюты</string>
-    <string name="currency_new">Новая валюта</string>
-    <string name="currency_icon_title">Иконка валюты</string>
-    <string name="currency_error_iso_empty">Введите ISO-код</string>
-    <string name="currency_error_iso_taken">Валюта с таким кодом уже есть</string>
-    <string name="currency_error_iso_in_pair">Код используется в валютной паре</string>
-    <string name="currency_error_save">Не удалось сохранить валюту</string>
-    <string name="currency_error_in_use">Валюта используется кошельком или валютной парой — сначала уберите её оттуда</string>
-    <string name="currency_delete_question">Удалить валюту?</string>
-    <string name="currency_tag_shared">общая</string>
-    <string name="currency_tag_not_in_eq">не в эквиваленте</string>
+    <string name="currency_list_title">Currencies</string>
+    <string name="currency_new">New currency</string>
+    <string name="currency_icon_title">Currency icon</string>
+    <string name="currency_error_iso_empty">Enter the ISO code</string>
+    <string name="currency_error_iso_taken">A currency with this code already exists</string>
+    <string name="currency_error_iso_in_pair">The code is used in a currency pair</string>
+    <string name="currency_error_save">Couldn\'t save the currency</string>
+    <string name="currency_error_in_use">The currency is used by a wallet or a currency pair — remove it from there first</string>
+    <string name="currency_delete_question">Delete this currency?</string>
+    <string name="currency_tag_shared">shared</string>
+    <string name="currency_tag_not_in_eq">not in equivalent</string>
 
-    <string name="pair_shared_cannot_delete">Общая пара — удалить нельзя</string>
-    <string name="pair_delete_question">Удалить пару %1$s? Вся история её курса тоже будет удалена.</string>
-    <string name="pair_delete_with_rates">У пары %1$s курсов: %2$d. Удалить пару вместе со всеми курсами?</string>
-    <string name="pair_choose">Выбрать</string>
-    <string name="pair_base_currency">Базовая валюта</string>
-    <string name="pair_quote_currency">Котируемая валюта</string>
-    <string name="pair_error_choose_both">Выберите обе валюты</string>
-    <string name="pair_error_same">Валюты должны быть разными</string>
-    <string name="pair_error_add">Ошибка добавления пары</string>
-    <string name="pair_no_rate">Нет курса</string>
+    <string name="pair_shared_cannot_delete">Shared pair — can\'t be deleted</string>
+    <string name="pair_delete_question">Delete the pair %1$s? Its whole rate history will be deleted too.</string>
+    <string name="pair_delete_with_rates">The pair %1$s has %2$d rates. Delete the pair together with all its rates?</string>
+    <string name="pair_choose">Choose</string>
+    <string name="pair_base_currency">Base currency</string>
+    <string name="pair_quote_currency">Quote currency</string>
+    <string name="pair_error_choose_both">Choose both currencies</string>
+    <string name="pair_error_same">The currencies must be different</string>
+    <string name="pair_error_add">Couldn\'t add the pair</string>
+    <string name="pair_no_rate">No rate</string>
 
-    <string name="rates_source_title">Источник</string>
-    <string name="rates_source_cbr">ЦБ РФ</string>
-    <string name="rates_loading">Загрузка…</string>
-    <string name="rates_no_data">Нет данных за указанный период</string>
+    <string name="rates_source_title">Source</string>
+    <string name="rates_source_cbr">Bank of Russia</string>
+    <string name="rates_loading">Loading…</string>
+    <string name="rates_no_data">No data for this period</string>
     <plurals name="rates_loaded">
-        <item quantity="one">Готово: загружена %d запись</item>
-        <item quantity="few">Готово: загружено %d записи</item>
-        <item quantity="many">Готово: загружено %d записей</item>
-        <item quantity="other">Готово: загружено %d записей</item>
+        <item quantity="one">Done: %d record loaded</item>
+        <item quantity="other">Done: %d records loaded</item>
     </plurals>
-    <string name="rates_error_no_pair">Валютная пара не найдена</string>
-    <string name="rates_error_cbr_rub_only">ЦБ РФ котирует только пары с RUB</string>
-    <string name="rates_error_cbr_unsupported">Валюта %1$s не поддерживается ЦБ РФ</string>
-    <string name="rates_error_yahoo_none">Yahoo Finance не располагает котировками %1$s</string>
-    <string name="rates_chart_empty">нет курсов за период</string>
-    <string name="rates_chart_min_max">мин %1$s · макс %2$s</string>
-    <string name="rates_chart_no_data">Нет данных</string>
+    <string name="rates_error_no_pair">Currency pair not found</string>
+    <string name="rates_error_cbr_rub_only">The Bank of Russia quotes only pairs with RUB</string>
+    <string name="rates_error_cbr_unsupported">The Bank of Russia doesn\'t support %1$s</string>
+    <string name="rates_error_yahoo_none">Yahoo Finance has no quotes for %1$s</string>
+    <string name="rates_chart_empty">no rates for this period</string>
+    <string name="rates_chart_min_max">min %1$s · max %2$s</string>
+    <string name="rates_chart_no_data">No data</string>
 
-    <string name="rate_dialog_add">Добавить курс</string>
-    <string name="rate_dialog_edit">Редактировать курс</string>
-    <string name="rate_error_empty">Введите курс</string>
-    <string name="rate_added">Курс добавлен</string>
-    <string name="rate_error_add">Ошибка при добавлении</string>
-    <string name="rate_updated">Курс обновлен</string>
-    <string name="rate_not_found">Курс не найден</string>
-    <string name="rate_delete_question">Удалить курс?</string>
-    <string name="rate_deleted">Курс удален</string>
-    <string name="rate_error_delete">Ошибка при удалении: %1$s</string>
+    <string name="rate_dialog_add">Add rate</string>
+    <string name="rate_dialog_edit">Edit rate</string>
+    <string name="rate_error_empty">Enter the rate</string>
+    <string name="rate_added">Rate added</string>
+    <string name="rate_error_add">Couldn\'t add</string>
+    <string name="rate_updated">Rate updated</string>
+    <string name="rate_not_found">Rate not found</string>
+    <string name="rate_delete_question">Delete this rate?</string>
+    <string name="rate_deleted">Rate deleted</string>
+    <string name="rate_error_delete">Couldn\'t delete: %1$s</string>
 </resources>
