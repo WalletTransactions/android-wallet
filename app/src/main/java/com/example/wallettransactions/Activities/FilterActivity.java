@@ -205,7 +205,7 @@ public class FilterActivity extends AppCompatActivity {
 
     /** Без лишних нулей после запятой: 100.0 → «100», 100.5 → «100.5». */
     private static String formatCompact(double value) {
-        return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value);
+        return com.example.wallettransactions.AdapterUtils.plainNumber(value);
     }
 
     /** null — поле пустое или не число (запятую тоже принимаем как разделитель). */

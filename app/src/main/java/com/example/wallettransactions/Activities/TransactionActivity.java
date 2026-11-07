@@ -388,7 +388,7 @@ public class TransactionActivity extends AppCompatActivity {
         }
 
         double amount = getIntent().getDoubleExtra(cAmount, 0);
-        mAmount.setText(amount == 0 ? "" : String.valueOf(amount));
+        mAmount.setText(amount == 0 ? "" : com.example.wallettransactions.AdapterUtils.plainNumber(amount));
         mComment.setText(getIntent().getStringExtra(cComment));
 
         // Экран получает одну проводку, а операция может состоять из нескольких.
@@ -710,23 +710,41 @@ public class TransactionActivity extends AppCompatActivity {
 
         if (picked == mKind) return;
 
-        // Нижняя строка у всех трёх типов — кошелёк, поэтому переезжает вместе с суммой.
-        // Верхняя у каждого своя (статья расхода / дохода / «Откуда») — запоминаем её,
-        // чтобы вернуть, если пользователь придёт на эту вкладку обратно.
-        mTopByKind.put(mKind, getTop());
-        AccountItem wallet = getBottom();
+        // Кошелёк переезжает вместе с суммой и сохраняет направление денег: у расхода
+        // деньги уходят с него — в переводе он «Откуда»; у дохода приходят на него — «Куда».
+        // Раньше кошелёк всегда шёл в нижнюю строку, и «расход Сбер → Квартира», переделанный
+        // в перевод, становился «Квартира → Сбер» (capital-assets, 2026-11-07). Вторая сторона
+        // у каждого типа своя (статья расхода / дохода / другой кошелёк перевода) —
+        // запоминаем её, чтобы вернуть, если пользователь придёт на эту вкладку обратно.
+        Kind previous = mKind;
+        AccountItem wallet;
+        AccountItem other;
+        if (previous == Kind.transfer) {
+            boolean walletIsFrom = picked == Kind.expense;
+            wallet = walletIsFrom ? mAccFrom : mAccTo;
+            other  = walletIsFrom ? mAccTo : mAccFrom;
+        } else {
+            wallet = getBottom();
+            other  = getTop();
+        }
+        mTopByKind.put(previous, other);
 
         mKind = picked;
 
-        AccountItem top = mTopByKind.get(mKind);
-        // Перевод сам на себя смысла не имеет — а запомненное «Откуда» вполне может
-        // совпасть с кошельком, который приехал снизу.
-        if (mKind == Kind.transfer && top != null && wallet != null
-                && top.getId().equals(wallet.getId())) {
-            top = null;
+        AccountItem rest = mTopByKind.get(mKind);
+        // Перевод сам на себя смысла не имеет — а запомненная вторая сторона вполне может
+        // совпасть с кошельком, который переехал.
+        if (mKind == Kind.transfer && rest != null && wallet != null
+                && rest.getId().equals(wallet.getId())) {
+            rest = null;
         }
 
-        setSlots(top, wallet);
+        if (mKind == Kind.transfer && previous == Kind.expense) {
+            mAccFrom = wallet;
+            mAccTo   = rest;
+        } else {
+            setSlots(rest, wallet);
+        }
 
         renderKind();
         updateSaveButton();
@@ -761,6 +779,9 @@ public class TransactionActivity extends AppCompatActivity {
 
         // Подпись под суммой занята результатом, пока там выражение.
         updateAmountPreview();
+
+        // «⇅» между строками — только у перевода: у расхода и дохода стороны разного рода.
+        findViewById(R.id.btnSwapSlots).setVisibility(mKind == Kind.transfer ? View.VISIBLE : View.GONE);
 
         // Минус — только у расхода, и только как подпись: сама сумма всегда без знака.
         mAmountSign.setVisibility(mKind == Kind.expense ? View.VISIBLE : View.GONE);
@@ -801,6 +822,31 @@ public class TransactionActivity extends AppCompatActivity {
 
         updateCrossCurrencyUI();
         updateCommissionCurrency();
+    }
+
+    /**
+     * «⇅» у перевода: «Откуда» и «Куда» меняются местами. У разновалютного перевода вместе
+     * с ними меняются и суммы — каждая остаётся при своём кошельке; зачисление после этого
+     * считается введённым вручную, чтобы курс не переписал его.
+     */
+    public void onSwapSlots(View view) {
+        if (mKind != Kind.transfer) return;
+        boolean wasCross = isCrossCurrencyActive();
+        String amountFrom = mAmount.getText().toString();
+        String amountTo = mEditAmountTo.getText().toString();
+
+        AccountItem from = mAccFrom;
+        mAccFrom = mAccTo;
+        mAccTo = from;
+
+        boolean swapAmounts = wasCross && isCrossCurrencyActive() && !amountTo.isEmpty();
+        if (swapAmounts) mAmountToUserEdited = true;
+        renderSlots();
+        if (swapAmounts) {
+            mAmount.setText(amountTo);
+            setAmountToProgrammatically(amountFrom);
+        }
+        updateSaveButton();
     }
 
     private AccountOperatingItem asWallet(AccountItem item) {

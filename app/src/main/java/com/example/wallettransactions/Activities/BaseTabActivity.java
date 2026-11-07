@@ -323,7 +323,7 @@ public abstract class BaseTabActivity extends AppCompatActivity {
 
     /** Без лишних нулей после запятой: 100.0 → «100», 100.5 → «100.5». */
     private static String formatCompact(double value) {
-        return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value);
+        return com.example.wallettransactions.AdapterUtils.plainNumber(value);
     }
 
     protected void updateCurrencyButton() {
