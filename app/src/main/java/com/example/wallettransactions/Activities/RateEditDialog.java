@@ -77,7 +77,7 @@ public class RateEditDialog {
         View btnDelete = view.findViewById(R.id.btnDelete);
 
         ((TextView) view.findViewById(R.id.dialogTitle))
-                .setText(isNew ? "Добавить курс" : "Редактировать курс");
+                .setText(isNew ? R.string.rate_dialog_add : R.string.rate_dialog_edit);
 
         pickedDate.setTime(rateDate);
         drawDate(edtDate);
@@ -113,7 +113,7 @@ public class RateEditDialog {
         String valueStr = edtValue.getText().toString().trim().replace(',', '.');
 
         if (valueStr.isEmpty()) {
-            Toast.makeText(context, "Введите курс", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, R.string.rate_error_empty, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -165,9 +165,9 @@ public class RateEditDialog {
                     if (rowId >= 0) {
                         listener.onRateSaved();
                         if (dialog != null) dialog.dismiss();
-                        Toast.makeText(context, "Курс добавлен", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, R.string.rate_added, Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(context, "Ошибка при добавлении", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, R.string.rate_error_add, Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     ContentValues values = new ContentValues();
@@ -184,25 +184,25 @@ public class RateEditDialog {
                     if (rows > 0) {
                         listener.onRateSaved();
                         if (dialog != null) dialog.dismiss();
-                        Toast.makeText(context, "Курс обновлен", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, R.string.rate_updated, Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(context, "Курс не найден", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, R.string.rate_not_found, Toast.LENGTH_SHORT).show();
                     }
                 }
             } finally {
                 db.close();
             }
         } catch (Exception e) {
-            Toast.makeText(context, "Ошибка: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, context.getString(R.string.error_with_reason, e.getMessage()), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void deleteRate() {
         new AlertDialog.Builder(context)
-                .setTitle("Удалить курс?")
+                .setTitle(R.string.rate_delete_question)
                 .setMessage(DateUtils.DateToStr(rateDate) + " - " + String.format("%.5f", rateValue))
-                .setPositiveButton("Удалить", (d, w) -> doDeleteRate())
-                .setNegativeButton("Отмена", null)
+                .setPositiveButton(R.string.action_delete, (d, w) -> doDeleteRate())
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 
@@ -224,12 +224,12 @@ public class RateEditDialog {
             if (rows > 0) {
                 listener.onRateDeleted();
                 if (dialog != null) dialog.dismiss();
-                Toast.makeText(context, "Курс удален", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, R.string.rate_deleted, Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(context, "Курс не найден", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, R.string.rate_not_found, Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
-            Toast.makeText(context, "Ошибка при удалении: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, context.getString(R.string.rate_error_delete, e.getMessage()), Toast.LENGTH_SHORT).show();
         }
     }
 }

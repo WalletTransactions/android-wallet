@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English: capital assets and revaluation (openspec capital-assets). -->
+<resources>
+    <string name="system_category_revaluation">Revaluation</string>
+    <string name="account_system_revaluation_hint">System category — asset revaluations go through it, so it can\'t be deleted or renamed</string>
+    <string name="picker_asset_name">%1$s · %2$s</string>
+    <string name="asset_type_real_estate_short">real estate</string>
+    <string name="asset_type_vehicle_short">vehicle</string>
+    <string name="asset_type_other_short">other</string>
+    <string name="asset_type_real_estate">Real estate</string>
+    <string name="asset_type_vehicle">Vehicle</string>
+    <string name="asset_type_other">Other</string>
+    <string name="asset_is_capital">Capital asset</string>
+    <string name="asset_type_label">Asset type</string>
+    <string name="asset_in_net_worth">Include in “Total with capital”</string>
+    <string name="asset_revalue">Revalue</string>
+    <string name="asset_move_operations">Move operations to an asset</string>
+    <string name="revaluation_title">Revaluation</string>
+    <string name="revaluation_date">DATE</string>
+    <string name="revaluation_new_value">NEW VALUE</string>
+    <string name="revaluation_cancel">Cancel</string>
+    <string name="revaluation_save">Save</string>
+    <string name="revaluation_current">Now: %1$s</string>
+    <string name="revaluation_current_delta">Now: %1$s · Difference: %2$s</string>
+    <string name="revaluation_enter_value">Enter a value</string>
+    <string name="revaluation_negative">The value can\'t be negative</string>
+    <string name="revaluation_too_precise">No more than %1$d digits after the point</string>
+    <string name="revaluation_comment">Value: %1$s</string>
+    <string name="revaluation_unchanged">The value hasn\'t changed</string>
+    <string name="revaluation_failed">Couldn\'t save the revaluation</string>
+    <string name="revaluation_saved">Revaluation saved</string>
+    <string name="row_revaluation">Revaluation</string>
+    <string name="row_revaluation_comment">Revaluation · %1$s</string>
+    <string name="move_pick_asset">Which asset</string>
+    <string name="move_confirm_title">Move operations to an asset</string>
+    <string name="move_confirm_message">Operations: %1$d. They will become transfers to “%2$s”, and the category “%3$s” will be archived.</string>
+    <string name="move_confirm_ok">Move</string>
+    <string name="move_confirm_cancel">Cancel</string>
+    <string name="move_failed">Couldn\'t move the operations: %1$s</string>
+    <string name="move_skipped">Not moved: %1$d — no rate for the date. Add the rate and try again.</string>
+    <string name="move_skipped_ok">OK</string>
+    <string name="move_done">Operations moved: %1$d</string>
+    <string name="wallets_section_liquid">Liquid</string>
+    <string name="wallets_section_capital">Capital</string>
+    <string name="summary_capital">Capital</string>
+    <string name="summary_net_worth">Total with capital</string>
+    <string name="sync_healed_ledger_reread">Reloading the wallet from the server to pick up capital assets</string>
+</resources>

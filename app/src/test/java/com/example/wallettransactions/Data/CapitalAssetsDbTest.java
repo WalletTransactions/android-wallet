@@ -35,7 +35,7 @@ import org.robolectric.RobolectricTestRunner;
 import java.util.Date;
 
 /**
- * openspec capital-assets: таблица {@code account_asset} и шаг v88, признак актива в модели,
+ * openspec capital-assets: таблица {@code account_asset} и шаг v89, признак актива в модели,
  * системная «Переоценка», запись переоценки, исключение её из дохода/расхода, итоги
  * «ликвидные / капитал / всего с капиталом» и перенос операций категории в актив.
  */
@@ -84,7 +84,7 @@ public class CapitalAssetsDbTest {
         helper.close();
     }
 
-    // ── 1.1 схема и шаг v88 ─────────────────────────────────────────────────
+    // ── 1.1 схема и шаг v89 ─────────────────────────────────────────────────
 
     @Test
     public void freshInstall_hasAccountAssetTable_withoutRereadFlag() {
@@ -95,13 +95,13 @@ public class CapitalAssetsDbTest {
     }
 
     @Test
-    public void upgradeFrom87_createsTableTriggerViewColumn_andRaisesRereadFlag() {
+    public void upgradeFrom88_createsTableTriggerViewColumn_andRaisesRereadFlag() {
         db.execSQL("DROP TABLE account_asset");
         db.execSQL("DROP VIEW v_operation_eq");
         db.execSQL("DROP VIEW v_operation");
         db.execSQL("CREATE VIEW v_operation AS SELECT 1 x");
 
-        helper.onUpgrade(db, 87, 88);
+        helper.onUpgrade(db, 88, 89);
 
         assertTrue(WalletDbHelper.tableExists(db, "account_asset"));
         assertTrue(exists("trigger", "trg_account_asset_dirty"));

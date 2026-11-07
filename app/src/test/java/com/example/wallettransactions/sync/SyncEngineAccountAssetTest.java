@@ -40,7 +40,7 @@ import java.util.Map;
 
 /**
  * openspec capital-assets, синк: {@code account_asset} в push (ключи по контракту wallet-api)
- * и pull, переклейка uuid при 409 и однократный перечит потока ledger после шага v88.
+ * и pull, переклейка uuid при 409 и однократный перечит потока ledger после шага v89.
  */
 @RunWith(RobolectricTestRunner.class)
 public class SyncEngineAccountAssetTest {

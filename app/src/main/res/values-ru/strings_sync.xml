@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Синк: журнал, исходы прохода, интеграции (openspec android-i18n, задача 2.8). -->
+<resources>
+    <string name="sync_type_currency">Валюта</string>
+    <string name="sync_type_pair">Валютная пара</string>
+    <string name="sync_type_rate">Курс</string>
+    <string name="sync_type_account">Счёт</string>
+    <string name="sync_type_operation">Операция</string>
+    <string name="sync_type_icon">Иконка</string>
+    <string name="sync_action_sent">Отправлено</string>
+    <string name="sync_action_sent_delete">Отправлено (удаление)</string>
+    <string name="sync_action_added">Добавлено</string>
+    <string name="sync_action_changed">Изменено</string>
+    <string name="sync_action_deleted">Удалено</string>
+    <string name="sync_action_icon_adopted">Своя стала иконкой с сервера</string>
+    <string name="sync_action_icon_renamed">Своя переименована</string>
+    <!-- Имя своей иконки, уступившей имя серверной (spec icon-sync) — хранится в базе. -->
+    <string name="icon_own_suffix">%1$s (своя)</string>
+    <string name="icon_own_suffix_n">%1$s (своя %2$d)</string>
+
+    <string name="sync_no_changes">Изменений нет — локальные данные уже совпадают с сервером.</string>
+    <string name="sync_healed_name_conflict">конфликт имени счёта — переклеено, отправляю повторно</string>
+    <string name="sync_healed_missing_reference">нет на сервере: %1$s — помечено заново, отправляю повторно</string>
+    <string name="sync_healed_resync">Повторная загрузка с сервера — подтягиваю пропущенные данные</string>
+    <string name="sync_healed_ledger_changed">Сервер сменил кошелёк — загружаю его заново</string>
+    <string name="sync_healed_purged">Сервер очистил старые удаления — загружаю данные заново</string>
+    <string name="sync_healed_cursor_reset">Позиция синхронизации разошлась с сервером — загружаю данные заново</string>
+    <string name="sync_healed_swept">Удалено записей, которых больше нет на сервере: %1$d</string>
+    <string name="sync_problem_deferred_icons">отложено до следующего синка (нет иконки-заместителя): %1$d строк</string>
+    <string name="sync_problem_no_substitute">нет иконки-заместителя для «%1$s»: строка отложена</string>
+    <string name="sync_problem_deferred_rows">Часть данных ждёт связанных записей с сервера (%1$s)</string>
+
+    <string name="sync_awaiting_decision">Ждёт решения: на главном экране вопрос об операциях без входа</string>
+    <string name="sync_still_running">синхронизация ещё идёт</string>
+    <string name="sync_unexpected_error">Неожиданная ошибка: %1$s</string>
+    <string name="sync_server_unreachable">Сервер недоступен по сети</string>
+    <string name="sync_partial">Часть изменений не отправлена — повторите синхронизацию</string>
+    <string name="sync_server_unavailable">Сервер недоступен: %1$s</string>
+    <string name="sync_bad_response">Некорректный ответ сервера: %1$s</string>
+    <string name="sync_rejected">Сервер отклонил часть изменений — %1$s</string>
+
+    <!-- Первое подключение к кошельку (spec ledger-connection). -->
+    <string name="connection_title">Операции без входа</string>
+    <string name="connection_transfer">Перенести</string>
+    <string name="connection_discard">Удалить с телефона</string>
+    <plurals name="connection_question">
+        <item quantity="one">На телефоне %d операция, внесённая до входа. Перенести их в кошелёк на сервере?</item>
+        <item quantity="few">На телефоне %d операции, внесённые до входа. Перенести их в кошелёк на сервере?</item>
+        <item quantity="many">На телефоне %d операций, внесённых до входа. Перенести их в кошелёк на сервере?</item>
+        <item quantity="other">На телефоне %d операций, внесённых до входа. Перенести их в кошелёк на сервере?</item>
+    </plurals>
+    <plurals name="connection_confirm_discard">
+        <item quantity="one">Удалить %d операцию с телефона? Отменить это нельзя.</item>
+        <item quantity="few">Удалить %d операции с телефона? Отменить это нельзя.</item>
+        <item quantity="many">Удалить %d операций с телефона? Отменить это нельзя.</item>
+        <item quantity="other">Удалить %d операций с телефона? Отменить это нельзя.</item>
+    </plurals>
+
+    <!-- Уведомления. -->
+    <string name="notify_channel_new_operations">Новые операции</string>
+    <string name="notify_new_operation">Новая операция</string>
+    <string name="notify_recurring_operation">Периодическая операция</string>
+    <string name="notify_and_more">и ещё %1$d</string>
+    <plurals name="notify_new_operations_word">
+        <item quantity="one">новая операция</item>
+        <item quantity="few">новые операции</item>
+        <item quantity="many">новых операций</item>
+        <item quantity="other">новых операций</item>
+    </plurals>
+    <string name="auth_channel">Статус синхронизации</string>
+    <string name="auth_relink_title">Нужна повторная авторизация</string>
+    <string name="auth_relink_text">Сессия с сервером истекла — нажмите, чтобы войти заново</string>
+
+    <!-- Интеграции и вход. -->
+    <string name="integrations_server_url">Адрес сервера</string>
+    <string name="integrations_no_browser">Не найден браузер, чтобы открыть %1$s</string>
+    <string name="integrations_no_app">Не найдено приложение, чтобы открыть %1$s</string>
+    <string name="integrations_session_expired">Сессия истекла</string>
+    <string name="integrations_not_connected">Не подключено</string>
+    <string name="integrations_need_google">Нужна связь с Google аккаунтом</string>
+    <string name="integrations_telegram_connected">Telegram подключён: %1$s</string>
+    <string name="integrations_telegram_title">Подключение к Telegram</string>
+    <string name="integrations_telegram_need_google">Бот привязывается к вашему аккаунту на сервере — сначала войдите через Google аккаунт.</string>
+    <string name="integrations_sign_in">Войти</string>
+    <string name="integrations_checking">Проверяю подключение…</string>
+    <string name="integrations_connected_list">Подключено:</string>
+    <string name="integrations_connected_since">%1$s — с %2$s</string>
+    <string name="integrations_connect_more">Подключить ещё</string>
+    <string name="integrations_disconnect">Отключить</string>
+    <string name="integrations_which_disconnect">Какой отключить?</string>
+    <string name="integrations_disconnect_question">Отключить %1$s?</string>
+    <string name="integrations_disconnect_message">Бот перестанет принимать траты из этого Telegram. Подключить снова можно в любой момент.</string>
+    <string name="integrations_telegram_disconnected">Telegram отключён</string>
+    <string name="integrations_every_minutes">раз в %1$d мин.</string>
+    <string name="integrations_every_hour">раз в час</string>
+    <string name="integrations_every_hours">раз в %1$d ч.</string>
+    <string name="integrations_sync_interval">Интервал синхронизации</string>
+    <string name="integrations_syncing">Синхронизация…</string>
+    <string name="sync_result_no_session_title">Не связано с сервером</string>
+    <string name="sync_result_no_session_body">Сначала войдите — «Связь с Google аккаунтом» выше.</string>
+    <string name="sync_result_relink_body">Нужен повторный вход через Google — нажмите «Связь с Google аккаунтом» выше.</string>
+    <string name="sync_result_unavailable_title">Сервер недоступен</string>
+    <string name="sync_result_awaiting_title">Синхронизация ждёт решения</string>
+    <string name="sync_result_awaiting_body">На телефоне есть операции, внесённые до входа. Ответьте на вопрос «Операции без входа» на главном экране.</string>
+    <string name="sync_result_partial_title">Синхронизация прошла не полностью</string>
+    <string name="sync_result_error_title">Ошибка синхронизации</string>
+    <string name="sync_result_ok_title">Синхронизация завершена</string>
+
+    <string name="telegram_no_link">Сервер не выдал ссылку для Telegram</string>
+    <string name="telegram_sign_in_first">Сначала войдите через «Связь с Google аккаунтом»</string>
+    <string name="telegram_server_unavailable">Сервер недоступен</string>
+    <string name="telegram_session_expired">Сессия истекла — нажмите «Связь с Google аккаунтом»</string>
+    <string name="telegram_bad_response">Некорректный ответ сервера</string>
+    <string name="telegram_not_configured">Telegram-бот на сервере не настроен</string>
+    <string name="telegram_http_error">Ошибка сервера: HTTP %1$d</string>
+
+    <string name="link_requesting_nonce">Запрашиваю nonce у %1$s…</string>
+    <string name="link_server_unreachable">Не удалось связаться с сервером (%1$s): %2$s</string>
+    <string name="link_nonce_rejected">Сервер отклонил запрос nonce: HTTP %1$d %2$s</string>
+    <string name="link_bad_nonce_response">Некорректный ответ /auth/nonce: %1$s</string>
+    <string name="link_sign_in_error">Ошибка входа: %1$s — %2$s</string>
+    <string name="link_unexpected_credential">Неожиданный тип credential: %1$s</string>
+    <string name="link_exchanging_token">id_token получен, обмениваю на токены сервера…</string>
+    <string name="link_exchange_failed">Не удалось обменять id_token: %1$s</string>
+    <string name="link_sign_in_rejected">Сервер отклонил вход: HTTP %1$d %2$s</string>
+    <string name="link_bad_sign_in_response">Некорректный ответ /auth/google/mobile: %1$s</string>
+    <string name="link_done">Готово — связано с %1$s.</string>
+</resources>

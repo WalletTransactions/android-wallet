@@ -1,0 +1,430 @@
+<resources>
+    <!-- Русский интерфейс (openspec android-i18n). Базовый язык — английский (values/),
+         ключи совпадают — это проверяет UiLanguageTest. -->
+    <string name="app_name">Посчитай и сбереги</string>
+    <string name="caption_add_transaction">Добавить расход</string>
+    <string name="caption_btn_save">Сохранить</string>
+    <string name="caption_choose_operating_account">Счета затрат</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="title_activity_report">ReportActivity</string>
+    <string name="title_activity_account">AccountActivity</string>
+    <string name="title_currencypair_list">CurrencyPairRates</string>
+    <string name="title_currencypair_detail">CurrencyPair Detail</string>
+    <string name="title_activity_filter">ScrollingActivity</string>
+
+    <!-- Системные категории на языке интерфейса (spec ui-language); хранимые имена —
+         Transfer / Transfer commission, см. AccountItem.getDisplayName. -->
+    <string name="system_category_transfer">Перевод</string>
+    <string name="system_category_transfer_commission">Комиссия за перевод</string>
+
+    <!-- account_picker_item_layout -->
+    <string name="account_picker_item_layout_picker_name_text">Кошелёк</string>
+
+    <!-- activity_account_item -->
+    <string name="activity_account_item_text_1">Нажмите для замены иконки</string>
+    <string name="activity_account_item_text_2">НАЗВАНИЕ</string>
+    <string name="activity_account_item_text_3">ВАЛЮТА</string>
+    <string name="activity_account_item_check_is_archive_text">Заархивированный</string>
+    <string name="activity_account_item_text_4">КОММЕНТАРИЙ</string>
+    <string name="activity_account_item_btn_delete_text">Удалить</string>
+    <string name="activity_account_item_btn_save_text">Сохранить</string>
+
+    <!-- activity_account_picker -->
+    <string name="activity_account_picker_btn_up_content_description">Назад</string>
+    <string name="activity_account_picker_picker_title_text">Выберите счёт</string>
+    <string name="activity_account_picker_kind_categories_text">Категории</string>
+    <string name="activity_account_picker_kind_wallets_text">Кошельки</string>
+    <string name="activity_account_picker_search_input_hint">Поиск по названию</string>
+    <string name="activity_account_picker_empty_state_text">Ничего не найдено</string>
+    <string name="activity_account_picker_text_1">+ Добавить кошелёк или категорию</string>
+
+    <!-- activity_add_category -->
+    <string name="activity_add_category_text_1">Иконка</string>
+    <string name="activity_add_category_text_2">Нажмите для выбора иконки</string>
+    <string name="activity_add_category_text_3">Название</string>
+    <string name="activity_add_category_edit_category_name_hint">Например, Продукты</string>
+    <string name="activity_add_category_text_4">Комментарий</string>
+    <string name="activity_add_category_edit_category_comment_hint">Необязательно</string>
+    <string name="activity_add_category_btn_save_text">Сохранить</string>
+
+    <!-- activity_add_wallet -->
+    <string name="activity_add_wallet_text_1">Иконка</string>
+    <string name="activity_add_wallet_text_2">Нажмите для выбора иконки</string>
+    <string name="activity_add_wallet_text_3">Название</string>
+    <string name="activity_add_wallet_edit_wallet_name_hint">Например, Наличные</string>
+    <string name="activity_add_wallet_text_4">Валюта</string>
+    <string name="activity_add_wallet_tv_currency_label_text">Нажмите для выбора валюты</string>
+    <string name="activity_add_wallet_text_5">Комментарий</string>
+    <string name="activity_add_wallet_edit_wallet_comment_hint">Необязательно</string>
+    <string name="activity_add_wallet_btn_save_text">Сохранить</string>
+
+    <!-- activity_ai -->
+    <string name="activity_ai_text_1">ИИ</string>
+    <string name="activity_ai_text_2">Трата своими словами</string>
+    <string name="activity_ai_edit_text_hint">Например: вчера такси 450 с тинькоффа</string>
+    <string name="activity_ai_btn_mic_content_description">Надиктовать</string>
+    <string name="activity_ai_btn_parse_text">Разобрать</string>
+    <string name="activity_ai_text_3">Отменить</string>
+    <string name="activity_ai_btn_manual_text">Заполнить вручную</string>
+    <string name="activity_ai_text_4">Синхронизировать и повторить</string>
+    <string name="activity_ai_text_5">Открыть операцию</string>
+    <string name="activity_ai_text_6">Разбор не записан</string>
+    <string name="activity_ai_text_7">Открыть снова</string>
+    <string name="activity_ai_text_8">Выписка из банка</string>
+    <string name="activity_ai_text_9">PDF или CSV из приложения банка — ИИ разберёт операции и подберёт категории, вы проверите и запишете</string>
+    <string name="activity_ai_text_10">Загрузить выписку</string>
+
+    <!-- activity_currency_form -->
+    <string name="activity_currency_form_btn_up_content_description">Назад</string>
+    <string name="activity_currency_form_form_title_text">Новая валюта</string>
+    <string name="activity_currency_form_shared_note_text">Общая валюта — изменить нельзя</string>
+    <string name="activity_currency_form_text_1">Иконка</string>
+    <string name="activity_currency_form_img_currency_icon_content_description">Иконка валюты</string>
+    <string name="activity_currency_form_text_2">Название</string>
+    <string name="activity_currency_form_edit_currency_name_hint">Например, Доллар США</string>
+    <string name="activity_currency_form_text_3">ISO-код</string>
+    <string name="activity_currency_form_text_4">Символ</string>
+    <string name="activity_currency_form_text_5">Точность (знаков после запятой)</string>
+    <string name="activity_currency_form_text_6">Показывать в эквиваленте</string>
+    <string name="activity_currency_form_btn_delete_text">Удалить</string>
+    <string name="activity_currency_form_btn_cancel_text">Отмена</string>
+    <string name="activity_currency_form_btn_save_text">Сохранить</string>
+
+    <!-- activity_currencypair_list -->
+    <string name="activity_currencypair_list_text_1">Курсы валют</string>
+    <string name="activity_currencypair_list_btn_currencies_text">Валюты</string>
+    <string name="activity_currencypair_list_currency_filter_search_hint">Поиск валюты</string>
+    <string name="activity_currencypair_list_text_2">+ Добавить валютную пару</string>
+
+    <!-- activity_currency_pair_rate_list -->
+    <string name="activity_currency_pair_rate_list_btn_delete_pair_content_description">Удалить пару</string>
+    <string name="activity_currency_pair_rate_list_text_1">История курса</string>
+    <string name="activity_currency_pair_rate_list_text_2">нажмите, чтобы изменить</string>
+    <string name="activity_currency_pair_rate_list_text_3">+ Добавить курс</string>
+
+    <!-- activity_currency_picker -->
+    <string name="activity_currency_picker_picker_title_text">Базовая валюта</string>
+    <string name="activity_currency_picker_search_input_hint">Поиск валюты</string>
+    <string name="activity_currency_picker_btn_create_currency_text">+ Создать валюту</string>
+
+    <!-- activity_export -->
+    <string name="activity_export_text_1">«Экспортировать БД» скопирует файл wallet.db в папку Downloads — можно открыть на компьютере в DB Browser for SQLite.\n\n«Экспортировать в JSON» выгрузит счета (с валютой), валютные пары, курсы и операции читаемым файлом того же формата, что принимает импорт JSON — с ним можно перенести данные на другое устройство.</string>
+    <string name="activity_export_btn_export_db_text">Экспортировать БД</string>
+    <string name="activity_export_btn_export_json_text">Экспортировать в JSON</string>
+    <string name="activity_export_btn_share_text">Поделиться</string>
+
+    <!-- activity_filter -->
+    <string name="activity_filter_text_1">Фильтр</string>
+    <string name="activity_filter_text_2">ПОИСК ПО ТЕКСТУ</string>
+    <string name="activity_filter_input_search_text_hint">Название или комментарий</string>
+    <string name="activity_filter_text_3">ТИП ОПЕРАЦИИ</string>
+    <string name="activity_filter_chip_all_text">Все</string>
+    <string name="activity_filter_text_4">Расход</string>
+    <string name="activity_filter_text_5">Доход</string>
+    <string name="activity_filter_text_6">Перевод</string>
+    <string name="activity_filter_text_7">СЧЕТА</string>
+    <string name="activity_filter_text_8">Счёт затрат</string>
+    <string name="activity_filter_category_summary_text">Все</string>
+    <string name="activity_filter_text_9">Кошелёк</string>
+    <string name="activity_filter_wallet_summary_text">Все</string>
+    <string name="activity_filter_text_10">СУММА В ВАЛЮТЕ КОШЕЛЬКА</string>
+    <string name="activity_filter_input_amount_min_hint">от</string>
+    <string name="activity_filter_input_amount_max_hint">до</string>
+    <string name="activity_filter_label_eq_range_text">СУММА В ЭКВИВАЛЕНТЕ</string>
+    <string name="activity_filter_input_eq_min_hint">от</string>
+    <string name="activity_filter_input_eq_max_hint">до</string>
+    <string name="activity_filter_btn_reset_text">Сбросить</string>
+    <string name="activity_filter_btn_apply_text">Показать 14</string>
+
+    <!-- activity_icon_crop -->
+    <string name="activity_icon_crop_crop_hint_text">Двигайте изображение пальцем, щипком меняйте масштаб. Всё, что за кругом, станет прозрачным.</string>
+    <string name="activity_icon_crop_btn_cancel_text">Отмена</string>
+    <string name="activity_icon_crop_btn_apply_text">Готово</string>
+
+    <!-- activity_icon_picker -->
+    <string name="activity_icon_picker_btn_up_content_description">Назад</string>
+    <string name="activity_icon_picker_picker_title_text">Иконка валюты</string>
+    <string name="activity_icon_picker_btn_new_icon_text">+ Новая иконка</string>
+
+    <!-- activity_import -->
+    <string name="activity_import_text_1">Счета</string>
+    <string name="activity_import_btn_import_account_text">Импортировать счета</string>
+    <string name="activity_import_text_2">Операции</string>
+    <string name="activity_import_btn_import_operation_text">Импортировать операции</string>
+    <string name="activity_import_text_3">Курсы валютных пар</string>
+    <string name="activity_import_btn_import_rate_text">Импортировать курсы</string>
+    <string name="activity_import_text_4">Операции (с переводами и комиссией), а также счета, валютные пары и курсы — одним файлом</string>
+    <string name="activity_import_btn_import_operation_json_text">Импортировать из JSON</string>
+
+    <!-- activity_integrations -->
+    <string name="activity_integrations_text_1">Интеграции</string>
+    <string name="activity_integrations_text_2">Адрес сервера</string>
+    <string name="activity_integrations_text_3">Связь с Google аккаунтом</string>
+    <string name="activity_integrations_link_status_value_text">Не подключено</string>
+    <string name="activity_integrations_text_4">Подключение к Telegram</string>
+    <string name="activity_integrations_text_5">Открыть веб-версию</string>
+    <string name="activity_integrations_text_6">в браузере</string>
+    <string name="activity_integrations_text_7">Автоматическая синхронизация</string>
+    <string name="activity_integrations_row_auto_connect_interval_text">раз в час</string>
+    <string name="activity_integrations_text_8">Синхронизировать сейчас</string>
+    <string name="activity_integrations_text_9">Уведомлять о новых операциях</string>
+    <string name="activity_integrations_text_10">периодические, из бота, веба и с других устройств</string>
+
+    <!-- activity_lock -->
+    <string name="activity_lock_lock_forgot_text">Забыли код?</string>
+
+    <!-- activity_more -->
+    <string name="activity_more_title_text">Ещё</string>
+    <string name="activity_more_text_1">Кошельки и категории</string>
+    <string name="activity_more_text_2">Повторяющиеся операции</string>
+    <string name="activity_more_text_3">ИИ</string>
+    <string name="activity_more_row_ai_hint_text">Трата своими словами</string>
+    <string name="activity_more_text_4">Интеграции</string>
+    <string name="activity_more_text_5">Курсы валют</string>
+    <string name="activity_more_text_6">Иконки и категории</string>
+    <string name="activity_more_text_7">Импорт из файла</string>
+    <string name="activity_more_text_8">Настройки</string>
+
+    <!-- activity_multi_picker -->
+    <string name="activity_multi_picker_btn_up_content_description">Назад</string>
+    <string name="activity_multi_picker_picker_title_text">Счёт затрат</string>
+    <string name="activity_multi_picker_btn_toggle_all_text">Выбрать все</string>
+    <string name="activity_multi_picker_picker_count_text">Все</string>
+    <string name="activity_multi_picker_search_input_hint">Поиск по названию</string>
+    <string name="activity_multi_picker_empty_state_text">Ничего не найдено</string>
+    <string name="activity_multi_picker_btn_done_text">Готово</string>
+
+    <!-- activity_recurring_operation_list -->
+    <string name="activity_recurring_operation_list_empty_recurring_text">Повторяющихся операций пока нет.</string>
+    <string name="activity_recurring_operation_list_text_1">+ Добавить повторяющуюся операцию</string>
+
+    <!-- activity_recurring_operation -->
+    <string name="activity_recurring_operation_btn_up_content_description">Назад</string>
+    <string name="activity_recurring_operation_btn_delete_content_description">Удалить</string>
+    <string name="activity_recurring_operation_text_1">Расход</string>
+    <string name="activity_recurring_operation_text_2">Доход</string>
+    <string name="activity_recurring_operation_text_3">Перевод</string>
+    <string name="activity_recurring_operation_label_slot_top_text">Статья расхода</string>
+    <string name="activity_recurring_operation_label_slot_bottom_text">Кошелёк</string>
+    <string name="activity_recurring_operation_text_4">Сумма</string>
+    <string name="activity_recurring_operation_text_5">Комментарий</string>
+    <string name="activity_recurring_operation_edit_comment_hint">Необязательно</string>
+    <string name="activity_recurring_operation_text_6">Повторять</string>
+    <string name="activity_recurring_operation_tv_frequency_text">Ежемесячно</string>
+    <string name="activity_recurring_operation_text_7">Дни недели</string>
+    <string name="activity_recurring_operation_text_8">Пн</string>
+    <string name="activity_recurring_operation_text_9">Вт</string>
+    <string name="activity_recurring_operation_text_10">Ср</string>
+    <string name="activity_recurring_operation_text_11">Чт</string>
+    <string name="activity_recurring_operation_text_12">Пт</string>
+    <string name="activity_recurring_operation_text_13">Сб</string>
+    <string name="activity_recurring_operation_text_14">Вс</string>
+    <string name="activity_recurring_operation_text_15">Через сколько недель</string>
+    <string name="activity_recurring_operation_tv_interval_text">Каждую неделю</string>
+    <string name="activity_recurring_operation_text_16">С какой даты</string>
+    <string name="activity_recurring_operation_text_17">До какой даты</string>
+    <string name="activity_recurring_operation_text_18">Всегда</string>
+    <string name="activity_recurring_operation_text_19">Повтор включён</string>
+    <string name="activity_recurring_operation_text_20">Сохранить</string>
+
+    <!-- activity_report -->
+    <string name="activity_report_caption_expanses_text">Расходы</string>
+    <string name="activity_report_caption_incomes_text">Доходы</string>
+
+    <!-- activity_reset_data -->
+    <string name="activity_reset_data_text_1">Действие необратимо. Отметьте, что удалить, и нажмите «Удалить» внизу.</string>
+    <string name="activity_reset_data_text_2">Что удалить</string>
+    <string name="activity_reset_data_chk_operations_text">Операции и счета (кроме системных категорий)</string>
+    <string name="activity_reset_data_chk_icons_text">Иконки</string>
+    <string name="activity_reset_data_chk_currency_pairs_text">Валютные пары и курсы</string>
+    <string name="activity_reset_data_text_3">После удаления</string>
+    <string name="activity_reset_data_chk_reseed_text">Создать дефолтный набор для отмеченного выше (счета, иконки, пары и курсы)</string>
+    <string name="activity_reset_data_btn_confirm_reset_text">Удалить</string>
+    <string name="activity_reset_data_text_4">Полная очистка базы</string>
+    <string name="activity_reset_data_text_5">Физически стирает все таблицы базы данных (а не помечает записи удалёнными). Изменение НЕ синхронизируется с сервером — при следующей синхронизации данные могут вернуться обратно с сервера.</string>
+    <string name="activity_reset_data_chk_hard_reseed_text">Создать дефолтный набор после очистки (как при первой установке)</string>
+    <string name="activity_reset_data_btn_hard_wipe_text">Удалить ВСЁ безвозвратно</string>
+
+    <!-- activity_settings -->
+    <string name="activity_settings_text_1">Настройки</string>
+    <string name="activity_settings_text_2">ОФОРМЛЕНИЕ</string>
+    <string name="activity_settings_chip_theme_light_text">Светлая</string>
+    <string name="activity_settings_chip_theme_dark_text">Тёмная</string>
+    <string name="activity_settings_chip_theme_system_text">Как в системе</string>
+    <string name="activity_settings_text_3">ВАЛЮТА</string>
+    <string name="activity_settings_text_4">Валюта эквивалента</string>
+    <string name="activity_settings_main_currency_value_text">₽ Российский рубль</string>
+    <string name="activity_settings_text_5">ВВОД ОПЕРАЦИЙ</string>
+    <string name="activity_settings_text_6">Сразу открывать клавиатуру поиска</string>
+    <string name="activity_settings_text_7">при выборе категории или кошелька</string>
+    <string name="activity_settings_text_8">Сортировка кошельков</string>
+    <string name="activity_settings_text_9">Сортировка категорий</string>
+    <string name="activity_settings_text_10">частота — сначала с выбранным кошельком</string>
+    <string name="activity_settings_text_11">БЕЗОПАСНОСТЬ</string>
+    <string name="activity_settings_text_12">Код доступа</string>
+    <string name="activity_settings_text_13">Сменить код</string>
+    <string name="activity_settings_text_14">Блокировать</string>
+    <string name="activity_settings_text_15">после ухода из приложения</string>
+    <string name="activity_settings_text_16">Скрывать в недавних</string>
+    <string name="activity_settings_label_biometric_text">Вход по отпечатку</string>
+    <string name="activity_settings_text_17">УВЕДОМЛЕНИЯ</string>
+    <string name="activity_settings_text_18">Напоминание вносить операции</string>
+    <string name="activity_settings_row_remind_time_text">каждый день в 20:00</string>
+    <string name="activity_settings_text_19">ДАННЫЕ</string>
+    <string name="activity_settings_text_20">Экспорт базы</string>
+    <string name="activity_settings_text_21">О ПРИЛОЖЕНИИ</string>
+    <string name="activity_settings_text_22">Оценить приложение</string>
+    <string name="activity_settings_text_23">Версия</string>
+    <string name="activity_settings_text_24">Дата сборки</string>
+
+    <!-- activity_statement_import -->
+    <string name="activity_statement_import_content_description_1">Назад</string>
+    <string name="activity_statement_import_text_2">Выписка</string>
+    <string name="activity_statement_import_text_3">Файл выписки</string>
+    <string name="activity_statement_import_tv_file_hint">PDF с текстом, CSV или TXT до 5 МБ</string>
+    <string name="activity_statement_import_text_4">Кошелёк выписки</string>
+    <string name="activity_statement_import_tv_wallet_hint">Выберите кошелёк</string>
+    <string name="activity_statement_import_btn_upload_text">Загрузить</string>
+    <string name="activity_statement_import_text_5">С экрана можно уйти — разбор идёт на сервере, вернитесь позже</string>
+    <string name="activity_statement_import_text_6">Загрузить другую выписку</string>
+    <string name="activity_statement_import_btn_write_ready_text">Записать готовые (0)</string>
+    <string name="activity_statement_import_text_7">Загрузить другую выписку</string>
+
+    <!-- activity_sync_link -->
+    <string name="activity_sync_link_text_1">Связь с Google аккаунтом</string>
+    <string name="activity_sync_link_text_2">Войдите тем же Google-аккаунтом, под которым сервер уже знает ваши данные.</string>
+    <string name="activity_sync_link_button_sign_in_text">Войти через Google</string>
+
+    <!-- activity_transaction -->
+    <string name="activity_transaction_btn_up_content_description">Назад</string>
+    <string name="activity_transaction_screen_title_text">Новая операция</string>
+    <string name="activity_transaction_btn_delete_content_description">Удалить операцию</string>
+    <string name="activity_transaction_text_1">Расход</string>
+    <string name="activity_transaction_text_2">Доход</string>
+    <string name="activity_transaction_text_3">Перевод</string>
+    <string name="activity_transaction_amount_hint_text">Сколько потратили</string>
+    <string name="activity_transaction_label_amount_to_text">Сумма в валюте получателя</string>
+    <string name="activity_transaction_edit_slot_top_hint">Статья расхода</string>
+    <string name="activity_transaction_edit_slot_bottom_hint">Кошелёк</string>
+    <string name="activity_transaction_text_4">Комиссия за перевод</string>
+    <string name="activity_transaction_edit_commission_account_hint">Счёт списания комиссии</string>
+    <string name="activity_transaction_text_5">Размер комиссии</string>
+    <string name="activity_transaction_text_6">Комиссия списывается со счёта</string>
+    <string name="activity_transaction_radio_commission_from_source_text">Со счёта отправителя (откуда)</string>
+    <string name="activity_transaction_radio_commission_from_dest_text">Со счёта получателя (куда)</string>
+    <string name="activity_transaction_text_7">Комиссия пока не сохраняется в базу — см. план работ.</string>
+    <string name="activity_transaction_edit_comment_hint">Комментарий</string>
+    <string name="activity_transaction_keypad_del_content_description">Стереть</string>
+
+    <!-- currency_picker_item_layout -->
+    <string name="currency_picker_item_layout_currency_name_text">Доллар США</string>
+
+    <!-- dialog_add_edit_icon -->
+    <string name="dialog_add_edit_icon_dialog_title_text">Добавить иконку</string>
+    <string name="dialog_add_edit_icon_img_icon_preview_content_description">Изображение иконки</string>
+    <string name="dialog_add_edit_icon_btn_select_icon_text">Выбрать изображение</string>
+    <string name="dialog_add_edit_icon_txt_server_icon_hint_text">Иконка с сервера — изменить или удалить её может администратор на сайте.</string>
+    <string name="dialog_add_edit_icon_lbl_icon_name_text">НАЗВАНИЕ</string>
+    <string name="dialog_add_edit_icon_edt_icon_name_hint">Например, Продукты</string>
+    <string name="dialog_add_edit_icon_lbl_icon_type_text">ТИП</string>
+    <string name="dialog_add_edit_icon_chip_category_text">Категория</string>
+    <string name="dialog_add_edit_icon_chip_flag_text">Флаг</string>
+    <string name="dialog_add_edit_icon_btn_delete_text">Удалить</string>
+    <string name="dialog_add_edit_icon_btn_cancel_text">Отмена</string>
+    <string name="dialog_add_edit_icon_btn_save_text">Сохранить</string>
+
+    <!-- dialog_download_rates -->
+    <string name="dialog_download_rates_text_1">Загрузка котировок</string>
+    <string name="dialog_download_rates_text_2">ИСТОЧНИК</string>
+    <string name="dialog_download_rates_source_value_text">ЦБ РФ</string>
+    <string name="dialog_download_rates_text_3">ПЕРИОД</string>
+    <string name="dialog_download_rates_input_from_hint">с</string>
+    <string name="dialog_download_rates_input_to_hint">по</string>
+    <string name="dialog_download_rates_text_4">ОБЪЁМ</string>
+    <string name="dialog_download_rates_radio_day_text">Каждый день</string>
+    <string name="dialog_download_rates_radio_monday_text">Каждый понедельник</string>
+    <string name="dialog_download_rates_radio_month_text">Каждый месяц</string>
+    <string name="dialog_download_rates_btn_cancel_text">Отмена</string>
+    <string name="dialog_download_rates_btn_download_text">Скачать</string>
+
+    <!-- dialog_edit_rate -->
+    <string name="dialog_edit_rate_dialog_title_text">Добавить курс</string>
+    <string name="dialog_edit_rate_text_1">ДАТА</string>
+    <string name="dialog_edit_rate_input_date_hint">дд.мм.гггг</string>
+    <string name="dialog_edit_rate_text_2">КУРС</string>
+    <string name="dialog_edit_rate_btn_delete_text">Удалить</string>
+    <string name="dialog_edit_rate_btn_cancel_text">Отмена</string>
+    <string name="dialog_edit_rate_btn_save_text">Сохранить</string>
+
+    <!-- dialog_new_pair -->
+    <string name="dialog_new_pair_text_1">Новая валютная пара</string>
+    <string name="dialog_new_pair_text_2">БАЗОВАЯ ВАЛЮТА</string>
+    <string name="dialog_new_pair_text_3">КОТИРУЕМАЯ ВАЛЮТА</string>
+    <string name="dialog_new_pair_text_4">ТОЧНОСТЬ (ЗНАКОВ ПОСЛЕ ЗАПЯТОЙ)</string>
+    <string name="dialog_new_pair_btn_cancel_text">Отмена</string>
+    <string name="dialog_new_pair_btn_create_text">Создать</string>
+
+    <!-- fragment_file_picker -->
+    <string name="fragment_file_picker_btn_choose_file_text">Выбрать файл</string>
+    <string name="fragment_file_picker_btn_format_info_text">Формат</string>
+
+    <!-- lock_keypad -->
+    <string name="lock_keypad_lock_key_ok_text">ОК</string>
+    <string name="lock_keypad_lock_key_bio_content_description">Вход по отпечатку</string>
+    <string name="lock_keypad_content_description_1">Стереть</string>
+
+    <!-- more_item_layout -->
+    <string name="more_item_layout_more_label_text">Курсы валют</string>
+
+    <!-- multi_picker_item_layout -->
+    <string name="multi_picker_item_layout_item_label_text">Название</string>
+
+    <!-- pair_item_layout -->
+    <string name="pair_item_layout_pair_date_text">24 июля 2026</string>
+
+    <!-- report_byaccount_item_layout -->
+    <string name="report_byaccount_item_layout_text_name_text">Категория</string>
+
+    <!-- transaction_item_layout -->
+    <string name="transaction_item_layout_account_to_name_text">Продукты</string>
+    <string name="transaction_item_layout_comment_text">Пятёрочка</string>
+
+    <!-- transaction_item_transfer -->
+    <string name="transaction_item_transfer_transfer_route_text">Mastercard → Тинькофф</string>
+
+    <!-- view_bottom_nav -->
+    <string name="view_bottom_nav_text_1">Операции</string>
+    <string name="view_bottom_nav_text_2">Кошельки</string>
+    <string name="view_bottom_nav_text_3">Отчёты</string>
+    <string name="view_bottom_nav_text_4">Ещё</string>
+    <string name="view_bottom_nav_btn_add_tran_content_description">Добавить операцию</string>
+
+    <!-- view_period_summary -->
+    <string name="view_period_summary_text_1">На начало</string>
+    <string name="view_period_summary_text_2">На конец</string>
+    <string name="view_period_summary_text_3">Доход</string>
+    <string name="view_period_summary_text_4">Расход</string>
+    <string name="view_period_summary_text_5">Итог</string>
+    <string name="view_period_summary_btn_clear_filter_text">Сбросить</string>
+
+    <!-- view_screen_header -->
+    <string name="view_screen_header_btn_up_content_description">Назад</string>
+
+    <!-- view_tab_actions -->
+    <string name="view_tab_actions_btn_filter_content_description">Фильтр</string>
+
+    <!-- view_transaction_day_header -->
+    <string name="view_transaction_day_header_text_date_text">24 июля</string>
+
+    <!-- wallet_balance_item_layout -->
+    <string name="wallet_balance_item_layout_wallet_name_text">Кошелёк</string>
+    <string name="wallet_balance_item_layout_text_1">НА НАЧАЛО</string>
+    <string name="wallet_balance_item_layout_text_2">ПРИХОД</string>
+
+    <!-- rate_list_menu -->
+    <string name="rate_list_menu_action_download_rates_title">Загрузить курсы</string>
+
+    <!-- report_list_menu -->
+    <string name="report_list_menu_action_change_currency_eq_title">Валюта отображения</string>
+</resources>

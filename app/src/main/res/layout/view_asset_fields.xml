@@ -15,7 +15,7 @@
         android:id="@+id/checkIsAsset"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Капитальный актив"
+        android:text="@string/asset_is_capital"
         android:textColor="@color/colorTextPrimary"
         android:textSize="15sp"
         android:buttonTint="@color/colorPrimary"
@@ -31,7 +31,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Тип актива"
+            android:text="@string/asset_type_label"
             android:textSize="11sp"
             android:textStyle="bold"
             android:textAllCaps="true"
@@ -50,7 +50,7 @@
                 android:id="@+id/assetTypeRealEstate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Недвижимость"
+                android:text="@string/asset_type_real_estate"
                 android:buttonTint="@color/colorPrimary"
                 android:textColor="@color/colorTextPrimary"
                 android:textSize="14sp"/>
@@ -59,7 +59,7 @@
                 android:id="@+id/assetTypeVehicle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Авто"
+                android:text="@string/asset_type_vehicle"
                 android:buttonTint="@color/colorPrimary"
                 android:textColor="@color/colorTextPrimary"
                 android:textSize="14sp"/>
@@ -68,7 +68,7 @@
                 android:id="@+id/assetTypeOther"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Прочее"
+                android:text="@string/asset_type_other"
                 android:buttonTint="@color/colorPrimary"
                 android:textColor="@color/colorTextPrimary"
                 android:textSize="14sp"/>
@@ -79,7 +79,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:checked="true"
-            android:text="Учитывать во «Всего с капиталом»"
+            android:text="@string/asset_in_net_worth"
             android:textColor="@color/colorTextPrimary"
             android:textSize="15sp"
             android:buttonTint="@color/colorPrimary"

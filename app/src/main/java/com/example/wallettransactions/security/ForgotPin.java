@@ -2,6 +2,8 @@ package com.example.wallettransactions.security;
 
 import android.app.KeyguardManager;
 import android.content.Context;
+
+import com.example.wallettransactions.R;
 import android.util.Log;
 
 import com.example.wallettransactions.TokenStore;
@@ -36,13 +38,8 @@ public final class ForgotPin {
     }
 
     /** Предупреждение перед стиранием — зависит от того, есть ли копия операций на сервере. */
-    public static String wipeWarning(boolean linkedToServer) {
-        return linkedToServer
-                ? "Все данные приложения на этом телефоне будут удалены. Операции, ещё не "
-                        + "отправленные на сервер, пропадут; остальное вернётся после "
-                        + "входа через «Связь с Google аккаунтом»."
-                : "Все данные приложения будут удалены: операции, кошельки, категории, настройки. "
-                        + "Телефон не связан с сервером — восстановить их будет неоткуда.";
+    public static String wipeWarning(Context c, boolean linkedToServer) {
+        return c.getString(linkedToServer ? R.string.wipe_warning_linked : R.string.wipe_warning_offline);
     }
 
     /** Связан ли телефон с сервером. Хранилище токенов не открылось — считаем, что нет: так предупреждение строже. */

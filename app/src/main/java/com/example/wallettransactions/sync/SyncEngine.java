@@ -1,5 +1,8 @@
 package com.example.wallettransactions.sync;
 
+import com.example.wallettransactions.R;
+import com.example.wallettransactions.Texts;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -105,6 +108,21 @@ import java.util.UUID;
 final class SyncEngine {
 
     private static final String TAG = "SyncEngine";
+
+    /**
+     * Идёт загрузка подключения (openspec new-user-default-set, design D6): пришедшая
+     * валюта, пара или счёт заменяет неотправленную локальную строку с тем же ключом
+     * ({@link LedgerConnection#adoptByKey}), а не пропускается на уникальном индексе.
+     * Ставит и снимает {@code SyncRunner} вокруг загрузки подключения; проход синка в
+     * процессе один, поэтому статического флага достаточно.
+     */
+    static volatile boolean adoptLocalByKey;
+
+    /** Действие строки журнала загрузки: «Удалено» / «Добавлено» / «Изменено». */
+    private static String pullAction(boolean deleted, boolean inserted) {
+        return Texts.get(deleted ? R.string.sync_action_deleted
+                : inserted ? R.string.sync_action_added : R.string.sync_action_changed);
+    }
 
     /** См. javadoc класса, "Порядок применения pull" — icon первым: на него ссылаются account/currency. */
     private static final String[] TABLE_ORDER = {
@@ -251,8 +269,8 @@ final class SyncEngine {
                     // остальной dirty-набор пересобирается и уходит прямо
                     // сейчас, а не ждёт следующего клика «Синхронизировать».
                     resolveAccountConflicts(db, conflicts);
-                    String detail = "конфликт имени счёта — переклеено, отправляю повторно";
-                    Log.w(TAG, "push: " + detail + " (раунд " + round + "): " + result.body);
+                    String detail = Texts.get(R.string.sync_healed_name_conflict);
+                    Log.w(TAG, "push: account name conflict, relinked (round " + round + "): " + result.body);
                     log.healed(detail);
                     healed = true;
                     break;
@@ -275,10 +293,9 @@ final class SyncEngine {
                 // помочь, падаем как раньше.
                 MissingReference missing = parseMissingReference(result.status, result.body);
                 if (missing != null && redirty(db, missing.table, missing.uuid) > 0) {
-                    String detail = "нет на сервере: " + missing.table + "/" + missing.uuid
-                            + " — помечено заново, отправляю повторно";
+                    String detail = Texts.get(R.string.sync_healed_missing_reference, missing.table + "/" + missing.uuid);
                     Log.w(TAG, "push: missing_reference (" + missing.table + "/" + missing.uuid
-                            + "), заново dirty (раунд " + round + "), повторяю прямо сейчас: " + result.body);
+                            + "), dirty again (round " + round + "), retrying now: " + result.body);
                     log.healed(detail);
                     healed = true;
                     break;
@@ -304,8 +321,8 @@ final class SyncEngine {
                 // отказа СЕРВЕРА нет, это клиент сам себя останавливает) —
                 // SyncRunner.runOnce ловит её тем же "максимум дебаг-информации"
                 // путём, что и любой прочий неожиданный сбой.
-                throw new IllegalStateException("push: самолечение не сошлось за " + MAX_SELF_HEAL_ROUNDS
-                        + " раундов — похоже на зацикленный конфликт, останавливаюсь");
+                throw new IllegalStateException("push: self-healing did not converge in " + MAX_SELF_HEAL_ROUNDS
+                        + " rounds — looks like a conflict loop, stopping");
             }
         }
     }
@@ -394,11 +411,11 @@ final class SyncEngine {
      */
     private static void logPortionSent(JSONObject portion, SyncLog log) throws JSONException {
         Map<String, String> displayType = new HashMap<>();
-        displayType.put("currency", "Валюта");
-        displayType.put("currency_pair", "Валютная пара");
-        displayType.put("currency_pair_rate", "Курс");
-        displayType.put("account", "Счёт");
-        displayType.put("operation", "Операция");
+        displayType.put("currency", Texts.get(R.string.sync_type_currency));
+        displayType.put("currency_pair", Texts.get(R.string.sync_type_pair));
+        displayType.put("currency_pair_rate", Texts.get(R.string.sync_type_rate));
+        displayType.put("account", Texts.get(R.string.sync_type_account));
+        displayType.put("operation", Texts.get(R.string.sync_type_operation));
 
         Iterator<String> tables = portion.keys();
         while (tables.hasNext()) {
@@ -408,7 +425,7 @@ final class SyncEngine {
             JSONArray rows = portion.getJSONArray(table);
             for (int i = 0; i < rows.length(); i++) {
                 boolean deleted = rows.getJSONObject(i).optBoolean("deleted", false);
-                log.push(type, deleted ? "Отправлено (удаление)" : "Отправлено");
+                log.push(type, Texts.get(deleted ? R.string.sync_action_sent_delete : R.string.sync_action_sent));
             }
         }
     }
@@ -688,7 +705,7 @@ final class SyncEngine {
             else entry.setValue(kept);
         }
         if (skipped > 0) {
-            problems.add("отложено до следующего синка (нет иконки-заместителя): " + skipped + " строк");
+            problems.add(Texts.get(R.string.sync_problem_deferred_icons, skipped));
         }
     }
 
@@ -752,7 +769,7 @@ final class SyncEngine {
             if (substitute != null) return substitute;
             Log.w(TAG, "push: нет иконки-заместителя для " + uuid + " (" + name + ") — строка отложена");
             deferred.add(uuid);
-            problems.add("нет иконки-заместителя для «" + name + "»: строка отложена");
+            problems.add(Texts.get(R.string.sync_problem_no_substitute, name));
             return uuid;
         }
     }
@@ -811,7 +828,7 @@ final class SyncEngine {
             int updated = db.update("account", cv, "uuid=?", new String[]{ourUuid});
             if (updated == 0) {
                 Log.w(TAG, "resolveAccountConflicts: локальный account uuid=" + ourUuid
-                        + " не найден (уже переклеен раньше?)");
+                        + " не найден (уже переклеен раньше?)"); // not UI: лог
                 continue;
             }
 
@@ -826,7 +843,7 @@ final class SyncEngine {
             db.update("account_asset", cvOp, "uuid=?", new String[]{ourUuid});
 
             Log.i(TAG, "account uuid " + ourUuid + " переклеен на существующий " + survivorUuid
-                    + " (конфликт имени счёта)");
+                    + " (конфликт имени счёта)"); // not UI: лог
         }
     }
 
@@ -851,7 +868,7 @@ final class SyncEngine {
             startFullReload(db, ctx);
             AppSettings.setUuidFormatResyncDone(ctx);
             AppSettings.setDeferredRowsResyncDone(ctx);
-            log.healed("Повторная загрузка с сервера — подтягиваю пропущенные данные");
+            log.healed(Texts.get(R.string.sync_healed_resync));
         }
         // Однократный перечит ledger после шага БД v88 (capital-assets, design п. 2):
         // прежняя версия пропускала строки account_asset, а курсор уходил дальше. Только
@@ -861,7 +878,7 @@ final class SyncEngine {
         boolean ledgerReread = AppSettings.isLedgerRereadPending(ctx);
         if (ledgerReread) {
             AppSettings.setLedgerSyncSeq(ctx, 0);
-            log.healed("Повторная загрузка кошелька с сервера — подтягиваю признаки активов");
+            log.healed(Texts.get(R.string.sync_healed_ledger_reread));
         }
         long ledgerSeq = AppSettings.getLedgerSyncSeq(ctx);
         long referenceSeq = AppSettings.getReferenceSyncSeq(ctx);
@@ -904,7 +921,7 @@ final class SyncEngine {
                 AppSettings.setSyncLedgerId(ctx, ledgerId);
                 if (knownBefore && ledgerSeq != 0) {
                     Log.w(TAG, "pull: леджер сменился на " + ledgerId + " — курсор " + ledgerSeq + " сброшен");
-                    log.healed("Сервер сменил кошелёк — загружаю его заново");
+                    log.healed(Texts.get(R.string.sync_healed_ledger_changed));
                     log.fullReload();
                     // Отложенное ждало строк старого леджера — их уже не будет.
                     deferred.clear();
@@ -928,14 +945,14 @@ final class SyncEngine {
                 boolean purged = "purged".equals(result.ledger.resetReason)
                         || "purged".equals(result.reference.resetReason);
                 Log.w(TAG, "pull: сброс курсора (ledger=" + ledgerSeq + " " + result.ledger.resetReason
-                        + ", reference=" + referenceSeq + " " + result.reference.resetReason + ") — поток начат заново");
-                log.healed(purged
-                        ? "Сервер очистил старые удаления — загружаю данные заново"
-                        : "Позиция синхронизации разошлась с сервером — загружаю данные заново");
+                        + ", reference=" + referenceSeq + " " + result.reference.resetReason + ") — поток начат заново"); // not UI: лог
+                log.healed(Texts.get(purged
+                        ? R.string.sync_healed_purged
+                        : R.string.sync_healed_cursor_reset));
                 if (ledgerSeq != 0 || referenceSeq != 0) {
                     if (serverResetSeen) {
-                        throw new JSONException("сервер повторно сбросил курсор за один проход (ledger="
-                                + ledgerSeq + " " + result.ledger.resetReason + ") — загрузка с нуля не идёт");
+                        throw new JSONException("server reset the cursor twice in one pass (ledger="
+                                + ledgerSeq + " " + result.ledger.resetReason + ") — full reload does not progress");
                     }
                     serverResetSeen = true;
                     log.fullReload();
@@ -981,7 +998,7 @@ final class SyncEngine {
             // Поток догнан, а родителя так и нет — на сервере строка ссылается на
             // то, чего нам не прислали. Не теряем: повторим на следующем синке.
             Log.w(TAG, "pull: строки без родителя после полной загрузки — " + deferred.summary());
-            log.problem("Часть данных ждёт связанных записей с сервера (" + deferred.summary() + ")");
+            log.problem(Texts.get(R.string.sync_problem_deferred_rows, deferred.summary()));
         }
 
         // Загрузка с нуля догнала оба потока — синкнутые строки, которых сервер
@@ -997,7 +1014,7 @@ final class SyncEngine {
             db.delete(WalletDbHelper.SYNC_RELOAD_SEEN_TABLE, null, null);
             AppSettings.clearFullReloadPending(ctx);
             Log.i(TAG, "pull: загрузка с нуля завершена, удалено строк без пары на сервере: " + swept);
-            if (total > 0) log.healed("Удалено записей, которых больше нет на сервере: " + total);
+            if (total > 0) log.healed(Texts.get(R.string.sync_healed_swept, total));
         }
 
         boolean touchedAccounts = touched.contains("account") || touched.contains("account_operating")
@@ -1232,7 +1249,7 @@ final class SyncEngine {
                 ContentValues clean = new ContentValues();
                 clean.put("dirty", 0);
                 db.update("icon", clean, "_id=?", new String[]{String.valueOf(own.id)});
-                log.pull("Иконка", "Своя стала иконкой с сервера");
+                log.pull(Texts.get(R.string.sync_type_icon), Texts.get(R.string.sync_action_icon_adopted));
                 return;
             }
             byte[] image = null;
@@ -1249,7 +1266,7 @@ final class SyncEngine {
                 rename.put("name", renamed);
                 db.update("icon", rename, "_id=?", new String[]{String.valueOf(own.id)});
                 Log.i(TAG, "icon: своя «" + name + "» переименована в «" + renamed + "» — имя занято иконкой с сервера");
-                log.pull("Иконка", "Своя переименована");
+                log.pull(Texts.get(R.string.sync_type_icon), Texts.get(R.string.sync_action_icon_renamed));
             }
             if (exists) {
                 updateFromServer(db, "icon", cv, local);
@@ -1258,7 +1275,7 @@ final class SyncEngine {
                 cv.put("uuid", uuid);
                 db.insertOrThrow("icon", null, cv);
             }
-            log.pull("Иконка", deleted ? "Удалено" : (exists ? "Изменено" : "Добавлено"));
+            log.pull(Texts.get(R.string.sync_type_icon), pullAction(deleted, !exists));
         } catch (SQLiteException e) {
             // uq_icon_name с иконкой «с сервера» и т.п. — тот же класс проблемы,
             // что у upsertByUuid (см. javadoc класса, "Что ещё сознательно не решено").
@@ -1293,8 +1310,8 @@ final class SyncEngine {
 
         /** «<имя> (своя)», занято — «<имя> (своя 2)», «(своя 3)», … среди живых иконок. */
         static String freeOwnName(SQLiteDatabase db, String name) {
-            String candidate = name + " (своя)";
-            for (int n = 2; nameTaken(db, candidate); n++) candidate = name + " (своя " + n + ")";
+            String candidate = Texts.get(R.string.icon_own_suffix, name);
+            for (int n = 2; nameTaken(db, candidate); n++) candidate = Texts.get(R.string.icon_own_suffix_n, name, n);
             return candidate;
         }
 
@@ -1372,7 +1389,7 @@ final class SyncEngine {
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "currency", uuid, cv);
         if (wasInsert == null) return true;
-        log.pull("Валюта", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
+        log.pull(Texts.get(R.string.sync_type_currency), pullAction(rowIsDeleted(row), wasInsert));
         return true;
     }
 
@@ -1402,7 +1419,7 @@ final class SyncEngine {
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "currency_pair", uuid, cv);
         if (wasInsert == null) return true;
-        log.pull("Валютная пара", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
+        log.pull(Texts.get(R.string.sync_type_pair), pullAction(rowIsDeleted(row), wasInsert));
         return true;
     }
 
@@ -1423,7 +1440,7 @@ final class SyncEngine {
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "currency_pair_rate", uuid, cv);
         if (wasInsert == null) return true;
-        log.pull("Курс", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
+        log.pull(Texts.get(R.string.sync_type_rate), pullAction(rowIsDeleted(row), wasInsert));
         return true;
     }
 
@@ -1469,7 +1486,7 @@ final class SyncEngine {
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "account", uuid, cv);
         if (wasInsert == null) return true;
-        log.pull("Счёт", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
+        log.pull(Texts.get(R.string.sync_type_account), pullAction(rowIsDeleted(row), wasInsert));
         return true;
     }
 
@@ -1488,7 +1505,7 @@ final class SyncEngine {
         Long accountId = findIdByUuid(db, "account", uuid);
         if (accountId == null) {
             Log.w(TAG, "account_operating " + uuid + ": account ещё не применён — строка пропущена "
-                    + "(нарушен порядок применения таблиц?)");
+                    + "(нарушен порядок применения таблиц?)"); // not UI: лог
             return false;
         }
         Long currencyId = findIdByUuid(db, "currency", row.getString("currency_uuid"));
@@ -1564,7 +1581,7 @@ final class SyncEngine {
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "operation", uuid, cv);
         if (wasInsert == null) return true;
-        log.pull("Операция", rowIsDeleted(row) ? "Удалено" : (wasInsert ? "Добавлено" : "Изменено"));
+        log.pull(Texts.get(R.string.sync_type_operation), pullAction(rowIsDeleted(row), wasInsert));
         if (wasInsert && !rowIsDeleted(row)) log.newOperation(uuid);
         return true;
     }
@@ -1781,6 +1798,9 @@ final class SyncEngine {
             boolean exists = local != null;
             if (exists) {
                 updateFromServer(db, table, cv, local);
+            } else if (adoptLocalByKey && cv.get("deleted_at") == null
+                    && LedgerConnection.adoptByKey(db, table, uuid, cv)) {
+                return false; // своя строка с тем же ключом стала этой — «Изменено»
             } else {
                 cv.put("uuid", uuid);
                 db.insertOrThrow(table, null, cv);

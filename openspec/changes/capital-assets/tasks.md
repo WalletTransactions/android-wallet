@@ -51,7 +51,7 @@ change wallet-api (`account_asset` в синке, `system_kind = 3`) реали�
 ## 7. Интеграция
 
 - [ ] 7.1 Сквозная проверка на двух устройствах (эмулятор + телефон) против test с выкатанным wallet-api: пометка актива, переоценка и перенос категории на одном видны на другом после синка; старая версия APK на третьем устройстве синкается без ошибок, балансы совпадают (Часть про старую версию APK — не требуется, решение 2026-11-02.)
-- [x] 7.2 `bash gradlew testDebugUnitTest assembleDebug` проходит — у `app` есть flavors, корневой `testDebugUnitTest` тесты приложения не запускает; фактически прогнано `bash gradlew testProdDebugUnitTest testQaDebugUnitTest assembleDebug`: 251/251 в каждом flavor, 2026-11-07
+- [x] 7.2 `bash gradlew testDebugUnitTest assembleDebug` проходит — у `app` есть flavors, корневой `testDebugUnitTest` тесты приложения не запускает; фактически прогнано `bash gradlew testProdDebugUnitTest testQaDebugUnitTest assembleDebug`: после слияния с main (android-i18n, new-user-default-set) — 301/301 в каждом flavor, 2026-11-07
 
 ## Workflow follow-up
 
@@ -61,8 +61,8 @@ change wallet-api (`account_asset` в синке, `system_kind = 3`) реали�
 
 ## Статус реализации (2026-11-07)
 
-- Шаг БД — **v88** (84–87 к моменту реализации заняли `currency-ui-tweaks`,
-  `server-managed-icons`, `purge-synced-tombstones`).
+- Шаг БД — **v89** (84–88 к моменту слияния заняли `currency-ui-tweaks`,
+  `server-managed-icons`, `purge-synced-tombstones`, `new-user-default-set`).
 - Тесты: `CapitalAssetsDbTest` (18 — схема и апгрейд, модель, CRUD, `is_revaluation`,
   «Переоценка», запись переоценки, доход/расход, капитал, перенос категории с откатом),
   `SyncEngineAccountAssetTest` (5 — push, pull с отложенной строкой, 409, перечит ledger и
@@ -77,3 +77,7 @@ change wallet-api (`account_asset` в синке, `system_kind = 3`) реали�
   подпись типа), строка переоценки в ленте и итог дня. Не прогонялось вживую: календарь
   диалога, диалоги выбора актива и подтверждения переноса, внешний вид раскладки.
 - 7.1 — открыта: нужна выкатка на test и два устройства.
+- После слияния с main: строки экранов вынесены в `strings_capital.xml` (английский и
+  русский, `ci/check_hardcoded_text.sh` чистый), «Переоценка» показывается через
+  `getDisplayName` на языке интерфейса (хранимое имя — данные синка); `account_asset`
+  учтён в подключении к кошельку (`LedgerConnection.adoptByKey`/`discardOffline`).

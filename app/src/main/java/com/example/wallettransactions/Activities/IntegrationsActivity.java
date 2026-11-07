@@ -129,15 +129,15 @@ public class IntegrationsActivity extends AppCompatActivity {
         input.setInputType(InputType.TYPE_TEXT_VARIATION_URI);
 
         new AlertDialog.Builder(this)
-                .setTitle("Адрес сервера")
+                .setTitle(R.string.integrations_server_url)
                 .setView(input)
-                .setPositiveButton("Сохранить", (d, which) -> {
+                .setPositiveButton(R.string.caption_btn_save, (d, which) -> {
                     String url = input.getText().toString().trim();
                     if (url.isEmpty()) return;
                     AppSettings.setServerBaseUrl(this, url);
                     serverUrlValue.setText(AppSettings.getServerBaseUrl(this));
                 })
-                .setNegativeButton("Отмена", null)
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 
@@ -152,7 +152,7 @@ public class IntegrationsActivity extends AppCompatActivity {
             com.example.wallettransactions.security.AppLock.allowNextLeave();
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "Не найден браузер, чтобы открыть " + url, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.integrations_no_browser, url), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -165,13 +165,13 @@ public class IntegrationsActivity extends AppCompatActivity {
 
     private void refreshLinkStatus() {
         if (AppSettings.isNeedsRelink(this)) {
-            linkStatusValue.setText("Сессия истекла");
+            linkStatusValue.setText(R.string.integrations_session_expired);
             linkStatusValue.setTextColor(ContextCompat.getColor(this, R.color.colorexpanse));
             return;
         }
         String email = AppSettings.getLinkedEmail(this);
         boolean linked = email != null && TokenStore.getRefreshToken(this) != null;
-        linkStatusValue.setText(linked ? email : "Не подключено");
+        linkStatusValue.setText(linked ? email : getString(R.string.integrations_not_connected));
         linkStatusValue.setTextColor(ContextCompat.getColor(this,
                 linked ? R.color.colorTextSecondary : R.color.colorTextHint));
     }
@@ -186,7 +186,7 @@ public class IntegrationsActivity extends AppCompatActivity {
     private void refreshTelegramStatus() {
         if (!isServerLinked()) {
             telegramLinks = null;
-            setTelegramStatus("Нужна связь с Google аккаунтом", R.color.colorTextHint);
+            setTelegramStatus(getString(R.string.integrations_need_google), R.color.colorTextHint);
             return;
         }
         if (telegramLinks == null) setTelegramStatus("…", R.color.colorTextHint);
@@ -208,7 +208,7 @@ public class IntegrationsActivity extends AppCompatActivity {
         if (isFinishing() || isDestroyed()) return;
         telegramLinks = links;
         if (links.isEmpty()) {
-            setTelegramStatus("Не подключено", R.color.colorTextHint);
+            setTelegramStatus(getString(R.string.integrations_not_connected), R.color.colorTextHint);
         } else {
             StringBuilder names = new StringBuilder();
             for (TelegramLinkClient.Link l : links) {
@@ -223,7 +223,7 @@ public class IntegrationsActivity extends AppCompatActivity {
             if (!telegramIdsBeforeLink.contains(l.tgUserId)) {
                 telegramIdsBeforeLink = null;
                 handler.removeCallbacksAndMessages(null);
-                Toast.makeText(this, "Telegram подключён: " + l.name, Toast.LENGTH_LONG).show();
+                Toast.makeText(this, getString(R.string.integrations_telegram_connected, l.name), Toast.LENGTH_LONG).show();
                 return;
             }
         }
@@ -242,34 +242,34 @@ public class IntegrationsActivity extends AppCompatActivity {
     public void onTelegram(View view) {
         if (!isServerLinked()) {
             new AlertDialog.Builder(this)
-                    .setTitle("Подключение к Telegram")
-                    .setMessage("Бот привязывается к вашему аккаунту на сервере — сначала войдите "
-                            + "через Google аккаунт.")
-                    .setPositiveButton("Войти", (d, w) -> onLinkServer(view))
-                    .setNegativeButton("Отмена", null)
+                    .setTitle(R.string.integrations_telegram_title)
+                    .setMessage(R.string.integrations_telegram_need_google)
+                    .setPositiveButton(R.string.integrations_sign_in, (d, w) -> onLinkServer(view))
+                    .setNegativeButton(R.string.action_cancel, null)
                     .show();
             return;
         }
         if (telegramLinks == null) {
             refreshTelegramStatus();
-            Toast.makeText(this, "Проверяю подключение…", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.integrations_checking, Toast.LENGTH_SHORT).show();
             return;
         }
         if (telegramLinks.isEmpty()) {
             startTelegramLink();
             return;
         }
-        StringBuilder message = new StringBuilder("Подключено:");
+        StringBuilder message = new StringBuilder(getString(R.string.integrations_connected_list));
         for (TelegramLinkClient.Link l : telegramLinks) {
-            message.append("\n").append(l.name);
-            if (l.createdAt.length() >= 10) message.append(" — с ").append(l.createdAt.substring(0, 10));
+            message.append("\n").append(l.createdAt.length() >= 10
+                    ? getString(R.string.integrations_connected_since, l.name, l.createdAt.substring(0, 10))
+                    : l.name);
         }
         new AlertDialog.Builder(this)
                 .setTitle("Telegram")
                 .setMessage(message.toString())
-                .setPositiveButton("Подключить ещё", (d, w) -> startTelegramLink())
-                .setNeutralButton("Отключить", (d, w) -> pickTelegramToUnlink())
-                .setNegativeButton("Закрыть", null)
+                .setPositiveButton(R.string.integrations_connect_more, (d, w) -> startTelegramLink())
+                .setNeutralButton(R.string.integrations_disconnect, (d, w) -> pickTelegramToUnlink())
+                .setNegativeButton(R.string.action_close, null)
                 .show();
     }
 
@@ -305,7 +305,7 @@ public class IntegrationsActivity extends AppCompatActivity {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(deepLink)));
         } catch (ActivityNotFoundException e) {
             telegramIdsBeforeLink = null;
-            Toast.makeText(this, "Не найдено приложение, чтобы открыть " + deepLink, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.integrations_no_app, deepLink), Toast.LENGTH_LONG).show();
             return;
         }
         // onResume после возврата сам перепроверит; бот может не успеть — добираем опросом.
@@ -327,21 +327,21 @@ public class IntegrationsActivity extends AppCompatActivity {
         String[] names = new String[telegramLinks.size()];
         for (int i = 0; i < names.length; i++) names[i] = telegramLinks.get(i).name;
         new AlertDialog.Builder(this)
-                .setTitle("Какой отключить?")
+                .setTitle(R.string.integrations_which_disconnect)
                 .setItems(names, (d, which) -> confirmTelegramUnlink(telegramLinks.get(which)))
                 .show();
     }
 
     private void confirmTelegramUnlink(TelegramLinkClient.Link link) {
         new AlertDialog.Builder(this)
-                .setTitle("Отключить " + link.name + "?")
-                .setMessage("Бот перестанет принимать траты из этого Telegram. Подключить снова можно в любой момент.")
-                .setPositiveButton("Отключить", (d, w) -> new Thread(() -> {
+                .setTitle(getString(R.string.integrations_disconnect_question, link.name))
+                .setMessage(R.string.integrations_disconnect_message)
+                .setPositiveButton(R.string.integrations_disconnect, (d, w) -> new Thread(() -> {
                     try {
                         TelegramLinkClient.unlink(this, link.tgUserId);
                         runOnUiThread(() -> {
                             if (isFinishing() || isDestroyed()) return;
-                            Toast.makeText(this, "Telegram отключён", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, R.string.integrations_telegram_disconnected, Toast.LENGTH_SHORT).show();
                             refreshTelegramStatus();
                         });
                     } catch (TelegramLinkClient.TelegramException e) {
@@ -351,7 +351,7 @@ public class IntegrationsActivity extends AppCompatActivity {
                         });
                     }
                 }).start())
-                .setNegativeButton("Отмена", null)
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 
@@ -389,10 +389,10 @@ public class IntegrationsActivity extends AppCompatActivity {
     }
 
     private String intervalLabel(int minutes) {
-        if (minutes < 60) return "раз в " + minutes + " мин.";
+        if (minutes < 60) return getString(R.string.integrations_every_minutes, minutes);
         int hours = minutes / 60;
-        if (hours == 1) return "раз в час";
-        return "раз в " + hours + " ч.";
+        if (hours == 1) return getString(R.string.integrations_every_hour);
+        return getString(R.string.integrations_every_hours, hours);
     }
 
     public void onPickAutoConnectInterval(View view) {
@@ -400,7 +400,7 @@ public class IntegrationsActivity extends AppCompatActivity {
         for (int i = 0; i < items.length; i++) items[i] = intervalLabel(AUTO_CONNECT_INTERVALS_MINUTES[i]);
 
         new AlertDialog.Builder(this)
-                .setTitle("Интервал синхронизации")
+                .setTitle(R.string.integrations_sync_interval)
                 .setItems(items, (d, which) -> {
                     int minutes = AUTO_CONNECT_INTERVALS_MINUTES[which];
                     AppSettings.setAutoConnectIntervalMinutes(this, minutes);
@@ -426,7 +426,7 @@ public class IntegrationsActivity extends AppCompatActivity {
     public void onSyncNow(View view) {
         if (syncInProgress) return;
         syncInProgress = true;
-        syncNowStatus.setText("Синхронизация…");
+        syncNowStatus.setText(R.string.integrations_syncing);
 
         new Thread(() -> {
             SyncRunner.Outcome outcome = SyncRunner.runOnce(this);
@@ -445,28 +445,32 @@ public class IntegrationsActivity extends AppCompatActivity {
         String body;
         switch (outcome.status) {
             case NO_SESSION:
-                title = "Не связано с сервером";
-                body = "Сначала войдите — «Связь с Google аккаунтом» выше.";
+                title = getString(R.string.sync_result_no_session_title);
+                body = getString(R.string.sync_result_no_session_body);
                 break;
             case NEEDS_RELINK:
-                title = "Сессия истекла";
-                body = "Нужен повторный вход через Google — нажмите «Связь с Google аккаунтом» выше.";
+                title = getString(R.string.integrations_session_expired);
+                body = getString(R.string.sync_result_relink_body);
                 break;
             case NETWORK_ERROR:
-                title = "Сервер недоступен";
+                title = getString(R.string.sync_result_unavailable_title);
                 body = outcome.errorMessage;
                 break;
+            case AWAITING_DECISION:
+                title = getString(R.string.sync_result_awaiting_title);
+                body = getString(R.string.sync_result_awaiting_body);
+                break;
             case PARTIAL:
-                title = "Синхронизация прошла не полностью";
+                title = getString(R.string.sync_result_partial_title);
                 body = outcome.errorMessage + "\n\n" + outcome.log.toDisplayText();
                 break;
             case ERROR:
-                title = "Ошибка синхронизации";
+                title = getString(R.string.sync_result_error_title);
                 body = outcome.errorMessage + "\n\n" + outcome.log.toDisplayText();
                 break;
             case OK:
             default:
-                title = "Синхронизация завершена";
+                title = getString(R.string.sync_result_ok_title);
                 body = outcome.log.toDisplayText();
                 break;
         }
@@ -483,7 +487,7 @@ public class IntegrationsActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setView(scroll)
-                .setPositiveButton("Закрыть", null)
+                .setPositiveButton(R.string.action_close, null)
                 .show();
     }
 

@@ -81,7 +81,7 @@ public class SyncLinkActivity extends AppCompatActivity {
 
     /** Шаг 1: POST /auth/nonce — сервер выдаёт одноразовый nonce (см. README google-auth, "Мобильный вход"). */
     private void fetchNonceThenSignIn() {
-        showResult("Запрашиваю nonce у " + AppSettings.getServerBaseUrl(this) + "…");
+        showResult(getString(R.string.link_requesting_nonce, AppSettings.getServerBaseUrl(this)));
 
         Request request = new Request.Builder()
                 .url(AppSettings.getServerBaseUrl(this) + "auth/nonce")
@@ -92,9 +92,8 @@ public class SyncLinkActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call call, IOException e) {
                 Log.e(TAG, "POST /auth/nonce failed", e);
-                runOnUiThread(() -> showResult("Не удалось связаться с сервером (" +
-                        AppSettings.getServerBaseUrl(SyncLinkActivity.this) +
-                        "): " + e.getMessage()));
+                runOnUiThread(() -> showResult(getString(R.string.link_server_unreachable,
+                        AppSettings.getServerBaseUrl(SyncLinkActivity.this), e.getMessage())));
             }
 
             @Override
@@ -102,13 +101,13 @@ public class SyncLinkActivity extends AppCompatActivity {
                 try (Response r = response) {
                     String body = r.body() != null ? r.body().string() : "";
                     if (!r.isSuccessful()) {
-                        runOnUiThread(() -> showResult("Сервер отклонил запрос nonce: HTTP " + r.code() + " " + body));
+                        runOnUiThread(() -> showResult(getString(R.string.link_nonce_rejected, r.code(), body)));
                         return;
                     }
                     String nonce = new JSONObject(body).getString("nonce");
                     runOnUiThread(() -> startCredentialManager(nonce));
                 } catch (JSONException e) {
-                    runOnUiThread(() -> showResult("Некорректный ответ /auth/nonce: " + e.getMessage()));
+                    runOnUiThread(() -> showResult(getString(R.string.link_bad_nonce_response, e.getMessage())));
                 }
             }
         });
@@ -145,7 +144,7 @@ public class SyncLinkActivity extends AppCompatActivity {
                     @Override
                     public void onError(GetCredentialException e) {
                         Log.e(TAG, "getCredentialAsync failed", e);
-                        showResult("Ошибка входа: " + e.getClass().getSimpleName() + " — " + e.getMessage());
+                        showResult(getString(R.string.link_sign_in_error, e.getClass().getSimpleName(), e.getMessage()));
                     }
                 });
     }
@@ -154,7 +153,7 @@ public class SyncLinkActivity extends AppCompatActivity {
         if (!(credential instanceof CustomCredential)
                 || !GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
                         .equals(((CustomCredential) credential).getType())) {
-            showResult("Неожиданный тип credential: " + credential.getType());
+            showResult(getString(R.string.link_unexpected_credential, credential.getType()));
             return;
         }
         // GoogleIdTokenCredential.createFrom не объявляет checked-исключение
@@ -166,7 +165,7 @@ public class SyncLinkActivity extends AppCompatActivity {
 
     /** Шаг 3: POST /auth/google/mobile — обмен id_token на собственную пару токенов сервера. */
     private void exchangeIdToken(String idToken, String email) {
-        showResult("id_token получен, обмениваю на токены сервера…");
+        showResult(getString(R.string.link_exchanging_token));
 
         // device_id — стабильный по этой установке (AppSettings, один раз
         // сгенерированный UUID), а не android_id/IMEI и т.п.: тем и хорош,
@@ -194,7 +193,7 @@ public class SyncLinkActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call call, IOException e) {
                 Log.e(TAG, "POST /auth/google/mobile failed", e);
-                runOnUiThread(() -> showResult("Не удалось обменять id_token: " + e.getMessage()));
+                runOnUiThread(() -> showResult(getString(R.string.link_exchange_failed, e.getMessage())));
             }
 
             @Override
@@ -202,7 +201,7 @@ public class SyncLinkActivity extends AppCompatActivity {
                 try (Response r = response) {
                     String body = r.body() != null ? r.body().string() : "";
                     if (!r.isSuccessful()) {
-                        runOnUiThread(() -> showResult("Сервер отклонил вход: HTTP " + r.code() + " " + body));
+                        runOnUiThread(() -> showResult(getString(R.string.link_sign_in_rejected, r.code(), body)));
                         return;
                     }
                     JSONObject json = new JSONObject(body);
@@ -210,7 +209,7 @@ public class SyncLinkActivity extends AppCompatActivity {
                     String refreshToken = json.getString("refresh_token");
                     runOnUiThread(() -> onLinked(accessToken, refreshToken, email));
                 } catch (JSONException e) {
-                    runOnUiThread(() -> showResult("Некорректный ответ /auth/google/mobile: " + e.getMessage()));
+                    runOnUiThread(() -> showResult(getString(R.string.link_bad_sign_in_response, e.getMessage())));
                 }
             }
         });
@@ -237,7 +236,7 @@ public class SyncLinkActivity extends AppCompatActivity {
         if (!email.equals(previousEmail)) {
             AppSettings.resetSyncCursors(this);
         }
-        showResult("Готово — связано с " + email + ".");
+        showResult(getString(R.string.link_done, email));
         new Handler(Looper.getMainLooper()).postDelayed(this::finish, 1200);
     }
 

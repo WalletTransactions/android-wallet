@@ -877,9 +877,35 @@ public class WalletDbCRUD {
         cv.put(WalletContract.AccountEntry.COLUMN_COMMENT, accComment);
         cv.put(WalletContract.AccountEntry.COLUMN_ICON_ID, iconId);
         cv.put(WalletContract.AccountEntry.COLUMN_IS_ARCHIVED, isArchive);
-        cv.put(WalletContract.AccountEntry.COLUMN_NAME, accName);
+        // Новое имя или иконка — строка больше не «из набора» (new-user-default-set, design D3).
+        if (rowDiffers(db, WalletContract.AccountEntry.TABLE_NAME, id,
+                new String[]{WalletContract.AccountEntry.COLUMN_NAME, WalletContract.AccountEntry.COLUMN_ICON_ID},
+                new String[]{accName, Integer.toString(iconId)})) {
+            cv.put(WalletContract.AccountEntry.COLUMN_FROM_SEED, 0);
+        }
 
         return db.update(WalletContract.AccountEntry.TABLE_NAME, cv, WalletContract.AccountEntry._ID+"="+id, null);
+    }
+
+    /**
+     * Отличается ли хоть одна из {@code columns} строки {@code id} от {@code values}
+     * (сравнение в SQLite, {@code IS NOT}: тот же тип, что в колонке). Нет строки — {@code false}.
+     */
+    static boolean rowDiffers(SQLiteDatabase db, String table, int id, String[] columns, String[] values) {
+        StringBuilder where = new StringBuilder();
+        String[] args = new String[values.length + 1];
+        for (int i = 0; i < columns.length; i++) {
+            if (i > 0) where.append(" OR ");
+            where.append(columns[i]).append(" IS NOT ?");
+            args[i] = values[i];
+        }
+        args[values.length] = Integer.toString(id);
+        Cursor c = db.rawQuery("SELECT 1 FROM " + table + " WHERE (" + where + ") AND _id = ? LIMIT 1", args);
+        try {
+            return c.moveToFirst();
+        } finally {
+            c.close();
+        }
     }
 
     // ── Валюты (экран «Список валют» → форма валюты) ───────────────────────────
@@ -902,8 +928,15 @@ public class WalletDbCRUD {
     public static int UpdateCurrency(SQLiteDatabase db, int id, String name, String iso,
                                      String symbol, int precision, int iconId,
                                      boolean showInEquivalent) {
-        return db.update(WalletContract.CurrencyEntry.TABLE_NAME,
-                currencyValues(name, iso, symbol, precision, iconId, showInEquivalent),
+        ContentValues cv = currencyValues(name, iso, symbol, precision, iconId, showInEquivalent);
+        // Новые имя, код, символ или иконка — валюта больше не «из набора» (design D3).
+        if (rowDiffers(db, WalletContract.CurrencyEntry.TABLE_NAME, id,
+                new String[]{WalletContract.CurrencyEntry.COLUMN_NAME, WalletContract.CurrencyEntry.COLUMN_ISO_NAME,
+                        WalletContract.CurrencyEntry.COLUMN_SYMBOL, WalletContract.CurrencyEntry.COLUMN_ICON_ID},
+                new String[]{name, iso, symbol, Integer.toString(iconId)})) {
+            cv.put(WalletContract.CurrencyEntry.COLUMN_FROM_SEED, 0);
+        }
+        return db.update(WalletContract.CurrencyEntry.TABLE_NAME, cv,
                 WalletContract.CurrencyEntry._ID + "=? AND "
                         + WalletContract.CurrencyEntry.COLUMN_IS_SHARED + "=0",
                 new String[]{Integer.toString(id)});

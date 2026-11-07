@@ -26,14 +26,14 @@
             android:layout_height="40dp"
             android:background="@drawable/bg_pill_secondary"
             android:src="@drawable/ic_nav_back"
-            android:contentDescription="Назад"
+            android:contentDescription="@string/activity_statement_import_content_description_1"
             android:onClick="btnUp"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="Выписка"
+            android:text="@string/activity_statement_import_text_2"
             android:textSize="20sp"
             android:textStyle="bold"
             android:fontFamily="@font/caprasimo"
@@ -60,20 +60,20 @@
                 android:id="@+id/pickBox"
                 style="@style/AiCard">
 
-                <TextView style="@style/AiLabel" android:layout_marginTop="0dp" android:text="Файл выписки"/>
+                <TextView style="@style/AiLabel" android:layout_marginTop="0dp" android:text="@string/activity_statement_import_text_3"/>
 
                 <TextView
                     android:id="@+id/tvFile"
                     style="@style/AiValue"
-                    android:hint="PDF с текстом, CSV или TXT до 5 МБ"
+                    android:hint="@string/activity_statement_import_tv_file_hint"
                     android:onClick="onPickFile"/>
 
-                <TextView style="@style/AiLabel" android:text="Кошелёк выписки"/>
+                <TextView style="@style/AiLabel" android:text="@string/activity_statement_import_text_4"/>
 
                 <TextView
                     android:id="@+id/tvWallet"
                     style="@style/AiValue"
-                    android:hint="Выберите кошелёк"
+                    android:hint="@string/activity_statement_import_tv_wallet_hint"
                     android:onClick="onPickWallet"/>
 
                 <TextView android:id="@+id/tvPickError" style="@style/AiWarning"/>
@@ -81,7 +81,7 @@
                 <Button
                     android:id="@+id/btnUpload"
                     style="@style/AiButtonPrimary"
-                    android:text="Загрузить"
+                    android:text="@string/activity_statement_import_btn_upload_text"
                     android:onClick="onUpload"/>
             </LinearLayout>
 
@@ -110,7 +110,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="С экрана можно уйти — разбор идёт на сервере, вернитесь позже"
+                    android:text="@string/activity_statement_import_text_5"
                     android:textSize="12.5sp"
                     android:textColor="@color/colorTextSecondary"/>
             </LinearLayout>
@@ -130,7 +130,7 @@
 
                 <Button
                     style="@style/AiButtonOutline"
-                    android:text="Загрузить другую выписку"
+                    android:text="@string/activity_statement_import_text_6"
                     android:onClick="onAnother"/>
             </LinearLayout>
 
@@ -165,12 +165,12 @@
                     <Button
                         android:id="@+id/btnWriteReady"
                         style="@style/AiButtonPrimary"
-                        android:text="Записать готовые (0)"
+                        android:text="@string/activity_statement_import_btn_write_ready_text"
                         android:onClick="onWriteReady"/>
 
                     <Button
                         style="@style/AiButtonOutline"
-                        android:text="Загрузить другую выписку"
+                        android:text="@string/activity_statement_import_text_7"
                         android:onClick="onAnother"/>
                 </LinearLayout>
 

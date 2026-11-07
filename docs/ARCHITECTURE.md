@@ -73,6 +73,32 @@ Singleton.instance.reloadIconList(context);     // сбрасывает и пе�
 Поэтому `CurrencyPairList.clear()` обязателен внутри загрузчика, иначе список
 дублируется. Расхождение с остальными геттерами намеренным не выглядит.
 
+## Тексты и языки
+
+openspec `android-i18n`, spec `ui-language`. Все тексты интерфейса — ресурсы:
+`res/values/` — английский (базовый: любой язык телефона, кроме русского),
+`res/values-ru/` — русский. Файлы по экранам: `strings.xml` (тексты layout/menu),
+`strings_main.xml`, `strings_operation.xml`, `strings_accounts.xml`,
+`strings_currency.xml`, `strings_recurring.xml`, `strings_settings.xml`,
+`strings_import.xml`, `strings_sync.xml`, `strings_ai.xml`. Числа — `<plurals>`.
+На Android 13+ язык приложения выбирается в системных настройках
+(`res/xml/locales_config.xml`, `android:localeConfig`).
+
+- Экраны берут строки через `getString`. Классы без экрана (журнал синка, отчёт
+  импорта, `AiTexts`) — через `Texts`: контекст приложения ставит
+  `WalletApplication.onCreate`.
+- Не переводятся: логи, технические детали исключений (по-английски), SQL, данные в
+  файлах экспорта и строки, уходящие на сервер, — такие литералы с кириллицей помечены
+  `// not UI`.
+- Системные категории хранятся и синкаются как `Transfer` / `Transfer commission`, а
+  показываются `AccountItem.getDisplayName()` на языке интерфейса; `getName()` — для
+  правки, поиска по имени и синка.
+- `ci/check_hardcoded_text.sh` (GitHub CI и `ci/run_unit_tests.sh`) не пускает кириллицу
+  в литералах Java и атрибутах layout/menu; `UiLanguageTest` проверяет, что в `values/`
+  и `values-ru/` одни и те же ключи и подстановки.
+- Robolectric-тесты идут на русском (`src/test/resources/robolectric.properties`,
+  `qualifiers=ru`); английский — явным `@Config(qualifiers = "en")`.
+
 ## Общая шапка корневых экранов
 
 Четыре таба нижней панели — «Операции» (`MainActivity`), «Кошельки»
@@ -145,7 +171,7 @@ erDiagram
         int currency_id FK
     }
     account_asset {
-        int _id PK "= account._id, v88"
+        int _id PK "= account._id, v89"
         int asset_type "1 недвижимость, 2 авто, 3 прочее"
         int include_in_net_worth
         text comment
@@ -237,7 +263,7 @@ erDiagram
 `TransactionActivity`, пропуском при загрузке в `WalletDbLoader` и защитой от `null`
 в `TransactionArrayAdapter`.
 
-### Капитальные активы и «Переоценка» (v88)
+### Капитальные активы и «Переоценка» (v89)
 
 Кошелёк может быть **капитальным активом** — квартира, машина, прочее (openspec
 `capital-assets`). Признак — строка `account_asset` по образцу `account_operating`:
@@ -267,7 +293,7 @@ erDiagram
 | `v_account_expanse` | Счёта без валюты, то есть категории |
 | `v_currency_conversion` | Раскрывает каждую пару в **два** направления: прямое и обратное с флагом `is_reverse` |
 | `v_currency_conversion_rate` | Курс на дату с уже применённым `1.0/rate` для обратного направления; через `UNION` добавляет тождественный курс 1 валюты к себе с датой `2000-01-01` |
-| `v_operation` | Операция с именами счётов и валютой; `is_revaluation` — 1, если одна из сторон — счёт с `system_kind = 3` (v88) |
+| `v_operation` | Операция с именами счётов и валютой; `is_revaluation` — 1, если одна из сторон — счёт с `system_kind = 3` (v89) |
 | `v_operation_eq` | Операция с курсом на свою дату и суммой в эквиваленте; пробрасывает `is_revaluation` |
 
 `is_revaluation` — единственное место, где решается «это переоценка». Её используют
@@ -320,7 +346,7 @@ round(coalesce(opt.amount_to, 0) - coalesce(opf.amount_fr, 0), c.precision)
 - `GenerateReportGetBalanceToDate` — суммирует её результат для полей
   «баланс на начало / на конец» в `ReportActivity`
 
-С v88 итог карточки периода (`GenerateReportGetBalanceToDate`) — **только ликвидные**
+С v89 итог карточки периода (`GenerateReportGetBalanceToDate`) — **только ликвидные**
 кошельки: строки с `assetType != null` пропускаются. Капитал считает
 `GenerateCapitalToDate` из тех же строк: «Капитал» — все активы, «Всего с
 капиталом» — ликвидные плюс активы с `include_in_net_worth`. Неполнота та же, что у
@@ -397,11 +423,14 @@ round(vccr.rate * (coalesce(opt.amount_to, 0) - coalesce(opf.amount_fr, 0)), 2) 
 
 ## Миграции
 
-`DATABASE_VERSION = 88` в `WalletDbHelper` (v88 — таблица `account_asset` с триггером
+`DATABASE_VERSION = 89` в `WalletDbHelper` (v89 — таблица `account_asset` с триггером
 dirty и индексом uuid, колонка `is_revaluation` во вьюхах и флаг однократного
-перечита ledger, `upgradeToCapitalAssetsV88`, см. «Капитальные активы и
+перечита ledger, `upgradeToCapitalAssetsV89`, см. «Капитальные активы и
 „Переоценка“» и «Синхронизация»; общие `createSyncTriggers`/`createUuidIndexes`
-пропускают `account_asset`, пока её нет, — их зовут и старые шаги v72/v82; v87 — таблица `sync_reload_seen`, см.
+пропускают `account_asset`, пока её нет, — их зовут и старые шаги v72/v82;
+v88 — `from_seed` у `account`, `currency`,
+`currency_pair`, см. «Синхронизация» → «Встроенный набор и подключение к кошельку»;
+v87 — таблица `sync_reload_seen`, см.
 «Синхронизация» → «Удалённые строки»; v86 — `icon.origin`, см. «Иконки с
 сервера и свои»; v85 — `currency.show_in_equivalent`, `currency.is_shared`,
 `currency_pair.is_shared`, см. «Свои и общие валюты и пары»).
@@ -545,7 +574,43 @@ Binder-транзакции (~500 КБ), из-за чего extras приход�
 
 Время последнего прохода с исходом `OK`/`PARTIAL` — `AppSettings.getLastSyncSuccessAt`.
 
-### Капитальные активы в синке (v88)
+### Встроенный набор и подключение к кошельку (v88)
+
+Пустая база заполняется из `assets/seed.json` (`WalletFillData.InsertFirstDictionary`,
+openspec `new-user-default-set`): общие категории с именами `{ru, en}` (язык — по
+языку телефона при посеве, `CurrencyNames.seedLanguage`), системные `Transfer` /
+`Transfer commission`, иконки, валюты с флагами (название — от Android по коду ISO),
+пары. Кошельков и курсов нет. Строки набора помечены `from_seed = 1` у `account`,
+`currency`, `currency_pair`; правка имени, иконки, кода или символа снимает метку
+(`WalletDbCRUD`). Метка локальная, в push не входит. Апгрейд v88 добавляет колонку с 0 —
+старые базы ничего «из набора» не имеют.
+
+Общая валюта показывается названием Android на текущем языке (`Currency.getName`),
+своя — сохранённым.
+
+**Подключение** — первый проход после входа на базе без строк, бывших на сервере
+(чистая установка, переустановка, полная очистка). Признак
+`AppSettings.isLedgerConnectionPending` ставит `SyncRunner.startConnectionIfFresh`, снимает
+проход с прошедшей отправкой или «Удалить с телефона». Порядок прохода другой:
+
+```
+ refresh -> pull (adopt by key) -> connection step -> push -> purge
+                                          |
+                                          +-- question -> Status.AWAITING_DECISION, no push
+```
+
+- Загрузка подключения (`SyncEngine.adoptLocalByKey`): пришедшая валюта (код), пара
+  (символ) или счёт (имя по правилу `AccountNames`), совпавшая с неотправленной локальной
+  строкой, заменяет её — локальная строка берёт uuid и поля серверной
+  (`LedgerConnection.adoptByKey`). Связи по `_id`, поэтому операции и кошельки
+  переклеивать не нужно.
+- Шаг после загрузки (`LedgerConnection.afterPull`): если на телефоне есть счёт с
+  сервера, нетронутые строки набора без ссылок удаляются (системные — нет); если
+  остались неотправленные операции и «Перенести» не нажато — вопрос.
+- Вопрос «Операции без входа» показывает главный экран (`LedgerConnectionDialog`):
+  «Перенести» — проход с отправкой; «Удалить с телефона» — `LedgerConnection.discardOffline`.
+
+### Капитальные активы в синке (v89)
 
 `account_asset` — в `TABLE_ORDER` после `account_operating` (и в `PURGE_ORDER` перед
 ней). Push отправляет `uuid, asset_type, include_in_net_worth, comment, deleted` —
@@ -556,7 +621,7 @@ Binder-транзакции (~500 КБ), из-за чего extras приход�
 бы со старым uuid несуществующего на сервере счёта.
 
 Прежняя версия приложения молча пропускала строки `account_asset` в pull, а курсор
-ledger уходил дальше. Поэтому шаг БД v88 поднимает флаг
+ledger уходил дальше. Поэтому шаг БД v89 поднимает флаг
 `AppSettings.isLedgerRereadPending`, и `pullAll` один раз читает поток **ledger** с
 нуля: reference-курсор и `ledger_id` не трогаются, загрузкой с вычисткой это не
 считается (upsert по uuid идемпотентен, удалять нечего). Флаг снимается после первой

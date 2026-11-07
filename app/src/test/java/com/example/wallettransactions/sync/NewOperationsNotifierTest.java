@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,6 +22,7 @@ import java.util.List;
  * уведомление и как склоняется заголовок.
  */
 @RunWith(RobolectricTestRunner.class)
+@Config(qualifiers = "ru") // русские формы plurals (few/many) выбираются только в русской локали
 public class NewOperationsNotifierTest {
 
     private SQLiteDatabase db;

@@ -5,6 +5,6 @@
     style="@style/MoreRow">
 
     <TextView android:id="@+id/moreGlyph" style="@style/MoreRowGlyph" android:text="⇅"/>
-    <TextView android:id="@+id/moreLabel" style="@style/MoreRowLabel" android:text="Курсы валют"/>
+    <TextView android:id="@+id/moreLabel" style="@style/MoreRowLabel" android:text="@string/more_item_layout_more_label_text"/>
     <ImageView style="@style/MoreRowChevron"/>
 </LinearLayout>

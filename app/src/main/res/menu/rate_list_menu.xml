@@ -4,7 +4,7 @@
 
     <item
         android:id="@+id/action_download_rates"
-        android:title="Загрузить курсы"
+        android:title="@string/rate_list_menu_action_download_rates_title"
         android:icon="@android:drawable/stat_sys_download"
         app:showAsAction="always"/>
 

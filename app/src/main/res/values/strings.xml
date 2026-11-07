@@ -1,48 +1,427 @@
 <resources>
-    <string name="app_name">Посчитай и сбереги</string>
-    <string name="caption_btn_add">добавить</string>
-    <string name="caption_add_transaction">Добавить расход</string>
-    <string name="caption_btn_save">Сохранить</string>
-
-    <string name="category_product">Продукты</string>
-    <string name="category_restoryan">Ресторан</string>
-    <string name="category_car">Машина</string>
-
-    <string-array name="array_category">
-        <item>@string/category_product</item>
-        <item>@string/category_restoryan</item>
-        <item>@string/category_car</item>
-    </string-array>
-    <string name="title_activity_category">CategoryActivity</string>
-    <string name="caption_clear_transaction">Удалить все</string>
-    <string name="action_charged_list" type="id">Счета затрат</string>
-    <string name="caption_choose_any_account">Счета</string>
-    <string name="caption_choose_operating_account">Счета затрат</string>
-    <string name="caption_choose_charged_account">Счета зачисления</string>
-    <string name="title_activity_report">ReportActivity</string>
-    <string name="title_activity_main2">MainActivity2</string>
-    <string name="navigation_drawer_open">Открыть</string>
-    <string name="navigation_drawer_close">Закрыть</string>
-    <string name="nav_header_title">Android Studio</string>
-    <string name="nav_header_subtitle">android.studio@android.com</string>
-    <string name="nav_header_desc">Navigation header</string>
+    <!-- Base language: English (openspec android-i18n, design D1). Russian — values-ru/, same keys. -->
+    <string name="app_name">Count &amp; Save</string>
+    <string name="caption_add_transaction">Add expense</string>
+    <string name="caption_btn_save">Save</string>
+    <string name="caption_choose_operating_account">Expense accounts</string>
     <string name="action_settings">Settings</string>
 
-    <string name="menu_home">Home</string>
-    <string name="menu_gallery">Gallery</string>
-    <string name="menu_slideshow">Slideshow</string>
-    <string name="menu_tools">Tools</string>
-    <string name="menu_share">Share</string>
-    <string name="menu_send">Send</string>
-    <string name="title_activity_main">MainActivity</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_report">ReportActivity</string>
     <string name="title_activity_account">AccountActivity</string>
-    <string name="tab_account_expanse">Затраты</string>
-    <string name="tab_account_operating">Счета</string>
-    <string name="tab_account_income">Доходы</string>
     <string name="title_currencypair_list">CurrencyPairRates</string>
     <string name="title_currencypair_detail">CurrencyPair Detail</string>
     <string name="title_activity_filter">ScrollingActivity</string>
 
+    <string name="system_category_transfer">Transfer</string>
+    <string name="system_category_transfer_commission">Transfer fee</string>
+
+    <!-- account_picker_item_layout -->
+    <string name="account_picker_item_layout_picker_name_text">Wallet</string>
+
+    <!-- activity_account_item -->
+    <string name="activity_account_item_text_1">Tap to change the icon</string>
+    <string name="activity_account_item_text_2">NAME</string>
+    <string name="activity_account_item_text_3">CURRENCY</string>
+    <string name="activity_account_item_check_is_archive_text">Archived</string>
+    <string name="activity_account_item_text_4">COMMENT</string>
+    <string name="activity_account_item_btn_delete_text">Delete</string>
+    <string name="activity_account_item_btn_save_text">Save</string>
+
+    <!-- activity_account_picker -->
+    <string name="activity_account_picker_btn_up_content_description">Back</string>
+    <string name="activity_account_picker_picker_title_text">Choose an account</string>
+    <string name="activity_account_picker_kind_categories_text">Categories</string>
+    <string name="activity_account_picker_kind_wallets_text">Wallets</string>
+    <string name="activity_account_picker_search_input_hint">Search by name</string>
+    <string name="activity_account_picker_empty_state_text">Nothing found</string>
+    <string name="activity_account_picker_text_1">+ Add a wallet or category</string>
+
+    <!-- activity_add_category -->
+    <string name="activity_add_category_text_1">Icon</string>
+    <string name="activity_add_category_text_2">Tap to choose an icon</string>
+    <string name="activity_add_category_text_3">Name</string>
+    <string name="activity_add_category_edit_category_name_hint">For example, Groceries</string>
+    <string name="activity_add_category_text_4">Comment</string>
+    <string name="activity_add_category_edit_category_comment_hint">Optional</string>
+    <string name="activity_add_category_btn_save_text">Save</string>
+
+    <!-- activity_add_wallet -->
+    <string name="activity_add_wallet_text_1">Icon</string>
+    <string name="activity_add_wallet_text_2">Tap to choose an icon</string>
+    <string name="activity_add_wallet_text_3">Name</string>
+    <string name="activity_add_wallet_edit_wallet_name_hint">For example, Cash</string>
+    <string name="activity_add_wallet_text_4">Currency</string>
+    <string name="activity_add_wallet_tv_currency_label_text">Tap to choose a currency</string>
+    <string name="activity_add_wallet_text_5">Comment</string>
+    <string name="activity_add_wallet_edit_wallet_comment_hint">Optional</string>
+    <string name="activity_add_wallet_btn_save_text">Save</string>
+
+    <!-- activity_ai -->
+    <string name="activity_ai_text_1">AI</string>
+    <string name="activity_ai_text_2">An expense in your own words</string>
+    <string name="activity_ai_edit_text_hint">For example: taxi 12 yesterday from my card</string>
+    <string name="activity_ai_btn_mic_content_description">Dictate</string>
+    <string name="activity_ai_btn_parse_text">Parse</string>
+    <string name="activity_ai_text_3">Cancel</string>
+    <string name="activity_ai_btn_manual_text">Fill in manually</string>
+    <string name="activity_ai_text_4">Sync and retry</string>
+    <string name="activity_ai_text_5">Open the operation</string>
+    <string name="activity_ai_text_6">The parse wasn\'t saved</string>
+    <string name="activity_ai_text_7">Open again</string>
+    <string name="activity_ai_text_8">Bank statement</string>
+    <string name="activity_ai_text_9">A PDF or CSV from your bank app — AI parses the operations and picks categories, you review and save</string>
+    <string name="activity_ai_text_10">Upload a statement</string>
+
+    <!-- activity_currency_form -->
+    <string name="activity_currency_form_btn_up_content_description">Back</string>
+    <string name="activity_currency_form_form_title_text">New currency</string>
+    <string name="activity_currency_form_shared_note_text">Shared currency — can\'t be changed</string>
+    <string name="activity_currency_form_text_1">Icon</string>
+    <string name="activity_currency_form_img_currency_icon_content_description">Currency icon</string>
+    <string name="activity_currency_form_text_2">Name</string>
+    <string name="activity_currency_form_edit_currency_name_hint">For example, US Dollar</string>
+    <string name="activity_currency_form_text_3">ISO code</string>
+    <string name="activity_currency_form_text_4">Symbol</string>
+    <string name="activity_currency_form_text_5">Precision (decimal places)</string>
+    <string name="activity_currency_form_text_6">Show in equivalent</string>
+    <string name="activity_currency_form_btn_delete_text">Delete</string>
+    <string name="activity_currency_form_btn_cancel_text">Cancel</string>
+    <string name="activity_currency_form_btn_save_text">Save</string>
+
+    <!-- activity_currencypair_list -->
+    <string name="activity_currencypair_list_text_1">Exchange rates</string>
+    <string name="activity_currencypair_list_btn_currencies_text">Currencies</string>
+    <string name="activity_currencypair_list_currency_filter_search_hint">Search currency</string>
+    <string name="activity_currencypair_list_text_2">+ Add a currency pair</string>
+
+    <!-- activity_currency_pair_rate_list -->
+    <string name="activity_currency_pair_rate_list_btn_delete_pair_content_description">Delete pair</string>
+    <string name="activity_currency_pair_rate_list_text_1">Rate history</string>
+    <string name="activity_currency_pair_rate_list_text_2">tap to edit</string>
+    <string name="activity_currency_pair_rate_list_text_3">+ Add a rate</string>
+
+    <!-- activity_currency_picker -->
+    <string name="activity_currency_picker_picker_title_text">Base currency</string>
+    <string name="activity_currency_picker_search_input_hint">Search currency</string>
+    <string name="activity_currency_picker_btn_create_currency_text">+ Create a currency</string>
+
+    <!-- activity_export -->
+    <string name="activity_export_text_1">“Export database” copies wallet.db to the Downloads folder — you can open it on a computer in DB Browser for SQLite.\n\n“Export to JSON” saves accounts (with currencies), currency pairs, rates and operations as a readable file in the same format the JSON import accepts — use it to move your data to another device.</string>
+    <string name="activity_export_btn_export_db_text">Export database</string>
+    <string name="activity_export_btn_export_json_text">Export to JSON</string>
+    <string name="activity_export_btn_share_text">Share</string>
+
+    <!-- activity_filter -->
+    <string name="activity_filter_text_1">Filter</string>
+    <string name="activity_filter_text_2">TEXT SEARCH</string>
+    <string name="activity_filter_input_search_text_hint">Name or comment</string>
+    <string name="activity_filter_text_3">OPERATION TYPE</string>
+    <string name="activity_filter_chip_all_text">All</string>
+    <string name="activity_filter_text_4">Expense</string>
+    <string name="activity_filter_text_5">Income</string>
+    <string name="activity_filter_text_6">Transfer</string>
+    <string name="activity_filter_text_7">ACCOUNTS</string>
+    <string name="activity_filter_text_8">Expense category</string>
+    <string name="activity_filter_category_summary_text">All</string>
+    <string name="activity_filter_text_9">Wallet</string>
+    <string name="activity_filter_wallet_summary_text">All</string>
+    <string name="activity_filter_text_10">AMOUNT IN WALLET CURRENCY</string>
+    <string name="activity_filter_input_amount_min_hint">from</string>
+    <string name="activity_filter_input_amount_max_hint">to</string>
+    <string name="activity_filter_label_eq_range_text">AMOUNT IN EQUIVALENT</string>
+    <string name="activity_filter_input_eq_min_hint">from</string>
+    <string name="activity_filter_input_eq_max_hint">to</string>
+    <string name="activity_filter_btn_reset_text">Reset</string>
+    <string name="activity_filter_btn_apply_text">Show 14</string>
+
+    <!-- activity_icon_crop -->
+    <string name="activity_icon_crop_crop_hint_text">Drag the image with your finger, pinch to zoom. Everything outside the circle becomes transparent.</string>
+    <string name="activity_icon_crop_btn_cancel_text">Cancel</string>
+    <string name="activity_icon_crop_btn_apply_text">Done</string>
+
+    <!-- activity_icon_picker -->
+    <string name="activity_icon_picker_btn_up_content_description">Back</string>
+    <string name="activity_icon_picker_picker_title_text">Currency icon</string>
+    <string name="activity_icon_picker_btn_new_icon_text">+ New icon</string>
+
+    <!-- activity_import -->
+    <string name="activity_import_text_1">Accounts</string>
+    <string name="activity_import_btn_import_account_text">Import accounts</string>
+    <string name="activity_import_text_2">Operations</string>
+    <string name="activity_import_btn_import_operation_text">Import operations</string>
+    <string name="activity_import_text_3">Currency pair rates</string>
+    <string name="activity_import_btn_import_rate_text">Import rates</string>
+    <string name="activity_import_text_4">Operations (with transfers and fees), plus accounts, currency pairs and rates — in one file</string>
+    <string name="activity_import_btn_import_operation_json_text">Import from JSON</string>
+
+    <!-- activity_integrations -->
+    <string name="activity_integrations_text_1">Integrations</string>
+    <string name="activity_integrations_text_2">Server address</string>
+    <string name="activity_integrations_text_3">Link Google account</string>
+    <string name="activity_integrations_link_status_value_text">Not connected</string>
+    <string name="activity_integrations_text_4">Connect Telegram</string>
+    <string name="activity_integrations_text_5">Open the web version</string>
+    <string name="activity_integrations_text_6">in the browser</string>
+    <string name="activity_integrations_text_7">Automatic sync</string>
+    <string name="activity_integrations_row_auto_connect_interval_text">every hour</string>
+    <string name="activity_integrations_text_8">Sync now</string>
+    <string name="activity_integrations_text_9">Notify about new operations</string>
+    <string name="activity_integrations_text_10">recurring, from the bot, the web and other devices</string>
+
+    <!-- activity_lock -->
+    <string name="activity_lock_lock_forgot_text">Forgot the code?</string>
+
+    <!-- activity_more -->
+    <string name="activity_more_title_text">More</string>
+    <string name="activity_more_text_1">Wallets and categories</string>
+    <string name="activity_more_text_2">Recurring operations</string>
+    <string name="activity_more_text_3">AI</string>
+    <string name="activity_more_row_ai_hint_text">An expense in your own words</string>
+    <string name="activity_more_text_4">Integrations</string>
+    <string name="activity_more_text_5">Exchange rates</string>
+    <string name="activity_more_text_6">Icons and categories</string>
+    <string name="activity_more_text_7">Import from file</string>
+    <string name="activity_more_text_8">Settings</string>
+
+    <!-- activity_multi_picker -->
+    <string name="activity_multi_picker_btn_up_content_description">Back</string>
+    <string name="activity_multi_picker_picker_title_text">Expense category</string>
+    <string name="activity_multi_picker_btn_toggle_all_text">Select all</string>
+    <string name="activity_multi_picker_picker_count_text">All</string>
+    <string name="activity_multi_picker_search_input_hint">Search by name</string>
+    <string name="activity_multi_picker_empty_state_text">Nothing found</string>
+    <string name="activity_multi_picker_btn_done_text">Done</string>
+
+    <!-- activity_recurring_operation_list -->
+    <string name="activity_recurring_operation_list_empty_recurring_text">No recurring operations yet.</string>
+    <string name="activity_recurring_operation_list_text_1">+ Add a recurring operation</string>
+
+    <!-- activity_recurring_operation -->
+    <string name="activity_recurring_operation_btn_up_content_description">Back</string>
+    <string name="activity_recurring_operation_btn_delete_content_description">Delete</string>
+    <string name="activity_recurring_operation_text_1">Expense</string>
+    <string name="activity_recurring_operation_text_2">Income</string>
+    <string name="activity_recurring_operation_text_3">Transfer</string>
+    <string name="activity_recurring_operation_label_slot_top_text">Expense category</string>
+    <string name="activity_recurring_operation_label_slot_bottom_text">Wallet</string>
+    <string name="activity_recurring_operation_text_4">Amount</string>
+    <string name="activity_recurring_operation_text_5">Comment</string>
+    <string name="activity_recurring_operation_edit_comment_hint">Optional</string>
+    <string name="activity_recurring_operation_text_6">Repeat</string>
+    <string name="activity_recurring_operation_tv_frequency_text">Monthly</string>
+    <string name="activity_recurring_operation_text_7">Days of the week</string>
+    <string name="activity_recurring_operation_text_8">Mo</string>
+    <string name="activity_recurring_operation_text_9">Tu</string>
+    <string name="activity_recurring_operation_text_10">We</string>
+    <string name="activity_recurring_operation_text_11">Th</string>
+    <string name="activity_recurring_operation_text_12">Fr</string>
+    <string name="activity_recurring_operation_text_13">Sa</string>
+    <string name="activity_recurring_operation_text_14">Su</string>
+    <string name="activity_recurring_operation_text_15">Every how many weeks</string>
+    <string name="activity_recurring_operation_tv_interval_text">Every week</string>
+    <string name="activity_recurring_operation_text_16">Starting on</string>
+    <string name="activity_recurring_operation_text_17">Until</string>
+    <string name="activity_recurring_operation_text_18">Forever</string>
+    <string name="activity_recurring_operation_text_19">Repeat is on</string>
+    <string name="activity_recurring_operation_text_20">Save</string>
+
+    <!-- activity_report -->
+    <string name="activity_report_caption_expanses_text">Expenses</string>
+    <string name="activity_report_caption_incomes_text">Income</string>
+
+    <!-- activity_reset_data -->
+    <string name="activity_reset_data_text_1">This can\'t be undone. Select what to delete and tap “Delete” below.</string>
+    <string name="activity_reset_data_text_2">What to delete</string>
+    <string name="activity_reset_data_chk_operations_text">Operations and accounts (except system categories)</string>
+    <string name="activity_reset_data_chk_icons_text">Icons</string>
+    <string name="activity_reset_data_chk_currency_pairs_text">Currency pairs and rates</string>
+    <string name="activity_reset_data_text_3">After deletion</string>
+    <string name="activity_reset_data_chk_reseed_text">Create the default set for the items selected above (accounts, icons, pairs and rates)</string>
+    <string name="activity_reset_data_btn_confirm_reset_text">Delete</string>
+    <string name="activity_reset_data_text_4">Full database wipe</string>
+    <string name="activity_reset_data_text_5">Physically erases all database tables (instead of marking records deleted). The change is NOT synced with the server — the next sync may bring the data back from the server.</string>
+    <string name="activity_reset_data_chk_hard_reseed_text">Create the default set after wiping (as on first install)</string>
+    <string name="activity_reset_data_btn_hard_wipe_text">Delete EVERYTHING for good</string>
+
+    <!-- activity_settings -->
+    <string name="activity_settings_text_1">Settings</string>
+    <string name="activity_settings_text_2">APPEARANCE</string>
+    <string name="activity_settings_chip_theme_light_text">Light</string>
+    <string name="activity_settings_chip_theme_dark_text">Dark</string>
+    <string name="activity_settings_chip_theme_system_text">System</string>
+    <string name="activity_settings_text_3">CURRENCY</string>
+    <string name="activity_settings_text_4">Equivalent currency</string>
+    <string name="activity_settings_main_currency_value_text">$ US Dollar</string>
+    <string name="activity_settings_text_5">ENTERING OPERATIONS</string>
+    <string name="activity_settings_text_6">Open the search keyboard right away</string>
+    <string name="activity_settings_text_7">when choosing a category or wallet</string>
+    <string name="activity_settings_text_8">Wallet sorting</string>
+    <string name="activity_settings_text_9">Category sorting</string>
+    <string name="activity_settings_text_10">frequency — the chosen wallet first</string>
+    <string name="activity_settings_text_11">SECURITY</string>
+    <string name="activity_settings_text_12">Passcode</string>
+    <string name="activity_settings_text_13">Change code</string>
+    <string name="activity_settings_text_14">Lock</string>
+    <string name="activity_settings_text_15">after leaving the app</string>
+    <string name="activity_settings_text_16">Hide in recent apps</string>
+    <string name="activity_settings_label_biometric_text">Fingerprint sign-in</string>
+    <string name="activity_settings_text_17">NOTIFICATIONS</string>
+    <string name="activity_settings_text_18">Reminder to add operations</string>
+    <string name="activity_settings_row_remind_time_text">every day at 20:00</string>
+    <string name="activity_settings_text_19">DATA</string>
+    <string name="activity_settings_text_20">Database export</string>
+    <string name="activity_settings_text_21">ABOUT</string>
+    <string name="activity_settings_text_22">Rate the app</string>
+    <string name="activity_settings_text_23">Version</string>
+    <string name="activity_settings_text_24">Build date</string>
+
+    <!-- activity_statement_import -->
+    <string name="activity_statement_import_content_description_1">Back</string>
+    <string name="activity_statement_import_text_2">Statement</string>
+    <string name="activity_statement_import_text_3">Statement file</string>
+    <string name="activity_statement_import_tv_file_hint">PDF with text, CSV or TXT up to 5 MB</string>
+    <string name="activity_statement_import_text_4">Statement wallet</string>
+    <string name="activity_statement_import_tv_wallet_hint">Choose a wallet</string>
+    <string name="activity_statement_import_btn_upload_text">Upload</string>
+    <string name="activity_statement_import_text_5">You can leave this screen — parsing runs on the server, come back later</string>
+    <string name="activity_statement_import_text_6">Upload another statement</string>
+    <string name="activity_statement_import_btn_write_ready_text">Save ready ones (0)</string>
+    <string name="activity_statement_import_text_7">Upload another statement</string>
+
+    <!-- activity_sync_link -->
+    <string name="activity_sync_link_text_1">Link Google account</string>
+    <string name="activity_sync_link_text_2">Sign in with the same Google account the server already knows your data under.</string>
+    <string name="activity_sync_link_button_sign_in_text">Sign in with Google</string>
+
+    <!-- activity_transaction -->
+    <string name="activity_transaction_btn_up_content_description">Back</string>
+    <string name="activity_transaction_screen_title_text">New operation</string>
+    <string name="activity_transaction_btn_delete_content_description">Delete operation</string>
+    <string name="activity_transaction_text_1">Expense</string>
+    <string name="activity_transaction_text_2">Income</string>
+    <string name="activity_transaction_text_3">Transfer</string>
+    <string name="activity_transaction_amount_hint_text">How much did you spend</string>
+    <string name="activity_transaction_label_amount_to_text">Amount in the recipient\'s currency</string>
+    <string name="activity_transaction_edit_slot_top_hint">Expense category</string>
+    <string name="activity_transaction_edit_slot_bottom_hint">Wallet</string>
+    <string name="activity_transaction_text_4">Transfer fee</string>
+    <string name="activity_transaction_edit_commission_account_hint">Account to charge the fee</string>
+    <string name="activity_transaction_text_5">Fee amount</string>
+    <string name="activity_transaction_text_6">The fee is charged to</string>
+    <string name="activity_transaction_radio_commission_from_source_text">The sender\'s account (from)</string>
+    <string name="activity_transaction_radio_commission_from_dest_text">The recipient\'s account (to)</string>
+    <string name="activity_transaction_text_7">The fee isn\'t saved to the database yet — see the work plan.</string>
+    <string name="activity_transaction_edit_comment_hint">Comment</string>
+    <string name="activity_transaction_keypad_del_content_description">Erase</string>
+
+    <!-- currency_picker_item_layout -->
+    <string name="currency_picker_item_layout_currency_name_text">US Dollar</string>
+
+    <!-- dialog_add_edit_icon -->
+    <string name="dialog_add_edit_icon_dialog_title_text">Add icon</string>
+    <string name="dialog_add_edit_icon_img_icon_preview_content_description">Icon image</string>
+    <string name="dialog_add_edit_icon_btn_select_icon_text">Choose image</string>
+    <string name="dialog_add_edit_icon_txt_server_icon_hint_text">Server icon — only the administrator can change or delete it on the website.</string>
+    <string name="dialog_add_edit_icon_lbl_icon_name_text">NAME</string>
+    <string name="dialog_add_edit_icon_edt_icon_name_hint">For example, Groceries</string>
+    <string name="dialog_add_edit_icon_lbl_icon_type_text">TYPE</string>
+    <string name="dialog_add_edit_icon_chip_category_text">Category</string>
+    <string name="dialog_add_edit_icon_chip_flag_text">Flag</string>
+    <string name="dialog_add_edit_icon_btn_delete_text">Delete</string>
+    <string name="dialog_add_edit_icon_btn_cancel_text">Cancel</string>
+    <string name="dialog_add_edit_icon_btn_save_text">Save</string>
+
+    <!-- dialog_download_rates -->
+    <string name="dialog_download_rates_text_1">Download quotes</string>
+    <string name="dialog_download_rates_text_2">SOURCE</string>
+    <string name="dialog_download_rates_source_value_text">Bank of Russia</string>
+    <string name="dialog_download_rates_text_3">PERIOD</string>
+    <string name="dialog_download_rates_input_from_hint">from</string>
+    <string name="dialog_download_rates_input_to_hint">to</string>
+    <string name="dialog_download_rates_text_4">FREQUENCY</string>
+    <string name="dialog_download_rates_radio_day_text">Every day</string>
+    <string name="dialog_download_rates_radio_monday_text">Every Monday</string>
+    <string name="dialog_download_rates_radio_month_text">Every month</string>
+    <string name="dialog_download_rates_btn_cancel_text">Cancel</string>
+    <string name="dialog_download_rates_btn_download_text">Download</string>
+
+    <!-- dialog_edit_rate -->
+    <string name="dialog_edit_rate_dialog_title_text">Add rate</string>
+    <string name="dialog_edit_rate_text_1">DATE</string>
+    <string name="dialog_edit_rate_input_date_hint">dd.mm.yyyy</string>
+    <string name="dialog_edit_rate_text_2">RATE</string>
+    <string name="dialog_edit_rate_btn_delete_text">Delete</string>
+    <string name="dialog_edit_rate_btn_cancel_text">Cancel</string>
+    <string name="dialog_edit_rate_btn_save_text">Save</string>
+
+    <!-- dialog_new_pair -->
+    <string name="dialog_new_pair_text_1">New currency pair</string>
+    <string name="dialog_new_pair_text_2">BASE CURRENCY</string>
+    <string name="dialog_new_pair_text_3">QUOTE CURRENCY</string>
+    <string name="dialog_new_pair_text_4">PRECISION (DECIMAL PLACES)</string>
+    <string name="dialog_new_pair_btn_cancel_text">Cancel</string>
+    <string name="dialog_new_pair_btn_create_text">Create</string>
+
+    <!-- fragment_file_picker -->
+    <string name="fragment_file_picker_btn_choose_file_text">Choose file</string>
+    <string name="fragment_file_picker_btn_format_info_text">Format</string>
+
+    <!-- lock_keypad -->
+    <string name="lock_keypad_lock_key_ok_text">OK</string>
+    <string name="lock_keypad_lock_key_bio_content_description">Fingerprint sign-in</string>
+    <string name="lock_keypad_content_description_1">Erase</string>
+
+    <!-- more_item_layout -->
+    <string name="more_item_layout_more_label_text">Exchange rates</string>
+
+    <!-- multi_picker_item_layout -->
+    <string name="multi_picker_item_layout_item_label_text">Name</string>
+
+    <!-- pair_item_layout -->
+    <string name="pair_item_layout_pair_date_text">July 24, 2026</string>
+
+    <!-- report_byaccount_item_layout -->
+    <string name="report_byaccount_item_layout_text_name_text">Category</string>
+
+    <!-- transaction_item_layout -->
+    <string name="transaction_item_layout_account_to_name_text">Groceries</string>
+    <string name="transaction_item_layout_comment_text">Supermarket</string>
+
+    <!-- transaction_item_transfer -->
+    <string name="transaction_item_transfer_transfer_route_text">Mastercard → Visa</string>
+
+    <!-- view_bottom_nav -->
+    <string name="view_bottom_nav_text_1">Operations</string>
+    <string name="view_bottom_nav_text_2">Wallets</string>
+    <string name="view_bottom_nav_text_3">Reports</string>
+    <string name="view_bottom_nav_text_4">More</string>
+    <string name="view_bottom_nav_btn_add_tran_content_description">Add operation</string>
+
+    <!-- view_period_summary -->
+    <string name="view_period_summary_text_1">Opening</string>
+    <string name="view_period_summary_text_2">Closing</string>
+    <string name="view_period_summary_text_3">Income</string>
+    <string name="view_period_summary_text_4">Expense</string>
+    <string name="view_period_summary_text_5">Total</string>
+    <string name="view_period_summary_btn_clear_filter_text">Reset</string>
+
+    <!-- view_screen_header -->
+    <string name="view_screen_header_btn_up_content_description">Back</string>
+
+    <!-- view_tab_actions -->
+    <string name="view_tab_actions_btn_filter_content_description">Filter</string>
+
+    <!-- view_transaction_day_header -->
+    <string name="view_transaction_day_header_text_date_text">July 24</string>
+
+    <!-- wallet_balance_item_layout -->
+    <string name="wallet_balance_item_layout_wallet_name_text">Wallet</string>
+    <string name="wallet_balance_item_layout_text_1">OPENING</string>
+    <string name="wallet_balance_item_layout_text_2">IN</string>
+
+    <!-- rate_list_menu -->
+    <string name="rate_list_menu_action_download_rates_title">Download rates</string>
+
+    <!-- report_list_menu -->
+    <string name="report_list_menu_action_change_currency_eq_title">Display currency</string>
 </resources>

@@ -132,7 +132,7 @@ public class AccountItemFragment extends Fragment {
 
 
     public void buttonAccountClick(View view) {
-        startActivityForResult(AccountPickerActivity.buildIntent(getContext(), "Кошелёк",
+        startActivityForResult(AccountPickerActivity.buildIntent(getContext(), getString(R.string.operation_slot_wallet),
                 AccountPickerActivity.cSelectedTypeOperationAccounts,
                 mAccount == null ? 0 : mAccount.getId()), accountFrameId);
     }

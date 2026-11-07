@@ -23,7 +23,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 88;
+    private static final int DATABASE_VERSION = 89;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -110,6 +110,8 @@ public class WalletDbHelper extends SQLiteOpenHelper {
              // v76 — явный признак «кошелёк или категория», см. javadoc
              // AccountItem.Kind и шаг v76 в onUpgrade ниже.
              + WalletContract.AccountEntry.COLUMN_KIND + " INT NOT NULL DEFAULT 0,\n"
+             // v88 — см. addFromSeedV88.
+             + WalletContract.AccountEntry.COLUMN_FROM_SEED + " INTEGER NOT NULL DEFAULT 0,\n"
              + SYNC_COLUMNS_DDL + ",\n"
              + " CONSTRAINT fk_account_icon_id FOREIGN KEY ("
              + WalletContract.AccountEntry.COLUMN_ICON_ID
@@ -127,6 +129,8 @@ public class WalletDbHelper extends SQLiteOpenHelper {
              // v85 — см. addCurrencyFlagsV85.
              + WalletContract.CurrencyEntry.COLUMN_SHOW_IN_EQUIVALENT + " INTEGER NOT NULL DEFAULT 1, \n"
              + WalletContract.CurrencyEntry.COLUMN_IS_SHARED + " INTEGER NOT NULL DEFAULT 0, \n"
+             // v88 — см. addFromSeedV88.
+             + WalletContract.CurrencyEntry.COLUMN_FROM_SEED + " INTEGER NOT NULL DEFAULT 0, \n"
              + SYNC_COLUMNS_DDL + ", \n"
              + " CONSTRAINT fk_currency_icon_id FOREIGN KEY ("
              + WalletContract.CurrencyEntry.COLUMN_ICON_ID
@@ -142,6 +146,8 @@ public class WalletDbHelper extends SQLiteOpenHelper {
              + WalletContract.CurrencyPairEntry.COLUMN_PRECISION + " INTEGER NOT NULL DEFAULT 5, \n"
              // v85 — см. addCurrencyFlagsV85.
              + WalletContract.CurrencyPairEntry.COLUMN_IS_SHARED + " INTEGER NOT NULL DEFAULT 0, \n"
+             // v88 — см. addFromSeedV88.
+             + WalletContract.CurrencyPairEntry.COLUMN_FROM_SEED + " INTEGER NOT NULL DEFAULT 0, \n"
              + SYNC_COLUMNS_DDL + ", \n"
              + " CONSTRAINT fk_currency_pair_base_currency_id FOREIGN KEY ("
              + WalletContract.CurrencyPairEntry.COLUMN_BASE_CURRECNCY_ID
@@ -244,7 +250,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     private void createUuidIndexes(SQLiteDatabase db) {
         createUuidIndex(db, WalletContract.AccountEntry.TABLE_NAME);
         createUuidIndex(db, WalletContract.AccountOperatingEntry.TABLE_NAME);
-        // См. createSyncTriggers: шаги v72/v82 идут раньше v88, где таблица появляется.
+        // См. createSyncTriggers: шаги v72/v82 идут раньше v89, где таблица появляется.
         if (tableExists(db, WalletContract.AccountAssetEntry.TABLE_NAME)) {
             createUuidIndex(db, WalletContract.AccountAssetEntry.TABLE_NAME);
         }
@@ -384,6 +390,23 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         db.execSQL("UPDATE " + table + " SET " + dirty + " = 0 WHERE " + dirty + " <> 0");
     }
 
+    /**
+     * v88 (openspec new-user-default-set, design D3): {@code from_seed} у {@code account},
+     * {@code currency}, {@code currency_pair} — 1 у строк, заведённых из встроенного набора
+     * и не тронутых пользователем. Только {@code ADD COLUMN} с 0: существующие строки (в том
+     * числе прежний личный сид) из набора не считаются, и при подключении к кошельку ни одна
+     * не удалится как нетронутая строка набора. Без {@code UPDATE} — иначе триггер
+     * {@code trg_<table>_dirty} отправил бы все строки в push.
+     */
+    static void addFromSeedV88(SQLiteDatabase db) {
+        addColumnIfMissing(db, WalletContract.AccountEntry.TABLE_NAME,
+                WalletContract.AccountEntry.COLUMN_FROM_SEED, "INTEGER NOT NULL DEFAULT 0");
+        addColumnIfMissing(db, WalletContract.CurrencyEntry.TABLE_NAME,
+                WalletContract.CurrencyEntry.COLUMN_FROM_SEED, "INTEGER NOT NULL DEFAULT 0");
+        addColumnIfMissing(db, WalletContract.CurrencyPairEntry.TABLE_NAME,
+                WalletContract.CurrencyPairEntry.COLUMN_FROM_SEED, "INTEGER NOT NULL DEFAULT 0");
+    }
+
     private static void addColumnIfMissing(SQLiteDatabase db, String table, String column, String ddl) {
         if (columnExists(db, table, column)) return;
         db.execSQL("ALTER TABLE " + table + " ADD COLUMN " + column + " " + ddl);
@@ -484,7 +507,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     private void createSyncTriggers(SQLiteDatabase db) {
         createDirtyTrigger(db, WalletContract.AccountEntry.TABLE_NAME, WalletContract.AccountEntry._ID);
         createDirtyTrigger(db, WalletContract.AccountOperatingEntry.TABLE_NAME, WalletContract.AccountOperatingEntry._ID);
-        // account_asset появляется шагом v88 — старые шаги апгрейда (v72) зовут этот метод раньше.
+        // account_asset появляется шагом v89 — старые шаги апгрейда (v72) зовут этот метод раньше.
         if (tableExists(db, WalletContract.AccountAssetEntry.TABLE_NAME)) {
             createDirtyTrigger(db, WalletContract.AccountAssetEntry.TABLE_NAME, WalletContract.AccountAssetEntry._ID);
         }
@@ -672,8 +695,8 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                         pairCol + " = ? AND substr(" + dateCol + ", 1, 10) = ? AND rowid <> ?",
                         new String[]{String.valueOf(pairId), day, String.valueOf(survivorRowId)});
                 Log.i(LOG_TAG, "dedupeCurrencyPairRateDuplicates: пара _id=" + pairId + ", дата " + day
-                        + " — удалено дублей: " + deleted + ", оставлена rowid=" + survivorRowId
-                        + " (была date=" + survivorDate + ")");
+                        + " — удалено дублей: " + deleted + ", оставлена rowid=" + survivorRowId // not UI: лог
+                        + " (была date=" + survivorDate + ")"); // not UI: лог
 
                 ContentValues cv = new ContentValues();
                 cv.put(dateCol, day); // нормализуем до чистой даты, без времени
@@ -883,7 +906,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                 "select o._id, o.date, o.acc_fr_id, o.acc_to_id, o.amount, o.comment , acf.name acc_fr_name, act.name acc_to_name, COALESCE(aof.currency_id , aot.currency_id ) currency_id\n" +
                 ", case when aof._id is not null then 1 else 0 end acc_from_is_operating\n" +
                 ", case when aot._id is not null then 1 else 0 end acc_to_is_operating\n" +
-                // v88 (capital-assets, design п. 5): переоценка — одна из сторон счёт с
+                // v89 (capital-assets, design п. 5): переоценка — одна из сторон счёт с
                 // system_kind = 3. Тот же признак, что у wallet-api (без фильтра deleted_at
                 // по счёту); доход, расход и плитки-фильтры исключают is_revaluation = 1.
                 ", case when acf.system_kind = 3 or act.system_kind = 3 then 1 else 0 end is_revaluation\n" +
@@ -957,9 +980,9 @@ CONSTRAINT fk_currencies_id FOREIGN KEY (currency_id) REFERENCES currencies (_id
     }
 
     /**
-     * v88 (openspec capital-assets, design п. 1) — признак капитального актива, см.
+     * v89 (openspec capital-assets, design п. 1) — признак капитального актива, см.
      * {@link WalletContract.AccountAssetEntry}. {@code IF NOT EXISTS} — вызывается и из
-     * onCreate, и из шага v88.
+     * onCreate, и из шага v89.
      */
     static void CreateAccountAssetEntry(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS " + WalletContract.AccountAssetEntry.TABLE_NAME + " (\n"
@@ -974,13 +997,13 @@ CONSTRAINT fk_currencies_id FOREIGN KEY (currency_id) REFERENCES currencies (_id
     }
 
     /**
-     * Шаг v88 (openspec capital-assets, design п. 2): таблица {@code account_asset} с
+     * Шаг v89 (openspec capital-assets, design п. 2): таблица {@code account_asset} с
      * триггером dirty и индексом uuid, вьюхи с колонкой {@code is_revaluation} и флаг
      * однократного перечита потока ledger — прежняя версия пропускала строки
      * {@code account_asset} в pull, а курсор уходил дальше
      * ({@code SyncEngine.pullAll}, {@code AppSettings.isLedgerRereadPending}).
      */
-    void upgradeToCapitalAssetsV88(SQLiteDatabase db) {
+    void upgradeToCapitalAssetsV89(SQLiteDatabase db) {
         CreateAccountAssetEntry(db);
         createDirtyTrigger(db, WalletContract.AccountAssetEntry.TABLE_NAME, WalletContract.AccountAssetEntry._ID);
         createUuidIndex(db, WalletContract.AccountAssetEntry.TABLE_NAME);
@@ -1290,8 +1313,12 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
                 createSyncReloadSeen(db);
             }
             if (oldVersion < 88) {
-                // v88: капитальные активы (capital-assets) — account_asset, is_revaluation, перечит ledger.
-                upgradeToCapitalAssetsV88(db);
+                // v88: метка «из набора» (new-user-default-set), у существующих строк 0.
+                addFromSeedV88(db);
+            }
+            if (oldVersion < 89) {
+                // v89: капитальные активы (capital-assets) — account_asset, is_revaluation, перечит ledger.
+                upgradeToCapitalAssetsV89(db);
             }
             return;
         }

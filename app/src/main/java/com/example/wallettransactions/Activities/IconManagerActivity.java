@@ -47,7 +47,7 @@ public class IconManagerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_icon_manager);
 
-        ((TextView) findViewById(R.id.screenTitle)).setText("Иконки и категории");
+        ((TextView) findViewById(R.id.screenTitle)).setText(R.string.icon_manager_title);
 
         expandableListView = findViewById(R.id.expandableListView);
         findViewById(R.id.fabAddIcon).setOnClickListener(v -> openAddIconDialog());

@@ -65,6 +65,10 @@ public class SyncWorker extends Worker {
                 return Result.success();
             case NO_SESSION:
                 return Result.success();
+            case AWAITING_DECISION:
+                // Повтор ничего не даст, пока пользователь не ответит на вопрос на главном
+                // экране; ответ сам запускает проход (new-user-default-set, design D8).
+                return Result.success();
             case NEEDS_RELINK:
                 // Уведомление уже показано AuthSession — тихо повторить вход
                 // через Google отсюда нельзя (см. её javadoc).

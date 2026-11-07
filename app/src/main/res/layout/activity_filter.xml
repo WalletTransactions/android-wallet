@@ -31,7 +31,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="Фильтр"
+            android:text="@string/activity_filter_text_1"
             android:textSize="20sp"
             android:textStyle="bold"
             android:fontFamily="@font/caprasimo"
@@ -53,19 +53,19 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <TextView style="@style/SettingsGroupLabel" android:text="ПОИСК ПО ТЕКСТУ"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_filter_text_2"/>
             <EditText
                 android:id="@+id/inputSearchText"
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
                 android:background="@drawable/bg_input_pill"
-                android:hint="Название или комментарий"
+                android:hint="@string/activity_filter_input_search_text_hint"
                 android:paddingLeft="18dp"
                 android:paddingRight="18dp"
                 android:textSize="14sp"
                 android:layout_marginBottom="22dp"/>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="ТИП ОПЕРАЦИИ"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_filter_text_3"/>
             <LinearLayout
                 android:id="@+id/chipGroupKind"
                 android:layout_width="match_parent"
@@ -73,25 +73,25 @@
                 android:orientation="horizontal"
                 android:layout_marginBottom="22dp">
 
-                <TextView android:id="@+id/chipAll" style="@style/FilterChip" android:text="Все" android:background="@drawable/bg_chip_selected" android:textColor="@color/colorSurface"/>
+                <TextView android:id="@+id/chipAll" style="@style/FilterChip" android:text="@string/activity_filter_chip_all_text" android:background="@drawable/bg_chip_selected" android:textColor="@color/colorSurface"/>
                 <!-- Иконки те же, что на чипах экрана операции. Тинт статический разметки —
                      только заготовка на первую отрисовку; реальный цвет и фон под текущий
                      выбор красит FilterActivity.paintKind() сразу в onCreate. -->
                 <LinearLayout android:id="@+id/chipExpense" style="@style/FilterChipIcon">
                     <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_expense" android:tint="@color/colorTextSecondary"/>
-                    <TextView style="@style/FilterChipIconLabel" android:text="Расход"/>
+                    <TextView style="@style/FilterChipIconLabel" android:text="@string/activity_filter_text_4"/>
                 </LinearLayout>
                 <LinearLayout android:id="@+id/chipIncome" style="@style/FilterChipIcon">
                     <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_income" android:tint="@color/colorTextSecondary"/>
-                    <TextView style="@style/FilterChipIconLabel" android:text="Доход"/>
+                    <TextView style="@style/FilterChipIconLabel" android:text="@string/activity_filter_text_5"/>
                 </LinearLayout>
                 <LinearLayout android:id="@+id/chipTransfer" style="@style/FilterChipIcon" android:layout_marginEnd="0dp">
                     <ImageView style="@style/FilterChipIconImage" android:src="@drawable/ic_kind_transfer" android:tint="@color/colorTextSecondary"/>
-                    <TextView style="@style/FilterChipIconLabel" android:text="Перевод"/>
+                    <TextView style="@style/FilterChipIconLabel" android:text="@string/activity_filter_text_6"/>
                 </LinearLayout>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="СЧЕТА"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_filter_text_7"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -110,9 +110,9 @@
                     android:onClick="onPickCategories">
 
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="Счёт затрат" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
+                        android:text="@string/activity_filter_text_8" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
                     <TextView android:id="@+id/categorySummary" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Все" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/colorTextSecondary" android:layout_marginEnd="6dp"/>
+                        android:text="@string/activity_filter_category_summary_text" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/colorTextSecondary" android:layout_marginEnd="6dp"/>
                     <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
                 </LinearLayout>
 
@@ -127,14 +127,14 @@
                     android:onClick="onPickWallets">
 
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="Кошелёк" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
+                        android:text="@string/activity_filter_text_9" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
                     <TextView android:id="@+id/walletSummary" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Все" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/colorTextSecondary" android:layout_marginEnd="6dp"/>
+                        android:text="@string/activity_filter_wallet_summary_text" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/colorTextSecondary" android:layout_marginEnd="6dp"/>
                     <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
                 </LinearLayout>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="СУММА В ВАЛЮТЕ КОШЕЛЬКА"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_filter_text_10"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
@@ -143,7 +143,7 @@
 
                 <EditText android:id="@+id/inputAmountMin" android:layout_width="0dp" android:layout_height="match_parent"
                     android:layout_weight="1" android:background="@drawable/bg_input_pill" android:gravity="center"
-                    android:hint="от" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                    android:hint="@string/activity_filter_input_amount_min_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
 
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:layout_marginLeft="8dp" android:layout_marginRight="8dp" android:layout_gravity="center_vertical"
@@ -151,13 +151,13 @@
 
                 <EditText android:id="@+id/inputAmountMax" android:layout_width="0dp" android:layout_height="match_parent"
                     android:layout_weight="1" android:background="@drawable/bg_input_pill" android:gravity="center"
-                    android:hint="до" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                    android:hint="@string/activity_filter_input_amount_max_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
             </LinearLayout>
 
             <!-- Текст дописывает FilterActivity: валюта эквивалента общая для всех табов
                  и выбирается в шапке (BaseTabActivity.onPickCurrencyEq), тут не рубли жёстко,
                  а то, что выбрано сейчас. -->
-            <TextView android:id="@+id/labelEqRange" style="@style/SettingsGroupLabel" android:text="СУММА В ЭКВИВАЛЕНТЕ"/>
+            <TextView android:id="@+id/labelEqRange" style="@style/SettingsGroupLabel" android:text="@string/activity_filter_label_eq_range_text"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
@@ -166,7 +166,7 @@
 
                 <EditText android:id="@+id/inputEqMin" android:layout_width="0dp" android:layout_height="match_parent"
                     android:layout_weight="1" android:background="@drawable/bg_input_pill" android:gravity="center"
-                    android:hint="от" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                    android:hint="@string/activity_filter_input_eq_min_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
 
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:layout_marginLeft="8dp" android:layout_marginRight="8dp" android:layout_gravity="center_vertical"
@@ -174,7 +174,7 @@
 
                 <EditText android:id="@+id/inputEqMax" android:layout_width="0dp" android:layout_height="match_parent"
                     android:layout_weight="1" android:background="@drawable/bg_input_pill" android:gravity="center"
-                    android:hint="до" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                    android:hint="@string/activity_filter_input_eq_max_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
@@ -195,7 +195,7 @@
             android:layout_marginEnd="10dp"
             android:background="@drawable/bg_pill_outline"
             android:gravity="center"
-            android:text="Сбросить"
+            android:text="@string/activity_filter_btn_reset_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/colorTextPrimary"
@@ -208,7 +208,7 @@
             android:layout_weight="1"
             android:background="@drawable/bg_pill_primary"
             android:gravity="center"
-            android:text="Показать 14"
+            android:text="@string/activity_filter_btn_apply_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/colorSurface"

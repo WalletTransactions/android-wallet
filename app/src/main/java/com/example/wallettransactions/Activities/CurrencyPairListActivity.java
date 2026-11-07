@@ -76,7 +76,7 @@ public class CurrencyPairListActivity extends AppCompatActivity {
             CurrencyPair item = adapter.getItem(position);
             if (item == null) return false;
             if (item.isShared()) {
-                Toast.makeText(this, "Общая пара — удалить нельзя", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.pair_shared_cannot_delete, Toast.LENGTH_SHORT).show();
             } else {
                 confirmDeletePair(this, item, this::applyFilter);
             }
@@ -132,9 +132,9 @@ public class CurrencyPairListActivity extends AppCompatActivity {
      */
     static void confirmDeletePair(android.app.Activity activity, CurrencyPair pair, Runnable onDeleted) {
         new AlertDialog.Builder(activity)
-                .setMessage("Удалить пару " + pair.getSymbol() + "? Вся история её курса тоже будет удалена.")
-                .setNegativeButton("Отмена", null)
-                .setPositiveButton("Удалить", (d, w) -> {
+                .setMessage(activity.getString(R.string.pair_delete_question, pair.getSymbol()))
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.action_delete, (d, w) -> {
                     long rates = liveRateCount(activity, pair.getId());
                     if (rates == 0) {
                         deletePair(activity, pair, onDeleted);
@@ -153,10 +153,9 @@ public class CurrencyPairListActivity extends AppCompatActivity {
     private static void confirmWithRateCount(android.app.Activity activity, CurrencyPair pair, long rates,
                                              Runnable onDeleted) {
         new AlertDialog.Builder(activity)
-                .setMessage("У пары " + pair.getSymbol() + " курсов: " + rates
-                        + ". Удалить пару вместе со всеми курсами?")
-                .setNegativeButton("Отмена", null)
-                .setPositiveButton("Удалить", (d, w) -> deletePair(activity, pair, onDeleted))
+                .setMessage(activity.getString(R.string.pair_delete_with_rates, pair.getSymbol(), rates))
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.action_delete, (d, w) -> deletePair(activity, pair, onDeleted))
                 .show();
     }
 
@@ -174,7 +173,7 @@ public class CurrencyPairListActivity extends AppCompatActivity {
         int deleted = WalletDbCRUD.DeleteCurrencyPair(writable, pair.getId());
         writable.close();
         if (deleted == 0) {
-            Toast.makeText(activity, "Общая пара — удалить нельзя", Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, R.string.pair_shared_cannot_delete, Toast.LENGTH_SHORT).show();
             return;
         }
         Singleton.instance.reloadCurrencyPairList(activity);
@@ -216,8 +215,8 @@ public class CurrencyPairListActivity extends AppCompatActivity {
         selectedQuoteIso = null;
 
         newPairDlgView = LayoutInflater.from(this).inflate(R.layout.dialog_new_pair, null);
-        ((TextView) newPairDlgView.findViewById(R.id.baseValue)).setText("Выбрать");
-        ((TextView) newPairDlgView.findViewById(R.id.quoteValue)).setText("Выбрать");
+        ((TextView) newPairDlgView.findViewById(R.id.baseValue)).setText(R.string.pair_choose);
+        ((TextView) newPairDlgView.findViewById(R.id.quoteValue)).setText(R.string.pair_choose);
 
         newPairDialog = new AlertDialog.Builder(this).setView(newPairDlgView).create();
         newPairDialog.show();
@@ -226,14 +225,14 @@ public class CurrencyPairListActivity extends AppCompatActivity {
     /** rowBase tap target (dialog_new_pair.xml android:onClick). */
     public void onPickBase(View view) {
         startActivityForResult(
-                CurrencyPickerActivity.buildIntent(this, "Базовая валюта", selectedBaseIso),
+                CurrencyPickerActivity.buildIntent(this, getString(R.string.pair_base_currency), selectedBaseIso),
                 REQUEST_PICK_BASE);
     }
 
     /** rowQuote tap target (dialog_new_pair.xml android:onClick). */
     public void onPickQuote(View view) {
         startActivityForResult(
-                CurrencyPickerActivity.buildIntent(this, "Котируемая валюта", selectedQuoteIso),
+                CurrencyPickerActivity.buildIntent(this, getString(R.string.pair_quote_currency), selectedQuoteIso),
                 REQUEST_PICK_QUOTE);
     }
 
@@ -245,11 +244,11 @@ public class CurrencyPairListActivity extends AppCompatActivity {
     /** btnCreate tap target (dialog_new_pair.xml android:onClick). */
     public void onCreatePair(View view) {
         if (selectedBaseIso == null || selectedQuoteIso == null) {
-            Toast.makeText(this, "Выберите обе валюты", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.pair_error_choose_both, Toast.LENGTH_SHORT).show();
             return;
         }
         if (selectedBaseIso.equals(selectedQuoteIso)) {
-            Toast.makeText(this, "Валюты должны быть разными", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.pair_error_same, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -263,7 +262,7 @@ public class CurrencyPairListActivity extends AppCompatActivity {
         long newId = WalletDbCRUD.InsertCurrencyPair(writable, selectedBaseIso, selectedQuoteIso, precision);
         writable.close();
         if (newId < 0) {
-            Toast.makeText(this, "Ошибка добавления пары", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.pair_error_add, Toast.LENGTH_SHORT).show();
             return;
         }
 

@@ -33,7 +33,8 @@ import java.util.Date;
  * Кнопка «Сохранить» в окне операции сразу после открытия (changes/fix-prefill-save-enabled).
  * Черновик из ИИ открывает окно новой операции, где заполнено всё; раньше onCreate
  * гасил кнопку безусловно, и сохранить можно было только после любой правки.
- * База — настоящая, с первичным справочником (WalletFillData): из неё берутся кошелёк и категория.
+ * База — настоящая, с первичным справочником (WalletFillData): из неё берётся категория,
+ * кошелёк заводит setUp.
  */
 @RunWith(RobolectricTestRunner.class)
 public class TransactionSaveButtonTest {
@@ -47,7 +48,19 @@ public class TransactionSaveButtonTest {
         context = ApplicationProvider.getApplicationContext();
         // Картинки первичного справочника не влезают в CursorWindow Robolectric,
         // а кнопке «Сохранить» они не нужны.
-        Singleton.instance.getWritableDatabase(context).execSQL("UPDATE icon SET image = x'00'");
+        android.database.sqlite.SQLiteDatabase db = Singleton.instance.getWritableDatabase(context);
+        db.execSQL("UPDATE icon SET image = x'00'");
+        // Во встроенном наборе кошельков нет (new-user-default-set) — заводим один.
+        android.database.Cursor c = db.rawQuery("SELECT (SELECT _id FROM icon LIMIT 1),"
+                + " (SELECT _id FROM currency WHERE iso_code = 'EUR')", null);
+        try {
+            c.moveToFirst();
+            com.example.wallettransactions.Data.WalletDbCRUD.InsertOperatingAccount(db, "Наличные", "",
+                    c.getInt(0), c.getInt(1));
+        } finally {
+            c.close();
+        }
+        Singleton.instance.reloadAccounts(context);
     }
 
     @After

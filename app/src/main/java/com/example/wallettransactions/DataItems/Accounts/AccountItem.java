@@ -35,8 +35,8 @@ public class AccountItem implements IFilterIsLike {
      * {@code is_revaluation} вьюх). Заводится лениво при первой переоценке; если обычная
      * категория с этим именем уже есть, берётся {@link #SYSTEM_REVALUATION_FALLBACK_NAME}.
      */
-    public static final String SYSTEM_REVALUATION_NAME = "Переоценка";
-    public static final String SYSTEM_REVALUATION_FALLBACK_NAME = "Переоценка активов";
+    public static final String SYSTEM_REVALUATION_NAME = "Переоценка"; // not UI: хранимое имя, уходит в синк
+    public static final String SYSTEM_REVALUATION_FALLBACK_NAME = "Переоценка активов"; // not UI
 
     /**
      * Явный признак системности счёта (v75, колонка {@code account.system_kind}) — заменяет
@@ -150,8 +150,41 @@ public class AccountItem implements IFilterIsLike {
         return id;
     }
 
+    /**
+     * Хранимое имя — для правки, поиска по имени и синка. Для показа — {@link #getDisplayName}.
+     */
     public String getName(){
         return name;
+    }
+
+    /** Ресурсы приложения для {@link #getDisplayName}; ставит {@code WalletApplication.onCreate}. */
+    private static volatile android.content.Context appContext;
+
+    public static void initDisplayNames(android.content.Context context) {
+        appContext = context.getApplicationContext();
+    }
+
+    /**
+     * Имя для показа (openspec android-i18n, spec ui-language): системные категории — на
+     * языке интерфейса («Перевод», «Комиссия за перевод»), остальные — хранимое имя.
+     * Хранимое {@code Transfer}/{@code Transfer commission} не меняется и уходит в синк.
+     */
+    public String getDisplayName() {
+        android.content.Context c = appContext;
+        if (c == null || systemKind == null) return name;
+        c = com.example.wallettransactions.AppLanguage.localized(c);
+        switch (systemKind) {
+            case TRANSFER:
+                return c.getString(com.example.wallettransactions.R.string.system_category_transfer);
+            case TRANSFER_COMMISSION:
+                return c.getString(com.example.wallettransactions.R.string.system_category_transfer_commission);
+            case REVALUATION:
+                // Хранимое имя («Переоценка» или запасное «Переоценка активов») — данные
+                // синка; показ — на языке интерфейса, как у Transfer.
+                return c.getString(com.example.wallettransactions.R.string.system_category_revaluation);
+            default:
+                return name;
+        }
     }
 
     public String getComment(){

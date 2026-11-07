@@ -30,7 +30,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="Настройки"
+            android:text="@string/activity_settings_text_1"
             android:textSize="20sp"
             android:textStyle="bold"
             android:fontFamily="@font/caprasimo"
@@ -55,7 +55,7 @@
               тумблером не выражается. Подсветку выбранного расставляет код
               (SettingsActivity.applyThemeChips) — здесь все три нарисованы неактивными.
             -->
-            <TextView style="@style/SettingsGroupLabel" android:text="ОФОРМЛЕНИЕ"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_settings_text_2"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -65,24 +65,59 @@
                 <TextView
                     android:id="@+id/chipThemeLight"
                     style="@style/FilterChip"
-                    android:text="Светлая"
+                    android:text="@string/activity_settings_chip_theme_light_text"
                     android:onClick="onPickTheme"/>
 
                 <TextView
                     android:id="@+id/chipThemeDark"
                     style="@style/FilterChip"
-                    android:text="Тёмная"
+                    android:text="@string/activity_settings_chip_theme_dark_text"
                     android:onClick="onPickTheme"/>
 
                 <TextView
                     android:id="@+id/chipThemeSystem"
                     style="@style/FilterChip"
                     android:layout_marginEnd="0dp"
-                    android:text="Как в системе"
+                    android:text="@string/activity_settings_chip_theme_system_text"
                     android:onClick="onPickTheme"/>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="ВАЛЮТА"/>
+            <LinearLayout
+                android:id="@+id/rowLanguage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_card"
+                android:padding="16dp"
+                android:layout_marginBottom="22dp"
+                android:onClick="onPickLanguage">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/settings_language"
+                    android:textSize="14.5sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorTextPrimary"/>
+
+                <TextView
+                    android:id="@+id/languageValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/colorexpanse"
+                    android:layout_marginEnd="6dp"/>
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_chevron_right"/>
+            </LinearLayout>
+
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_settings_text_3"/>
             <LinearLayout
                 android:id="@+id/rowMainCurrency"
                 android:layout_width="match_parent"
@@ -98,7 +133,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Валюта эквивалента"
+                    android:text="@string/activity_settings_text_4"
                     android:textSize="14.5sp"
                     android:textStyle="bold"
                     android:textColor="@color/colorTextPrimary"/>
@@ -107,7 +142,7 @@
                     android:id="@+id/mainCurrencyValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="₽ Российский рубль"
+                    android:text="@string/activity_settings_main_currency_value_text"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:textColor="@color/colorexpanse"
@@ -119,7 +154,7 @@
                     android:src="@drawable/ic_chevron_right"/>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="ВВОД ОПЕРАЦИЙ"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_settings_text_5"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -139,7 +174,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Сразу открывать клавиатуру поиска"
+                        android:text="@string/activity_settings_text_6"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -148,7 +183,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="3dp"
-                        android:text="при выборе категории или кошелька"
+                        android:text="@string/activity_settings_text_7"
                         android:textSize="12.5sp"
                         android:textColor="@color/colorTextSecondary"/>
                 </LinearLayout>
@@ -189,7 +224,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Сортировка кошельков"
+                        android:text="@string/activity_settings_text_8"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -229,7 +264,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Сортировка категорий"
+                            android:text="@string/activity_settings_text_9"
                             android:textSize="14.5sp"
                             android:textStyle="bold"
                             android:textColor="@color/colorTextPrimary"/>
@@ -238,7 +273,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="3dp"
-                            android:text="частота — сначала с выбранным кошельком"
+                            android:text="@string/activity_settings_text_10"
                             android:textSize="12.5sp"
                             android:textColor="@color/colorTextSecondary"/>
                     </LinearLayout>
@@ -259,7 +294,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="БЕЗОПАСНОСТЬ"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_settings_text_11"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -278,7 +313,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Код доступа"
+                        android:text="@string/activity_settings_text_12"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -320,7 +355,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Сменить код"
+                            android:text="@string/activity_settings_text_13"
                             android:textSize="14.5sp"
                             android:textStyle="bold"
                             android:textColor="@color/colorTextPrimary"/>
@@ -351,7 +386,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Блокировать"
+                                android:text="@string/activity_settings_text_14"
                                 android:textSize="14.5sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/colorTextPrimary"/>
@@ -360,7 +395,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="3dp"
-                                android:text="после ухода из приложения"
+                                android:text="@string/activity_settings_text_15"
                                 android:textSize="12.5sp"
                                 android:textColor="@color/colorTextSecondary"/>
                         </LinearLayout>
@@ -399,7 +434,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Скрывать в недавних"
+                                android:text="@string/activity_settings_text_16"
                                 android:textSize="14.5sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/colorTextPrimary"/>
@@ -443,7 +478,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Вход по отпечатку"
+                        android:text="@string/activity_settings_label_biometric_text"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextHint"/>
@@ -464,7 +499,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="УВЕДОМЛЕНИЯ"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_settings_text_17"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -483,7 +518,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Напоминание вносить операции"
+                        android:text="@string/activity_settings_text_18"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -493,7 +528,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="3dp"
-                        android:text="каждый день в 20:00"
+                        android:text="@string/activity_settings_row_remind_time_text"
                         android:textSize="12.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorexpanse"
@@ -516,7 +551,7 @@
                 </FrameLayout>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="ДАННЫЕ"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_settings_text_19"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -539,7 +574,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Экспорт базы"
+                        android:text="@string/activity_settings_text_20"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -551,7 +586,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <TextView style="@style/SettingsGroupLabel" android:text="О ПРИЛОЖЕНИИ"/>
+            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_settings_text_21"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -572,7 +607,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Оценить приложение"
+                        android:text="@string/activity_settings_text_22"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -598,7 +633,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Версия"
+                        android:text="@string/activity_settings_text_23"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -626,7 +661,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Дата сборки"
+                        android:text="@string/activity_settings_text_24"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Китай: круглый флаг 64x64, как flag_georgia.xml (seed.json, new-user-default-set). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+  <group>
+    <clip-path android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z"/>
+    <path android:fillColor="#EE1C25" android:pathData="M0,0 H64 V64 H0Z"/>
+    <path android:fillColor="#FFDE00" android:pathData="M21.00,13.00 L23.02,19.22 L29.56,19.22 L24.27,23.06 L26.29,29.28 L21.00,25.44 L15.71,29.28 L17.73,23.06 L12.44,19.22 L18.98,19.22Z"/>
+    <path android:fillColor="#FFDE00" android:pathData="M32.50,10.40 L32.05,12.53 L33.93,13.62 L31.77,13.85 L31.31,15.98 L30.43,13.99 L28.26,14.22 L29.88,12.76 L28.99,10.77 L30.88,11.86Z"/>
+    <path android:fillColor="#FFDE00" android:pathData="M35.52,15.05 L35.82,17.20 L37.97,17.58 L36.01,18.54 L36.32,20.70 L34.80,19.13 L32.84,20.08 L33.87,18.16 L32.35,16.59 L34.50,16.97Z"/>
+    <path android:fillColor="#FFDE00" android:pathData="M34.48,22.05 L35.50,23.97 L37.65,23.59 L36.13,25.16 L37.16,27.08 L35.20,26.13 L33.68,27.70 L33.99,25.54 L32.03,24.58 L34.18,24.20Z"/>
+    <path android:fillColor="#FFDE00" android:pathData="M29.50,27.40 L31.12,28.86 L33.01,27.77 L32.12,29.76 L33.74,31.22 L31.57,30.99 L30.69,32.98 L30.23,30.85 L28.07,30.62 L29.95,29.53Z"/>
+  </group>
+  <path android:fillColor="#CCCCCC" android:fillAlpha="0.4"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z M4,32 A28,28 0 1 1 60,32 A28,28 0 1 1 4,32Z"/>
+</vector>

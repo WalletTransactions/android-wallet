@@ -1,5 +1,8 @@
 package com.example.wallettransactions.sync;
 
+import com.example.wallettransactions.R;
+import com.example.wallettransactions.Texts;
+
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -54,7 +57,17 @@ public final class SyncRunner {
      */
     public enum Status { NO_SESSION, NEEDS_RELINK, NETWORK_ERROR, ERROR, PARTIAL, OK,
         /** Только из {@link #runOnceShared}: таймаут ожидания вышел, проход продолжается. */
-        STILL_RUNNING }
+        STILL_RUNNING,
+        /**
+         * Подключение к кошельку ждёт ответа на вопрос об операциях без входа (spec
+         * ledger-connection): загрузка прошла, отправки не было.
+         */
+        AWAITING_DECISION }
+
+    /** Причина исхода {@link Status#AWAITING_DECISION} — для журнала и экранов синка. */
+    public static String awaitingDecisionMessage() {
+        return Texts.get(R.string.sync_awaiting_decision);
+    }
 
     public static final class Outcome {
         public final Status status;
@@ -93,10 +106,10 @@ public final class SyncRunner {
         try {
             return task.get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
-            return new Outcome(Status.STILL_RUNNING, new SyncLog(), "синхронизация ещё идёт");
+            return new Outcome(Status.STILL_RUNNING, new SyncLog(), Texts.get(R.string.sync_still_running));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return new Outcome(Status.STILL_RUNNING, new SyncLog(), "синхронизация ещё идёт");
+            return new Outcome(Status.STILL_RUNNING, new SyncLog(), Texts.get(R.string.sync_still_running));
         } catch (ExecutionException e) {
             return failed(e);
         }
@@ -145,7 +158,7 @@ public final class SyncRunner {
     }
 
     private static Outcome failed(ExecutionException e) {
-        return new Outcome(Status.ERROR, new SyncLog(), "Неожиданная ошибка: " + e.getCause());
+        return new Outcome(Status.ERROR, new SyncLog(), Texts.get(R.string.sync_unexpected_error, String.valueOf(e.getCause())));
     }
 
     private static Outcome doRunOnce(Context ctx) {
@@ -160,18 +173,63 @@ public final class SyncRunner {
                 // через Google отсюда нельзя (см. её javadoc).
                 return new Outcome(Status.NEEDS_RELINK, log, null);
             case NETWORK_ERROR:
-                return new Outcome(Status.NETWORK_ERROR, log, "Сервер недоступен по сети");
+                return new Outcome(Status.NETWORK_ERROR, log, Texts.get(R.string.sync_server_unreachable));
             case OK:
                 break;
         }
 
         SQLiteDatabase db = Singleton.instance.getWritableDatabase(ctx);
+        startConnectionIfFresh(ctx, db);
         SyncApiClient api = new SyncApiClient(ctx, TokenStore.getAccessToken(ctx));
         return runSteps(new Steps() {
             @Override public void push(SyncLog l) throws IOException, JSONException { SyncEngine.pushDirty(db, api, l); }
             @Override public void pull(SyncLog l) throws IOException, JSONException { SyncEngine.pullAll(db, api, ctx, l); }
             @Override public void purge() { SyncEngine.purgeTombstones(db); }
+            @Override public boolean connecting() { return AppSettings.isLedgerConnectionPending(ctx); }
+            @Override public void connectionPull(SyncLog l) throws IOException, JSONException {
+                SyncEngine.adoptLocalByKey = true;
+                try {
+                    SyncEngine.pullAll(db, api, ctx, l);
+                } finally {
+                    SyncEngine.adoptLocalByKey = false;
+                }
+            }
+            @Override public LedgerConnection.Step connect() {
+                boolean transfer = AppSettings.getConnectionDecision(ctx) == AppSettings.ConnectionDecision.TRANSFER;
+                LedgerConnection.Step step = LedgerConnection.afterPull(db, transfer);
+                // Шаг мог удалить строки набора — справочники в памяти перечитываются.
+                Singleton.instance.reloadAccounts(ctx);
+                Singleton.instance.reloadCurrencyList(ctx);
+                Singleton.instance.reloadCurrencyPairList(ctx);
+                if (step == LedgerConnection.Step.ASK) {
+                    AppSettings.setConnectionDecision(ctx, AppSettings.ConnectionDecision.ASKED,
+                            LedgerConnection.offlineOperationCount(db));
+                }
+                // После решения: главный экран по этому сигналу перечитывает ленту и
+                // показывает вопрос (MainActivity.showConnectionQuestion).
+                PeriodFilterState.get(ctx).markDataChanged();
+                return step;
+            }
+            @Override public void connectionDone() { AppSettings.setLedgerConnectionPending(ctx, false); }
         }, log);
+    }
+
+    /**
+     * Подключение начинается в проходе со входом, если на телефоне нет строк, бывших на
+     * сервере (spec ledger-connection, design D4), и длится до прохода с прошедшей
+     * отправкой — даже если загрузка прерывалась и часть строк уже принята.
+     * <p>
+     * Загрузка подключения — с нуля: курсоры синка сбрасываются при старте. Иначе после
+     * «Удалить всё безвозвратно» при живом входе курсоры остались бы на прежней позиции,
+     * загрузка не вернула бы кошелёк, он выглядел бы пустым, и набор ушёл бы в него
+     * дублями категорий. Прерванное подключение курсоры не сбрасывает — продолжает.
+     */
+    static void startConnectionIfFresh(Context ctx, SQLiteDatabase db) {
+        if (!AppSettings.isLedgerConnectionPending(ctx) && !SyncEngine.hasSyncedRows(db)) {
+            AppSettings.setLedgerSyncSeq(ctx, 0);
+            AppSettings.setReferenceSyncSeq(ctx, 0);
+            AppSettings.setLedgerConnectionPending(ctx, true);
+        }
     }
 
     /** Шаги прохода после входа — подменяются в тестах (SyncRunnerTest). */
@@ -179,6 +237,18 @@ public final class SyncRunner {
         void push(SyncLog log) throws IOException, JSONException;
         void pull(SyncLog log) throws IOException, JSONException;
         void purge();
+
+        /** Идёт подключение к кошельку (spec ledger-connection) — загрузка до отправки. */
+        default boolean connecting() { return false; }
+
+        /** Загрузка подключения: с принятием серверных строк по ключу (design D6). */
+        default void connectionPull(SyncLog log) throws IOException, JSONException { pull(log); }
+
+        /** Шаг подключения после загрузки (design D7, D8). */
+        default LedgerConnection.Step connect() { return LedgerConnection.Step.PUSH; }
+
+        /** Отправка подключения прошла — подключение закончено. */
+        default void connectionDone() {}
     }
 
     /**
@@ -187,11 +257,25 @@ public final class SyncRunner {
      * сети или при ошибке загрузки до неё не доходит, и строку, ссылку на которую
      * принесла бы незагруженная страница, она не трогает. Ошибка чистки исход не
      * меняет — данные уже синхронизированы, удалённое повторится следующим проходом.
+     * <p>
+     * Подключение к кошельку (openspec new-user-default-set, design D5): pull → шаг
+     * подключения → push → чистка. Шаг ответил «спросить» — исход
+     * {@link Status#AWAITING_DECISION}, отправки нет. Ошибка до push оставляет
+     * подключение незаконченным — следующий проход продолжит его.
      */
     static Outcome runSteps(Steps steps, SyncLog log) {
         try {
-            steps.push(log);
-            steps.pull(log);
+            if (steps.connecting()) {
+                steps.connectionPull(log);
+                if (steps.connect() == LedgerConnection.Step.ASK) {
+                    return new Outcome(Status.AWAITING_DECISION, log, awaitingDecisionMessage());
+                }
+                steps.push(log);
+                steps.connectionDone();
+            } else {
+                steps.push(log);
+                steps.pull(log);
+            }
             try {
                 steps.purge();
             } catch (RuntimeException e) {
@@ -201,15 +285,15 @@ public final class SyncRunner {
                 // Push/pull прошли, но часть строк осталась dirty (например,
                 // нет иконки-заместителя — см. SyncEngine.PushIconRefs) —
                 // не "всё синхронизировано", подробности в журнале (✖).
-                return new Outcome(Status.PARTIAL, log, "Часть изменений не отправлена — повторите синхронизацию");
+                return new Outcome(Status.PARTIAL, log, Texts.get(R.string.sync_partial));
             }
             return new Outcome(Status.OK, log, null);
         } catch (IOException e) {
             // Сервер выключен/недоступен по сети между push и pull — обычное
             // дело для LAN-only стенда (план, п. 1.4).
-            return new Outcome(Status.NETWORK_ERROR, log, "Сервер недоступен: " + e.getMessage());
+            return new Outcome(Status.NETWORK_ERROR, log, Texts.get(R.string.sync_server_unavailable, e.getMessage()));
         } catch (JSONException e) {
-            return new Outcome(Status.ERROR, log, "Некорректный ответ сервера: " + e.getMessage());
+            return new Outcome(Status.ERROR, log, Texts.get(R.string.sync_bad_response, e.getMessage()));
         } catch (SyncEngine.PushRejectedException e) {
             // Сервер отклонил push-порцию (не самовосстанавливающийся
             // конфликт имени счёта — тот SyncEngine.pushDirty гасит сам, см.
@@ -219,12 +303,12 @@ public final class SyncRunner {
             // нести подтверждённые "Отправлено" за успешные порции ДО
             // упавшей — показываем оба факта разом (см.
             // IntegrationsActivity.showSyncResultDialog, ветка ERROR).
-            return new Outcome(Status.ERROR, log, "Сервер отклонил часть изменений — " + e.getMessage());
+            return new Outcome(Status.ERROR, log, Texts.get(R.string.sync_rejected, e.getMessage()));
         } catch (RuntimeException e) {
             // "Максимум дебаг-информации" по прямому запросу пользователя —
             // не проглатывать неожиданное молча, кнопка вызвана вручную,
             // есть кому это увидеть прямо сейчас.
-            return new Outcome(Status.ERROR, log, "Неожиданная ошибка: " + e);
+            return new Outcome(Status.ERROR, log, Texts.get(R.string.sync_unexpected_error, String.valueOf(e)));
         }
     }
 }

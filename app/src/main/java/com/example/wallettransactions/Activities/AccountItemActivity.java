@@ -94,7 +94,7 @@ public class AccountItemActivity extends AppCompatActivity {
         checkIsArchive.setChecked(account.getIsArchived());
 
         if (account instanceof AccountOperatingItem) {
-            setScreenTitle("Кошелёк");
+            setScreenTitle(getString(R.string.account_title_wallet));
             selectedCurrency = ((AccountOperatingItem) account).getCurrency();
             originalCurrencyId = selectedCurrency.getId();
             operatingGroup.setVisibility(View.VISIBLE);
@@ -104,7 +104,7 @@ public class AccountItemActivity extends AppCompatActivity {
             // «Переоценить» — только у актива, сохранённого как актив (не у только что отмеченного).
             findViewById(R.id.btnRevaluate).setVisibility(originalAsset != null ? View.VISIBLE : View.GONE);
         } else {
-            setScreenTitle("Категория");
+            setScreenTitle(getString(R.string.account_title_category));
             operatingGroup.setVisibility(View.GONE);
         }
 
@@ -121,13 +121,10 @@ public class AccountItemActivity extends AppCompatActivity {
             // считать удалением: правило обошли бы в один шаг.
             editAccName.setEnabled(false);
             editComment.setHint(account.isSystemCommission()
-                    ? "Системная категория — на неё по умолчанию уходит комиссия за перевод, "
-                            + "поэтому её нельзя удалить или переименовать"
+                    ? R.string.account_system_commission_hint
                     : account.isSystemRevaluation()
-                    ? "Системная категория — через неё проводится переоценка активов, "
-                            + "поэтому её нельзя удалить или переименовать"
-                    : "Системная категория — переводы между разными валютами "
-                            + "проходят через неё, поэтому её нельзя удалить или переименовать");
+                    ? R.string.account_system_revaluation_hint
+                    : R.string.account_system_transfer_hint);
         }
 
         // Save is disabled until something changes
@@ -168,7 +165,8 @@ public class AccountItemActivity extends AppCompatActivity {
 
     /** Справочник иконок вместо галереи — см. AddCategoryActivity.pickIconClick. */
     public void pickIconClick(View view) {
-        String title = account instanceof AccountOperatingItem ? "Иконка кошелька" : "Иконка категории";
+        String title = getString(account instanceof AccountOperatingItem
+                ? R.string.icon_title_wallet : R.string.icon_title_category);
         startActivityForResult(
                 IconPickerActivity.buildIntent(this, title, Icon.IconType.CATEGORY, selectedIconId),
                 REQUEST_PICK_ICON);
@@ -182,7 +180,7 @@ public class AccountItemActivity extends AppCompatActivity {
             items[i] = c.getIso() + "  —  " + c.getName();
         }
         new AlertDialog.Builder(this)
-                .setTitle("Выберите валюту")
+                .setTitle(R.string.account_choose_currency)
                 .setItems(items, (dialog, which) -> {
                     selectedCurrency = currencies.get(which);
                     refreshCurrencyUI();
@@ -205,7 +203,7 @@ public class AccountItemActivity extends AppCompatActivity {
 
     public void btnSaveClick(View view) {
         String name = editAccName.getText().toString().trim();
-        if (name.isEmpty()) { editAccName.setError("Введите название"); return; }
+        if (name.isEmpty()) { editAccName.setError(getString(R.string.account_error_name_empty)); return; }
 
         // Поле имени у системного счёта отключено, но исходное имя всё равно
         // навязываем: правило опознаёт системность именно по нему.
@@ -213,7 +211,7 @@ public class AccountItemActivity extends AppCompatActivity {
 
         SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
         if (WalletDbCRUD.IsAccountNameTaken(db, name, account.getId())) {
-            editAccName.setError("Такое название уже есть");
+            editAccName.setError(getString(R.string.account_error_name_taken));
             return;
         }
 
@@ -253,10 +251,10 @@ public class AccountItemActivity extends AppCompatActivity {
      */
     public void btnDeleteClick(View view) {
         new AlertDialog.Builder(this)
-                .setTitle("Удалить")
-                .setMessage("Удалить «" + account.getName() + "»?")
-                .setPositiveButton("Удалить", (d, w) -> deleteAccount())
-                .setNegativeButton("Отмена", null)
+                .setTitle(R.string.action_delete)
+                .setMessage(getString(R.string.account_delete_question, account.getDisplayName()))
+                .setPositiveButton(R.string.action_delete, (d, w) -> deleteAccount())
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 
@@ -277,17 +275,16 @@ public class AccountItemActivity extends AppCompatActivity {
     private String deleteRefusedMessage(WalletDbCRUD.DeleteAccountResult result) {
         // Системным бывает только счёт из двух зашитых по имени, а это категории.
         if (result == WalletDbCRUD.DeleteAccountResult.systemAccount) {
-            return "«" + account.getName() + "» — системная категория, её нельзя удалить";
+            return getString(R.string.account_delete_refused_system, account.getDisplayName());
         }
-        return "По «" + account.getName() + "» есть операции — удалить нельзя, "
-                + "иначе они пропадут вместе с ней";
+        return getString(R.string.account_delete_refused_operations, account.getDisplayName());
     }
 
     /** Диалог «Переоценка» (capital-assets, asset-revaluation). */
     public void btnRevaluateClick(View view) {
         new RevaluationDialog(this, (AccountOperatingItem) account, () -> {
             setResult(RESULT_OK);
-            Toast.makeText(this, "Переоценка записана", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.revaluation_saved, Toast.LENGTH_SHORT).show();
         }).show();
     }
 
@@ -306,9 +303,9 @@ public class AccountItemActivity extends AppCompatActivity {
         }
         if (assets.isEmpty()) return;
         String[] names = new String[assets.size()];
-        for (int i = 0; i < assets.size(); i++) names[i] = assets.get(i).getName();
+        for (int i = 0; i < assets.size(); i++) names[i] = assets.get(i).getDisplayName();
         new AlertDialog.Builder(this)
-                .setTitle("В какой актив")
+                .setTitle(R.string.move_pick_asset)
                 .setItems(names, (d, which) -> confirmMove(assets.get(which)))
                 .show();
     }
@@ -317,11 +314,10 @@ public class AccountItemActivity extends AppCompatActivity {
         SQLiteDatabase db = Singleton.instance.getWritableDatabase(this);
         int count = WalletDbCRUD.CountCategoryWalletOperations(db, account.getId());
         new AlertDialog.Builder(this)
-                .setTitle("Перенести операции в актив")
-                .setMessage("Операций: " + count + ". Они станут переводами в «" + asset.getName()
-                        + "», а категория «" + account.getName() + "» уйдёт в архив.")
-                .setPositiveButton("Перенести", (d, w) -> moveTo(asset))
-                .setNegativeButton("Отмена", null)
+                .setTitle(R.string.move_confirm_title)
+                .setMessage(getString(R.string.move_confirm_message, count, asset.getDisplayName(), account.getDisplayName()))
+                .setPositiveButton(R.string.move_confirm_ok, (d, w) -> moveTo(asset))
+                .setNegativeButton(R.string.move_confirm_cancel, null)
                 .show();
     }
 
@@ -331,7 +327,7 @@ public class AccountItemActivity extends AppCompatActivity {
         try {
             result = WalletDbCRUD.MoveCategoryToAsset(db, account.getId(), asset.getId());
         } catch (RuntimeException e) {
-            Toast.makeText(this, "Не удалось перенести операции: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.move_failed, e.getMessage()), Toast.LENGTH_LONG).show();
             return;
         }
         reloadSingleton();
@@ -341,12 +337,11 @@ public class AccountItemActivity extends AppCompatActivity {
         setResult(RESULT_OK);
         if (result.skippedNoRate > 0) {
             new AlertDialog.Builder(this)
-                    .setMessage("Не перенесено операций: " + result.skippedNoRate
-                            + " — нет курса на дату. Добавьте курс и повторите.")
-                    .setPositiveButton("Понятно", (d, w) -> finish())
+                    .setMessage(getString(R.string.move_skipped, result.skippedNoRate))
+                    .setPositiveButton(R.string.move_skipped_ok, (d, w) -> finish())
                     .show();
         } else {
-            Toast.makeText(this, "Перенесено операций: " + result.moved, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.move_done, result.moved), Toast.LENGTH_SHORT).show();
             finish();
         }
     }

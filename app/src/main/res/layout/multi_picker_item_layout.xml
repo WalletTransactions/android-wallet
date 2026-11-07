@@ -24,7 +24,7 @@
         android:layout_marginStart="12dp"
         android:ellipsize="end"
         android:maxLines="1"
-        android:text="Название"
+        android:text="@string/multi_picker_item_layout_item_label_text"
         android:textColor="@color/colorTextPrimary"
         android:textSize="14sp"
         android:textStyle="bold"/>

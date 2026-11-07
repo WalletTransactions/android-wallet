@@ -300,25 +300,25 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         }
 
         filterBanner.setVisibility(View.VISIBLE);
-        ((TextView) findViewById(R.id.filterSummary)).setText("Фильтр · " + join(parts));
+        ((TextView) findViewById(R.id.filterSummary)).setText(getString(R.string.filter_banner, join(parts)));
     }
 
     /** null — фильтра по виду нет, показывать в резюме нечего. */
-    private static String operationKindTitle(DataFilter.OperationKind kind) {
+    private String operationKindTitle(DataFilter.OperationKind kind) {
         switch (kind) {
-            case income:   return "Только доходы";
-            case expense:  return "Только расходы";
-            case transfer: return "Только переводы";
+            case income:   return getString(R.string.filter_only_income);
+            case expense:  return getString(R.string.filter_only_expense);
+            case transfer: return getString(R.string.filter_only_transfers);
             default:       return null;
         }
     }
 
     /** null — обе границы не заданы, показывать в резюме нечего. */
-    private static String rangeSummary(Double min, Double max) {
+    private String rangeSummary(Double min, Double max) {
         if (min == null && max == null) return null;
         if (min != null && max != null) return formatCompact(min) + "–" + formatCompact(max);
-        if (min != null) return "от " + formatCompact(min);
-        return "до " + formatCompact(max);
+        if (min != null) return getString(R.string.filter_range_from, formatCompact(min));
+        return getString(R.string.filter_range_to, formatCompact(max));
     }
 
     /** Без лишних нулей после запятой: 100.0 → «100», 100.5 → «100.5». */

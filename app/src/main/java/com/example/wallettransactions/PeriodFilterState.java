@@ -203,7 +203,7 @@ public final class PeriodFilterState {
         List<String> names = new ArrayList<>();
         for (Integer id : accountIds) {
             AccountItem item = accounts.getAccountById(id);
-            if (item != null) names.add(item.getName());
+            if (item != null) names.add(item.getDisplayName());
         }
         return names;
     }

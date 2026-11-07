@@ -34,7 +34,7 @@ public class AddCategoryActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_category);
 
-        ((TextView) findViewById(R.id.screenTitle)).setText("Новая категория");
+        ((TextView) findViewById(R.id.screenTitle)).setText(R.string.account_new_category);
 
         imgIconPreview = findViewById(R.id.imgIconPreview);
         iconPickerHint = findViewById(R.id.iconPickerHint);
@@ -51,7 +51,7 @@ public class AddCategoryActivity extends AppCompatActivity {
         int current = selectedIconId > 0 ? selectedIconId
                 : Singleton.instance.getIconList(this).getUnknownIcon().getId();
         startActivityForResult(
-                IconPickerActivity.buildIntent(this, "Иконка категории", Icon.IconType.CATEGORY, current),
+                IconPickerActivity.buildIntent(this, getString(R.string.icon_title_category), Icon.IconType.CATEGORY, current),
                 REQUEST_PICK_ICON);
     }
 
@@ -80,13 +80,13 @@ public class AddCategoryActivity extends AppCompatActivity {
     public void btnSaveClick(View view) {
         String name = editName.getText().toString().trim();
         if (name.isEmpty()) {
-            editName.setError("Введите название");
+            editName.setError(getString(R.string.account_error_name_empty));
             return;
         }
 
         SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
         if (WalletDbCRUD.IsAccountNameTaken(db, name, -1)) {
-            editName.setError("Такое название уже есть");
+            editName.setError(getString(R.string.account_error_name_taken));
             return;
         }
 

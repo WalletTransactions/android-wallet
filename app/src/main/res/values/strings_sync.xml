@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English: sync journal, pass outcomes, integrations (openspec android-i18n, task 3.1). -->
+<resources>
+    <string name="sync_type_currency">Currency</string>
+    <string name="sync_type_pair">Currency pair</string>
+    <string name="sync_type_rate">Rate</string>
+    <string name="sync_type_account">Account</string>
+    <string name="sync_type_operation">Operation</string>
+    <string name="sync_type_icon">Icon</string>
+    <string name="sync_action_sent">Sent</string>
+    <string name="sync_action_sent_delete">Sent (deletion)</string>
+    <string name="sync_action_added">Added</string>
+    <string name="sync_action_changed">Changed</string>
+    <string name="sync_action_deleted">Deleted</string>
+    <string name="sync_action_icon_adopted">Own icon became a server icon</string>
+    <string name="sync_action_icon_renamed">Own icon renamed</string>
+    <string name="icon_own_suffix">%1$s (own)</string>
+    <string name="icon_own_suffix_n">%1$s (own %2$d)</string>
+
+    <string name="sync_no_changes">No changes — local data already matches the server.</string>
+    <string name="sync_healed_name_conflict">account name conflict — relinked, sending again</string>
+    <string name="sync_healed_missing_reference">missing on the server: %1$s — marked again, sending again</string>
+    <string name="sync_healed_resync">Reloading from the server — fetching missed data</string>
+    <string name="sync_healed_ledger_changed">The server switched the wallet — loading it again</string>
+    <string name="sync_healed_purged">The server cleaned up old deletions — loading data again</string>
+    <string name="sync_healed_cursor_reset">Sync position went out of step with the server — loading data again</string>
+    <string name="sync_healed_swept">Removed records no longer on the server: %1$d</string>
+    <string name="sync_problem_deferred_icons">postponed to the next sync (no substitute icon): %1$d rows</string>
+    <string name="sync_problem_no_substitute">no substitute icon for “%1$s”: row postponed</string>
+    <string name="sync_problem_deferred_rows">Some data is waiting for related records from the server (%1$s)</string>
+
+    <string name="sync_awaiting_decision">Waiting for a decision: the main screen asks about operations added before sign-in</string>
+    <string name="sync_still_running">sync is still running</string>
+    <string name="sync_unexpected_error">Unexpected error: %1$s</string>
+    <string name="sync_server_unreachable">The server is unreachable over the network</string>
+    <string name="sync_partial">Some changes weren\'t sent — sync again</string>
+    <string name="sync_server_unavailable">The server is unavailable: %1$s</string>
+    <string name="sync_bad_response">Invalid server response: %1$s</string>
+    <string name="sync_rejected">The server rejected some changes — %1$s</string>
+
+    <string name="connection_title">Operations added before sign-in</string>
+    <string name="connection_transfer">Move</string>
+    <string name="connection_discard">Delete from phone</string>
+    <plurals name="connection_question">
+        <item quantity="one">There is %d operation on the phone added before sign-in. Move it to the wallet on the server?</item>
+        <item quantity="other">There are %d operations on the phone added before sign-in. Move them to the wallet on the server?</item>
+    </plurals>
+    <plurals name="connection_confirm_discard">
+        <item quantity="one">Delete %d operation from the phone? This can\'t be undone.</item>
+        <item quantity="other">Delete %d operations from the phone? This can\'t be undone.</item>
+    </plurals>
+
+    <string name="notify_channel_new_operations">New operations</string>
+    <string name="notify_new_operation">New operation</string>
+    <string name="notify_recurring_operation">Recurring operation</string>
+    <string name="notify_and_more">and %1$d more</string>
+    <plurals name="notify_new_operations_word">
+        <item quantity="one">new operation</item>
+        <item quantity="other">new operations</item>
+    </plurals>
+    <string name="auth_channel">Sync status</string>
+    <string name="auth_relink_title">Sign in again</string>
+    <string name="auth_relink_text">The server session expired — tap to sign in again</string>
+
+    <string name="integrations_server_url">Server address</string>
+    <string name="integrations_no_browser">No browser found to open %1$s</string>
+    <string name="integrations_no_app">No app found to open %1$s</string>
+    <string name="integrations_session_expired">Session expired</string>
+    <string name="integrations_not_connected">Not connected</string>
+    <string name="integrations_need_google">Google account link needed</string>
+    <string name="integrations_telegram_connected">Telegram connected: %1$s</string>
+    <string name="integrations_telegram_title">Connect Telegram</string>
+    <string name="integrations_telegram_need_google">The bot is linked to your account on the server — sign in with Google first.</string>
+    <string name="integrations_sign_in">Sign in</string>
+    <string name="integrations_checking">Checking the connection…</string>
+    <string name="integrations_connected_list">Connected:</string>
+    <string name="integrations_connected_since">%1$s — since %2$s</string>
+    <string name="integrations_connect_more">Connect another</string>
+    <string name="integrations_disconnect">Disconnect</string>
+    <string name="integrations_which_disconnect">Which one to disconnect?</string>
+    <string name="integrations_disconnect_question">Disconnect %1$s?</string>
+    <string name="integrations_disconnect_message">The bot will stop accepting expenses from this Telegram. You can connect it again at any time.</string>
+    <string name="integrations_telegram_disconnected">Telegram disconnected</string>
+    <string name="integrations_every_minutes">every %1$d min</string>
+    <string name="integrations_every_hour">every hour</string>
+    <string name="integrations_every_hours">every %1$d h</string>
+    <string name="integrations_sync_interval">Sync interval</string>
+    <string name="integrations_syncing">Syncing…</string>
+    <string name="sync_result_no_session_title">Not linked to a server</string>
+    <string name="sync_result_no_session_body">Sign in first — “Link Google account” above.</string>
+    <string name="sync_result_relink_body">You need to sign in with Google again — tap “Link Google account” above.</string>
+    <string name="sync_result_unavailable_title">Server unavailable</string>
+    <string name="sync_result_awaiting_title">Sync is waiting for a decision</string>
+    <string name="sync_result_awaiting_body">The phone has operations added before sign-in. Answer the “Operations added before sign-in” question on the main screen.</string>
+    <string name="sync_result_partial_title">Sync was not complete</string>
+    <string name="sync_result_error_title">Sync error</string>
+    <string name="sync_result_ok_title">Sync complete</string>
+
+    <string name="telegram_no_link">The server didn\'t return a Telegram link</string>
+    <string name="telegram_sign_in_first">Sign in first with “Link Google account”</string>
+    <string name="telegram_server_unavailable">Server unavailable</string>
+    <string name="telegram_session_expired">Session expired — tap “Link Google account”</string>
+    <string name="telegram_bad_response">Invalid server response</string>
+    <string name="telegram_not_configured">The Telegram bot isn\'t set up on the server</string>
+    <string name="telegram_http_error">Server error: HTTP %1$d</string>
+
+    <string name="link_requesting_nonce">Requesting a nonce from %1$s…</string>
+    <string name="link_server_unreachable">Couldn\'t reach the server (%1$s): %2$s</string>
+    <string name="link_nonce_rejected">The server rejected the nonce request: HTTP %1$d %2$s</string>
+    <string name="link_bad_nonce_response">Invalid /auth/nonce response: %1$s</string>
+    <string name="link_sign_in_error">Sign-in error: %1$s — %2$s</string>
+    <string name="link_unexpected_credential">Unexpected credential type: %1$s</string>
+    <string name="link_exchanging_token">Got the id_token, exchanging it for server tokens…</string>
+    <string name="link_exchange_failed">Couldn\'t exchange the id_token: %1$s</string>
+    <string name="link_sign_in_rejected">The server rejected the sign-in: HTTP %1$d %2$s</string>
+    <string name="link_bad_sign_in_response">Invalid /auth/google/mobile response: %1$s</string>
+    <string name="link_done">Done — linked to %1$s.</string>
+</resources>

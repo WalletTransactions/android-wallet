@@ -115,7 +115,7 @@ public class MultiPickerActivity extends AppCompatActivity {
 
         mVisibleItems.clear();
         for (AccountItem item : mAllItems) {
-            if (query.isEmpty() || item.getName().toLowerCase().contains(query))
+            if (query.isEmpty() || item.getDisplayName().toLowerCase().contains(query))
                 mVisibleItems.add(item);
         }
 
@@ -151,10 +151,10 @@ public class MultiPickerActivity extends AppCompatActivity {
         boolean allSelected = selected.size() == mAllItems.size() && !mAllItems.isEmpty();
 
         pickerCount.setText(selected.isEmpty()
-                ? "Все"
-                : selected.size() + " из " + mAllItems.size());
+                ? getString(R.string.filter_all)
+                : getString(R.string.picker_selected_of, selected.size(), mAllItems.size()));
 
-        btnToggleAll.setText(allSelected ? "Снять всё" : "Выбрать все");
+        btnToggleAll.setText(allSelected ? R.string.picker_unselect_all : R.string.picker_select_all);
     }
 
     public void onToggleAll(View view) {
@@ -216,7 +216,7 @@ public class MultiPickerActivity extends AppCompatActivity {
             boolean isChecked = selected.contains(item.getId());
 
             ((ImageView) row.findViewById(R.id.itemIcon)).setImageBitmap(item.getIcon().getBitmap());
-            ((TextView) row.findViewById(R.id.itemLabel)).setText(item.getName());
+            ((TextView) row.findViewById(R.id.itemLabel)).setText(item.getDisplayName());
 
             TextView check = row.findViewById(R.id.itemCheck);
             check.setBackgroundResource(isChecked ? R.drawable.bg_check_on : R.drawable.bg_check_off);

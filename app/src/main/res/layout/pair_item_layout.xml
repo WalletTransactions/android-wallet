@@ -28,7 +28,7 @@
         <TextView android:id="@+id/pairName" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="USD/RUB" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
         <TextView android:id="@+id/pairDate" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="24 июля 2026" android:textSize="11.5sp" android:textColor="@color/colorTextSecondary"/>
+            android:text="@string/pair_item_layout_pair_date_text" android:textSize="11.5sp" android:textColor="@color/colorTextSecondary"/>
     </LinearLayout>
 
     <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="end">

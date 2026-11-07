@@ -1,6 +1,7 @@
 package com.example.wallettransactions.Activities;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -68,7 +69,7 @@ public class ResetDataActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reset_data);
 
-        ((TextView) findViewById(R.id.screenTitle)).setText("Удалить данные");
+        ((TextView) findViewById(R.id.screenTitle)).setText(R.string.reset_title);
 
         chkOperations    = findViewById(R.id.chkOperations);
         chkIcons         = findViewById(R.id.chkIcons);
@@ -96,23 +97,21 @@ public class ResetDataActivity extends AppCompatActivity {
         boolean iconsChecked = chkIcons.isChecked();
         boolean pairsChecked = chkCurrencyPairs.isChecked();
         if (!opsChecked && !iconsChecked && !pairsChecked) {
-            Toast.makeText(this, "Отметьте хотя бы один пункт", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.reset_nothing_checked, Toast.LENGTH_SHORT).show();
             return;
         }
 
         boolean reseed = chkReseed.isChecked();
         new AlertDialog.Builder(this)
-                .setTitle("Удалить отмеченное?")
-                .setMessage("Действие необратимо." + (reseed
-                        ? " После удаления будет создан дефолтный набор для отмеченного."
-                        : ""))
-                .setPositiveButton("Удалить", (d, w) -> runReset(opsChecked, iconsChecked, pairsChecked, reseed))
-                .setNegativeButton("Отмена", null)
+                .setTitle(R.string.reset_question)
+                .setMessage(reseed ? R.string.reset_irreversible_reseed : R.string.reset_irreversible)
+                .setPositiveButton(R.string.action_delete, (d, w) -> runReset(opsChecked, iconsChecked, pairsChecked, reseed))
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 
     private void runReset(boolean ops, boolean icons, boolean pairs, boolean reseed) {
-        setBusy(true, "Удаление…");
+        setBusy(true, getString(R.string.reset_busy));
 
         new Thread(() -> {
             try {
@@ -127,24 +126,34 @@ public class ResetDataActivity extends AppCompatActivity {
                     db.endTransaction();
                 }
 
-                // Кэши переживают удаление в БД и держат призраков — перечитываем то, что
-                // реально могло измениться (см. javadoc каждого reload* в Singleton).
-                if (ops) Singleton.instance.reloadAccounts(this);
-                if (icons) Singleton.instance.reloadIconList(this);
-                if (pairs) Singleton.instance.reloadCurrencyPairList(this);
+                reloadCachesAfterReset(this, ops, icons, pairs);
 
                 runOnUiThread(() -> {
-                    setBusy(false, "Готово");
-                    Toast.makeText(this, "Удаление завершено", Toast.LENGTH_SHORT).show();
+                    setBusy(false, getString(R.string.reset_done));
+                    Toast.makeText(this, R.string.reset_finished, Toast.LENGTH_SHORT).show();
                 });
             } catch (Exception e) {
-                String error = "Ошибка: " + e.getMessage();
+                String error = getString(R.string.error_with_reason, e.getMessage());
                 runOnUiThread(() -> {
                     setBusy(false, error);
                     Toast.makeText(this, error, Toast.LENGTH_LONG).show();
                 });
             }
         }).start();
+    }
+
+    /**
+     * Кэши переживают удаление в БД и держат призраков — перечитываем то, что реально могло
+     * измениться (см. javadoc каждого reload* в Singleton). Иконки — первыми: счета и валюты
+     * при перечитывании берут картинку из списка иконок по {@code icon_id}, а пересев иконок
+     * выдаёт им новые {@code _id}. Со старым списком категории набора остаются без иконок до
+     * перезапуска приложения.
+     */
+    static void reloadCachesAfterReset(Context context, boolean ops, boolean icons, boolean pairs) {
+        if (icons) Singleton.instance.reloadIconList(context);
+        if (ops || icons) Singleton.instance.reloadAccounts(context);
+        if (icons) Singleton.instance.reloadCurrencyList(context);
+        if (pairs) Singleton.instance.reloadCurrencyPairList(context);
     }
 
     private void setBusy(boolean busy, String statusText) {
@@ -159,17 +168,15 @@ public class ResetDataActivity extends AppCompatActivity {
     public void onHardWipe(View view) {
         boolean reseed = chkHardReseed.isChecked();
         new AlertDialog.Builder(this)
-                .setTitle("Удалить ВСЁ безвозвратно?")
-                .setMessage("Все таблицы базы будут физически очищены. Это НЕ обычное " +
-                        "\"мягкое\" удаление — изменение не уйдёт на сервер, и следующая " +
-                        "синхронизация может вернуть эти же данные обратно. Отменить нельзя.")
-                .setPositiveButton("Удалить всё", (d, w) -> runHardWipe(reseed))
-                .setNegativeButton("Отмена", null)
+                .setTitle(R.string.reset_hard_question)
+                .setMessage(R.string.reset_hard_message)
+                .setPositiveButton(R.string.reset_hard_confirm, (d, w) -> runHardWipe(reseed))
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 
     private void runHardWipe(boolean reseed) {
-        setBusy(true, "Очистка базы…");
+        setBusy(true, getString(R.string.reset_hard_busy));
 
         new Thread(() -> {
             try {
@@ -202,7 +209,7 @@ public class ResetDataActivity extends AppCompatActivity {
                 Singleton.instance.reloadCurrencyPairList(this);
 
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "База полностью очищена", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.reset_hard_done, Toast.LENGTH_SHORT).show();
                     // Дальше по стеку (счета, операции, кэши Singleton) могло остаться что
                     // угодно, ссылающееся на теперь несуществующие строки — не перечитываем
                     // кэши на месте, а перезапускаем на чистый MainActivity, как при первом
@@ -212,7 +219,7 @@ public class ResetDataActivity extends AppCompatActivity {
                     startActivity(intent);
                 });
             } catch (Exception e) {
-                String error = "Ошибка: " + e.getMessage();
+                String error = getString(R.string.error_with_reason, e.getMessage());
                 runOnUiThread(() -> {
                     setBusy(false, error);
                     Toast.makeText(this, error, Toast.LENGTH_LONG).show();

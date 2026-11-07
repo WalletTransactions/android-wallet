@@ -23,13 +23,13 @@ public class Icon {
     }
 
     public enum IconType {
-        CATEGORY(0, "Категория"),
-        FLAG(1, "Флаг");
+        CATEGORY(0, com.example.wallettransactions.R.string.icon_type_category),
+        FLAG(1, com.example.wallettransactions.R.string.icon_type_flag);
 
         private final int value;
-        private final String label;
+        private final int label;
 
-        IconType(int value, String label) {
+        IconType(int value, int label) {
             this.value = value;
             this.label = label;
         }
@@ -38,7 +38,8 @@ public class Icon {
             return value;
         }
 
-        public String getLabel() {
+        /** Ресурс подписи типа (openspec android-i18n). */
+        public int getLabel() {
             return label;
         }
 

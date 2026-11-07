@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Великобритания: круглый флаг 64x64, как flag_georgia.xml (seed.json, new-user-default-set). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+  <group>
+    <clip-path android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z"/>
+    <path android:fillColor="#012169" android:pathData="M0,0 H64 V64 H0Z"/>
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="12" android:pathData="M0,0 L64,64 M64,0 L0,64"/>
+    <path android:strokeColor="#C8102E" android:strokeWidth="4" android:pathData="M0,0 L64,64 M64,0 L0,64"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M0,24 H64 V40 H0Z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M24,0 H40 V64 H24Z"/>
+    <path android:fillColor="#C8102E" android:pathData="M0,27 H64 V37 H0Z"/>
+    <path android:fillColor="#C8102E" android:pathData="M27,0 H37 V64 H27Z"/>
+  </group>
+  <path android:fillColor="#CCCCCC" android:fillAlpha="0.4"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z M4,32 A28,28 0 1 1 60,32 A28,28 0 1 1 4,32Z"/>
+</vector>

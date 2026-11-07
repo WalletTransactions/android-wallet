@@ -112,37 +112,37 @@ public class RevaluationDialog {
     String deltaLine(String input) {
         double current = currentBalance();
         Double value = parse(input);
-        if (value == null) return "Сейчас: " + money(current);
+        if (value == null) return context.getString(R.string.revaluation_current, money(current));
         double delta = round(value - current);
         String sign = delta > 0 ? "+" : delta < 0 ? "−" : "";
-        return "Сейчас: " + money(current) + " · Разница: " + sign + money(Math.abs(delta));
+        return context.getString(R.string.revaluation_current_delta, money(current), sign + money(Math.abs(delta)));
     }
 
     private void save(EditText edtValue) {
         Double value = parse(edtValue.getText().toString());
         if (value == null) {
-            edtValue.setError("Введите оценку");
+            edtValue.setError(context.getString(R.string.revaluation_enter_value));
             return;
         }
         if (value < 0) {
-            edtValue.setError("Оценка не может быть отрицательной");
+            edtValue.setError(context.getString(R.string.revaluation_negative));
             return;
         }
         if (BigDecimal.valueOf(value).stripTrailingZeros().scale() > precision()) {
-            edtValue.setError("Не больше " + precision() + " знаков после точки");
+            edtValue.setError(context.getString(R.string.revaluation_too_precise, precision()));
             return;
         }
         WalletDbCRUD.RevaluationResult result = WalletDbCRUD.WriteRevaluation(db(), asset.getId(), dayStr(),
-                value, precision(), "Оценка: " + money(value));
+                value, precision(), context.getString(R.string.revaluation_comment, money(value)));
         switch (result) {
             case unchanged:
-                Toast.makeText(context, "Оценка не изменилась", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, R.string.revaluation_unchanged, Toast.LENGTH_SHORT).show();
                 return;
             case negative:
-                edtValue.setError("Оценка не может быть отрицательной");
+                edtValue.setError(context.getString(R.string.revaluation_negative));
                 return;
             case failed:
-                Toast.makeText(context, "Не удалось записать переоценку", Toast.LENGTH_LONG).show();
+                Toast.makeText(context, R.string.revaluation_failed, Toast.LENGTH_LONG).show();
                 return;
             default:
                 break;

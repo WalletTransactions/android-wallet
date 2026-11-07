@@ -47,7 +47,7 @@ public class AccountActivity extends BaseTabActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_account);
-        initTabScreen(R.id.navWallets, "Кошельки");
+        initTabScreen(R.id.navWallets, getString(R.string.tab_wallets));
         reloadSharedAndTabData();
     }
 
@@ -139,11 +139,11 @@ public class AccountActivity extends BaseTabActivity {
         for (WalletRow r : result) (r.isAsset ? assets : liquid).add(r);
         List<WalletRow> sectioned = new ArrayList<>();
         if (!liquid.isEmpty()) {
-            sectioned.add(WalletRow.header("Ликвидные", liquid));
+            sectioned.add(WalletRow.header(getString(R.string.wallets_section_liquid), liquid));
             sectioned.addAll(liquid);
         }
         if (!assets.isEmpty()) {
-            sectioned.add(WalletRow.header("Капитал", assets));
+            sectioned.add(WalletRow.header(getString(R.string.wallets_section_capital), assets));
             sectioned.addAll(assets);
         }
         return sectioned;

@@ -176,23 +176,23 @@ public class AppLockTest {
     @Test
     public void biometricErrors_reasons() {
         assertEquals("Сначала включите код доступа",
-                BiometricErrors.unavailableReason(false, BiometricManager.BIOMETRIC_SUCCESS));
-        assertNull(BiometricErrors.unavailableReason(true, BiometricManager.BIOMETRIC_SUCCESS));
-        assertNotNull(BiometricErrors.unavailableReason(true, BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE));
+                BiometricErrors.unavailableReason(ctx, false, BiometricManager.BIOMETRIC_SUCCESS));
+        assertNull(BiometricErrors.unavailableReason(ctx, true, BiometricManager.BIOMETRIC_SUCCESS));
+        assertNotNull(BiometricErrors.unavailableReason(ctx, true, BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE));
         assertTrue(BiometricErrors.canEnroll(true, BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED));
         assertFalse(BiometricErrors.canEnroll(false, BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED));
     }
 
     @Test
     public void biometricErrors_lockScreen() {
-        assertNull(BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_NEGATIVE_BUTTON));
-        assertNull(BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_USER_CANCELED));
-        assertNull(BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_CANCELED));
+        assertNull(BiometricErrors.lockScreenMessage(ctx, BiometricPrompt.ERROR_NEGATIVE_BUTTON));
+        assertNull(BiometricErrors.lockScreenMessage(ctx, BiometricPrompt.ERROR_USER_CANCELED));
+        assertNull(BiometricErrors.lockScreenMessage(ctx, BiometricPrompt.ERROR_CANCELED));
         assertEquals("Отпечаток временно недоступен — введите код",
-                BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_LOCKOUT));
+                BiometricErrors.lockScreenMessage(ctx, BiometricPrompt.ERROR_LOCKOUT));
         assertEquals("Отпечаток временно недоступен — введите код",
-                BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_LOCKOUT_PERMANENT));
-        assertNotNull(BiometricErrors.lockScreenMessage(BiometricPrompt.ERROR_HW_UNAVAILABLE));
+                BiometricErrors.lockScreenMessage(ctx, BiometricPrompt.ERROR_LOCKOUT_PERMANENT));
+        assertNotNull(BiometricErrors.lockScreenMessage(ctx, BiometricPrompt.ERROR_HW_UNAVAILABLE));
     }
 
     @Test
@@ -227,8 +227,8 @@ public class AppLockTest {
 
     @Test
     public void forgotPin_wipeWarning_dependsOnServerLink() {
-        assertTrue(ForgotPin.wipeWarning(true).contains("Связь с Google аккаунтом"));
-        assertTrue(ForgotPin.wipeWarning(false).contains("восстановить их будет неоткуда"));
+        assertTrue(ForgotPin.wipeWarning(ctx, true).contains("Связь с Google аккаунтом"));
+        assertTrue(ForgotPin.wipeWarning(ctx, false).contains("восстановить их будет неоткуда"));
     }
 
     // ── Когда запирать ────────────────────────────────────────────────────────

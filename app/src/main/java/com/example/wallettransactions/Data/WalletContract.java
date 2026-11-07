@@ -98,6 +98,11 @@ public class WalletContract {
          * явным полем. Проставляется один раз при создании строки и дальше не меняется.
          */
         public final static String COLUMN_KIND = "kind";
+        /**
+         * v88 (openspec new-user-default-set, design D3): 1 — строка заведена из встроенного
+         * набора и пользователь её не менял (имя, иконка). Только локальная, в push не уходит.
+         */
+        public final static String COLUMN_FROM_SEED = "from_seed";
         public final static String COLUMN_UUID = "uuid";
         public final static String COLUMN_DIRTY = "dirty";
         public final static String COLUMN_DELETED_AT = "deleted_at";
@@ -154,6 +159,8 @@ public class WalletContract {
         public final static String COLUMN_SHOW_IN_EQUIVALENT = "show_in_equivalent";
         /** v85: 1 — строка из общего справочника сервера ({@code ledger_id} пуст в pull), локальная. */
         public final static String COLUMN_IS_SHARED = "is_shared";
+        /** v88: см. {@link AccountEntry#COLUMN_FROM_SEED}; снимается при правке имени, кода, символа, иконки. */
+        public final static String COLUMN_FROM_SEED = "from_seed";
         public final static String COLUMN_UUID = "uuid";
         public final static String COLUMN_DIRTY = "dirty";
         public final static String COLUMN_DELETED_AT = "deleted_at";
@@ -206,6 +213,8 @@ public class WalletContract {
         public final static String COLUMN_PRECISION = "precision";
         /** v85: 1 — пара из общего справочника сервера ({@code ledger_id} пуст в pull), локальная. */
         public final static String COLUMN_IS_SHARED = "is_shared";
+        /** v88: см. {@link AccountEntry#COLUMN_FROM_SEED}; пары на телефоне не правятся. */
+        public final static String COLUMN_FROM_SEED = "from_seed";
         public final static String COLUMN_UUID = "uuid";
         public final static String COLUMN_DIRTY = "dirty";
         public final static String COLUMN_DELETED_AT = "deleted_at";

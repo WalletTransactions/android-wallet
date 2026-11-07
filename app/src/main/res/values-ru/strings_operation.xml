@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Окно операции, выбор счёта, календарь (openspec android-i18n, задача 2.2). -->
+<resources>
+    <string name="action_delete">Удалить</string>
+    <string name="action_cancel">Отмена</string>
+
+    <string name="operation_title_new">Новая операция</string>
+    <string name="operation_title_edit">Изменение операции</string>
+    <string name="operation_delete_title">Удалить операцию</string>
+    <string name="operation_delete_question">Удалить операцию?</string>
+    <string name="operation_delete_commission">Удалить комиссию</string>
+    <string name="operation_delete_whole">Удалить всю операцию</string>
+
+    <string name="operation_slot_income_category">Статья дохода</string>
+    <string name="operation_slot_expense_category">Статья расхода</string>
+    <string name="operation_slot_wallet">Кошелёк</string>
+    <string name="operation_slot_from">Откуда</string>
+    <string name="operation_slot_to">Куда</string>
+    <string name="operation_amount_income">Сколько получили</string>
+    <string name="operation_amount_expense">Сколько потратили</string>
+    <string name="operation_amount_transfer">Сколько переводим</string>
+
+    <string name="operation_error_no_source">Выберите счет списывания средств</string>
+    <string name="operation_error_no_target">Выберите счет зачисления средств</string>
+    <string name="operation_error_two_categories">Нельзя создать транзакцию между двумя категориями — хотя бы один счёт должен быть кошельком</string>
+    <string name="operation_error_amount_to">Укажите сумму в валюте счёта-получателя</string>
+    <string name="operation_error_amount_zero">Сумма операции должна быть больше нуля</string>
+    <string name="operation_error_update">Произошла ошибка при обновлении</string>
+    <string name="operation_error_no_account">Счет не был получен</string>
+    <string name="operation_commission_account">Счёт списания комиссии</string>
+    <string name="operation_commission_amount">комиссия %1$s</string>
+    <string name="operation_rate_not_found">Курс на %1$s не найден — введите сумму сами</string>
+    <string name="operation_rate_info">Курс на %1$s: 1 %2$s = %3$s %4$s</string>
+
+    <string name="picker_catalog_title">Кошельки и категории</string>
+    <string name="picker_add_title">Добавить</string>
+    <string name="picker_add_wallet">Кошелёк</string>
+    <string name="picker_add_category">Категория</string>
+    <string name="picker_archived_name">%1$s · в архиве</string>
+    <string name="picker_selected_of">%1$d из %2$d</string>
+    <string name="picker_select_all">Выбрать все</string>
+    <string name="picker_unselect_all">Снять всё</string>
+    <string name="picker_sort_name">По алфавиту</string>
+    <string name="picker_sort_balance">По остатку</string>
+    <string name="picker_sort_usage">По частоте</string>
+
+    <string name="calendar_today">Сегодня</string>
+</resources>

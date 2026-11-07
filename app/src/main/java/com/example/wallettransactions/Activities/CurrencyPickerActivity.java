@@ -46,7 +46,7 @@ public class CurrencyPickerActivity extends AppCompatActivity {
 
     /** Список «Валюты» в режиме просмотра. */
     public static Intent buildBrowseIntent(Context ctx) {
-        Intent intent = buildIntent(ctx, "Валюты", null);
+        Intent intent = buildIntent(ctx, ctx.getString(R.string.currency_list_title), null);
         intent.putExtra(ARG_BROWSE, true);
         return intent;
     }
