@@ -251,6 +251,25 @@ public class LedgerConnectionTest {
     }
 
     @Test
+    public void hardWipeWhileLinked_connectionPullsFromZero() throws Exception {
+        // «Удалить всё безвозвратно» при живом входе: база пустая, курсоры прежние.
+        AppSettings.setLedgerConnectionPending(ctx, false);
+        ContentValues own = new ContentValues();
+        own.put("origin", 1);
+        db.update("icon", own, "uuid = ?", new String[]{ICON});
+        AppSettings.setLedgerSyncSeq(ctx, 93);
+        AppSettings.setReferenceSyncSeq(ctx, 13);
+        SyncRunner.startConnectionIfFresh(ctx, db);
+        assertTrue(AppSettings.isLedgerConnectionPending(ctx));
+        assertEquals(0, AppSettings.getLedgerSyncSeq(ctx));
+        assertEquals(0, AppSettings.getReferenceSyncSeq(ctx));
+        // Прерванное подключение продолжает с достигнутой позиции.
+        AppSettings.setLedgerSyncSeq(ctx, 40);
+        SyncRunner.startConnectionIfFresh(ctx, db);
+        assertEquals(40, AppSettings.getLedgerSyncSeq(ctx));
+    }
+
+    @Test
     public void alreadySynced_noConnection() throws Exception {
         AppSettings.setLedgerConnectionPending(ctx, false);
         SyncEngine.adoptLocalByKey = false;
