@@ -79,6 +79,15 @@
     {"name": "Thai Baht", "iso": "THB", "symbol": "฿", "icon": "Flag THB", "icon_resource": "flag_thb", "precision": 2},
     {"name": "UAE Dirham", "iso": "AED", "symbol": "AED", "icon": "Flag AED", "icon_resource": "flag_aed", "precision": 2}
   ],
+  "flag_icons": [
+    {"name": "Flag ALL", "resource": "flag_albania"},
+    {"name": "Flag ARS", "resource": "flag_ars"},
+    {"name": "Bosnian flag", "resource": "flag_bosnian"},
+    {"name": "Flag CLP", "resource": "flag_clp"},
+    {"name": "Croatian flag", "resource": "flag_croatian"},
+    {"name": "Flag KES", "resource": "flag_kenian"},
+    {"name": "Flag TZS", "resource": "flag_tanzanian"}
+  ],
   "currency_pairs": [
     {"symbol": "EURUSD", "base": "EUR", "quote": "USD"},
     {"symbol": "USDRUB", "base": "USD", "quote": "RUB"},
