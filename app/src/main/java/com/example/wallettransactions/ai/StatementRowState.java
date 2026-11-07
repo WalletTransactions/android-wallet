@@ -74,12 +74,12 @@ public final class StatementRowState {
             return new Readiness(false, -1, AiTexts.statementCategoryProblem(category.name, category.state));
         }
         if (walletState != DraftReconciler.State.OK) {
-            return new Readiness(false, category.id, AiTexts.STATEMENT_WALLET_MISSING);
+            return new Readiness(false, category.id, AiTexts.statementWalletMissing());
         }
-        if (row.amountValue() <= 0) return new Readiness(false, category.id, "Сумма не больше нуля");
+        if (row.amountValue() <= 0) return new Readiness(false, category.id, com.example.wallettransactions.Texts.get(com.example.wallettransactions.R.string.statement_amount_not_positive));
         LocalDate day = parse(row.date);
-        if (day == null) return new Readiness(false, category.id, "Дата не разобралась");
-        if (day.isAfter(today)) return new Readiness(false, category.id, "Дата в будущем");
+        if (day == null) return new Readiness(false, category.id, com.example.wallettransactions.Texts.get(com.example.wallettransactions.R.string.statement_date_unparsed));
+        if (day.isAfter(today)) return new Readiness(false, category.id, com.example.wallettransactions.Texts.get(com.example.wallettransactions.R.string.statement_date_future));
         return new Readiness(true, category.id, null);
     }
 

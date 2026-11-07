@@ -82,8 +82,8 @@ public class StatementImportActivity extends AppCompatActivity {
     private static final String STATE_IMPORT = "statement.importId";
     private static final String STATE_ROW = "statement.pendingRowId";
 
-    private static final String LOGIN_TEXT = "Войдите, чтобы пользоваться ИИ";
-    private static final String NO_NETWORK_TEXT = "Нет связи с сервером";
+    private String loginText() { return getString(R.string.more_ai_sign_in); }
+    private String noNetworkText() { return getString(R.string.more_ai_no_server); }
 
     /** Строка списка: строка импорта и что с ней на телефоне. */
     static final class RowModel {
@@ -257,12 +257,12 @@ public class StatementImportActivity extends AppCompatActivity {
         try {
             startActivityForResult(intent, REQUEST_FILE);
         } catch (android.content.ActivityNotFoundException e) {
-            Toast.makeText(this, "Нет приложения для выбора файла", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.statement_no_file_picker, Toast.LENGTH_SHORT).show();
         }
     }
 
     public void onPickWallet(View view) {
-        startActivityForResult(AccountPickerActivity.buildIntent(this, "Кошелёк выписки",
+        startActivityForResult(AccountPickerActivity.buildIntent(this, getString(R.string.statement_wallet_picker),
                 AccountPickerActivity.cSelectedTypeOperationAccounts, walletId), REQUEST_WALLET);
     }
 
@@ -310,7 +310,7 @@ public class StatementImportActivity extends AppCompatActivity {
         tvFile.setText(fileUri == null ? "" : fileName + (fileSize >= 0 ? " · " + sizeText(fileSize) : ""));
         AccountItem wallet = walletId > 0 ? Singleton.instance.getAccounts(this).getAccountById(walletId) : null;
         tvWallet.setText(wallet != null ? wallet.getDisplayName() : "");
-        if (fileSize > MAX_FILE_BYTES) showPickError(AiTexts.STATEMENT_FILE_TOO_BIG);
+        if (fileSize > MAX_FILE_BYTES) showPickError(AiTexts.statementFileTooBig());
         updateUploadButton();
     }
 
@@ -323,9 +323,10 @@ public class StatementImportActivity extends AppCompatActivity {
         tvPickError.setVisibility(View.VISIBLE);
     }
 
-    private static String sizeText(long bytes) {
-        if (bytes < 1024 * 1024) return Math.max(1, bytes / 1024) + " КБ";
-        return String.format(java.util.Locale.ROOT, "%.1f МБ", bytes / 1024.0 / 1024.0).replace('.', ',');
+    private String sizeText(long bytes) {
+        if (bytes < 1024 * 1024) return getString(R.string.statement_size_kb, Math.max(1, bytes / 1024));
+        return getString(R.string.statement_size_mb,
+                String.format(java.util.Locale.ROOT, "%.1f", bytes / 1024.0 / 1024.0).replace('.', ','));
     }
 
     // ── Загрузка ─────────────────────────────────────────────────────────────
@@ -333,14 +334,14 @@ public class StatementImportActivity extends AppCompatActivity {
     public void onUpload(View view) {
         if (busy || fileUri == null || walletId <= 0) return;
         if (fileSize > MAX_FILE_BYTES) {
-            showPickError(AiTexts.STATEMENT_FILE_TOO_BIG);
+            showPickError(AiTexts.statementFileTooBig());
             return;
         }
         final int gen = ++generation;
         busy = true;
         tvPickError.setVisibility(View.GONE);
         updateUploadButton();
-        showProgress("Синхронизирую…");
+        showProgress(getString(R.string.ai_syncing));
         final Context app = getApplicationContext();
         final Uri uri = fileUri;
         final String name = fileName;
@@ -349,26 +350,26 @@ public class StatementImportActivity extends AppCompatActivity {
             // Кошелёк, созданный на телефоне, иначе серверу неизвестен (unknown_wallet).
             SyncRunner.Outcome sync = SyncRunner.runOnceShared(app, AiActivity.SYNC_WAIT_MS);
             if (sync.status == SyncRunner.Status.NO_SESSION || sync.status == SyncRunner.Status.NEEDS_RELINK) {
-                uploadFailed(gen, LOGIN_TEXT);
+                uploadFailed(gen, loginText());
                 return;
             }
-            runOnUiThread(() -> { if (gen == generation) tvProgress.setText("Загружаю выписку…"); });
+            runOnUiThread(() -> { if (gen == generation) tvProgress.setText(R.string.statement_uploading); });
             byte[] bytes;
             try {
                 bytes = readFile(uri);
             } catch (IOException | SecurityException e) {
                 // Доступ к URI мог пропасть (процесс пересоздан, источник отозвал право) — не сеть.
-                uploadFailed(gen, AiTexts.STATEMENT_FILE_UNREADABLE);
+                uploadFailed(gen, AiTexts.statementFileUnreadable());
                 return;
             }
             if (bytes == null) {
-                uploadFailed(gen, AiTexts.STATEMENT_FILE_TOO_BIG);
+                uploadFailed(gen, AiTexts.statementFileTooBig());
                 return;
             }
             try {
                 AiApiClient client = sessionClient(app);
                 if (client == null) {
-                    uploadFailed(gen, LOGIN_TEXT);
+                    uploadFailed(gen, loginText());
                     return;
                 }
                 String walletUuid = AiActivity.serverUuid(Singleton.instance.getReadableDatabase(app), wallet);
@@ -401,9 +402,9 @@ public class StatementImportActivity extends AppCompatActivity {
                 }
                 uploadFailed(gen, AiTexts.statementHttpError(e.code, e.error));
             } catch (IOException e) {
-                uploadFailed(gen, NO_NETWORK_TEXT);
+                uploadFailed(gen, noNetworkText());
             } catch (JSONException e) {
-                uploadFailed(gen, "Некорректный ответ сервера");
+                uploadFailed(gen, getString(R.string.ai_bad_response));
             }
         }).start();
     }
@@ -421,7 +422,7 @@ public class StatementImportActivity extends AppCompatActivity {
     /** Файл целиком; null — больше 5 МБ (размер мог быть неизвестен до чтения). */
     private byte[] readFile(Uri uri) throws IOException {
         try (InputStream in = getContentResolver().openInputStream(uri)) {
-            if (in == null) throw new IOException("файл не открылся");
+            if (in == null) throw new IOException("file did not open");
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             byte[] buf = new byte[64 * 1024];
             int n;
@@ -437,7 +438,7 @@ public class StatementImportActivity extends AppCompatActivity {
     private static AiApiClient sessionClient(Context app) throws IOException {
         AiApiClient.SessionState s = AiApiClient.refreshSession(app);
         if (s == AiApiClient.SessionState.NO_SESSION || s == AiApiClient.SessionState.NEEDS_RELINK) return null;
-        if (s == AiApiClient.SessionState.NETWORK_ERROR) throw new IOException("нет сети");
+        if (s == AiApiClient.SessionState.NETWORK_ERROR) throw new IOException("no network");
         return AiApiClient.create(app);
     }
 
@@ -478,19 +479,19 @@ public class StatementImportActivity extends AppCompatActivity {
         final String id = importId;
         final boolean needSync = !syncedForList;
         final Context app = getApplicationContext();
-        if (current == null || !current.hasRows()) showProgress(current != null ? AiTexts.statementProgress(current) : "Загружаю…");
+        if (current == null || !current.hasRows()) showProgress(current != null ? AiTexts.statementProgress(current) : getString(R.string.statement_loading));
         new Thread(() -> {
             try {
                 AiApiClient client = sessionClient(app);
                 if (client == null) {
-                    runOnUiThread(() -> { if (gen == generation) showMessage(LOGIN_TEXT); });
+                    runOnUiThread(() -> { if (gen == generation) showMessage(loginText()); });
                     return;
                 }
                 StatementImport imp = client.getImport(id);
                 if (imp.hasRows()) {
                     if (needSync) {
                         // Операции из веба и бота — чтобы проверка на дубли видела их.
-                        runOnUiThread(() -> { if (gen == generation && listBox.getVisibility() != View.VISIBLE) tvProgress.setText("Синхронизирую…"); });
+                        runOnUiThread(() -> { if (gen == generation && listBox.getVisibility() != View.VISIBLE) tvProgress.setText(R.string.ai_syncing); });
                         SyncRunner.runOnceShared(app, AiActivity.SYNC_WAIT_MS);
                         Singleton.instance.reloadAccounts(app);
                     }
@@ -510,13 +511,13 @@ public class StatementImportActivity extends AppCompatActivity {
                         importId = null;
                         current = null;
                         showPick();
-                        showPickError("Импорт не найден — он удалён или истёк");
+                        showPickError(getString(R.string.statement_not_found));
                     } else {
-                        showListOrMessage("Сервер ответил ошибкой (HTTP " + e.code + ")");
+                        showListOrMessage(getString(R.string.ai_http_error, e.code));
                     }
                 });
             } catch (IOException | JSONException e) {
-                runOnUiThread(() -> { if (gen == generation) showListOrMessage(AiTexts.STATEMENT_NO_NETWORK); });
+                runOnUiThread(() -> { if (gen == generation) showListOrMessage(AiTexts.statementNoNetwork()); });
             }
         }).start();
     }
@@ -533,7 +534,7 @@ public class StatementImportActivity extends AppCompatActivity {
             return;
         }
         if (!imp.hasRows()) {
-            showMessage("Импорт отменён");
+            showMessage(getString(R.string.statement_cancelled));
             return;
         }
         models = built;
@@ -643,7 +644,7 @@ public class StatementImportActivity extends AppCompatActivity {
         DraftReconciler.Local wallet = DraftReconciler.lookup(db, new Ref(current.walletUuid, "", "", "", 2));
         importWalletId = wallet.state == DraftReconciler.State.OK ? (int) wallet.id : 0;
         AccountItem walletItem = importWalletId > 0 ? Singleton.instance.getAccounts(this).getAccountById(importWalletId) : null;
-        tvListTitle.setText((current.sourceName != null ? current.sourceName : "Выписка")
+        tvListTitle.setText((current.sourceName != null ? current.sourceName : getString(R.string.statement_title_default))
                 + (walletItem != null ? " · " + walletItem.getDisplayName() : ""));
 
         int added = 0;
@@ -652,12 +653,12 @@ public class StatementImportActivity extends AppCompatActivity {
             if (m.kind == Kind.ADDED) added++;
             if (m.readiness.ready) ready++;
         }
-        tvListSummary.setText("Строк: " + models.size() + " · добавлено: " + added);
+        tvListSummary.setText(getString(R.string.statement_summary, models.size(), added));
         if (importWalletId == 0) {
-            tvListNote.setText(AiTexts.STATEMENT_WALLET_MISSING);
+            tvListNote.setText(AiTexts.statementWalletMissing());
             tvListNote.setVisibility(View.VISIBLE);
         }
-        btnWriteReady.setText("Записать готовые (" + ready + ")");
+        btnWriteReady.setText(getString(R.string.statement_write_ready, ready));
         btnWriteReady.setEnabled(ready > 0 && !busy);
 
         rowsContainer.removeAllViews();
@@ -679,8 +680,8 @@ public class StatementImportActivity extends AppCompatActivity {
         String category;
         if (m.category.state == DraftReconciler.State.OK) category = m.category.name;
         else if (r.categoryUuid != null) category = AiTexts.statementCategoryProblem(m.category.name, m.category.state);
-        else if (r.suggestion != null) category = "ИИ предлагает: " + r.suggestion;
-        else category = "Без категории";
+        else if (r.suggestion != null) category = getString(R.string.statement_ai_suggests, r.suggestion);
+        else category = getString(R.string.statement_no_category);
         ((TextView) v.findViewById(R.id.tvRowCategory)).setText(r.isExpense() ? category : dirText(r.dir));
 
         TextView source = v.findViewById(R.id.tvRowSource);
@@ -710,10 +711,10 @@ public class StatementImportActivity extends AppCompatActivity {
         return date != null && date.length() >= 10 ? date.substring(8, 10) + "." + date.substring(5, 7) + "." + date.substring(0, 4) : "";
     }
 
-    private static String dirText(String dir) {
-        if ("income".equals(dir)) return "Доход — не записывается";
-        if ("transfer".equals(dir)) return "Перевод — не записывается";
-        return "Не расход — не записывается";
+    private String dirText(String dir) {
+        if ("income".equals(dir)) return getString(R.string.statement_dir_income);
+        if ("transfer".equals(dir)) return getString(R.string.statement_dir_transfer);
+        return getString(R.string.statement_dir_other);
     }
 
     // ── Запись строки через окно операции ────────────────────────────────────
@@ -739,12 +740,12 @@ public class StatementImportActivity extends AppCompatActivity {
     }
 
     /** Подсказка над полями: строка выписки и что с ней не так. */
-    private static String rowHint(RowModel m) {
-        StringBuilder sb = new StringBuilder("Строка выписки: «").append(m.row.sourceText()).append('»');
+    private String rowHint(RowModel m) {
+        StringBuilder sb = new StringBuilder(getString(R.string.statement_row_source, m.row.sourceText()));
         if (m.kind == Kind.CHECK) sb.append('\n').append(AiTexts.statementCheck(m.row.check));
         if (m.kind == Kind.DUPLICATE && m.duplicate != null) sb.append('\n').append(AiTexts.statementDuplicate(m.duplicate));
         if (m.row.categoryUuid == null && m.row.suggestion != null) {
-            sb.append("\nИИ предлагает категорию «").append(m.row.suggestion).append('»');
+            sb.append('\n').append(getString(R.string.statement_row_suggestion, m.row.suggestion));
         }
         return sb.toString();
     }
@@ -862,20 +863,12 @@ public class StatementImportActivity extends AppCompatActivity {
         for (RowModel m : models) if (m.readiness.ready) ready.add(m);
         if (ready.isEmpty()) return;
         new AlertDialog.Builder(this)
-                .setTitle("Записать готовые")
-                .setMessage("Записать " + ready.size() + " " + operationsWord(ready.size())
-                        + " в кошелёк? Строки «Нужна категория», «Проверить» и «Похоже, уже есть» не тронутся.")
-                .setPositiveButton("Записать", (d, w) -> writeReady(ready))
-                .setNegativeButton("Отмена", null)
+                .setTitle(R.string.statement_write_title)
+                .setMessage(getResources().getQuantityString(R.plurals.statement_write_question,
+                        ready.size(), ready.size()))
+                .setPositiveButton(R.string.statement_write, (d, w) -> writeReady(ready))
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
-    }
-
-    private static String operationsWord(int n) {
-        int mod10 = n % 10;
-        int mod100 = n % 100;
-        if (mod10 == 1 && mod100 != 11) return "операцию";
-        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "операции";
-        return "операций";
     }
 
     /** Одна транзакция SQLite с {@code uuid = row_id}, затем отметка на сервере и фоновый синк. */
@@ -919,7 +912,7 @@ public class StatementImportActivity extends AppCompatActivity {
                 current = done;
                 models = built;
                 showList();
-                Toast.makeText(this, "Записано: " + written.size(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.statement_written, written.size()), Toast.LENGTH_SHORT).show();
             });
         }).start();
     }

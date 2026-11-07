@@ -13,16 +13,25 @@
 Проверка каждой: `ci/check_hardcoded_text.sh` и юнит-тесты зелёные, экран
 на эмуляторе выглядит как до выноса.
 
-- [ ] 2.1 Главный экран, вкладки, `BaseTabActivity`, `MoreActivity`, `FilterActivity`
-- [ ] 2.2 Операция: `TransactionActivity`, `MultiPicker*`, ввод ИИ в окне операции
-- [ ] 2.3 Счета и категории: `AccountItemActivity`, `AddWalletActivity`, `IconEditDialog`, `IconCropActivity`
-- [ ] 2.4 Валюты и курсы: `CurrencyPairListActivity`, `CurrencyPairRateListActivity`, `CurrencyFormActivity`, `RateEditDialog`
-- [ ] 2.5 Повторяющиеся операции и напоминания: `RecurringOperationActivity`, `RecurringOperationListActivity`, `RecurringOperation`, `reminder/ReminderWorker`
-- [ ] 2.6 Настройки и безопасность: `SettingsActivity`, `LockActivity`, `security/BiometricErrors`, `ResetDataActivity`
-- [ ] 2.7 Импорт и экспорт: `ImportActivity`, `ExportActivity`, `StatementImportActivity`, `Data/WalletImportData`, `Data/WalletExportData`
-- [ ] 2.8 Интеграции и синк: `IntegrationsActivity`, `SyncLinkActivity`, `sync/SyncEngine` (журнал), `SyncLog`, `SyncRunner`, `NewOperationsNotifier`, `AuthSession`, `TelegramLinkClient`
-- [ ] 2.9 ИИ: `AiActivity`, `ai/AiTexts` — только тексты интерфейса, запросы к wallet-ai помечены `// not UI` (design D2)
-- [ ] 2.10 Остаток: файл исключений проверки пуст. Проверка: `ci/check_hardcoded_text.sh` без исключений зелёный
+Выполнено 2026-11-07 для всех групп: layout/menu — одним проходом (314 атрибутов →
+`strings.xml`), Java — по группам в `values/strings_<группа>.xml`. Тексты, которые
+строятся вне экранов (журнал синка, отчёт импорта, ИИ), берутся через `Texts`
+(контекст приложения). Логи и технические детали исключений — по-английски или с
+`// not UI`. Тексты русского интерфейса не менялись, кроме: английские статусы импорта
+(«Importing operations…») стали русскими, в примерах подсказок импорта личные названия
+заменены общими, ручные окончания — plurals. Вид экранов на эмуляторе по одному не
+сверялся — его покрывает ручная проверка 3.2 (английский) и прогон русского там же.
+
+- [x] 2.1 Главный экран, вкладки, `BaseTabActivity`, `MoreActivity`, `FilterActivity` — `strings_main.xml`
+- [x] 2.2 Операция: `TransactionActivity`, `MultiPicker*`, ввод ИИ в окне операции — `strings_operation.xml`, `PickerSort` хранит ресурс
+- [x] 2.3 Счета и категории: `AccountItemActivity`, `AddWalletActivity`, `IconEditDialog`, `IconCropActivity` — `strings_accounts.xml`, `Icon.IconType` хранит ресурс
+- [x] 2.4 Валюты и курсы: `CurrencyPairListActivity`, `CurrencyPairRateListActivity`, `CurrencyFormActivity`, `RateEditDialog` — `strings_currency.xml`
+- [x] 2.5 Повторяющиеся операции и напоминания: `RecurringOperationActivity`, `RecurringOperationListActivity`, `RecurringOperation`, `reminder/ReminderWorker` — `strings_recurring.xml`; причины пропуска напоминания — только в лог
+- [x] 2.6 Настройки и безопасность: `SettingsActivity`, `LockActivity`, `security/BiometricErrors`, `ResetDataActivity` — `strings_settings.xml`; помощники безопасности берут `Context`, `AppLockTest` обновлён
+- [x] 2.7 Импорт и экспорт: `ImportActivity`, `ExportActivity`, `StatementImportActivity`, `Data/WalletImportData`, `Data/WalletExportData` — `strings_import.xml`; описание формата внутри JSON-экспорта — данные, `// not UI`
+- [x] 2.8 Интеграции и синк: `IntegrationsActivity`, `SyncLinkActivity`, `sync/SyncEngine` (журнал), `SyncLog`, `SyncRunner`, `NewOperationsNotifier`, `AuthSession`, `TelegramLinkClient` — `strings_sync.xml`; диалог «Операции без входа» — plurals
+- [x] 2.9 ИИ: `AiActivity`, `ai/AiTexts` — только тексты интерфейса, запросы к wallet-ai помечены `// not UI` (design D2) — `strings_ai.xml`; `AiTextsTest` — Robolectric с `qualifiers = "ru"`. Язык распознавания речи (`ru-RU`) не трогали — это вход для wallet-ai, не интерфейс
+- [x] 2.10 Остаток: файл исключений проверки пуст. Проверка: `ci/check_hardcoded_text.sh` без исключений зелёный — выполнено 2026-11-07: в `ci/hardcoded_text_allowlist.txt` 0 файлов, проверка и все юнит-тесты зелёные. Проверка ловит только кириллицу: английские литералы без кириллицы (например, `Snackbar.setAction("Action")`) она не видит
 
 ## 3. Английский
 
