@@ -288,8 +288,8 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
         }
 
         if (tran.LinkedCommission != null) {
-            holder.tvCommission.setText("комиссия "
-                    + formatAmount(tran.LinkedCommission.Amount, tran.LinkedCommission.getCurrency()));
+            holder.tvCommission.setText(getContext().getString(R.string.operation_commission_amount,
+                    formatAmount(tran.LinkedCommission.Amount, tran.LinkedCommission.getCurrency())));
             holder.tvCommission.setVisibility(View.VISIBLE);
         } else {
             holder.tvCommission.setVisibility(View.GONE);
@@ -413,8 +413,8 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
         }
 
         if (tran.LinkedCommission != null) {
-            holder.tvFee.setText("комиссия "
-                    + formatAmount(tran.LinkedCommission.Amount, tran.LinkedCommission.getCurrency()));
+            holder.tvFee.setText(getContext().getString(R.string.operation_commission_amount,
+                    formatAmount(tran.LinkedCommission.Amount, tran.LinkedCommission.getCurrency())));
             holder.tvFee.setVisibility(View.VISIBLE);
         } else {
             holder.tvFee.setVisibility(View.GONE);

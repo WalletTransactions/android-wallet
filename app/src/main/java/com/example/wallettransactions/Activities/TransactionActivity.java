@@ -396,7 +396,7 @@ public class TransactionActivity extends AppCompatActivity {
 
         Date mDateTime = DateUtils.StrToDate(getIntent().getStringExtra(cDate));
 
-        mScreenTitle.setText(mIsEdit ? "Изменение операции" : "Новая операция");
+        mScreenTitle.setText(mIsEdit ? R.string.operation_title_edit : R.string.operation_title_new);
 
         String hint = getIntent().getStringExtra(cHint);
         TextView aiHint = findViewById(R.id.tvAiHint);
@@ -515,10 +515,10 @@ public class TransactionActivity extends AppCompatActivity {
     public void btnDeleteClick(View view) {
         if (mLegId <= 0 && mCommissionId <= 0) {
             new AlertDialog.Builder(this)
-                    .setTitle("Удалить")
-                    .setMessage("Удалить операцию?")
-                    .setPositiveButton("Удалить", (d, w) -> deleteOperation(new int[]{mTranId}))
-                    .setNegativeButton("Отмена", null)
+                    .setTitle(R.string.action_delete)
+                    .setMessage(R.string.operation_delete_question)
+                    .setPositiveButton(R.string.action_delete, (d, w) -> deleteOperation(new int[]{mTranId}))
+                    .setNegativeButton(R.string.action_cancel, null)
                     .show();
             return;
         }
@@ -545,27 +545,27 @@ public class TransactionActivity extends AppCompatActivity {
 
         if (mCommissionId <= 0) {
             new AlertDialog.Builder(this)
-                    .setTitle("Удалить")
-                    .setMessage("Удалить операцию?")
-                    .setPositiveButton("Удалить", (d, w) -> deleteOperation(all))
-                    .setNegativeButton("Отмена", null)
+                    .setTitle(R.string.action_delete)
+                    .setMessage(R.string.operation_delete_question)
+                    .setPositiveButton(R.string.action_delete, (d, w) -> deleteOperation(all))
+                    .setNegativeButton(R.string.action_cancel, null)
                     .show();
             return;
         }
 
         String[] items = {
-                "Удалить комиссию",
-                "Удалить всю операцию",
+                getString(R.string.operation_delete_commission),
+                getString(R.string.operation_delete_whole),
         };
         new AlertDialog.Builder(this)
-                .setTitle("Удалить операцию")
+                .setTitle(R.string.operation_delete_title)
                 .setItems(items, (d, which) -> {
                     switch (which) {
                         case 0: deleteOperation(new int[]{mCommissionId}); break;
                         case 1: deleteOperation(all); break;
                     }
                 })
-                .setNegativeButton("Отмена", null)
+                .setNegativeButton(R.string.action_cancel, null)
                 .show();
     }
 
@@ -740,21 +740,21 @@ public class TransactionActivity extends AppCompatActivity {
 
         switch (mKind) {
             case income:
-                mEditSlotTop.setHint("Статья дохода");
-                mEditSlotBottom.setHint("Кошелёк");
-                mAmountHintText = "Сколько получили";
+                mEditSlotTop.setHint(R.string.operation_slot_income_category);
+                mEditSlotBottom.setHint(R.string.operation_slot_wallet);
+                mAmountHintText = getString(R.string.operation_amount_income);
                 mAmount.setTextColor(ContextCompat.getColor(this, R.color.colorprofit));
                 break;
             case transfer:
-                mEditSlotTop.setHint("Откуда");
-                mEditSlotBottom.setHint("Куда");
-                mAmountHintText = "Сколько переводим";
+                mEditSlotTop.setHint(R.string.operation_slot_from);
+                mEditSlotBottom.setHint(R.string.operation_slot_to);
+                mAmountHintText = getString(R.string.operation_amount_transfer);
                 mAmount.setTextColor(ContextCompat.getColor(this, R.color.colortransfer));
                 break;
             default:
-                mEditSlotTop.setHint("Статья расхода");
-                mEditSlotBottom.setHint("Кошелёк");
-                mAmountHintText = "Сколько потратили";
+                mEditSlotTop.setHint(R.string.operation_slot_expense_category);
+                mEditSlotBottom.setHint(R.string.operation_slot_wallet);
+                mAmountHintText = getString(R.string.operation_amount_expense);
                 mAmount.setTextColor(ContextCompat.getColor(this, R.color.colorexpanse));
                 break;
         }
@@ -980,27 +980,25 @@ public class TransactionActivity extends AppCompatActivity {
         if (mSaved) return;
 
         if (mAccFrom == null)  {
-           Toast.makeText(this, "Выберите счет списывания средств", Toast.LENGTH_SHORT).show();
+           Toast.makeText(this, R.string.operation_error_no_source, Toast.LENGTH_SHORT).show();
            return;
         }
 
         if (mAccTo == null) {
-            Toast.makeText(this, "Выберите счет зачисления средств", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.operation_error_no_target, Toast.LENGTH_SHORT).show();
             return;
         }
 
         // Both accounts being categories means no currency → broken data
         if (!(mAccFrom instanceof AccountOperatingItem) && !(mAccTo instanceof AccountOperatingItem)) {
-            Toast.makeText(this,
-                    "Нельзя создать транзакцию между двумя категориями — хотя бы один счёт должен быть кошельком",
-                    Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.operation_error_two_categories, Toast.LENGTH_LONG).show();
             return;
         }
 
         // Вторая нога валютного перевода — отдельная проводка, и сумма у неё своя:
         // из курса её только предлагают, подтвердить должен пользователь.
         if (isCrossCurrencyActive() && parseAmount(mEditAmountTo.getText().toString()) <= 0) {
-            Toast.makeText(this, "Укажите сумму в валюте счёта-получателя", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.operation_error_amount_to, Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -1014,7 +1012,7 @@ public class TransactionActivity extends AppCompatActivity {
         // На клавиатуре есть вычитание и деление, так что выражение легко сводится
         // к нулю или к минусу — такую сумму в базу пускать нельзя.
         if (amount <= 0) {
-            Toast.makeText(this, "Сумма операции должна быть больше нуля", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.operation_error_amount_zero, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -1045,7 +1043,7 @@ public class TransactionActivity extends AppCompatActivity {
 
         if (newRowId == -1) {
             // Если ID  -1, значит произошла ошибка
-            Toast.makeText(this, "Произошла ошибка при обновлении", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.operation_error_update, Toast.LENGTH_SHORT).show();
         } else {
             mSaved = true;
             // Кошелёк операции: у расхода и перевода — списания, у дохода — зачисления.
@@ -1276,7 +1274,7 @@ public class TransactionActivity extends AppCompatActivity {
 
         int accountId = data.getIntExtra(AccountPickerActivity.cAccountId, -1);
         if (accountId == -1) {
-            Snackbar.make(this.getWindow().getDecorView().getRootView(), "Счет не был получен", Snackbar.LENGTH_LONG)
+            Snackbar.make(this.getWindow().getDecorView().getRootView(), R.string.operation_error_no_account, Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
             return;
         }
@@ -1345,7 +1343,7 @@ public class TransactionActivity extends AppCompatActivity {
     public void onPickCommissionAccount(View view) {
         // Пара — кошелёк, с которого списывается комиссия.
         AccountItem side = mRadioCommissionFromDest.isChecked() ? mAccTo : mAccFrom;
-        openAccountPicker("Счёт списания комиссии", mAccCommission, side,
+        openAccountPicker(getString(R.string.operation_commission_account), mAccCommission, side,
                 AccountPickerActivity.cSelectedTypeChargeAccounts, AccountSelectCommission);
     }
 
@@ -1434,8 +1432,8 @@ public class TransactionActivity extends AppCompatActivity {
                 curFrom.getId(), curTo.getId(), mCalDateTime.getTime());
 
         if (rate == null) {
-            mTvRateInfo.setText("Курс на " + String.format("%1$td.%1$tm.%1$tY", mCalDateTime)
-                    + " не найден — введите сумму сами");
+            mTvRateInfo.setText(getString(R.string.operation_rate_not_found,
+                    String.format("%1$td.%1$tm.%1$tY", mCalDateTime)));
             // Без курса подставить нечего, а прежнее значение осталось от другой пары
             // валют — показывать его как сумму зачисления нельзя.
             if (!mAmountToUserEdited) setAmountToProgrammatically("");
@@ -1445,9 +1443,9 @@ public class TransactionActivity extends AppCompatActivity {
         // Дата — та, на которую курс реально стоит: ближайшая не позже даты операции,
         // а не сама дата операции. Точность — инструмента, а не валюты: у пары она
         // своя (currency_pair.precision), и двух знаков курсу обычно мало.
-        mTvRateInfo.setText("Курс на " + String.format("%1$td.%1$tm.%1$tY", rate.date)
-                + ": 1 " + curFrom.getIso() + " = "
-                + formatAmount(rate.rate, ratePrecision(curFrom, curTo)) + " " + curTo.getIso());
+        mTvRateInfo.setText(getString(R.string.operation_rate_info,
+                String.format("%1$td.%1$tm.%1$tY", rate.date), curFrom.getIso(),
+                formatAmount(rate.rate, ratePrecision(curFrom, curTo)), curTo.getIso()));
 
         if (mAmountToUserEdited) return;
 

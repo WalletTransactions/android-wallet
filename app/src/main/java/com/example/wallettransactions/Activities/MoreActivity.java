@@ -50,30 +50,30 @@ public class MoreActivity extends BaseTabActivity {
     private void refreshAiRow() {
         if (!AiApiClient.hasSession(this)) {
             aiAvailable = false;
-            setAiRow(false, "Войдите, чтобы пользоваться ИИ");
+            setAiRow(false, getString(R.string.more_ai_sign_in));
             return;
         }
         if (aiAvailable) return;
-        setAiRow(false, "Проверяю…");
+        setAiRow(false, getString(R.string.more_ai_checking));
         final Context app = getApplicationContext();
         new Thread(() -> {
             String reason;
             boolean ok = false;
             AiApiClient.SessionState session = AiApiClient.refreshSession(app);
             if (session == AiApiClient.SessionState.NO_SESSION || session == AiApiClient.SessionState.NEEDS_RELINK) {
-                reason = "Войдите, чтобы пользоваться ИИ";
+                reason = app.getString(R.string.more_ai_sign_in);
             } else if (session == AiApiClient.SessionState.NETWORK_ERROR) {
-                reason = "Нет связи с сервером";
+                reason = app.getString(R.string.more_ai_no_server);
             } else {
                 try {
                     ok = AiApiClient.create(app).status().canParseExpense();
-                    reason = ok ? "Трата своими словами" : "ИИ сейчас выключен";
+                    reason = app.getString(ok ? R.string.more_ai_available : R.string.more_ai_off);
                 } catch (AiApiClient.HttpError e) {
-                    reason = e.code == 401 ? "Войдите, чтобы пользоваться ИИ" : "ИИ сейчас выключен";
+                    reason = app.getString(e.code == 401 ? R.string.more_ai_sign_in : R.string.more_ai_off);
                 } catch (IOException e) {
-                    reason = "Нет связи с сервером";
+                    reason = app.getString(R.string.more_ai_no_server);
                 } catch (JSONException e) {
-                    reason = "ИИ сейчас выключен";
+                    reason = app.getString(R.string.more_ai_off);
                 }
             }
             final boolean available = ok;

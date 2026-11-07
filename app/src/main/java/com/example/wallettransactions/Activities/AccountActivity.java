@@ -47,7 +47,7 @@ public class AccountActivity extends BaseTabActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_account);
-        initTabScreen(R.id.navWallets, "Кошельки");
+        initTabScreen(R.id.navWallets, getString(R.string.tab_wallets));
         reloadSharedAndTabData();
     }
 

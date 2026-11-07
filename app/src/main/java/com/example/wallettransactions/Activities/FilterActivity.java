@@ -108,7 +108,7 @@ public class FilterActivity extends AppCompatActivity {
         PeriodFilterState state = PeriodFilterState.get(this);
         int count = WalletDbLoader.CountOperations(Singleton.instance.getReadableDatabase(this),
                 state.getDateFrom(), state.getDateTo(), state.getCurrencyEq(this), buildPreviewFilter());
-        btnApply.setText("Показать " + count);
+        btnApply.setText(getString(R.string.filter_apply_count, count));
     }
 
     private DataFilter buildPreviewFilter() {
@@ -194,8 +194,9 @@ public class FilterActivity extends AppCompatActivity {
         // жёстко, а то, что выбрано сейчас (см. BaseTabActivity.onPickCurrencyEq).
         TextView labelEqRange = findViewById(R.id.labelEqRange);
         Currency currencyEq = state.getCurrencyEq(this);
-        labelEqRange.setText("СУММА В ЭКВИВАЛЕНТЕ"
-                + (currencyEq != null ? ", " + currencyEq.getIso() : ""));
+        labelEqRange.setText(currencyEq != null
+                ? getString(R.string.filter_eq_range_label_currency, currencyEq.getIso())
+                : getString(R.string.filter_eq_range_label));
     }
 
     private static void setOptionalText(EditText field, Double value) {
@@ -240,12 +241,12 @@ public class FilterActivity extends AppCompatActivity {
     }
 
     public void onPickCategories(View view) {
-        openPicker("Счёт затрат", MultiPickerActivity.cSourceExpanseAccounts,
+        openPicker(getString(R.string.filter_picker_categories), MultiPickerActivity.cSourceExpanseAccounts,
                 selectedCategories, requestPickCategories);
     }
 
     public void onPickWallets(View view) {
-        openPicker("Кошелёк", MultiPickerActivity.cSourceOperationAccounts,
+        openPicker(getString(R.string.filter_picker_wallets), MultiPickerActivity.cSourceOperationAccounts,
                 selectedWallets, requestPickWallets);
     }
 
@@ -281,7 +282,8 @@ public class FilterActivity extends AppCompatActivity {
     }
 
     private void updateSummary(List<AccountItem> selected, TextView summary) {
-        summary.setText(selected.isEmpty() ? "Все" : selected.size() + " выбрано");
+        summary.setText(selected.isEmpty() ? getString(R.string.filter_all)
+                : getResources().getQuantityString(R.plurals.filter_selected_count, selected.size(), selected.size()));
     }
 
     private static String joinIds(List<AccountItem> items) {
@@ -296,8 +298,8 @@ public class FilterActivity extends AppCompatActivity {
     public void onResetFilter(View view) {
         selectedCategories.clear();
         selectedWallets.clear();
-        categorySummary.setText("Все");
-        walletSummary.setText("Все");
+        categorySummary.setText(R.string.filter_all);
+        walletSummary.setText(R.string.filter_all);
 
         selectedKind = DataFilter.OperationKind.all;
         paintKind();

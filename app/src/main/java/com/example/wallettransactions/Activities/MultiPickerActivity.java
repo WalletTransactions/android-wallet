@@ -151,10 +151,10 @@ public class MultiPickerActivity extends AppCompatActivity {
         boolean allSelected = selected.size() == mAllItems.size() && !mAllItems.isEmpty();
 
         pickerCount.setText(selected.isEmpty()
-                ? "Все"
-                : selected.size() + " из " + mAllItems.size());
+                ? getString(R.string.filter_all)
+                : getString(R.string.picker_selected_of, selected.size(), mAllItems.size()));
 
-        btnToggleAll.setText(allSelected ? "Снять всё" : "Выбрать все");
+        btnToggleAll.setText(allSelected ? R.string.picker_unselect_all : R.string.picker_select_all);
     }
 
     public void onToggleAll(View view) {

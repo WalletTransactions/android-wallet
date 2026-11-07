@@ -55,7 +55,7 @@ public class ReportActivity extends BaseTabActivity {
         lstIncome.setOnItemClickListener(this::treeViewClick);
         lstExpanse.setOnItemClickListener(this::treeViewClick);
 
-        initTabScreen(R.id.navReport, "Отчёты");
+        initTabScreen(R.id.navReport, getString(R.string.tab_reports));
         reloadSharedAndTabData();
     }
 

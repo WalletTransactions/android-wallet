@@ -446,7 +446,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         new AlertDialog.Builder(this)
                 .setTitle(title)
-                .setSingleChoiceItems(PickerSort.titles(modes), checked, (d, which) -> {
+                .setSingleChoiceItems(PickerSort.titles(this, modes), checked, (d, which) -> {
                     AppSettings.setPickerSort(this, wallets, modes[which]);
                     paintSortValues();
                     d.dismiss();
@@ -455,8 +455,8 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void paintSortValues() {
-        walletSortValue.setText(AppSettings.getPickerSort(this, true).getTitle());
-        categorySortValue.setText(AppSettings.getPickerSort(this, false).getTitle());
+        walletSortValue.setText(AppSettings.getPickerSort(this, true).getTitle(this));
+        categorySortValue.setText(AppSettings.getPickerSort(this, false).getTitle(this));
     }
 
     public void onPickRemindTime(View view) {
