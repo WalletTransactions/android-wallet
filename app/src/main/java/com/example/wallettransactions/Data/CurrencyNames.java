@@ -15,7 +15,9 @@ public final class CurrencyNames {
 
     /** Язык посева набора: {@code ru} на русском телефоне, иначе {@code en} (spec starter-set, «Язык набора»). */
     public static String seedLanguage(Context context) {
-        LocaleList locales = context.getResources().getConfiguration().getLocales();
+        // Язык из «Настроек» приложения, если выбран (AppLanguage), иначе — телефона.
+        LocaleList locales = com.example.wallettransactions.AppLanguage
+                .localized(context.getApplicationContext()).getResources().getConfiguration().getLocales();
         Locale first = locales.isEmpty() ? Locale.getDefault() : locales.get(0);
         return "ru".equals(first.getLanguage()) ? "ru" : "en";
     }

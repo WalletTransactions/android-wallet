@@ -22,6 +22,7 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.example.wallettransactions.AppLanguage;
 import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.BuildConfig;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
@@ -60,6 +61,7 @@ public class SettingsActivity extends AppCompatActivity {
     private static final int REQUEST_PIN_CHANGE_SET = 4;
 
     private TextView mainCurrencyValue;
+    private TextView languageValue;
     private TextView chipThemeLight;
     private TextView chipThemeDark;
     private TextView chipThemeSystem;
@@ -89,6 +91,7 @@ public class SettingsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_settings);
 
         mainCurrencyValue = findViewById(R.id.mainCurrencyValue);
+        languageValue = findViewById(R.id.languageValue);
         chipThemeLight = findViewById(R.id.chipThemeLight);
         chipThemeDark = findViewById(R.id.chipThemeDark);
         chipThemeSystem = findViewById(R.id.chipThemeSystem);
@@ -120,6 +123,7 @@ public class SettingsActivity extends AppCompatActivity {
         buildDateValue.setText(BuildConfig.BUILD_TIME);
 
         applyThemeChips(AppSettings.getThemeMode(this));
+        languageValue.setText(languageTitles()[languageIndex()]);
 
         String savedIso = AppSettings.getCurrencyEqIso(this);
         Currency saved = savedIso != null
@@ -167,6 +171,32 @@ public class SettingsActivity extends AppCompatActivity {
                 ? R.drawable.bg_chip_selected : R.drawable.bg_chip_unselected);
         chip.setTextColor(ContextCompat.getColor(this,
                 selected ? R.color.colorSurface : R.color.colorTextSecondary));
+    }
+
+    /** Язык приложения (AppLanguage): язык телефона, English, Русский. */
+    public void onPickLanguage(View view) {
+        int checked = languageIndex();
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.settings_language)
+                .setSingleChoiceItems(languageTitles(), checked, (d, which) -> {
+                    d.dismiss();
+                    // Экраны AppCompat пересоздаются сами на новом языке.
+                    if (which != checked) AppLanguage.set(AppLanguage.TAGS[which]);
+                })
+                .show();
+    }
+
+    private String[] languageTitles() {
+        return new String[]{getString(R.string.settings_language_system),
+                getString(R.string.settings_language_en), getString(R.string.settings_language_ru)};
+    }
+
+    private static int languageIndex() {
+        String tag = AppLanguage.current();
+        for (int i = 0; i < AppLanguage.TAGS.length; i++) {
+            if (AppLanguage.TAGS[i].equals(tag)) return i;
+        }
+        return 0;
     }
 
     public void onPickMainCurrency(View view) {

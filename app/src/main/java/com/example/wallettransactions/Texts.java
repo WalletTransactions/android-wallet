@@ -21,7 +21,7 @@ public final class Texts {
     private static Context ctx() {
         Context c = app;
         if (c == null) throw new IllegalStateException("Texts.init was not called (WalletApplication.onCreate)");
-        return c;
+        return AppLanguage.localized(c);
     }
 
     public static String get(int resId) {

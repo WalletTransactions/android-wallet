@@ -80,4 +80,8 @@
     <string name="reset_hard_confirm">Удалить всё</string>
     <string name="reset_hard_busy">Очистка базы…</string>
     <string name="reset_hard_done">База полностью очищена</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_language_system">Как на телефоне</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_ru">Русский</string>
 </resources>

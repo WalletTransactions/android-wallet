@@ -155,6 +155,7 @@ public class AccountItem implements IFilterIsLike {
     public String getDisplayName() {
         android.content.Context c = appContext;
         if (c == null || systemKind == null) return name;
+        c = com.example.wallettransactions.AppLanguage.localized(c);
         switch (systemKind) {
             case TRANSFER:
                 return c.getString(com.example.wallettransactions.R.string.system_category_transfer);
