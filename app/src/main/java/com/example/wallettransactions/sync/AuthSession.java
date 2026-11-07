@@ -147,7 +147,7 @@ final class AuthSession {
         // createNotificationChannel идемпотентна — дешевле звать каждый раз,
         // чем протаскивать отдельную инициализацию через WalletApplication.
         manager.createNotificationChannel(new NotificationChannel(
-                CHANNEL_ID, "Статус синхронизации", NotificationManager.IMPORTANCE_DEFAULT));
+                CHANNEL_ID, ctx.getString(R.string.auth_channel), NotificationManager.IMPORTANCE_DEFAULT));
 
         // «Ещё» под «Интеграциями» — чтобы «назад» с них вёл в приложение, а не наружу.
         PendingIntent pendingIntent = TaskStackBuilder.create(ctx)
@@ -158,8 +158,8 @@ final class AuthSession {
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(ctx, CHANNEL_ID)
                         .setSmallIcon(R.mipmap.main_icon)
-                        .setContentTitle("Нужна повторная авторизация")
-                        .setContentText("Сессия с сервером истекла — нажмите, чтобы войти заново")
+                        .setContentTitle(ctx.getString(R.string.auth_relink_title))
+                        .setContentText(ctx.getString(R.string.auth_relink_text))
                         .setContentIntent(pendingIntent)
                         .setAutoCancel(true);
 

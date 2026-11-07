@@ -125,12 +125,12 @@ public class FilePickerFragment extends Fragment {
         new AlertDialog.Builder(ctx)
                 .setTitle(formatTitle)
                 .setView(scroll)
-                .setPositiveButton("Копировать", (d, w) -> {
+                .setPositiveButton(R.string.action_copy, (d, w) -> {
                     ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
                     cm.setPrimaryClip(ClipData.newPlainText(formatTitle, formatContent.toString()));
-                    Toast.makeText(ctx, "Скопировано", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ctx, R.string.copied, Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("Закрыть", null)
+                .setNegativeButton(R.string.action_close, null)
                 .show();
     }
 

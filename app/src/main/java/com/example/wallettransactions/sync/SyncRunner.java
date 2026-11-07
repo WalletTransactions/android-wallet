@@ -1,5 +1,8 @@
 package com.example.wallettransactions.sync;
 
+import com.example.wallettransactions.R;
+import com.example.wallettransactions.Texts;
+
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -62,8 +65,9 @@ public final class SyncRunner {
         AWAITING_DECISION }
 
     /** Причина исхода {@link Status#AWAITING_DECISION} — для журнала и экранов синка. */
-    public static final String AWAITING_DECISION_MESSAGE =
-            "Ждёт решения: на главном экране вопрос об операциях без входа";
+    public static String awaitingDecisionMessage() {
+        return Texts.get(R.string.sync_awaiting_decision);
+    }
 
     public static final class Outcome {
         public final Status status;
@@ -102,10 +106,10 @@ public final class SyncRunner {
         try {
             return task.get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
-            return new Outcome(Status.STILL_RUNNING, new SyncLog(), "синхронизация ещё идёт");
+            return new Outcome(Status.STILL_RUNNING, new SyncLog(), Texts.get(R.string.sync_still_running));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return new Outcome(Status.STILL_RUNNING, new SyncLog(), "синхронизация ещё идёт");
+            return new Outcome(Status.STILL_RUNNING, new SyncLog(), Texts.get(R.string.sync_still_running));
         } catch (ExecutionException e) {
             return failed(e);
         }
@@ -154,7 +158,7 @@ public final class SyncRunner {
     }
 
     private static Outcome failed(ExecutionException e) {
-        return new Outcome(Status.ERROR, new SyncLog(), "Неожиданная ошибка: " + e.getCause());
+        return new Outcome(Status.ERROR, new SyncLog(), Texts.get(R.string.sync_unexpected_error, String.valueOf(e.getCause())));
     }
 
     private static Outcome doRunOnce(Context ctx) {
@@ -169,7 +173,7 @@ public final class SyncRunner {
                 // через Google отсюда нельзя (см. её javadoc).
                 return new Outcome(Status.NEEDS_RELINK, log, null);
             case NETWORK_ERROR:
-                return new Outcome(Status.NETWORK_ERROR, log, "Сервер недоступен по сети");
+                return new Outcome(Status.NETWORK_ERROR, log, Texts.get(R.string.sync_server_unreachable));
             case OK:
                 break;
         }
@@ -257,7 +261,7 @@ public final class SyncRunner {
             if (steps.connecting()) {
                 steps.connectionPull(log);
                 if (steps.connect() == LedgerConnection.Step.ASK) {
-                    return new Outcome(Status.AWAITING_DECISION, log, AWAITING_DECISION_MESSAGE);
+                    return new Outcome(Status.AWAITING_DECISION, log, awaitingDecisionMessage());
                 }
                 steps.push(log);
                 steps.connectionDone();
@@ -274,15 +278,15 @@ public final class SyncRunner {
                 // Push/pull прошли, но часть строк осталась dirty (например,
                 // нет иконки-заместителя — см. SyncEngine.PushIconRefs) —
                 // не "всё синхронизировано", подробности в журнале (✖).
-                return new Outcome(Status.PARTIAL, log, "Часть изменений не отправлена — повторите синхронизацию");
+                return new Outcome(Status.PARTIAL, log, Texts.get(R.string.sync_partial));
             }
             return new Outcome(Status.OK, log, null);
         } catch (IOException e) {
             // Сервер выключен/недоступен по сети между push и pull — обычное
             // дело для LAN-only стенда (план, п. 1.4).
-            return new Outcome(Status.NETWORK_ERROR, log, "Сервер недоступен: " + e.getMessage());
+            return new Outcome(Status.NETWORK_ERROR, log, Texts.get(R.string.sync_server_unavailable, e.getMessage()));
         } catch (JSONException e) {
-            return new Outcome(Status.ERROR, log, "Некорректный ответ сервера: " + e.getMessage());
+            return new Outcome(Status.ERROR, log, Texts.get(R.string.sync_bad_response, e.getMessage()));
         } catch (SyncEngine.PushRejectedException e) {
             // Сервер отклонил push-порцию (не самовосстанавливающийся
             // конфликт имени счёта — тот SyncEngine.pushDirty гасит сам, см.
@@ -292,12 +296,12 @@ public final class SyncRunner {
             // нести подтверждённые "Отправлено" за успешные порции ДО
             // упавшей — показываем оба факта разом (см.
             // IntegrationsActivity.showSyncResultDialog, ветка ERROR).
-            return new Outcome(Status.ERROR, log, "Сервер отклонил часть изменений — " + e.getMessage());
+            return new Outcome(Status.ERROR, log, Texts.get(R.string.sync_rejected, e.getMessage()));
         } catch (RuntimeException e) {
             // "Максимум дебаг-информации" по прямому запросу пользователя —
             // не проглатывать неожиданное молча, кнопка вызвана вручную,
             // есть кому это увидеть прямо сейчас.
-            return new Outcome(Status.ERROR, log, "Неожиданная ошибка: " + e);
+            return new Outcome(Status.ERROR, log, Texts.get(R.string.sync_unexpected_error, String.valueOf(e)));
         }
     }
 }

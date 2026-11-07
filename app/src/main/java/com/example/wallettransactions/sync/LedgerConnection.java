@@ -226,34 +226,18 @@ public final class LedgerConnection {
         }
     }
 
-    // ── Тексты диалога (spec ledger-connection; до android-i18n — здесь) ──────
-
-    public static final String DIALOG_TITLE = "Операции без входа";
-    public static final String BUTTON_TRANSFER = "Перенести";
-    public static final String BUTTON_DISCARD = "Удалить с телефона";
-    public static final String BUTTON_DELETE = "Удалить";
-    public static final String BUTTON_CANCEL = "Отмена";
+    // ── Тексты диалога (spec ledger-connection) — ресурсы strings_sync.xml ────
 
     /** «На телефоне 7 операций, внесённых до входа. Перенести их в кошелёк на сервере?» */
     public static String questionText(int n) {
-        return "На телефоне " + n + " " + plural(n, "операция, внесённая", "операции, внесённые",
-                "операций, внесённых") + " до входа. Перенести их в кошелёк на сервере?";
+        return com.example.wallettransactions.Texts.plural(
+                com.example.wallettransactions.R.plurals.connection_question, n);
     }
 
     /** «Удалить 7 операций с телефона? Отменить это нельзя.» */
     public static String confirmDiscardText(int n) {
-        return "Удалить " + n + " " + plural(n, "операцию", "операции", "операций")
-                + " с телефона? Отменить это нельзя.";
-    }
-
-    /** Русское склонение после числа: 1 операция, 2 операции, 5 операций, 21 операция. */
-    static String plural(int n, String one, String few, String many) {
-        int mod100 = Math.abs(n) % 100;
-        int mod10 = mod100 % 10;
-        if (mod100 >= 11 && mod100 <= 14) return many;
-        if (mod10 == 1) return one;
-        if (mod10 >= 2 && mod10 <= 4) return few;
-        return many;
+        return com.example.wallettransactions.Texts.plural(
+                com.example.wallettransactions.R.plurals.connection_confirm_discard, n);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

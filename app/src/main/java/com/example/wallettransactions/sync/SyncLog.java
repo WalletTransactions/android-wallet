@@ -138,7 +138,7 @@ public final class SyncLog {
     /** Готовый многострочный текст для показа в диалоге — по строке на (тип, действие), с числом строк. */
     public String toDisplayText() {
         if (isEmpty()) {
-            return "Изменений нет — локальные данные уже совпадают с сервером.";
+            return com.example.wallettransactions.Texts.get(com.example.wallettransactions.R.string.sync_no_changes);
         }
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<Key, Integer> e : counts.entrySet()) {

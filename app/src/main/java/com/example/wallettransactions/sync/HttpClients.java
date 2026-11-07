@@ -73,7 +73,7 @@ public final class HttpClients {
                 List<InetAddress> cached = recall(hostname);
                 if (cached.isEmpty()) throw e;
                 Log.w("HttpClients", "DNS не ответил для " + hostname + " (" + e.getMessage()
-                        + ") — беру последний известный адрес " + cached);
+                        + ") — беру последний известный адрес " + cached); // not UI: лог
                 return cached;
             }
         }

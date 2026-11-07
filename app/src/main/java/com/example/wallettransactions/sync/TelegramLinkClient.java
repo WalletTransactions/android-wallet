@@ -1,5 +1,7 @@
 package com.example.wallettransactions.sync;
 
+import com.example.wallettransactions.R;
+
 import android.content.Context;
 
 import com.example.wallettransactions.AppSettings;
@@ -82,7 +84,7 @@ public final class TelegramLinkClient {
     /** @return deep link {@code https://t.me/<бот>?start=<код>} */
     public static String createLinkCode(Context ctx) throws TelegramException {
         String link = call(ctx, "POST", "auth/telegram/link-code").optString("deep_link", "");
-        if (link.isEmpty()) throw new TelegramException("Сервер не выдал ссылку для Telegram", false);
+        if (link.isEmpty()) throw new TelegramException(ctx.getString(R.string.telegram_no_link), false);
         return link;
     }
 
@@ -92,7 +94,7 @@ public final class TelegramLinkClient {
 
     private static JSONObject call(Context ctx, String method, String path) throws TelegramException {
         if (TokenStore.getRefreshToken(ctx) == null || AppSettings.isNeedsRelink(ctx)) {
-            throw new TelegramException("Сначала войдите через «Связь с Google аккаунтом»", true);
+            throw new TelegramException(ctx.getString(R.string.telegram_sign_in_first), true);
         }
         try {
             String access = TokenStore.getAccessToken(ctx);
@@ -105,17 +107,17 @@ public final class TelegramLinkClient {
                 case OK:
                     break;
                 case NETWORK_ERROR:
-                    throw new TelegramException("Сервер недоступен", false);
+                    throw new TelegramException(ctx.getString(R.string.telegram_server_unavailable), false);
                 default:
-                    throw new TelegramException("Сессия истекла — нажмите «Связь с Google аккаунтом»", true);
+                    throw new TelegramException(ctx.getString(R.string.telegram_session_expired), true);
             }
             JSONObject body = execute(ctx, method, path, TokenStore.getAccessToken(ctx));
-            if (body == null) throw new TelegramException("Сессия истекла — нажмите «Связь с Google аккаунтом»", true);
+            if (body == null) throw new TelegramException(ctx.getString(R.string.telegram_session_expired), true);
             return body;
         } catch (IOException e) {
-            throw new TelegramException("Сервер недоступен", false);
+            throw new TelegramException(ctx.getString(R.string.telegram_server_unavailable), false);
         } catch (JSONException e) {
-            throw new TelegramException("Некорректный ответ сервера", false);
+            throw new TelegramException(ctx.getString(R.string.telegram_bad_response), false);
         }
     }
 
@@ -133,11 +135,11 @@ public final class TelegramLinkClient {
             String text = response.body() != null ? response.body().string() : "";
             JSONObject body = new JSONObject(text.isEmpty() ? "{}" : text);
             if (response.code() == 503) {
-                throw new TelegramException("Telegram-бот на сервере не настроен", false);
+                throw new TelegramException(ctx.getString(R.string.telegram_not_configured), false);
             }
             if (!response.isSuccessful()) {
                 String error = body.optString("error", "");
-                throw new TelegramException(error.isEmpty() ? "Ошибка сервера: HTTP " + response.code() : error, false);
+                throw new TelegramException(error.isEmpty() ? ctx.getString(R.string.telegram_http_error, response.code()) : error, false);
             }
             return body;
         }

@@ -86,7 +86,7 @@ public final class NewOperationsNotifier {
         NotificationManager manager = ctx.getSystemService(NotificationManager.class);
         if (manager == null) return;
         manager.createNotificationChannel(new NotificationChannel(
-                CHANNEL_ID, "Новые операции", NotificationManager.IMPORTANCE_DEFAULT));
+                CHANNEL_ID, ctx.getString(R.string.notify_channel_new_operations), NotificationManager.IMPORTANCE_DEFAULT));
 
         Intent intent = new Intent(ctx, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -101,14 +101,14 @@ public final class NewOperationsNotifier {
         String title;
         if (lines.size() == 1) {
             boolean recurring = lines.get(0).startsWith("↻ ");
-            title = recurring ? "Периодическая операция" : "Новая операция";
+            title = ctx.getString(recurring ? R.string.notify_recurring_operation : R.string.notify_new_operation);
             builder.setContentTitle(title)
                     .setContentText(recurring ? lines.get(0).substring(2) : lines.get(0));
         } else {
             title = lines.size() + " " + plural(lines.size());
             NotificationCompat.InboxStyle style = new NotificationCompat.InboxStyle().setBigContentTitle(title);
             for (int i = 0; i < Math.min(lines.size(), MAX_LINES); i++) style.addLine(lines.get(i));
-            if (lines.size() > MAX_LINES) style.setSummaryText("и ещё " + (lines.size() - MAX_LINES));
+            if (lines.size() > MAX_LINES) style.setSummaryText(ctx.getString(R.string.notify_and_more, lines.size() - MAX_LINES));
             builder.setContentTitle(title).setContentText(lines.get(0)).setStyle(style);
         }
 
@@ -188,10 +188,8 @@ public final class NewOperationsNotifier {
         return sb.toString();
     }
 
+    /** «новая операция» / «новые операции» / «новых операций» — после числа (ресурс plurals). */
     static String plural(int n) {
-        int mod10 = n % 10, mod100 = n % 100;
-        if (mod10 == 1 && mod100 != 11) return "новая операция";
-        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "новые операции";
-        return "новых операций";
+        return com.example.wallettransactions.Texts.plural(R.plurals.notify_new_operations_word, n);
     }
 }

@@ -138,7 +138,7 @@ final class PullDeferredRows {
     void save() throws IOException {
         if (file == null) return;
         if (isEmpty()) {
-            if (file.exists() && !file.delete()) throw new IOException("не удалось удалить " + file);
+            if (file.exists() && !file.delete()) throw new IOException("cannot delete " + file);
             return;
         }
         JSONObject json = new JSONObject();
@@ -157,6 +157,6 @@ final class PullDeferredRows {
             out.write(json.toString().getBytes(StandardCharsets.UTF_8));
             out.getFD().sync();
         }
-        if (!tmp.renameTo(file)) throw new IOException("не удалось переименовать " + tmp + " в " + file);
+        if (!tmp.renameTo(file)) throw new IOException("cannot rename " + tmp + " to " + file);
     }
 }
