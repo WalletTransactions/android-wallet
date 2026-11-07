@@ -178,11 +178,11 @@ public final class NewOperationsNotifier {
 
         StringBuilder sb = new StringBuilder();
         if (from.isOperatingAccount() && to.isOperatingAccount()) {
-            sb.append(sum).append(" · ").append(from.getName()).append(" → ").append(to.getName());
+            sb.append(sum).append(" · ").append(from.getDisplayName()).append(" → ").append(to.getDisplayName());
         } else if (from.isOperatingAccount()) {
-            sb.append('−').append(sum).append(" · ").append(to.getName());
+            sb.append('−').append(sum).append(" · ").append(to.getDisplayName());
         } else {
-            sb.append('+').append(sum).append(" · ").append(from.getName());
+            sb.append('+').append(sum).append(" · ").append(from.getDisplayName());
         }
         if (comment != null && !comment.trim().isEmpty()) sb.append(" · ").append(comment.trim());
         return sb.toString();

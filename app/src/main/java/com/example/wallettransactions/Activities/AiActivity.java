@@ -500,8 +500,8 @@ public class AiActivity extends AppCompatActivity {
             String symbol = wallet instanceof AccountOperatingItem
                     ? " " + ((AccountOperatingItem) wallet).getCurrency().getSymbol() : "";
             return "Записано: " + amount.toPlainString() + symbol
-                    + " · " + (other != null ? other.getName() : "")
-                    + " · " + (wallet != null ? wallet.getName() : "");
+                    + " · " + (other != null ? other.getDisplayName() : "")
+                    + " · " + (wallet != null ? wallet.getDisplayName() : "");
         } finally {
             c.close();
         }

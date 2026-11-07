@@ -176,7 +176,7 @@ public class ReportByAccountsAdapter  extends ArrayAdapter<AccountItem> {
 
         bindShare(holder, sumEq);
 
-        holder.TvName.setText(сhargeItem.getName());
+        holder.TvName.setText(сhargeItem.getDisplayName());
         holder.Img.setImageBitmap(сhargeItem.getIcon().getBitmap());
 
         return listItem;

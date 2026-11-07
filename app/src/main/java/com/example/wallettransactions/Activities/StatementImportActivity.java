@@ -309,7 +309,7 @@ public class StatementImportActivity extends AppCompatActivity {
         listBox.setVisibility(View.GONE);
         tvFile.setText(fileUri == null ? "" : fileName + (fileSize >= 0 ? " · " + sizeText(fileSize) : ""));
         AccountItem wallet = walletId > 0 ? Singleton.instance.getAccounts(this).getAccountById(walletId) : null;
-        tvWallet.setText(wallet != null ? wallet.getName() : "");
+        tvWallet.setText(wallet != null ? wallet.getDisplayName() : "");
         if (fileSize > MAX_FILE_BYTES) showPickError(AiTexts.STATEMENT_FILE_TOO_BIG);
         updateUploadButton();
     }
@@ -644,7 +644,7 @@ public class StatementImportActivity extends AppCompatActivity {
         importWalletId = wallet.state == DraftReconciler.State.OK ? (int) wallet.id : 0;
         AccountItem walletItem = importWalletId > 0 ? Singleton.instance.getAccounts(this).getAccountById(importWalletId) : null;
         tvListTitle.setText((current.sourceName != null ? current.sourceName : "Выписка")
-                + (walletItem != null ? " · " + walletItem.getName() : ""));
+                + (walletItem != null ? " · " + walletItem.getDisplayName() : ""));
 
         int added = 0;
         int ready = 0;

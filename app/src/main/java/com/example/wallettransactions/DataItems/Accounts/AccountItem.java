@@ -133,8 +133,36 @@ public class AccountItem implements IFilterIsLike {
         return id;
     }
 
+    /**
+     * Хранимое имя — для правки, поиска по имени и синка. Для показа — {@link #getDisplayName}.
+     */
     public String getName(){
         return name;
+    }
+
+    /** Ресурсы приложения для {@link #getDisplayName}; ставит {@code WalletApplication.onCreate}. */
+    private static volatile android.content.Context appContext;
+
+    public static void initDisplayNames(android.content.Context context) {
+        appContext = context.getApplicationContext();
+    }
+
+    /**
+     * Имя для показа (openspec android-i18n, spec ui-language): системные категории — на
+     * языке интерфейса («Перевод», «Комиссия за перевод»), остальные — хранимое имя.
+     * Хранимое {@code Transfer}/{@code Transfer commission} не меняется и уходит в синк.
+     */
+    public String getDisplayName() {
+        android.content.Context c = appContext;
+        if (c == null || systemKind == null) return name;
+        switch (systemKind) {
+            case TRANSFER:
+                return c.getString(com.example.wallettransactions.R.string.system_category_transfer);
+            case TRANSFER_COMMISSION:
+                return c.getString(com.example.wallettransactions.R.string.system_category_transfer_commission);
+            default:
+                return name;
+        }
     }
 
     public String getComment(){

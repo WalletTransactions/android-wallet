@@ -147,7 +147,7 @@ public class RecurringOperationListActivity extends AppCompatActivity {
 
             String title = r.comment != null && !r.comment.trim().isEmpty()
                     ? r.comment.trim()
-                    : (top != null ? top.getName() : "Счёт удалён");
+                    : (top != null ? top.getDisplayName() : "Счёт удалён");
             ((TextView) v.findViewById(R.id.recTitle)).setText(title);
             ((TextView) v.findViewById(R.id.recAccounts)).setText(nameOf(from) + " → " + nameOf(to));
 
@@ -187,7 +187,7 @@ public class RecurringOperationListActivity extends AppCompatActivity {
         }
 
         private String nameOf(AccountItem item) {
-            return item != null ? item.getName() : "—";
+            return item != null ? item.getDisplayName() : "—";
         }
 
         private void applySwitchState(FrameLayout switchView, boolean on) {

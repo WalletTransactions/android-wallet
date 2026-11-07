@@ -73,8 +73,9 @@ TRANSFER / TRANSFER_COMMISSION — строка ресурса, иначе хр�
 комментариев, `Log.*` и строк с `// not UI`, и кириллица в атрибутах
 `android:text|hint|title|contentDescription` layout/menu, не начинающихся с
 `@`. Сначала — список исключений по файлам, который сокращается с каждым
-вынесенным экраном; в конце — пустой. Запуск в `ci/run_unit_tests.sh`.
-Плюс Android lint `HardcodedText` как ошибка.
+вынесенным экраном; в конце — пустой. Запуск в `ci/run_unit_tests.sh` и шагом
+GitHub CI. Android lint `HardcodedText` не подключаем: lint в CI не запускается, а
+атрибуты layout/menu проверяет тот же скрипт.
 
 ### D6. Тесты и язык
 

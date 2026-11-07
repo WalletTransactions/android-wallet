@@ -35,6 +35,10 @@ jobs:
           cache: gradle
 
       # gradlew лежит в git без бита исполнения — запускаем через bash.
+      # Новые тексты интерфейса — только в ресурсах (openspec android-i18n, design D5).
+      - name: Hardcoded UI text
+        run: bash ci/check_hardcoded_text.sh
+
       # Unit-тесты от варианта не зависят (openspec android-flavors, D3) — гоняем prod.
       - name: Unit tests
         run: bash ./gradlew :app:testProdDebugUnitTest --console=plain --no-daemon

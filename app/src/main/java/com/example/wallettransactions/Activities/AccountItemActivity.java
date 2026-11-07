@@ -225,7 +225,7 @@ public class AccountItemActivity extends AppCompatActivity {
     public void btnDeleteClick(View view) {
         new AlertDialog.Builder(this)
                 .setTitle("Удалить")
-                .setMessage("Удалить «" + account.getName() + "»?")
+                .setMessage("Удалить «" + account.getDisplayName() + "»?")
                 .setPositiveButton("Удалить", (d, w) -> deleteAccount())
                 .setNegativeButton("Отмена", null)
                 .show();
@@ -248,9 +248,9 @@ public class AccountItemActivity extends AppCompatActivity {
     private String deleteRefusedMessage(WalletDbCRUD.DeleteAccountResult result) {
         // Системным бывает только счёт из двух зашитых по имени, а это категории.
         if (result == WalletDbCRUD.DeleteAccountResult.systemAccount) {
-            return "«" + account.getName() + "» — системная категория, её нельзя удалить";
+            return "«" + account.getDisplayName() + "» — системная категория, её нельзя удалить";
         }
-        return "По «" + account.getName() + "» есть операции — удалить нельзя, "
+        return "По «" + account.getDisplayName() + "» есть операции — удалить нельзя, "
                 + "иначе они пропадут вместе с ней";
     }
 

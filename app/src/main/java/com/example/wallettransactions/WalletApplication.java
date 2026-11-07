@@ -28,6 +28,8 @@ public class WalletApplication extends Application {
     public void onCreate() {
         super.onCreate();
         installCrashHandler();
+        // Показ системных категорий на языке интерфейса (openspec android-i18n).
+        com.example.wallettransactions.DataItems.Accounts.AccountItem.initDisplayNames(this);
         // До первой активности: иначе стартовый экран успевает подняться в светлой теме
         // и тут же пересоздаться в тёмной — заметным миганием.
         AppSettings.applyThemeMode(this);

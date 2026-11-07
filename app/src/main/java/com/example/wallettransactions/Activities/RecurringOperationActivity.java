@@ -261,7 +261,7 @@ public class RecurringOperationActivity extends AppCompatActivity {
     private void bindSlot(ImageView img, TextView text, AccountItem item) {
         if (item != null) {
             img.setImageBitmap(item.getIcon().getBitmap());
-            text.setText(item.getName());
+            text.setText(item.getDisplayName());
             text.setTextColor(ContextCompat.getColor(this, R.color.colorTextPrimary));
         } else {
             img.setImageBitmap(Singleton.instance.getIconList(this).getUnknownIcon().getBitmap());

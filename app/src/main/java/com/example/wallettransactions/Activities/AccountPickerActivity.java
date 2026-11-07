@@ -288,7 +288,7 @@ public class AccountPickerActivity extends AppCompatActivity {
 
         mVisibleRows.clear();
         for (Row row : (mShowWallets ? mWalletRows : mCategoryRows)) {
-            if (query.isEmpty() || row.account.getName().toLowerCase().contains(query))
+            if (query.isEmpty() || row.account.getDisplayName().toLowerCase().contains(query))
                 mVisibleRows.add(row);
         }
 
@@ -377,7 +377,7 @@ public class AccountPickerActivity extends AppCompatActivity {
     }
 
     private Comparator<Row> comparator(PickerSort sort) {
-        Comparator<Row> byName = (a, b) -> a.account.getName().compareToIgnoreCase(b.account.getName());
+        Comparator<Row> byName = (a, b) -> a.account.getDisplayName().compareToIgnoreCase(b.account.getDisplayName());
 
         switch (sort) {
             case BALANCE:
@@ -489,7 +489,7 @@ public class AccountPickerActivity extends AppCompatActivity {
             }
 
             boolean archived = Boolean.TRUE.equals(row.account.getIsArchived());
-            tvName.setText(archived ? row.account.getName() + " · в архиве" : row.account.getName());
+            tvName.setText(archived ? row.account.getDisplayName() + " · в архиве" : row.account.getDisplayName());
 
             int nameColor = R.color.colorTextPrimary;
             if (archived) nameColor = R.color.colorTextHint;

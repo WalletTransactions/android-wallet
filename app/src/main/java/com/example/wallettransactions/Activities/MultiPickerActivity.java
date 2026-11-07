@@ -115,7 +115,7 @@ public class MultiPickerActivity extends AppCompatActivity {
 
         mVisibleItems.clear();
         for (AccountItem item : mAllItems) {
-            if (query.isEmpty() || item.getName().toLowerCase().contains(query))
+            if (query.isEmpty() || item.getDisplayName().toLowerCase().contains(query))
                 mVisibleItems.add(item);
         }
 
@@ -216,7 +216,7 @@ public class MultiPickerActivity extends AppCompatActivity {
             boolean isChecked = selected.contains(item.getId());
 
             ((ImageView) row.findViewById(R.id.itemIcon)).setImageBitmap(item.getIcon().getBitmap());
-            ((TextView) row.findViewById(R.id.itemLabel)).setText(item.getName());
+            ((TextView) row.findViewById(R.id.itemLabel)).setText(item.getDisplayName());
 
             TextView check = row.findViewById(R.id.itemCheck);
             check.setBackgroundResource(isChecked ? R.drawable.bg_check_on : R.drawable.bg_check_off);

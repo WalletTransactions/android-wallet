@@ -811,7 +811,7 @@ public class TransactionActivity extends AppCompatActivity {
     private void bindSlot(ImageView img, EditText edit, AccountItem item) {
         if (item != null) {
             img.setImageBitmap(item.getIcon().getBitmap());
-            edit.setText(item.getName());
+            edit.setText(item.getDisplayName());
         } else {
             IconList iconList = Singleton.instance.getIconList(this);
             img.setImageBitmap(iconList.getUnknownIcon().getBitmap());
