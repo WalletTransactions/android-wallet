@@ -50,7 +50,7 @@ change wallet-api (`account_asset` в синке, `system_kind = 3`) реали�
 
 ## 7. Интеграция
 
-- [ ] 7.1 Сквозная проверка на двух устройствах (эмулятор + телефон) против test с выкатанным wallet-api: пометка актива, переоценка и перенос категории на одном видны на другом после синка; старая версия APK на третьем устройстве синкается без ошибок, балансы совпадают (Часть про старую версию APK — не требуется, решение 2026-11-02.)
+- [ ] 7.1 Сквозная проверка на двух устройствах (эмулятор + телефон) против test с выкатанным wallet-api: пометка актива, переоценка и перенос категории на одном видны на другом после синка; старая версия APK на третьем устройстве синкается без ошибок, балансы совпадают (Часть про старую версию APK — не требуется, решение 2026-11-02.) — Тест: [android-wallet#33](https://github.com/WalletTransactions/android-wallet/issues/33)
 - [x] 7.2 `bash gradlew testDebugUnitTest assembleDebug` проходит — у `app` есть flavors, корневой `testDebugUnitTest` тесты приложения не запускает; фактически прогнано `bash gradlew testProdDebugUnitTest testQaDebugUnitTest assembleDebug`: после слияния с main (android-i18n, new-user-default-set) — 301/301 в каждом flavor, 2026-11-07
 
 ## Workflow follow-up
