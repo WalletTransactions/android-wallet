@@ -388,7 +388,7 @@ public class TransactionActivity extends AppCompatActivity {
         }
 
         double amount = getIntent().getDoubleExtra(cAmount, 0);
-        mAmount.setText(amount == 0 ? "" : String.valueOf(amount));
+        mAmount.setText(amount == 0 ? "" : com.example.wallettransactions.AdapterUtils.plainNumber(amount));
         mComment.setText(getIntent().getStringExtra(cComment));
 
         // Экран получает одну проводку, а операция может состоять из нескольких.

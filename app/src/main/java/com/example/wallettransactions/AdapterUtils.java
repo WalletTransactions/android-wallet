@@ -19,6 +19,16 @@ import static java.lang.StrictMath.abs;
 public class AdapterUtils {
     private static final Map<Integer, DecimalFormat> formatCache = new HashMap<>();
 
+    /**
+     * Число для поля ввода и короткой подписи: без экспоненты и лишних нулей
+     * (10000000.0 → «10000000», 100.50 → «100.5»). {@code String.valueOf(double)} с 10^7
+     * печатает «1.0E7» — такую строку ни поле суммы, ни пользователь не поймут.
+     */
+    public static String plainNumber(double value) {
+        if (value == 0) return "0";
+        return java.math.BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
+    }
+
     public static DecimalFormat getFormat(int precision) {
         return formatCache.computeIfAbsent(precision, p -> {
             StringBuilder pattern = new StringBuilder("#,##0");

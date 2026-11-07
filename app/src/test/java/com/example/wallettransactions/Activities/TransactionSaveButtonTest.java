@@ -1,5 +1,6 @@
 package com.example.wallettransactions.Activities;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -88,6 +89,13 @@ public class TransactionSaveButtonTest {
                 .putExtra(TransactionActivity.cTranId, 1);
         View save = open(in);
         assertFalse("правка без изменений по-прежнему погашена", save.isEnabled());
+    }
+
+    @Test
+    public void big_amount_is_shown_without_exponent() {
+        open(prefilledExpense(10_000_000.0));
+        android.widget.EditText amount = controller.get().findViewById(R.id.editAmount);
+        assertEquals("не «1.0E7»", "10000000", amount.getText().toString());
     }
 
     /** Те же extras, что кладёт AiActivity для черновика из ИИ. */
