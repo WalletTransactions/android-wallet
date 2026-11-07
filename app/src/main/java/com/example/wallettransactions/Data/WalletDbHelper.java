@@ -23,7 +23,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
     private static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 87;
+    private static final int DATABASE_VERSION = 88;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -63,6 +63,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         CreateOperationLink(db);
         CreateCurrencyEntry(db);
         CreateAccountOperatingEntry(db);
+        CreateAccountAssetEntry(db);
         CreateRate(db);
         CreateRecurringOperation(db);
         createSyncReloadSeen(db);
@@ -243,6 +244,10 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     private void createUuidIndexes(SQLiteDatabase db) {
         createUuidIndex(db, WalletContract.AccountEntry.TABLE_NAME);
         createUuidIndex(db, WalletContract.AccountOperatingEntry.TABLE_NAME);
+        // См. createSyncTriggers: шаги v72/v82 идут раньше v88, где таблица появляется.
+        if (tableExists(db, WalletContract.AccountAssetEntry.TABLE_NAME)) {
+            createUuidIndex(db, WalletContract.AccountAssetEntry.TABLE_NAME);
+        }
         createUuidIndex(db, WalletContract.CurrencyEntry.TABLE_NAME);
         createUuidIndex(db, WalletContract.CurrencyPairEntry.TABLE_NAME);
         createUuidIndex(db, WalletContract.CurrencyPairRateEntry.TABLE_NAME);
@@ -479,6 +484,10 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     private void createSyncTriggers(SQLiteDatabase db) {
         createDirtyTrigger(db, WalletContract.AccountEntry.TABLE_NAME, WalletContract.AccountEntry._ID);
         createDirtyTrigger(db, WalletContract.AccountOperatingEntry.TABLE_NAME, WalletContract.AccountOperatingEntry._ID);
+        // account_asset появляется шагом v88 — старые шаги апгрейда (v72) зовут этот метод раньше.
+        if (tableExists(db, WalletContract.AccountAssetEntry.TABLE_NAME)) {
+            createDirtyTrigger(db, WalletContract.AccountAssetEntry.TABLE_NAME, WalletContract.AccountAssetEntry._ID);
+        }
         createDirtyTrigger(db, WalletContract.CurrencyEntry.TABLE_NAME, WalletContract.CurrencyEntry._ID);
         createDirtyTrigger(db, WalletContract.CurrencyPairEntry.TABLE_NAME, WalletContract.CurrencyPairEntry._ID);
         createDirtyTrigger(db, WalletContract.IconEntry.TABLE_NAME, WalletContract.IconEntry._ID);
@@ -538,6 +547,15 @@ public class WalletDbHelper extends SQLiteOpenHelper {
      * v75 добавил {@code system_kind} безусловно — то есть колонка там уже есть, и
      * последующий {@code ALTER TABLE ADD COLUMN} упал бы на "duplicate column name".
      */
+    static boolean tableExists(SQLiteDatabase db, String table) {
+        Cursor c = db.rawQuery("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", new String[]{table});
+        try {
+            return c.moveToFirst();
+        } finally {
+            c.close();
+        }
+    }
+
     private static boolean columnExists(SQLiteDatabase db, String table, String column) {
         Cursor c = db.rawQuery("PRAGMA table_info(" + table + ")", null);
         try {
@@ -865,6 +883,10 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                 "select o._id, o.date, o.acc_fr_id, o.acc_to_id, o.amount, o.comment , acf.name acc_fr_name, act.name acc_to_name, COALESCE(aof.currency_id , aot.currency_id ) currency_id\n" +
                 ", case when aof._id is not null then 1 else 0 end acc_from_is_operating\n" +
                 ", case when aot._id is not null then 1 else 0 end acc_to_is_operating\n" +
+                // v88 (capital-assets, design п. 5): переоценка — одна из сторон счёт с
+                // system_kind = 3. Тот же признак, что у wallet-api (без фильтра deleted_at
+                // по счёту); доход, расход и плитки-фильтры исключают is_revaluation = 1.
+                ", case when acf.system_kind = 3 or act.system_kind = 3 then 1 else 0 end is_revaluation\n" +
                 "from operation o \n" +
                 "join account acf\n" +
                 "on acf._id = o.acc_fr_id \n" +
@@ -881,18 +903,18 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE VIEW v_operation_eq\n" +
                 "as\n" +
                 "select o._id, o.date, o.acc_fr_id, o.acc_to_id, o.amount, o.comment , o.acc_fr_name, o.acc_from_is_operating, o.acc_to_name, o.acc_to_is_operating,o.currency_id, o.to_currency_id, \n" +
-                "o.max_date_rate, r.rate , round(r.rate*o.amount,2) amount_eq \n" +
+                "o.max_date_rate, r.rate , round(r.rate*o.amount,2) amount_eq, o.is_revaluation \n" +
                 "from\n" +
                 "(\n" +
                 "select o._id, o.date, o.acc_fr_id, o.acc_to_id, o.amount, o.comment , o.acc_fr_name, o.acc_from_is_operating,\n" +
-                "o.acc_to_name, o.acc_to_is_operating, o.currency_id, cc._id to_currency_id, max(rld.date) max_date_rate , cc._id \n" +
+                "o.acc_to_name, o.acc_to_is_operating, o.currency_id, cc._id to_currency_id, max(rld.date) max_date_rate , cc._id, o.is_revaluation \n" +
                 "  from v_operation o\n" +
                 "  cross join currency cc \n" +
                 "  left join v_currency_conversion_rate rld\n" +
                 "    on rld.from_currency_id = o.currency_id and rld.to_currency_id =cc._id and o.date >= rld.date\n" +
                 " where cc.deleted_at is null\n" +
                 " group by o._id, o.date, o.acc_fr_id, o.acc_to_id, o.amount, o.comment , o.acc_fr_name, o.acc_from_is_operating, o.acc_to_name, o.acc_to_is_operating, \n" +
-                " o.currency_id,  cc._id \n" +
+                " o.currency_id,  cc._id, o.is_revaluation \n" +
                 " ) o \n" +
                 "left join v_currency_conversion_rate r\n" +
                 "  on r.to_currency_id =o.to_currency_id and r.from_currency_id = o.currency_id and o.max_date_rate = r.date;\n");
@@ -932,6 +954,38 @@ CONSTRAINT fk_currency_icon_id FOREIGN KEY (icon_id) REFERENCES icons (_id));
                 +"));");
 /*CREATE TABLE account_operating (_id INTEGER PRIMARY KEY, currency_id TEXT NOT NULL,
 CONSTRAINT fk_currencies_id FOREIGN KEY (currency_id) REFERENCES currencies (_id));*/
+    }
+
+    /**
+     * v88 (openspec capital-assets, design п. 1) — признак капитального актива, см.
+     * {@link WalletContract.AccountAssetEntry}. {@code IF NOT EXISTS} — вызывается и из
+     * onCreate, и из шага v88.
+     */
+    static void CreateAccountAssetEntry(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + WalletContract.AccountAssetEntry.TABLE_NAME + " (\n"
+                + WalletContract.AccountAssetEntry._ID + " INTEGER PRIMARY KEY, \n"
+                + WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE + " INTEGER NOT NULL, \n"
+                + WalletContract.AccountAssetEntry.COLUMN_INCLUDE_IN_NET_WORTH + " INTEGER NOT NULL DEFAULT 1, \n"
+                + WalletContract.AccountAssetEntry.COLUMN_COMMENT + " TEXT NOT NULL DEFAULT '', \n"
+                + SYNC_COLUMNS_DDL + ",\n"
+                + " CONSTRAINT fk_account_asset_id FOREIGN KEY ("
+                + WalletContract.AccountAssetEntry._ID + ") REFERENCES "
+                + WalletContract.AccountEntry.TABLE_NAME + " (" + WalletContract.AccountEntry._ID + "));");
+    }
+
+    /**
+     * Шаг v88 (openspec capital-assets, design п. 2): таблица {@code account_asset} с
+     * триггером dirty и индексом uuid, вьюхи с колонкой {@code is_revaluation} и флаг
+     * однократного перечита потока ledger — прежняя версия пропускала строки
+     * {@code account_asset} в pull, а курсор уходил дальше
+     * ({@code SyncEngine.pullAll}, {@code AppSettings.isLedgerRereadPending}).
+     */
+    void upgradeToCapitalAssetsV88(SQLiteDatabase db) {
+        CreateAccountAssetEntry(db);
+        createDirtyTrigger(db, WalletContract.AccountAssetEntry.TABLE_NAME, WalletContract.AccountAssetEntry._ID);
+        createUuidIndex(db, WalletContract.AccountAssetEntry.TABLE_NAME);
+        CreateViews(db);
+        if (mContext != null) com.example.wallettransactions.AppSettings.setLedgerRereadPending(mContext, true);
     }
 
     private void InsertAccountOperatingEntry(SQLiteDatabase db, long accId, long curId) {
@@ -1234,6 +1288,10 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             if (oldVersion < 87) {
                 // v87: отметки загрузки синка с нуля (purge-synced-tombstones), данные не меняются.
                 createSyncReloadSeen(db);
+            }
+            if (oldVersion < 88) {
+                // v88: капитальные активы (capital-assets) — account_asset, is_revaluation, перечит ledger.
+                upgradeToCapitalAssetsV88(db);
             }
             return;
         }

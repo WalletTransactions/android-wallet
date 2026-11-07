@@ -328,6 +328,9 @@ public class AccountPickerActivity extends AppCompatActivity {
             // В справочнике он, наоборот, нужен: снять архив больше негде. Прячется он
             // только здесь, в выборе, — в расчётах и отчётах остаётся (AccountItem.getIsArchived).
             if (!mCatalogMode && Boolean.TRUE.equals(account.getIsArchived())) continue;
+            // «Переоценку» при вводе операции не предлагаем (capital-assets): её проводки
+            // пишет диалог переоценки актива. В справочнике она видна.
+            if (!mCatalogMode && account.isSystemRevaluation()) continue;
 
             if (account.isOperatingAccount()) {
                 mWalletRows.add(new Row(account, balances.get(account.getId())));
@@ -365,8 +368,26 @@ public class AccountPickerActivity extends AppCompatActivity {
     }
 
     private void sortRows() {
-        mWalletRows.sort(withPriority(comparator(mWalletSort)));
+        // capital-assets: при вводе операции активы — после всех ликвидных кошельков при
+        // любой сортировке (стабильное разбиение поверх выбранного порядка). В справочнике
+        // активы стоят вместе с кошельками, только с подписью типа.
+        Comparator<Row> walletOrder = withPriority(comparator(mWalletSort));
+        if (!mCatalogMode) walletOrder = Comparator.<Row>comparingInt(r -> isAsset(r.account) ? 1 : 0).thenComparing(walletOrder);
+        mWalletRows.sort(walletOrder);
         mCategoryRows.sort(withPriority(comparator(mCategorySort)));
+    }
+
+    static boolean isAsset(AccountItem account) {
+        return account instanceof AccountOperatingItem && ((AccountOperatingItem) account).isAsset();
+    }
+
+    /** Подпись типа актива: «недвижимость», «авто», «прочее». */
+    static String assetTypeTitle(int type) {
+        switch (type) {
+            case 1: return "недвижимость";
+            case 2: return "авто";
+            default: return "прочее";
+        }
     }
 
     /** Приоритетные счета — первыми в своём порядке, остальные — по {@code rest}. */
@@ -489,7 +510,9 @@ public class AccountPickerActivity extends AppCompatActivity {
             }
 
             boolean archived = Boolean.TRUE.equals(row.account.getIsArchived());
-            tvName.setText(archived ? row.account.getName() + " · в архиве" : row.account.getName());
+            String name = row.account.getName();
+            if (wallet != null && wallet.isAsset()) name += " · " + assetTypeTitle(wallet.getAsset().type);
+            tvName.setText(archived ? name + " · в архиве" : name);
 
             int nameColor = R.color.colorTextPrimary;
             if (archived) nameColor = R.color.colorTextHint;

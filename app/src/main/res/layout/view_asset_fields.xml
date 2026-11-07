@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Признак капитального актива у кошелька (openspec capital-assets): «Капитальный актив»,
+  при включённом — «Тип актива» и «Учитывать во „Всего с капиталом“». Общий кусок для
+  «Нового кошелька» (AddWalletActivity, там третий переключатель скрыт — по умолчанию
+  включён) и карточки кошелька (AccountItemActivity). У категорий его нет.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/assetFields"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <CheckBox
+        android:id="@+id/checkIsAsset"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Капитальный актив"
+        android:textColor="@color/colorTextPrimary"
+        android:textSize="15sp"
+        android:buttonTint="@color/colorPrimary"
+        android:layout_marginBottom="8dp"/>
+
+    <LinearLayout
+        android:id="@+id/assetDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Тип актива"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            android:textColor="@color/colorTextSecondary"
+            android:layout_marginBottom="6dp"/>
+
+        <RadioGroup
+            android:id="@+id/assetTypeGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:checkedButton="@+id/assetTypeRealEstate"
+            android:layout_marginBottom="8dp">
+
+            <RadioButton
+                android:id="@+id/assetTypeRealEstate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Недвижимость"
+                android:buttonTint="@color/colorPrimary"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="14sp"/>
+
+            <RadioButton
+                android:id="@+id/assetTypeVehicle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Авто"
+                android:buttonTint="@color/colorPrimary"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="14sp"/>
+
+            <RadioButton
+                android:id="@+id/assetTypeOther"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Прочее"
+                android:buttonTint="@color/colorPrimary"
+                android:textColor="@color/colorTextPrimary"
+                android:textSize="14sp"/>
+        </RadioGroup>
+
+        <CheckBox
+            android:id="@+id/checkInNetWorth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="Учитывать во «Всего с капиталом»"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="15sp"
+            android:buttonTint="@color/colorPrimary"
+            android:layout_marginBottom="8dp"/>
+    </LinearLayout>
+</LinearLayout>

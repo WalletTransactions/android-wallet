@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Строка переоценки капитального актива (openspec capital-assets, asset-revaluation):
+  иконка актива со значком роста, название актива, подпись «Переоценка» (и
+  комментарий, если есть), сумма со знаком «+» (вверх) или «−» (вниз) цветом перевода.
+  В итог дня переоценка не входит (OperationItem.getMovementAmountEq).
+
+  Шапка дня — общий кусок с остальными строками (view_transaction_day_header).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingLeft="18dp"
+    android:paddingRight="18dp">
+
+    <include layout="@layout/view_transaction_day_header"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_card_row"
+        android:elevation="1dp"
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+
+        <RelativeLayout
+            android:layout_width="46dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="10dp">
+
+            <ImageView
+                android:id="@+id/revaluationAssetIcon"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_centerVertical="true"
+                android:padding="6dp"
+                android:background="@drawable/bg_icon_circle"
+                android:contentDescription="@null"/>
+
+            <ImageView
+                android:id="@+id/revaluationBadge"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentBottom="true"
+                android:padding="3dp"
+                android:background="@drawable/bg_icon_circle"
+                android:src="@drawable/acc_trending_up"
+                android:tint="@color/colortransfer"
+                android:contentDescription="@null"/>
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/revaluationAsset"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="13.5sp"
+                android:textStyle="bold"
+                android:textColor="@color/colorTextPrimary"
+                android:singleLine="true"
+                android:ellipsize="end"/>
+
+            <TextView
+                android:id="@+id/revaluationLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@color/colorTextSecondary"
+                android:singleLine="true"
+                android:ellipsize="end"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/revaluationAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textSize="14.5sp"
+            android:textStyle="bold"
+            android:textColor="@color/colortransfer"
+            android:singleLine="true"/>
+    </LinearLayout>
+</LinearLayout>

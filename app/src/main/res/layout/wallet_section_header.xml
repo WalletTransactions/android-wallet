@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Заголовок секции таба «Кошельки» (openspec capital-assets): «Ликвидные» / «Капитал»
+  и сумма секции на конец периода в валюте эквивалента. Без активов заголовков нет.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:baselineAligned="true"
+    android:paddingLeft="22dp"
+    android:paddingRight="22dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="4dp">
+
+    <TextView
+        android:id="@+id/sectionTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:letterSpacing="0.07"
+        android:textAllCaps="true"
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="10.5sp"
+        android:textStyle="bold"
+        tools:text="Капитал"/>
+
+    <TextView
+        android:id="@+id/sectionSum"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        tools:text="12 000 000 ₽"/>
+</LinearLayout>

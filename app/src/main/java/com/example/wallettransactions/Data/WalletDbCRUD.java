@@ -407,11 +407,330 @@ public class WalletDbCRUD {
         db.update(WalletContract.AccountOperatingEntry.TABLE_NAME, cvOp,
                 WalletContract.AccountOperatingEntry._ID + "=?", new String[]{id});
 
+        // Признак актива уходит вместе с кошельком (capital-assets) — живой строки
+        // account_asset у удалённого кошелька быть не должно.
+        ContentValues cvAsset = new ContentValues();
+        cvAsset.put(WalletContract.AccountAssetEntry.COLUMN_DELETED_AT, now);
+        db.update(WalletContract.AccountAssetEntry.TABLE_NAME, cvAsset,
+                WalletContract.AccountAssetEntry._ID + "=? AND "
+                        + WalletContract.AccountAssetEntry.COLUMN_DELETED_AT + " IS NULL", new String[]{id});
+
         ContentValues cvAcc = new ContentValues();
         cvAcc.put(WalletContract.AccountEntry.COLUMN_DELETED_AT, now);
         db.update(WalletContract.AccountEntry.TABLE_NAME, cvAcc,
                 WalletContract.AccountEntry._ID + "=?", new String[]{id});
         return DeleteAccountResult.deleted;
+    }
+
+    // ── Капитальные активы (openspec capital-assets) ───────────────────────────
+
+    /**
+     * Помечает кошелёк капитальным активом или меняет тип/«Учитывать во „Всего с
+     * капиталом“» (design п. 1). Строка одна на счёт: снятая раньше (мягко удалённая)
+     * оживает с тем же uuid, второй строки не появляется. dirty поднимает триггер или
+     * DEFAULT. Только для кошелька с живой {@code account_operating}.
+     *
+     * @return false — счёт не кошелёк (категория или удалён), ничего не записано
+     */
+    public static boolean SetAccountAsset(SQLiteDatabase db, int accountId, int assetType, boolean includeInNetWorth) {
+        String id = String.valueOf(accountId);
+        String uuid;
+        Cursor c = db.rawQuery("SELECT a." + WalletContract.AccountEntry.COLUMN_UUID
+                + " FROM " + WalletContract.AccountEntry.TABLE_NAME + " a"
+                + " JOIN " + WalletContract.AccountOperatingEntry.TABLE_NAME + " ao ON ao."
+                + WalletContract.AccountOperatingEntry._ID + " = a." + WalletContract.AccountEntry._ID
+                + " AND ao." + WalletContract.AccountOperatingEntry.COLUMN_DELETED_AT + " IS NULL"
+                + " WHERE a." + WalletContract.AccountEntry._ID + " = ? AND a."
+                + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL", new String[]{id});
+        try {
+            if (!c.moveToFirst()) {
+                Log.w(TAG, "SetAccountAsset: account id=" + accountId + " is not a live wallet");
+                return false;
+            }
+            uuid = c.getString(0);
+        } finally {
+            c.close();
+        }
+
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE, assetType);
+        cv.put(WalletContract.AccountAssetEntry.COLUMN_INCLUDE_IN_NET_WORTH, includeInNetWorth ? 1 : 0);
+        cv.putNull(WalletContract.AccountAssetEntry.COLUMN_DELETED_AT);
+        int updated = db.update(WalletContract.AccountAssetEntry.TABLE_NAME, cv,
+                WalletContract.AccountAssetEntry._ID + "=?", new String[]{id});
+        if (updated > 0) return true;
+
+        cv.put(WalletContract.AccountAssetEntry._ID, accountId);
+        // uuid = account.uuid — тот же инвариант, что у account_operating.
+        cv.put(WalletContract.AccountAssetEntry.COLUMN_UUID, uuid);
+        return db.insert(WalletContract.AccountAssetEntry.TABLE_NAME, null, cv) > 0;
+    }
+
+    /** Снимает признак актива — мягкое удаление строки, операции кошелька не трогаются. */
+    public static void ClearAccountAsset(SQLiteDatabase db, int accountId) {
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.AccountAssetEntry.COLUMN_DELETED_AT, System.currentTimeMillis());
+        db.update(WalletContract.AccountAssetEntry.TABLE_NAME, cv,
+                WalletContract.AccountAssetEntry._ID + "=? AND "
+                        + WalletContract.AccountAssetEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{String.valueOf(accountId)});
+    }
+
+    /** Есть ли на телефоне хоть один живой актив — для действия «Перенести операции в актив». */
+    public static boolean HasAssets(SQLiteDatabase db) {
+        Cursor c = db.rawQuery("SELECT 1 FROM " + WalletContract.AccountAssetEntry.TABLE_NAME + " aa"
+                + " JOIN " + WalletContract.AccountEntry.TABLE_NAME + " a ON a._id = aa._id AND a.deleted_at IS NULL"
+                + " WHERE aa." + WalletContract.AccountAssetEntry.COLUMN_DELETED_AT + " IS NULL LIMIT 1", null);
+        try {
+            return c.moveToFirst();
+        } finally {
+            c.close();
+        }
+    }
+
+    /**
+     * Системная категория «Переоценка» (design п. 4): уже есть (в том числе пришла синком с
+     * другого устройства) — она; нет — заводится с {@code system_kind = 3}. Имя
+     * «Переоценка» занято обычной категорией — «Переоценка активов» (чужую категорию в
+     * системную не превращаем: её прошлые проводки ушли бы из расходов); занято и оно —
+     * с номером « (2)», « (3)»…
+     */
+    public static int GetOrCreateRevaluationCategory(SQLiteDatabase db) {
+        int systemKind = AccountItem.SystemKind.REVALUATION.getValue();
+        int id = GetAccountIdBySystemKind(db, systemKind);
+        if (id > 0) return id;
+        String name = AccountItem.SYSTEM_REVALUATION_NAME;
+        if (GetAccountIdByName(db, name) > 0) {
+            name = AccountItem.SYSTEM_REVALUATION_FALLBACK_NAME;
+            for (int n = 2; GetAccountIdByName(db, name) > 0; n++) {
+                name = AccountItem.SYSTEM_REVALUATION_FALLBACK_NAME + " (" + n + ")";
+            }
+        }
+        return createCategory(db, name, "Percentage", systemKind);
+    }
+
+    /** Итог {@link #WriteRevaluation}. */
+    public enum RevaluationResult { written, unchanged, negative, failed }
+
+    /**
+     * Переоценка актива (openspec capital-assets, asset-revaluation): одна проводка на |Δ|,
+     * Δ = новая оценка − баланс актива по всем его проводкам до конца выбранного дня
+     * включительно. Δ &gt; 0 — «Переоценка» → актив, Δ &lt; 0 — актив → «Переоценка». Пишется
+     * на конец дня ({@code yyyy-MM-dd 23:59}), чтобы встать после всех операций того дня.
+     * Δ округляется до {@code precision} валюты актива; Δ = 0 — ничего не пишется.
+     *
+     * @param day      дата в формате {@code yyyy-MM-dd}
+     * @param newValue новая оценка в валюте актива
+     */
+    public static RevaluationResult WriteRevaluation(SQLiteDatabase db, int assetId, String day,
+                                                     double newValue, int precision, String comment) {
+        if (newValue < 0) return RevaluationResult.negative;
+        String endOfDay = day + " 23:59";
+        double current = WalletDbLoader.LoadAccountBalanceAt(db, assetId, endOfDay);
+        double delta = java.math.BigDecimal.valueOf(newValue - current)
+                .setScale(precision, java.math.RoundingMode.HALF_UP).doubleValue();
+        if (delta == 0) return RevaluationResult.unchanged;
+
+        db.beginTransaction();
+        try {
+            int categoryId = GetOrCreateRevaluationCategory(db);
+            if (categoryId <= 0) return RevaluationResult.failed;
+            long id = delta > 0
+                    ? InsertOperation(db, endOfDay, categoryId, assetId, delta, comment)
+                    : InsertOperation(db, endOfDay, assetId, categoryId, -delta, comment);
+            if (id <= 0) return RevaluationResult.failed;
+            db.setTransactionSuccessful();
+            return RevaluationResult.written;
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    /** Итог {@link #MoveCategoryToAsset}: сколько перенесено и сколько пропущено без курса. */
+    public static final class MoveResult {
+        public final int moved;
+        public final int skippedNoRate;
+        public final boolean archived;
+
+        MoveResult(int moved, int skippedNoRate, boolean archived) {
+            this.moved = moved;
+            this.skippedNoRate = skippedNoRate;
+            this.archived = archived;
+        }
+    }
+
+    /** Живые операции категории с кошельком на другой стороне — сколько перенесёт {@link #MoveCategoryToAsset}. */
+    public static int CountCategoryWalletOperations(SQLiteDatabase db, int categoryId) {
+        String id = String.valueOf(categoryId);
+        Cursor c = db.rawQuery("SELECT count(*) FROM " + WalletContract.OperationEntry.TABLE_NAME + " o"
+                + " JOIN " + WalletContract.AccountOperatingEntry.TABLE_NAME + " w ON w.deleted_at IS NULL"
+                + " AND w._id = CASE WHEN o.acc_fr_id = ? THEN o.acc_to_id ELSE o.acc_fr_id END"
+                + " WHERE (o.acc_fr_id = ? OR o.acc_to_id = ?) AND o.deleted_at IS NULL", new String[]{id, id, id});
+        try {
+            return c.moveToFirst() ? c.getInt(0) : 0;
+        } finally {
+            c.close();
+        }
+    }
+
+    /**
+     * Переносит все операции категории в капитальный актив одной транзакцией (openspec
+     * capital-assets, design п. 9). Делает клиент, а не сервер: офлайн-устройство с
+     * неотправленными операциями на старую категорию после серверной миграции привезло бы
+     * их обратно.
+     * <ul>
+     *   <li>Кошелёк операции в валюте актива — сторона-категория заменяется активом:
+     *   расход «кошелёк → категория» становится переводом «кошелёк → актив», возврат
+     *   «категория → кошелёк» — «актив → кошелёк». Суммы и даты прежние.</li>
+     *   <li>Другая валюта — валютный перевод в две ноги через «Transfer» по курсу на дату
+     *   операции, как {@code TransactionActivity.saveTransfer}: исходная проводка
+     *   становится «кошелёк → Transfer», новая нога «Transfer → актив» на сумму × курс
+     *   (округление до {@code precision} актива), связка {@code LEG}. Возврат — зеркально:
+     *   новая «актив → Transfer», исходная становится «Transfer → кошелёк». Нет курса на
+     *   дату — операция пропускается и считается; уже связанная разновалютная операция
+     *   (нога чужого перевода) тоже пропускается.</li>
+     *   <li>Правила повторяющихся операций (локальные) с этой категорией и кошельком в
+     *   валюте актива перенацеливаются на актив; разновалютные остаются как есть.</li>
+     *   <li>Не осталось живых операций — категория уходит в архив.</li>
+     * </ul>
+     * Ошибка посреди переноса откатывает всё (исключение пробрасывается).
+     */
+    public static MoveResult MoveCategoryToAsset(SQLiteDatabase db, int categoryId, int assetId) {
+        int assetCurrency = walletCurrencyId(db, assetId);
+        if (assetCurrency <= 0) throw new IllegalArgumentException("asset " + assetId + " is not a wallet");
+        int assetPrecision = currencyPrecision(db, assetCurrency);
+        String cat = String.valueOf(categoryId);
+
+        db.beginTransaction();
+        try {
+            int moved = 0, skipped = 0;
+            int bridgeId = -1;
+            List<long[]> ops = new ArrayList<>();      // _id, wallet, walletCurrency, isRefund(0/1), linked(0/1)
+            List<String> dates = new ArrayList<>();
+            List<Double> amounts = new ArrayList<>();
+            Cursor c = db.rawQuery("SELECT o._id, o.date, o.amount, o.acc_fr_id, o.acc_to_id, w.currency_id,"
+                    + " EXISTS (SELECT 1 FROM " + WalletContract.OperationLinkEntry.TABLE_NAME + " l"
+                    + "   WHERE (l.main_id = o._id OR l.link_id = o._id) AND l.deleted_at IS NULL)"
+                    + " FROM " + WalletContract.OperationEntry.TABLE_NAME + " o"
+                    + " JOIN " + WalletContract.AccountOperatingEntry.TABLE_NAME + " w ON w.deleted_at IS NULL"
+                    + "   AND w._id = CASE WHEN o.acc_fr_id = ? THEN o.acc_to_id ELSE o.acc_fr_id END"
+                    + " WHERE (o.acc_fr_id = ? OR o.acc_to_id = ?) AND o.deleted_at IS NULL",
+                    new String[]{cat, cat, cat});
+            try {
+                while (c.moveToNext()) {
+                    boolean refund = c.getInt(3) == categoryId;
+                    long wallet = refund ? c.getLong(4) : c.getLong(3);
+                    ops.add(new long[]{c.getLong(0), wallet, c.getLong(5), refund ? 1 : 0, c.getInt(6)});
+                    dates.add(c.getString(1));
+                    amounts.add(c.getDouble(2));
+                }
+            } finally {
+                c.close();
+            }
+
+            for (int i = 0; i < ops.size(); i++) {
+                long[] op = ops.get(i);
+                int opId = (int) op[0];
+                int wallet = (int) op[1];
+                boolean refund = op[3] == 1;
+                if (wallet == assetId) { skipped++; continue; } // проводка уже на самом активе — переводом в себя не станет
+                if (op[2] == assetCurrency) {
+                    ContentValues cv = new ContentValues();
+                    cv.put(refund ? WalletContract.OperationEntry.COLUMN_FROM : WalletContract.OperationEntry.COLUMN_TO, assetId);
+                    db.update(WalletContract.OperationEntry.TABLE_NAME, cv,
+                            WalletContract.OperationEntry._ID + "=?", new String[]{String.valueOf(opId)});
+                    moved++;
+                    continue;
+                }
+                if (op[4] == 1) { skipped++; continue; }
+                WalletDbLoader.RateOnDate rate = WalletDbLoader.LoadRateOnDate(db, (int) op[2], assetCurrency,
+                        com.example.wallettransactions.DateUtils.StrToDate(dates.get(i)));
+                if (rate == null) { skipped++; continue; }
+                if (bridgeId <= 0) {
+                    bridgeId = GetOrCreateSystemCategory(db, AccountItem.SystemKind.TRANSFER.getValue(),
+                            AccountItem.SYSTEM_TRANSFER_NAME, AccountItem.SYSTEM_TRANSFER_NAME);
+                    if (bridgeId <= 0) throw new IllegalStateException("no Transfer category");
+                }
+                double assetAmount = java.math.BigDecimal.valueOf(amounts.get(i) * rate.rate)
+                        .setScale(assetPrecision, java.math.RoundingMode.HALF_UP).doubleValue();
+                String comment = GetOperationComment(db, opId);
+                ContentValues cv = new ContentValues();
+                if (!refund) {
+                    cv.put(WalletContract.OperationEntry.COLUMN_TO, bridgeId);
+                    db.update(WalletContract.OperationEntry.TABLE_NAME, cv,
+                            WalletContract.OperationEntry._ID + "=?", new String[]{String.valueOf(opId)});
+                    long leg = InsertOperation(db, dates.get(i), bridgeId, assetId, assetAmount, comment);
+                    if (leg <= 0) throw new IllegalStateException("leg insert failed for operation " + opId);
+                    LinkOperations(db, opId, leg, OperationItem.LinkType.LEG);
+                } else {
+                    cv.put(WalletContract.OperationEntry.COLUMN_FROM, bridgeId);
+                    db.update(WalletContract.OperationEntry.TABLE_NAME, cv,
+                            WalletContract.OperationEntry._ID + "=?", new String[]{String.valueOf(opId)});
+                    long main = InsertOperation(db, dates.get(i), assetId, bridgeId, assetAmount, comment);
+                    if (main <= 0) throw new IllegalStateException("leg insert failed for operation " + opId);
+                    LinkOperations(db, main, opId, OperationItem.LinkType.LEG);
+                }
+                moved++;
+            }
+
+            // Правила повторяющихся операций: только одновалютные (кошелёк в валюте актива).
+            String sameCurrencyWallet = "SELECT _id FROM " + WalletContract.AccountOperatingEntry.TABLE_NAME
+                    + " WHERE deleted_at IS NULL AND currency_id = " + assetCurrency + " AND _id <> " + assetId;
+            String rt = WalletContract.RecurringOperationEntry.TABLE_NAME;
+            db.execSQL("UPDATE " + rt + " SET " + WalletContract.RecurringOperationEntry.COLUMN_TO + " = ?"
+                    + " WHERE " + WalletContract.RecurringOperationEntry.COLUMN_TO + " = ? AND "
+                    + WalletContract.RecurringOperationEntry.COLUMN_FROM + " IN (" + sameCurrencyWallet + ")",
+                    new Object[]{assetId, categoryId});
+            db.execSQL("UPDATE " + rt + " SET " + WalletContract.RecurringOperationEntry.COLUMN_FROM + " = ?"
+                    + " WHERE " + WalletContract.RecurringOperationEntry.COLUMN_FROM + " = ? AND "
+                    + WalletContract.RecurringOperationEntry.COLUMN_TO + " IN (" + sameCurrencyWallet + ")",
+                    new Object[]{assetId, categoryId});
+
+            boolean archived = false;
+            if (!HasOperations(db, categoryId)) {
+                ContentValues cv = new ContentValues();
+                cv.put(WalletContract.AccountEntry.COLUMN_IS_ARCHIVED, 1);
+                db.update(WalletContract.AccountEntry.TABLE_NAME, cv,
+                        WalletContract.AccountEntry._ID + "=?", new String[]{cat});
+                archived = true;
+            }
+            db.setTransactionSuccessful();
+            return new MoveResult(moved, skipped, archived);
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private static String GetOperationComment(SQLiteDatabase db, int operationId) {
+        Cursor c = db.rawQuery("SELECT " + WalletContract.OperationEntry.COLUMN_COMMENT + " FROM "
+                + WalletContract.OperationEntry.TABLE_NAME + " WHERE _id = ?", new String[]{String.valueOf(operationId)});
+        try {
+            return c.moveToFirst() ? c.getString(0) : "";
+        } finally {
+            c.close();
+        }
+    }
+
+    /** Валюта кошелька (живая {@code account_operating}) или -1. */
+    static int walletCurrencyId(SQLiteDatabase db, int accountId) {
+        Cursor c = db.rawQuery("SELECT " + WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID + " FROM "
+                + WalletContract.AccountOperatingEntry.TABLE_NAME + " WHERE _id = ? AND deleted_at IS NULL",
+                new String[]{String.valueOf(accountId)});
+        try {
+            return c.moveToFirst() ? c.getInt(0) : -1;
+        } finally {
+            c.close();
+        }
+    }
+
+    private static int currencyPrecision(SQLiteDatabase db, int currencyId) {
+        Cursor c = db.rawQuery("SELECT " + WalletContract.CurrencyEntry.COLUMN_PRECISION + " FROM "
+                + WalletContract.CurrencyEntry.TABLE_NAME + " WHERE _id = ?", new String[]{String.valueOf(currencyId)});
+        try {
+            return c.moveToFirst() ? c.getInt(0) : 2;
+        } finally {
+            c.close();
+        }
     }
 
     public static int UpdateAccountCurrency(SQLiteDatabase db, int accountId, int currencyId) {

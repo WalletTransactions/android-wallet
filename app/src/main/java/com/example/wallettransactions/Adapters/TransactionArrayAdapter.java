@@ -306,6 +306,8 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
 
     private static final int TYPE_DEFAULT = 0;
     private static final int TYPE_TRANSFER = 1;
+    /** Переоценка капитального актива (capital-assets) — своя строка, см. getRevaluationView. */
+    private static final int TYPE_REVALUATION = 2;
 
     /**
      * Перевод со счёта на счёт: либо обе стороны проводки — кошельки, либо это валютный
@@ -322,12 +324,65 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
 
     @Override
     public int getViewTypeCount() {
-        return 2;
+        return 3;
     }
 
     @Override
     public int getItemViewType(int position) {
-        return isTransfer(tranList.get(position)) ? TYPE_TRANSFER : TYPE_DEFAULT;
+        OperationItem tran = tranList.get(position);
+        if (tran.isRevaluation()) return TYPE_REVALUATION;
+        return isTransfer(tran) ? TYPE_TRANSFER : TYPE_DEFAULT;
+    }
+
+    static class RevaluationHolder {
+        final LinearLayout layoutDate;
+        final TextView tvDate, tvAmountEq;
+        final ImageView imgAsset;
+        final TextView tvAsset, tvLabel, tvAmount;
+
+        RevaluationHolder(View v) {
+            layoutDate = v.findViewById(R.id.LayoutDate);
+            tvDate     = v.findViewById(R.id.textDate);
+            tvAmountEq = v.findViewById(R.id.textAmountEq);
+            imgAsset   = v.findViewById(R.id.revaluationAssetIcon);
+            tvAsset    = v.findViewById(R.id.revaluationAsset);
+            tvLabel    = v.findViewById(R.id.revaluationLabel);
+            tvAmount   = v.findViewById(R.id.revaluationAmount);
+        }
+    }
+
+    /**
+     * Переоценка: название актива, подпись «Переоценка» (с комментарием, если есть), сумма
+     * со знаком «+» вверх и «−» вниз цветом перевода — это не доход и не расход.
+     */
+    private View getRevaluationView(OperationItem tran, View convertView, ViewGroup parent) {
+        View listItem = convertView;
+        RevaluationHolder holder;
+        if (listItem == null) {
+            listItem = LayoutInflater.from(context).inflate(R.layout.transaction_item_revaluation, parent, false);
+            holder = new RevaluationHolder(listItem);
+            listItem.setTag(holder);
+        } else {
+            holder = (RevaluationHolder) listItem.getTag();
+        }
+
+        bindDayHeader(holder.layoutDate, holder.tvDate, holder.tvAmountEq, tran);
+
+        boolean up = tran.isRevaluationUp();
+        AccountItem asset = up ? tran.AccTo : tran.AccFrom;
+        holder.imgAsset.setImageBitmap(asset.getIcon().getBitmap());
+        holder.tvAsset.setText(asset.getName());
+        boolean hasComment = tran.Comment != null && !tran.Comment.trim().isEmpty();
+        holder.tvLabel.setText(hasComment ? "Переоценка · " + tran.Comment : "Переоценка");
+        holder.tvAmount.setText(revaluationAmountText(tran.Amount, tran.getCurrency(), up));
+        return listItem;
+    }
+
+    /** «+2 000 000.00₽» / «−150 000.00₽» — знак по направлению переоценки. */
+    static String revaluationAmountText(double amount, Currency currency, boolean up) {
+        int precision = currency != null ? currency.getPrecision() : 2;
+        String symbol = currency != null ? currency.getSymbol() : "";
+        return (up ? "+" : "−") + AdapterUtils.getFormat(precision).format(Math.abs(amount)) + symbol;
     }
 
     /** Шапка периода: видна только у первой операции группы, у остальных скрыта. */
@@ -430,6 +485,7 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
 
         OperationItem tran = tranList.get(position);
 
+        if (tran.isRevaluation()) return getRevaluationView(tran, convertView, parent);
         if (isTransfer(tran)) return getTransferView(tran, convertView, parent);
 
         Holder holder;

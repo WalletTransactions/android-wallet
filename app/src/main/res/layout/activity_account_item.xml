@@ -124,7 +124,38 @@
                     android:src="@drawable/ic_next"
                     android:alpha="0.4"/>
             </LinearLayout>
+
+            <!-- Капитальный актив (capital-assets) — только у кошелька -->
+            <include layout="@layout/view_asset_fields"/>
+
+            <Button
+                android:id="@+id/btnRevaluate"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Переоценить"
+                android:textAllCaps="false"
+                android:textColor="@color/colorPrimary"
+                android:textStyle="bold"
+                android:visibility="gone"
+                android:onClick="btnRevaluateClick"
+                android:layout_marginBottom="8dp"/>
         </LinearLayout>
+
+        <!-- Перенос операций категории в актив (capital-assets) — только у обычной
+             категории и только если на телефоне есть хоть один актив -->
+        <Button
+            android:id="@+id/btnMoveToAsset"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Перенести операции в актив"
+            android:textAllCaps="false"
+            android:textColor="@color/colorPrimary"
+            android:textStyle="bold"
+            android:visibility="gone"
+            android:onClick="btnMoveToAssetClick"
+            android:layout_marginBottom="8dp"/>
 
         <!-- Archive -->
         <CheckBox
