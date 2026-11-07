@@ -1,6 +1,7 @@
 package com.example.wallettransactions.Activities;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -125,11 +126,7 @@ public class ResetDataActivity extends AppCompatActivity {
                     db.endTransaction();
                 }
 
-                // Кэши переживают удаление в БД и держат призраков — перечитываем то, что
-                // реально могло измениться (см. javadoc каждого reload* в Singleton).
-                if (ops) Singleton.instance.reloadAccounts(this);
-                if (icons) Singleton.instance.reloadIconList(this);
-                if (pairs) Singleton.instance.reloadCurrencyPairList(this);
+                reloadCachesAfterReset(this, ops, icons, pairs);
 
                 runOnUiThread(() -> {
                     setBusy(false, getString(R.string.reset_done));
@@ -143,6 +140,20 @@ public class ResetDataActivity extends AppCompatActivity {
                 });
             }
         }).start();
+    }
+
+    /**
+     * Кэши переживают удаление в БД и держат призраков — перечитываем то, что реально могло
+     * измениться (см. javadoc каждого reload* в Singleton). Иконки — первыми: счета и валюты
+     * при перечитывании берут картинку из списка иконок по {@code icon_id}, а пересев иконок
+     * выдаёт им новые {@code _id}. Со старым списком категории набора остаются без иконок до
+     * перезапуска приложения.
+     */
+    static void reloadCachesAfterReset(Context context, boolean ops, boolean icons, boolean pairs) {
+        if (icons) Singleton.instance.reloadIconList(context);
+        if (ops || icons) Singleton.instance.reloadAccounts(context);
+        if (icons) Singleton.instance.reloadCurrencyList(context);
+        if (pairs) Singleton.instance.reloadCurrencyPairList(context);
     }
 
     private void setBusy(boolean busy, String statusText) {
