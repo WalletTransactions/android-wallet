@@ -106,6 +106,8 @@ public class AiActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // «Поделиться» сразу после установки: база создаётся в фоне (fix-first-start-anr).
+        if (com.example.wallettransactions.Data.DbInit.redirectIfNeeded(this)) return;
         setContentView(R.layout.activity_ai);
 
         editText = findViewById(R.id.editText);

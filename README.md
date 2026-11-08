@@ -39,7 +39,7 @@ Android-приложение для учёта личных финансов: к
 | SDK | minSdk 27, target/compileSdk 34 |
 | Сборка | Gradle 7.5, Android Gradle Plugin 7.4.2, JDK 17 |
 | UI | AndroidX AppCompat, Material Components, ConstraintLayout, RecyclerView |
-| Данные | SQLite (`SQLiteOpenHelper`, схема v79), seed-справочники в `assets/seed.json` |
+| Данные | SQLite (`SQLiteOpenHelper`, схема v89), seed-справочники в `assets/seed.json` |
 | Сеть | OkHttp 4 |
 | Авторизация | Credential Manager + Google ID, токены в EncryptedSharedPreferences |
 | Фон | WorkManager |

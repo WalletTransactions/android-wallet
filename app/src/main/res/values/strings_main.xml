@@ -43,4 +43,8 @@
     <string name="more_ai_no_server">No connection to the server</string>
     <string name="more_ai_available">Describe an expense in your own words</string>
     <string name="more_ai_off">AI is turned off right now</string>
+
+    <!-- First start: the database is created off the main thread (DbInitActivity) -->
+    <string name="db_init_preparing">Preparing your wallet…</string>
+    <string name="db_init_failed">Couldn\'t prepare the wallet: %1$s</string>
 </resources>

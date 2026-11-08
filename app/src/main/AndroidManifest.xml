@@ -149,6 +149,10 @@
         <activity android:name=".Activities.IconCropActivity"
                 android:theme="@style/AppTheme.NoActionBar"
                 android:exported="false"/>
+        <!-- «Готовим кошелёк…»: первое открытие базы в фоне (openspec fix-first-start-anr). -->
+        <activity android:name=".Activities.DbInitActivity"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:exported="false"/>
         <activity
                 android:name=".Activities.MainActivity"
                 android:label="@string/app_name"

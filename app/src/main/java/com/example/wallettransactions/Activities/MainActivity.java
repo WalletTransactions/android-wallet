@@ -104,6 +104,8 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Первый запуск: база создаётся в фоне, лента откроется после (fix-first-start-anr).
+        if (com.example.wallettransactions.Data.DbInit.redirectIfNeeded(this)) return;
 
         setContentView(R.layout.activity_transaction_list);
         assignComponents();

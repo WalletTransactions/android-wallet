@@ -69,6 +69,34 @@ Singleton.instance.reloadIconList(context);     // сбрасывает и пе�
 затем пересобирает адаптер целиком — при смене `icon_type` иконка переезжает
 в другую группу, и `notifyDataSetChanged` этого не отразит.
 
+`getReadableDatabase`, `getWritableDatabase` и `getDbHelper` — `synchronized`: базу
+открывают и главный поток, и фоновые (`DbInitActivity`, воркеры WorkManager), а без
+блокировки два потока могли завести по своему `WalletDbHelper`. Helper создаётся на
+application context.
+
+### Первое открытие базы — в фоне
+
+`WalletDbHelper.onCreate` (схема + посев из `seed.json`, иконки перекодируются в PNG)
+и `onUpgrade` выполняются там, где базу попросили первой. Раньше это был главный поток
+в `MainActivity.onCreate` — на Huawei P20 Pro первый запуск ловил ANR (android-wallet#40,
+openspec `fix-first-start-anr`). Теперь точки входа — `MainActivity` (иконка),
+`AiActivity` и `StatementImportActivity` («Поделиться») — сразу после `super.onCreate`
+зовут `DbInit.redirectIfNeeded`:
+
+- база готова, если файл есть и `user_version ≥ DATABASE_VERSION` (заголовок читается
+  `SQLiteDatabase.openDatabase(…, OPEN_READONLY)` без helper'а; после первого «да» —
+  статический флаг);
+- не готова — экран закрывается, открывается `DbInitActivity` «Готовим кошелёк…»:
+  поток `db-init` открывает базу через `Singleton` (там и посев, и миграции), затем
+  открывается исходный экран с его intent'ом из `DbInit.EXTRA_NEXT`. ClipData и флаги
+  `FLAG_GRANT_*_URI_PERMISSION` переносятся на экран подготовки, иначе право на файл из
+  «Поделиться» не доехало бы до «Выписки». Ошибка открытия — текст на том же экране.
+
+Новая точка входа (exported activity), которая трогает базу в `onCreate`, должна
+звать `DbInit.redirectIfNeeded` так же. Экраны, открытые изнутри приложения, база
+уже готова к их запуску. На P20 Pro подготовка на чистой установке — около 30 с,
+почти всё время — `Bitmap.compress` иконок посева.
+
 `getCurrencyPairList` ведёт себя иначе: перечитывает базу при **каждом** вызове.
 Поэтому `CurrencyPairList.clear()` обязателен внутри загрузчика, иначе список
 дублируется. Расхождение с остальными геттерами намеренным не выглядит.
@@ -490,7 +518,10 @@ uuid уже есть — `UUID_TAKEN`, вторая не создаётся; у�
 `return-data`: битмап 512×512 ARGB весит около 1 МБ и не проходит лимит
 Binder-транзакции (~500 КБ), из-за чего extras приходили пустыми. Файл отдаётся
 кроп-приложению как `FileProvider`-Uri, поэтому в `file_provider_paths.xml` есть
-`cache-path`. Если кроп-приложения нет, пользователь отменил кроп или файл нечитаем —
+`cache-path`. Второй путь там — `external-files-path` `Download/`: «Экспорт базы» на
+всех версиях пишет в папку приложения `Android/data/<пакет>/files/Download`
+(`ExportActivity.exportDir`, без разрешений; общая `Download/` на Android 8–9 падала
+с `Permission denied` — android-wallet#38). Если кроп-приложения нет, пользователь отменил кроп или файл нечитаем —
 срабатывает кадрирование по центру.
 
 `icon.icon_type` группирует иконки на экране: `0` — категория, `1` — флаг.
