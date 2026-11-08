@@ -52,33 +52,49 @@
         <include layout="@layout/view_tab_actions"/>
     </LinearLayout>
 
-    <ScrollView
+    <!--
+      Раньше: ScrollView → ListView с высотой «по всем строкам» (setListViewHeightBasedOnChildren).
+      Так ListView создавал строку под каждую операцию сразу: за период «с 2018» это 8 тыс.
+      строк на главном потоке, и старт висел до ANR. Теперь список прокручивается сам и
+      переиспользует строки, а сводка периода уезжает вверх через AppBarLayout. Сводка
+      остаётся в дереве окна, поэтому findViewById из BaseTabActivity её находит.
+    -->
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/scrollable"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/headerRow"
-        android:layout_above="@+id/bottomNav"
-        android:clipToPadding="false"
-        android:scrollbars="none">
+        android:layout_above="@+id/bottomNav">
 
-        <LinearLayout
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/summaryBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="24dp">
+            android:background="@android:color/transparent"
+            android:stateListAnimator="@null"
+            app:elevation="0dp">
 
-            <include layout="@layout/view_period_summary"/>
-
-            <ListView
-                android:id="@+id/listView"
+            <!-- layout_width/height обязательны: без них <include> не применит scrollFlags. -->
+            <include
+                layout="@layout/view_period_summary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:divider="@null"
-                android:dividerHeight="0dp"
-                android:scrollbars="none"/>
-        </LinearLayout>
-    </ScrollView>
+                app:layout_scrollFlags="scroll"/>
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <ListView
+            android:id="@+id/listView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:nestedScrollingEnabled="true"
+            android:paddingTop="4dp"
+            android:paddingBottom="24dp"
+            android:scrollbars="none"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/btnUp"
