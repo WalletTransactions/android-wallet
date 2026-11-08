@@ -148,6 +148,43 @@ public class SyncEngineAccountAssetTest {
         assertFalse(deferred.isEmpty());
     }
 
+    // ── 8.2 журнал синка: признак актива без строки account (android-wallet#42) ──
+
+    @Test
+    public void pull_onlyAssetRow_logsAssetFlag_soScreensRecalculate() throws Exception {
+        localSyncedAccount();
+        SyncLog log = new SyncLog();
+
+        SyncEngine.applyPage(db, new JSONObject()
+                .put("account_asset", new JSONArray().put(assetRow(FLAT, 1, true))),
+                new JSONObject(), null, log, PullDeferredRows.inMemory());
+
+        assertFalse("пустой журнал — SyncRunner не поднимет ревизию, табы не пересчитаются", log.isEmpty());
+        assertTrue(log.toDisplayText(), log.toDisplayText().contains("Признак актива"));
+        assertTrue(log.toDisplayText(), log.toDisplayText().contains("Добавлено"));
+
+        SyncLog again = new SyncLog();
+        SyncEngine.applyPage(db, new JSONObject()
+                .put("account_asset", new JSONArray().put(assetRow(FLAT, 2, true))),
+                new JSONObject(), null, again, PullDeferredRows.inMemory());
+        assertTrue(again.toDisplayText(), again.toDisplayText().contains("Изменено"));
+    }
+
+    @Test
+    public void push_onlyAssetDirty_logsAssetFlagSent() throws Exception {
+        localSyncedAccount();
+        long flat = number("SELECT _id FROM account WHERE uuid = '" + FLAT + "'");
+        WalletDbCRUD.SetAccountAsset(db, (int) flat, 1, true);
+        ScriptedApi api = new ScriptedApi(context);
+        SyncLog log = new SyncLog();
+
+        SyncEngine.pushDirty(db, api, log);
+
+        assertEquals(1, api.pushed.size());
+        assertFalse("ушла только строка признака", api.pushed.get(0).has("account"));
+        assertTrue(log.toDisplayText(), log.toDisplayText().contains("Признак актива"));
+    }
+
     // ── 2.2 переклейка при 409 duplicate_name ───────────────────────────────
 
     @Test
@@ -285,9 +322,16 @@ public class SyncEngineAccountAssetTest {
 
         final Deque<Step> steps = new ArrayDeque<>();
         final List<long[]> calls = new ArrayList<>();
+        final List<JSONObject> pushed = new ArrayList<>();
 
         ScriptedApi(Context ctx) {
             super(ctx, "test-token");
+        }
+
+        @Override
+        HttpResult push(String batchId, JSONObject changes) {
+            pushed.add(changes);
+            return new HttpResult(200, new JSONObject());
         }
 
         @Override

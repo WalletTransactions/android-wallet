@@ -311,8 +311,11 @@ public class AccountItemActivity extends AppCompatActivity {
         }
 
         reloadSingleton();
+        // Табы в стеке («Операции» — другая Activity, onActivityResult до неё не дойдёт)
+        // перечитываются по ревизии: признак актива, имя, архив и валюта меняют их итоги
+        // и списки (capital-assets, design п. 10, android-wallet#42).
+        PeriodFilterState.get(this).markDataChanged();
         if (wroteOff) {
-            PeriodFilterState.get(this).markDataChanged();
             android.content.Context app = getApplicationContext();
             new Thread(() -> com.example.wallettransactions.sync.SyncRunner.runOnce(app)).start();
             Toast.makeText(this, R.string.archive_writeoff_done, Toast.LENGTH_SHORT).show();
@@ -346,6 +349,7 @@ public class AccountItemActivity extends AppCompatActivity {
             return;
         }
         reloadSingleton();
+        PeriodFilterState.get(this).markDataChanged(); // удалённый актив уносит строку «Капитал»
         setResult(RESULT_OK);
         finish();
     }

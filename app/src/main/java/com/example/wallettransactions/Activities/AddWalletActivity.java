@@ -18,6 +18,7 @@ import com.example.wallettransactions.Data.WalletDbLoader;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
 import com.example.wallettransactions.DataItems.Icon;
+import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
 
@@ -140,6 +141,9 @@ public class AddWalletActivity extends AppCompatActivity {
                 Singleton.instance.getCurrencyList(this),
                 Singleton.instance.getIconList(this),
                 null);
+        // Новый актив сразу даёт строку «Капитал» в карточке периода — табы в стеке
+        // перечитываются по ревизии (capital-assets, design п. 10, android-wallet#42).
+        PeriodFilterState.get(this).markDataChanged();
 
         setResult(RESULT_OK);
         finish();
