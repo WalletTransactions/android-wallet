@@ -59,6 +59,7 @@ change wallet-api (`account_asset` в синке, `system_kind = 3`) реали�
 - [x] 8.2 `SyncEngine`: `account_asset` пишет в журнал синка тип «Признак актива» (pull — `applyAccountAsset`, push — `logPortionSent`), строки `strings_sync.xml` (en, ru). Проверка: тест — pull одной строки `account_asset` даёт непустой журнал; push dirty-признака — строка «Отправлено»
 - [x] 8.3 Переоценка поднимает ревизию. Проверка: тест сохранения в `RevaluationDialog`
 - [x] 8.4 `bash gradlew testProdDebugUnitTest testQaDebugUnitTest assembleDebug` проходит — 328/328 в каждом flavor, `ci/check_hardcoded_text.sh` чистый, 2026-11-08. Тесты: `CapitalAssetsRecalcTest` (3 — открытый таб «Кошельки» пересчитывает «Капитал» после пометки и снятия; «Новый кошелёк» и «Переоценка» поднимают ревизию), `SyncEngineAccountAssetTest` +2 (журнал pull и push одной строки `account_asset`). Без правки падают 4 из 5 новых: переоценка ревизию уже поднимала. Вживую на устройстве — пункт 7.1 ([android-wallet#33](https://github.com/WalletTransactions/android-wallet/issues/33))
+- [ ] 8.5 Вживую на устройстве против test (сборка QA из main не раньше `2ce39d3`): пометка/снятие признака, «Новый кошелёк» с активом, «Переоценить» и пометка с другого устройства — «Операции» пересчитаны сразу, без смены даты; в журнале синка «Признак актива» — Тест: [android-wallet#47](https://github.com/WalletTransactions/android-wallet/issues/47)
 
 ## Workflow follow-up
 
