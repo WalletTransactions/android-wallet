@@ -53,6 +53,13 @@ change wallet-api (`account_asset` в синке, `system_kind = 3`) реали�
 - [ ] 7.1 Сквозная проверка на двух устройствах (эмулятор + телефон) против test с выкатанным wallet-api: пометка актива, переоценка и перенос категории на одном видны на другом после синка; старая версия APK на третьем устройстве синкается без ошибок, балансы совпадают (Часть про старую версию APK — не требуется, решение 2026-11-02.) — Тест: [android-wallet#33](https://github.com/WalletTransactions/android-wallet/issues/33)
 - [x] 7.2 `bash gradlew testDebugUnitTest assembleDebug` проходит — у `app` есть flavors, корневой `testDebugUnitTest` тесты приложения не запускает; фактически прогнано `bash gradlew testProdDebugUnitTest testQaDebugUnitTest assembleDebug`: после слияния с main (android-i18n, new-user-default-set) — 301/301 в каждом flavor, 2026-11-07
 
+## 8. Пересчёт табов после изменения признака ([android-wallet#42](https://github.com/WalletTransactions/android-wallet/issues/42), design п. 10)
+
+- [x] 8.1 `AccountItemActivity.save` и `AddWalletActivity.btnSaveClick` поднимают ревизию (`PeriodFilterState.markDataChanged`) после любой успешной записи. Проверка: Robolectric-тест — пометка, снятие признака и создание актива поднимают ревизию; отказ (пустое имя) — нет
+- [x] 8.2 `SyncEngine`: `account_asset` пишет в журнал синка тип «Признак актива» (pull — `applyAccountAsset`, push — `logPortionSent`), строки `strings_sync.xml` (en, ru). Проверка: тест — pull одной строки `account_asset` даёт непустой журнал; push dirty-признака — строка «Отправлено»
+- [x] 8.3 Переоценка поднимает ревизию. Проверка: тест сохранения в `RevaluationDialog`
+- [x] 8.4 `bash gradlew testProdDebugUnitTest testQaDebugUnitTest assembleDebug` проходит — 328/328 в каждом flavor, `ci/check_hardcoded_text.sh` чистый, 2026-11-08. Тесты: `CapitalAssetsRecalcTest` (3 — открытый таб «Кошельки» пересчитывает «Капитал» после пометки и снятия; «Новый кошелёк» и «Переоценка» поднимают ревизию), `SyncEngineAccountAssetTest` +2 (журнал pull и push одной строки `account_asset`). Без правки падают 4 из 5 новых: переоценка ревизию уже поднимала. Вживую на устройстве — пункт 7.1 ([android-wallet#33](https://github.com/WalletTransactions/android-wallet/issues/33))
+
 ## Workflow follow-up
 
 - Согласовать номер шага БД с `server-managed-icons` и `currency-ui-tweaks` при слиянии.

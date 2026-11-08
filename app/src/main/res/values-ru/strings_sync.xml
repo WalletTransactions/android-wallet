@@ -5,6 +5,7 @@
     <string name="sync_type_pair">Валютная пара</string>
     <string name="sync_type_rate">Курс</string>
     <string name="sync_type_account">Счёт</string>
+    <string name="sync_type_asset">Признак актива</string>
     <string name="sync_type_operation">Операция</string>
     <string name="sync_type_icon">Иконка</string>
     <string name="sync_action_sent">Отправлено</string>

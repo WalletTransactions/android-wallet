@@ -404,7 +404,8 @@ final class SyncEngine {
      * после успеха, не во время сборки строк (см. javadoc
      * {@link #pushDirty}, почему). Тип строки — по имени таблицы (тот же
      * человекочитаемый набор, что раньше проставляли лямбды
-     * {@link #collectDirtyByTable}); {@code account_operating}/
+     * {@link #collectDirtyByTable}); {@code account_asset} — свой тип: пометка актива
+     * идёт без строки {@code account} (design п. 10 capital-assets); {@code account_operating}/
      * {@code operation_link}/{@code currency_conversion} сознательно не
      * упомянуты — слишком технические, всегда сопровождают сиблинга (та же
      * причина, что и раньше).
@@ -415,6 +416,7 @@ final class SyncEngine {
         displayType.put("currency_pair", Texts.get(R.string.sync_type_pair));
         displayType.put("currency_pair_rate", Texts.get(R.string.sync_type_rate));
         displayType.put("account", Texts.get(R.string.sync_type_account));
+        displayType.put("account_asset", Texts.get(R.string.sync_type_asset));
         displayType.put("operation", Texts.get(R.string.sync_type_operation));
 
         Iterator<String> tables = portion.keys();
@@ -1193,7 +1195,7 @@ final class SyncEngine {
             case "currency_conversion": return applyCurrencyConversion(db, row);
             case "account": return applyAccount(db, row, log, iconGuard);
             case "account_operating": return applyAccountOperating(db, row);
-            case "account_asset": return applyAccountAsset(db, row);
+            case "account_asset": return applyAccountAsset(db, row, log);
             case "operation": return applyOperation(db, row, log);
             case "operation_link": return applyOperationLink(db, row);
             case "icon": applyIcon(db, row, newIconBlobs, log); return true;
@@ -1536,8 +1538,12 @@ final class SyncEngine {
      * Признак капитального актива (capital-assets, design п. 3) — копия логики
      * {@link #applyAccountOperating}: общий первичный ключ с {@code account}, родительский
      * счёт ищется по тому же uuid. Счёта ещё нет — строка откладывается до его прихода.
+     * <p>
+     * В журнал — своим типом, в отличие от {@code account_operating}: пометка актива меняет
+     * только эту строку, и без записи в журнале {@code SyncRunner} не поднял бы ревизию —
+     * открытые табы показывали бы итоги без нового актива (design п. 10, android-wallet#42).
      */
-    private static boolean applyAccountAsset(SQLiteDatabase db, JSONObject row) throws JSONException {
+    private static boolean applyAccountAsset(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
         String uuid = row.getString("uuid");
         Long accountId = findIdByUuid(db, "account", uuid);
         if (accountId == null) {
@@ -1558,6 +1564,7 @@ final class SyncEngine {
                 cv.put("uuid", localUuid(db, "account", uuid));
                 db.insertOrThrow("account_asset", null, cv);
             }
+            log.pull(Texts.get(R.string.sync_type_asset), pullAction(rowIsDeleted(row), local == null));
         } catch (SQLiteException e) {
             Log.w(TAG, "upsert account_asset uuid=" + uuid + " не удался: " + e.getMessage());
         }
