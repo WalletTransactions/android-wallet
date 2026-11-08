@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Environment;
 import androidx.core.content.FileProvider;
 import androidx.appcompat.app.AppCompatActivity;
@@ -164,20 +163,21 @@ public class ExportActivity extends AppCompatActivity {
         startActivity(Intent.createChooser(shareIntent, getString(isJson ? R.string.export_share_json : R.string.export_share_db)));
     }
 
-    private File getDownloadsDir() throws IOException {
-        File downloadsDir;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // API 29+: use app-specific downloads directory
-            downloadsDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
-        } else {
-            // API < 29: use public Downloads
-            downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        }
-
+    /**
+     * Папка приложения {@code Android/data/<пакет>/files/Download} на всех версиях: писать
+     * туда можно без разрешений. Общая {@code Download/} на Android 8–9 требовала
+     * {@code WRITE_EXTERNAL_STORAGE}, которое никто не запрашивал, — экспорт падал (#38).
+     */
+    static File exportDir(Context ctx) throws IOException {
+        File downloadsDir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
         if (downloadsDir == null || (!downloadsDir.exists() && !downloadsDir.mkdirs())) {
-            throw new IOException(getString(R.string.export_no_downloads));
+            throw new IOException(ctx.getString(R.string.export_no_downloads));
         }
         return downloadsDir;
+    }
+
+    private File getDownloadsDir() throws IOException {
+        return exportDir(this);
     }
 
     private static String timestamp() {
