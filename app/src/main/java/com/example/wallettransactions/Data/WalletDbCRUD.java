@@ -546,6 +546,40 @@ public class WalletDbCRUD {
         }
     }
 
+    /** Итог {@link #WriteOffBalance}. */
+    public enum WriteOffResult { written, zero, failed }
+
+    /**
+     * Остаток кошелька, округлённый до {@code precision} его валюты (HALF_UP): итоговый, по
+     * всем живым проводкам (archive-wallet-writeoff, D2, D3). 0 — списывать нечего.
+     */
+    public static double RoundedWalletBalance(SQLiteDatabase db, int walletId, int precision) {
+        return java.math.BigDecimal.valueOf(WalletDbLoader.LoadAccountBalance(db, walletId))
+                .setScale(precision, java.math.RoundingMode.HALF_UP).doubleValue();
+    }
+
+    /**
+     * Списание остатка кошелька на категорию при архивации (openspec archive-wallet-writeoff):
+     * остаток &gt; 0 — «кошелёк → категория» на остаток, &lt; 0 — «категория → кошелёк» на
+     * |остаток|. Остаток считается здесь же ({@link #RoundedWalletBalance}), а не берётся из
+     * диалога: за время диалога мог прийти синк. Пишется на конец дня
+     * ({@code yyyy-MM-dd 23:59}), как переоценка. Вызывается внутри транзакции сохранения
+     * экрана «Кошелёк» — вложенная транзакция откатит всё вместе с ней.
+     *
+     * @param day дата в формате {@code yyyy-MM-dd}
+     */
+    public static WriteOffResult WriteOffBalance(SQLiteDatabase db, int walletId, int categoryId, String day,
+                                                 int precision, String comment) {
+        double balance = RoundedWalletBalance(db, walletId, precision);
+        if (balance == 0) return WriteOffResult.zero;
+        if (categoryId <= 0) return WriteOffResult.failed;
+        String endOfDay = day + " 23:59";
+        long id = balance > 0
+                ? InsertOperation(db, endOfDay, walletId, categoryId, balance, comment)
+                : InsertOperation(db, endOfDay, categoryId, walletId, -balance, comment);
+        return id > 0 ? WriteOffResult.written : WriteOffResult.failed;
+    }
+
     /** Итог {@link #MoveCategoryToAsset}: сколько перенесено и сколько пропущено без курса. */
     public static final class MoveResult {
         public final int moved;

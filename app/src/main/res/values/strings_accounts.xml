@@ -45,4 +45,18 @@
     <string name="icon_dialog_delete_question">Delete this icon?</string>
     <string name="icon_dialog_deleted">Icon deleted</string>
     <string name="icon_dialog_in_use">The icon is used by accounts or currencies and can\'t be deleted</string>
+
+    <!-- archive-wallet-writeoff: списание остатка при архивации кошелька -->
+    <string name="archive_writeoff_title">Write off the balance?</string>
+    <string name="archive_writeoff_message">%1$s still has %2$s. Write off the balance before archiving?</string>
+    <string name="archive_writeoff_category">CATEGORY</string>
+    <string name="archive_writeoff_category_hint">Choose a category</string>
+    <string name="archive_writeoff_date">DATE</string>
+    <string name="archive_writeoff_ok">Write off and archive</string>
+    <string name="archive_writeoff_skip">Archive without write-off</string>
+    <string name="archive_writeoff_cancel">Cancel</string>
+    <string name="archive_writeoff_comment">Wallet archived</string>
+    <string name="archive_writeoff_picker_title">Write off to category</string>
+    <string name="archive_writeoff_done">Balance written off, wallet archived</string>
+    <string name="archive_writeoff_failed">Couldn\'t write off the balance</string>
 </resources>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Лист «Списать остаток?» при архивации кошелька (openspec archive-wallet-writeoff):
+  остаток в валюте кошелька, категория списания (AccountPickerActivity без системных),
+  дата (по умолчанию сегодня) и три кнопки. Открывается из «Сохранить» экрана «Кошелёк»
+  (ArchiveWriteOffDialog), разметка — по образцу dialog_revaluation.xml.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_sheet_top"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/dialogTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/archive_writeoff_title"
+        android:textSize="21sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/caprasimo"
+        android:textColor="@color/colorTextPrimary"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView
+        android:id="@+id/textMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="@color/colorTextSecondary"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/archive_writeoff_category"/>
+    <EditText
+        android:id="@+id/inputCategory"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_input_pill"
+        android:clickable="true"
+        android:cursorVisible="false"
+        android:focusable="false"
+        android:hint="@string/archive_writeoff_category_hint"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/archive_writeoff_date"/>
+    <EditText
+        android:id="@+id/inputDate"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_input_pill"
+        android:clickable="true"
+        android:cursorVisible="false"
+        android:focusable="false"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp"/>
+
+    <TextView
+        android:id="@+id/btnWriteOff"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@drawable/bg_pill_primary"
+        android:gravity="center"
+        android:text="@string/archive_writeoff_ok"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/colorSurface"
+        android:layout_marginBottom="9dp"/>
+
+    <TextView
+        android:id="@+id/btnSkip"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@drawable/bg_pill_outline"
+        android:gravity="center"
+        android:text="@string/archive_writeoff_skip"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/colorTextPrimary"
+        android:layout_marginBottom="9dp"/>
+
+    <TextView
+        android:id="@+id/btnCancel"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:gravity="center"
+        android:text="@string/archive_writeoff_cancel"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/colorTextSecondary"/>
+</LinearLayout>

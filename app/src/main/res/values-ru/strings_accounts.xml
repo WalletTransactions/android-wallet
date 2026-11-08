@@ -45,4 +45,18 @@
     <string name="icon_dialog_delete_question">Удалить иконку?</string>
     <string name="icon_dialog_deleted">Иконка удалена</string>
     <string name="icon_dialog_in_use">Иконка используется в счетах или валютах. Удаление невозможно</string>
+
+    <!-- archive-wallet-writeoff: списание остатка при архивации кошелька -->
+    <string name="archive_writeoff_title">Списать остаток?</string>
+    <string name="archive_writeoff_message">На кошельке «%1$s» осталось %2$s. Списать остаток перед архивацией?</string>
+    <string name="archive_writeoff_category">КАТЕГОРИЯ</string>
+    <string name="archive_writeoff_category_hint">Выберите категорию</string>
+    <string name="archive_writeoff_date">ДАТА</string>
+    <string name="archive_writeoff_ok">Списать и архивировать</string>
+    <string name="archive_writeoff_skip">Архивировать без списания</string>
+    <string name="archive_writeoff_cancel">Отмена</string>
+    <string name="archive_writeoff_comment">Архивация кошелька</string>
+    <string name="archive_writeoff_picker_title">Списать на категорию</string>
+    <string name="archive_writeoff_done">Остаток списан, кошелёк в архиве</string>
+    <string name="archive_writeoff_failed">Не удалось списать остаток</string>
 </resources>
