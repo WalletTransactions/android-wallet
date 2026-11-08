@@ -88,6 +88,11 @@ public class AccountPickerActivity extends AppCompatActivity {
      * импорта выписки. Остальные — как обычно.
      */
     public final static String cPriorityIds = "AccountPicker.PriorityIds";
+    /**
+     * Не показывать системные счета («Перевод», «Комиссия», «Переоценка»): списание остатка
+     * при архивации кошелька идёт только на обычную категорию (archive-wallet-writeoff, D8).
+     */
+    public final static String cHideSystem = "AccountPicker.HideSystem";
 
     private static final int REQUEST_EDIT_ACCOUNT = 300;
     private static final int REQUEST_ADD_WALLET   = 301;
@@ -308,6 +313,7 @@ public class AccountPickerActivity extends AppCompatActivity {
     private void buildRows() {
         AccountList accounts = Singleton.instance.getAccounts(this);
         Currency currencyEq = currencyEq();
+        boolean hideSystem = getIntent().getBooleanExtra(cHideSystem, false);
 
         mWalletRows.clear();
         mCategoryRows.clear();
@@ -331,6 +337,7 @@ public class AccountPickerActivity extends AppCompatActivity {
             // «Переоценку» при вводе операции не предлагаем (capital-assets): её проводки
             // пишет диалог переоценки актива. В справочнике она видна.
             if (!mCatalogMode && account.isSystemRevaluation()) continue;
+            if (hideSystem && account.isSystem()) continue;
 
             if (account.isOperatingAccount()) {
                 mWalletRows.add(new Row(account, balances.get(account.getId())));

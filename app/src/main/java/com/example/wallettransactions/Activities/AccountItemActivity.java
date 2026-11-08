@@ -18,6 +18,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.wallettransactions.AdapterUtils;
 import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.Data.WalletDbHelper;
 import com.example.wallettransactions.Data.WalletDbLoader;
@@ -26,12 +27,14 @@ import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
 import com.example.wallettransactions.DataItems.Icon;
+import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
 
 public class AccountItemActivity extends AppCompatActivity {
 
     private static final int REQUEST_PICK_ICON = 2;
+    private static final int REQUEST_PICK_WRITEOFF_CATEGORY = 3;
 
     private ImageView imageAccView;
     private ImageView imageCurencyView;
@@ -56,6 +59,8 @@ public class AccountItemActivity extends AppCompatActivity {
     /** Признак актива на входе (capital-assets); null — обычный кошелёк или категория. */
     private AccountOperatingItem.AssetInfo originalAsset;
     private AssetFields assetFields;
+    /** Лист «Списать остаток?», пока открыт (archive-wallet-writeoff). */
+    private ArchiveWriteOffDialog writeOffDialog;
 
     public static final String ARG_ACCOUNT_ID = "AccountItemActivity.account_id";
 
@@ -192,6 +197,12 @@ public class AccountItemActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_PICK_WRITEOFF_CATEGORY) {
+            if (resultCode != RESULT_OK || data == null || writeOffDialog == null) return;
+            int id = data.getIntExtra(AccountPickerActivity.cAccountId, 0);
+            writeOffDialog.setCategory(Singleton.instance.getAccounts(this).getAccountById(id));
+            return;
+        }
         if (requestCode != REQUEST_PICK_ICON || resultCode != RESULT_OK || data == null) return;
 
         selectedIconId = data.getIntExtra(IconPickerActivity.RESULT_ICON_ID, selectedIconId);
@@ -215,7 +226,58 @@ public class AccountItemActivity extends AppCompatActivity {
             return;
         }
 
+        // Архивация кошелька с остатком — сначала лист «Списать остаток?»
+        // (archive-wallet-writeoff); сохранение — по его кнопке.
+        double balance = account instanceof AccountOperatingItem
+                ? WalletDbCRUD.RoundedWalletBalance(db, account.getId(), precision()) : 0;
+        if (ArchiveWriteOffDialog.isOffered(account instanceof AccountOperatingItem, originalArchived,
+                checkIsArchive.isChecked(), originalAsset != null,
+                assetFields != null && assetFields.isAsset(), balance)) {
+            showWriteOffDialog(name, balance);
+            return;
+        }
+        save(name, 0, null);
+    }
+
+    /** Валюта кошелька: выбранная на экране или сохранённая; null — категория. */
+    private Currency walletCurrency() {
+        return selectedCurrency != null ? selectedCurrency
+                : account instanceof AccountOperatingItem ? ((AccountOperatingItem) account).getCurrency() : null;
+    }
+
+    private int precision() {
+        Currency c = walletCurrency();
+        return c != null ? c.getPrecision() : 2;
+    }
+
+    private void showWriteOffDialog(String name, double balance) {
+        Currency c = walletCurrency();
+        String money = AdapterUtils.getFormat(precision()).format(balance) + " " + (c != null ? c.getSymbol() : "");
+        writeOffDialog = new ArchiveWriteOffDialog(this,
+                getString(R.string.archive_writeoff_message, account.getDisplayName(), money),
+                new ArchiveWriteOffDialog.Listener() {
+                    @Override public void onWriteOff(int categoryId, String day) { save(name, categoryId, day); }
+                    @Override public void onArchiveWithoutWriteOff() { save(name, 0, null); }
+                    @Override public void onPickCategory(int currentId) {
+                        Intent pick = AccountPickerActivity.buildIntent(AccountItemActivity.this,
+                                getString(R.string.archive_writeoff_picker_title),
+                                AccountPickerActivity.cSelectedTypeChargeAccounts, currentId, account);
+                        pick.putExtra(AccountPickerActivity.cHideSystem, true);
+                        startActivityForResult(pick, REQUEST_PICK_WRITEOFF_CATEGORY);
+                    }
+                });
+        writeOffDialog.show();
+    }
+
+    /**
+     * Запись экрана. {@code writeOffCategoryId} &gt; 0 — в той же транзакции списать остаток
+     * кошелька на эту категорию датой {@code writeOffDay} (archive-wallet-writeoff, D9):
+     * не вышло — откатывается всё, экран остаётся открытым.
+     */
+    private void save(String name, int writeOffCategoryId, String writeOffDay) {
+        SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
         int iconId = selectedIconId > 0 ? selectedIconId : account.getIcon().getId();
+        boolean wroteOff = false;
 
         // Счёт, валюта и признак актива — одной транзакцией (capital-assets). Снятие
         // признака операции кошелька не трогает.
@@ -234,12 +296,28 @@ public class AccountItemActivity extends AppCompatActivity {
                     WalletDbCRUD.ClearAccountAsset(db, account.getId());
                 }
             }
+            if (writeOffCategoryId > 0) {
+                WalletDbCRUD.WriteOffResult r = WalletDbCRUD.WriteOffBalance(db, account.getId(),
+                        writeOffCategoryId, writeOffDay, precision(), getString(R.string.archive_writeoff_comment));
+                if (r == WalletDbCRUD.WriteOffResult.failed) {
+                    Toast.makeText(this, R.string.archive_writeoff_failed, Toast.LENGTH_LONG).show();
+                    return; // без setTransactionSuccessful — откат правок вместе с проводкой
+                }
+                wroteOff = r == WalletDbCRUD.WriteOffResult.written;
+            }
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
         }
 
         reloadSingleton();
+        if (wroteOff) {
+            PeriodFilterState.get(this).markDataChanged();
+            android.content.Context app = getApplicationContext();
+            new Thread(() -> com.example.wallettransactions.sync.SyncRunner.runOnce(app)).start();
+            Toast.makeText(this, R.string.archive_writeoff_done, Toast.LENGTH_SHORT).show();
+        }
+        if (writeOffDialog != null) writeOffDialog.dismiss();
         setResult(RESULT_OK);
         finish();
     }

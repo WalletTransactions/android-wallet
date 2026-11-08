@@ -404,6 +404,16 @@ public abstract class WalletDbLoader {
         }
     }
 
+    /**
+     * Итоговый баланс счёта в его валюте по всем живым проводкам, без границы по дате
+     * (archive-wallet-writeoff, D2: после списания кошелёк должен быть в нуле, даже если
+     * после выбранной даты есть операции).
+     */
+    public static double LoadAccountBalance(SQLiteDatabase db, int accountId) {
+        // Дата в базе — "yyyy-MM-dd HH:mm", строка "9999-…" больше любой из них.
+        return LoadAccountBalanceAt(db, accountId, "9999-12-31 23:59:59");
+    }
+
 
     /**
      * Net движение через мост «Transfer» за период, в валюте эквивалента: credit-нога
