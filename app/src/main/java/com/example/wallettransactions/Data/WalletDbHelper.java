@@ -21,9 +21,10 @@ public class WalletDbHelper extends SQLiteOpenHelper {
 
 
     public static final String LOG_TAG = WalletDbHelper.class.getSimpleName();
-    private static final String DATABASE_NAME = "wallet.db";
+    // Видны DbInit: он сверяет версию файла, не открывая базу через helper.
+    static final String DATABASE_NAME = "wallet.db";
 
-    private static final int DATABASE_VERSION = 89;
+    static final int DATABASE_VERSION = 89;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на

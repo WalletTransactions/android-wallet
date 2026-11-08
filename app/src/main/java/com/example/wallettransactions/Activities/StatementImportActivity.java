@@ -146,6 +146,8 @@ public class StatementImportActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // «Поделиться» сразу после установки: база создаётся в фоне (fix-first-start-anr).
+        if (com.example.wallettransactions.Data.DbInit.redirectIfNeeded(this)) return;
         setContentView(R.layout.activity_statement_import);
 
         pickBox = findViewById(R.id.pickBox);

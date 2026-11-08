@@ -23,14 +23,16 @@ public class Singleton {
     private CurrencyPairList currencyPairList = new CurrencyPairList();
 
 
-    public SQLiteDatabase getReadableDatabase(Context context){
+    // synchronized: базу открывают и главный поток, и фоновые (DbInitActivity, воркеры
+    // WorkManager). Без него два потока могли завести по своему WalletDbHelper.
+    public synchronized SQLiteDatabase getReadableDatabase(Context context){
         if (readableDatabase == null){
             readableDatabase = getDbHelper(context).getReadableDatabase();
         }
         return readableDatabase;
     }
 
-    public SQLiteDatabase getWritableDatabase(Context context){
+    public synchronized SQLiteDatabase getWritableDatabase(Context context){
         if (writeableDatabase == null){
             writeableDatabase = getDbHelper(context).getWritableDatabase();
         }
@@ -142,9 +144,9 @@ public class Singleton {
         PeriodFilterState.get(context).onCurrenciesReloaded(context);
     }
 
-    public WalletDbHelper getDbHelper(Context context) {
+    public synchronized WalletDbHelper getDbHelper(Context context) {
         if (dbHelper == null)
-            dbHelper = new WalletDbHelper(context);
+            dbHelper = new WalletDbHelper(context.getApplicationContext());
 
         return dbHelper;
     }

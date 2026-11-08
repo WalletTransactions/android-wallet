@@ -47,4 +47,8 @@
     <string name="more_ai_no_server">Нет связи с сервером</string>
     <string name="more_ai_available">Трата своими словами</string>
     <string name="more_ai_off">ИИ сейчас выключен</string>
+
+    <!-- Первый запуск: база создаётся не на главном потоке (DbInitActivity) -->
+    <string name="db_init_preparing">Готовим кошелёк…</string>
+    <string name="db_init_failed">Не удалось подготовить кошелёк: %1$s</string>
 </resources>
