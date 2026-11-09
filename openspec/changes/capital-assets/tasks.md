@@ -61,6 +61,13 @@ change wallet-api (`account_asset` в синке, `system_kind = 3`) реали�
 - [x] 8.4 `bash gradlew testProdDebugUnitTest testQaDebugUnitTest assembleDebug` проходит — 328/328 в каждом flavor, `ci/check_hardcoded_text.sh` чистый, 2026-11-08. Тесты: `CapitalAssetsRecalcTest` (3 — открытый таб «Кошельки» пересчитывает «Капитал» после пометки и снятия; «Новый кошелёк» и «Переоценка» поднимают ревизию), `SyncEngineAccountAssetTest` +2 (журнал pull и push одной строки `account_asset`). Без правки падают 4 из 5 новых: переоценка ревизию уже поднимала. Вживую на устройстве — пункт 7.1 ([android-wallet#33](https://github.com/WalletTransactions/android-wallet/issues/33))
 - [ ] 8.5 Вживую на устройстве против test (сборка QA из main не раньше `2ce39d3`): пометка/снятие признака, «Новый кошелёк» с активом, «Переоценить» и пометка с другого устройства — «Операции» пересчитаны сразу, без смены даты; в журнале синка «Признак актива» — Тест: [android-wallet#47](https://github.com/WalletTransactions/android-wallet/issues/47)
 
+## 9. «Капитал» и «Всего с капиталом» — отдельными строками ([android-wallet#43](https://github.com/WalletTransactions/android-wallet/issues/43), design п. 11)
+
+- [x] 9.1 `view_period_summary.xml`: вместо общей строки `capitalRow` — две, `capitalRow` («Капитал», `capitalSum`) и `netWorthRow` («Всего с капиталом», `netWorthSum`), разметка как у «На начало» (подпись слева с `weight=1`, сумма у правого края). `BaseTabActivity.refreshCapitalRow` показывает и скрывает обе вместе. Проверка: `CapitalAssetsRecalcTest` — без активов обеих строк нет, после пометки видны обе, каждая сумма в своей строке, суммы как прежде; снятие признака скрывает обе
+- [x] 9.2 `docs/ARCHITECTURE.md` («Расчёт балансов», «Капитальные активы на экранах»): две строки. Проверка: разделы обновлены
+- [x] 9.3 `bash gradlew testProdDebugUnitTest testQaDebugUnitTest assembleDebug` проходит, `ci/check_hardcoded_text.sh` чистый
+- [ ] 9.4 Вживую на эмуляторе, ширина телефона и планшета: две строки, суммы совпадают с прежними; без активов строк нет
+
 ## Workflow follow-up
 
 - Согласовать номер шага БД с `server-managed-icons` и `currency-ui-tweaks` при слиянии.
