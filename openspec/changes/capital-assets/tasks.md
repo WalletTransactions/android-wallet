@@ -65,8 +65,8 @@ change wallet-api (`account_asset` в синке, `system_kind = 3`) реали�
 
 - [x] 9.1 `view_period_summary.xml`: вместо общей строки `capitalRow` — две, `capitalRow` («Капитал», `capitalSum`) и `netWorthRow` («Всего с капиталом», `netWorthSum`), разметка как у «На начало» (подпись слева с `weight=1`, сумма у правого края). `BaseTabActivity.refreshCapitalRow` показывает и скрывает обе вместе. Проверка: `CapitalAssetsRecalcTest` — без активов обеих строк нет, после пометки видны обе, каждая сумма в своей строке, суммы как прежде; снятие признака скрывает обе
 - [x] 9.2 `docs/ARCHITECTURE.md` («Расчёт балансов», «Капитальные активы на экранах»): две строки. Проверка: разделы обновлены
-- [x] 9.3 `bash gradlew testProdDebugUnitTest testQaDebugUnitTest assembleDebug` проходит, `ci/check_hardcoded_text.sh` чистый
-- [ ] 9.4 Вживую на эмуляторе, ширина телефона и планшета: две строки, суммы совпадают с прежними; без активов строк нет
+- [x] 9.3 `bash gradlew testProdDebugUnitTest testQaDebugUnitTest assembleDebug` проходит — 328/328 в каждом flavor, `ci/check_hardcoded_text.sh` чистый, 2026-11-09
+- [x] 9.4 Вживую на эмуляторе, ширина телефона и планшета: две строки, суммы совпадают с прежними; без активов строк нет. Прогнано 2026-11-09 на AVD `wallet-api28` (QA debug из ветки, без входа, данные только локальные): без активов строк нет; актив `cdp-test-Flat` без операций — обе строки с 0,00 €; перевод 400 € `cdp-test-Card` → `cdp-test-Flat` — «На конец» −400, «Капитал» 400, «Всего с капиталом» 0 (= −400 + 400, тот же `GenerateCapitalToDate`); 1080×1920/420 dpi и 1600×2560/320 dpi (планшет) — две строки, суммы у правого края в колонке «На начало»; снятие признака — обе строки исчезли сразу
 
 ## Workflow follow-up
 
