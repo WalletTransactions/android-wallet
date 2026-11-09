@@ -85,6 +85,8 @@ public class CapitalAssetsRecalcTest {
         idle();
         assertEquals("активов нет — строки «Капитал» нет", View.GONE,
                 tab.get().findViewById(R.id.capitalRow).getVisibility());
+        assertEquals("активов нет — строки «Всего с капиталом» нет", View.GONE,
+                tab.get().findViewById(R.id.netWorthRow).getVisibility());
         tab.pause().stop(); // ушли в карточку кошелька — таб остался в стеке
 
         ActivityController<AccountItemActivity> item = Robolectric.buildActivity(AccountItemActivity.class,
@@ -98,8 +100,17 @@ public class CapitalAssetsRecalcTest {
         idle();
         assertEquals("после пометки — строка «Капитал» без смены даты", View.VISIBLE,
                 tab.get().findViewById(R.id.capitalRow).getVisibility());
+        assertEquals("после пометки — строка «Всего с капиталом»", View.VISIBLE,
+                tab.get().findViewById(R.id.netWorthRow).getVisibility());
+        // android-wallet#43: «Капитал» и «Всего с капиталом» — разные строки карточки,
+        // у каждой своя подпись и сумма.
+        assertTrue("суммы в разных строках",
+                tab.get().findViewById(R.id.capitalSum).getParent() == tab.get().findViewById(R.id.capitalRow)
+                        && tab.get().findViewById(R.id.netWorthSum).getParent() == tab.get().findViewById(R.id.netWorthRow));
         String capital = ((TextView) tab.get().findViewById(R.id.capitalSum)).getText().toString();
         assertTrue(capital, capital.replaceAll("\\D", "").startsWith("1000"));
+        String netWorth = ((TextView) tab.get().findViewById(R.id.netWorthSum)).getText().toString();
+        assertTrue(netWorth, netWorth.replaceAll("\\D", "").startsWith("1000"));
         tab.pause().stop();
 
         // Снятие признака — строка уходит так же сразу.
@@ -113,6 +124,7 @@ public class CapitalAssetsRecalcTest {
         tab.restart().start().resume();
         idle();
         assertEquals(View.GONE, tab.get().findViewById(R.id.capitalRow).getVisibility());
+        assertEquals(View.GONE, tab.get().findViewById(R.id.netWorthRow).getVisibility());
         tab.pause().stop().destroy();
     }
 

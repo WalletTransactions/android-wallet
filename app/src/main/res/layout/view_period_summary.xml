@@ -106,9 +106,13 @@
                 tools:text="592 794 ₽"/>
         </LinearLayout>
 
-        <!-- Капитал на конец периода (openspec capital-assets): видна, только если есть
-             хоть один актив. «На начало», «На конец» и «Итог» выше — только ликвидные
-             кошельки; эта строка объясняет, куда «ушли» деньги, вложенные в актив. -->
+        <!-- Капитал и «Всего с капиталом» на конец периода (openspec capital-assets):
+             видны, только если есть хоть один актив. «На начало», «На конец» и «Итог»
+             выше — только ликвидные кошельки; эти строки объясняют, куда «ушли» деньги,
+             вложенные в актив. Две строки, а не одна (android-wallet#43): в одной
+             строке две подписи и две суммы на узком экране слипались, а сумма
+             «Всего с капиталом» не стояла под «На конец». Разметка — как у «На начало»:
+             подпись слева, сумма у правого края. -->
         <LinearLayout
             android:id="@+id/capitalRow"
             android:layout_width="match_parent"
@@ -120,8 +124,9 @@
             tools:visibility="visible">
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:letterSpacing="0.07"
                 android:text="@string/summary_capital"
                 android:textAllCaps="true"
@@ -131,18 +136,28 @@
 
             <TextView
                 android:id="@+id/capitalSum"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 tools:text="12 000 000 ₽"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/netWorthRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:baselineAligned="true"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:visibility="visible">
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:letterSpacing="0.07"
                 android:text="@string/summary_net_worth"
                 android:textAllCaps="true"
@@ -154,7 +169,6 @@
                 android:id="@+id/netWorthSum"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
                 android:textColor="@color/colorTextPrimary"
                 android:textSize="13sp"
                 android:textStyle="bold"

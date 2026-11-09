@@ -254,16 +254,19 @@ public abstract class BaseTabActivity extends AppCompatActivity {
     }
 
     /**
-     * Строка «Капитал · Всего с капиталом» на конец периода (openspec capital-assets): итоги
+     * Строки «Капитал» и «Всего с капиталом» на конец периода (openspec capital-assets): итоги
      * выше считают только ликвидные кошельки, капитал — отдельно, тем же запросом балансов.
-     * Без активов строки нет.
+     * Без активов строк нет; видимость у двух строк всегда общая.
      */
     private void refreshCapitalRow(SQLiteDatabase db, Currency currencyEq) {
-        View row = findViewById(R.id.capitalRow);
-        if (row == null) return;
-        // Помеченный актив без операций тоже показывает строку (с нулём).
+        View capitalRow = findViewById(R.id.capitalRow);
+        View netWorthRow = findViewById(R.id.netWorthRow);
+        if (capitalRow == null || netWorthRow == null) return;
+        // Помеченный актив без операций тоже показывает строки (с нулём).
         boolean hasAssets = com.example.wallettransactions.Data.WalletDbCRUD.HasAssets(db);
-        row.setVisibility(hasAssets ? View.VISIBLE : View.GONE);
+        int visibility = hasAssets ? View.VISIBLE : View.GONE;
+        capitalRow.setVisibility(visibility);
+        netWorthRow.setVisibility(visibility);
         if (!hasAssets) return;
         WalletDbLoader.CapitalResult capital = WalletDbLoader.GenerateCapitalToDate(db, getDateTo(), currencyEq);
         AdapterUtils.setAmountText(findViewById(R.id.capitalSum), capital.capital, currencyEq,
