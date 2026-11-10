@@ -175,6 +175,61 @@ public class WalletImportData {
     }
 
     /**
+     * Символ новой валюты из импорта: формат его не несёт, а {@code currency.symbol} NOT NULL
+     * (android-wallet#54). Берём родной символ из {@link java.util.Currency} — по локалям
+     * стран, где валюта своя (RUB → ₽, UAH → ₴, PLN → zł, USD → $); из нескольких вариантов
+     * самый короткий. Неизвестный код или валюта без символа — сам код ISO.
+     */
+    static String currencySymbolFor(String iso) {
+        if (iso == null || iso.trim().isEmpty()) return "";
+        String code = iso.trim().toUpperCase(java.util.Locale.ROOT);
+        java.util.Currency cur;
+        try {
+            cur = java.util.Currency.getInstance(code);
+        } catch (IllegalArgumentException e) {
+            return iso;    // не код ISO 4217 — своя валюта
+        }
+        String best = null;
+        for (java.util.Locale l : java.util.Locale.getAvailableLocales()) {
+            if (l.getCountry().isEmpty()) continue;
+            java.util.Currency own;
+            try {
+                own = java.util.Currency.getInstance(l);
+            } catch (IllegalArgumentException e) {
+                continue;
+            }
+            if (!cur.equals(own)) continue;
+            String s = cur.getSymbol(l);
+            if (s == null || s.isEmpty() || s.equals(code)) continue;
+            if (best == null || s.length() < best.length()
+                    || (s.length() == best.length() && s.compareTo(best) < 0)) best = s;
+        }
+        return best != null ? best : iso;
+    }
+
+    /** Число знаков после запятой по ISO 4217 (JPY — 0), иначе 2. */
+    static int currencyPrecisionFor(String iso) {
+        try {
+            int d = java.util.Currency.getInstance(iso.trim().toUpperCase(java.util.Locale.ROOT))
+                    .getDefaultFractionDigits();
+            return d >= 0 && d <= 4 ? d : 2;
+        } catch (IllegalArgumentException e) {
+            return 2;
+        }
+    }
+
+    /** Есть ли среди живых валюта с этим кодом (удалённая не считается, android-wallet#54). */
+    static boolean liveCurrencyExists(SQLiteDatabase db, String iso) {
+        Cursor c = db.rawQuery("select 1 from currency where iso_code = ? and deleted_at is null limit 1",
+                new String[]{iso});
+        try {
+            return c.moveToFirst();
+        } finally {
+            c.close();
+        }
+    }
+
+    /**
      * Живая иконка с этим именем, иначе живая {@code unknown} (android-wallet#50). Ищем в
      * базе, а не в кэше {@link IconList}: кэш мог пережить удаление иконок. Раньше не
      * найденная иконка давала {@code icon_id = 1} — а это могла быть и удалённая иконка
@@ -226,13 +281,15 @@ public class WalletImportData {
             // Иконка валюты — тем же путём, что у счёта: только живая (раньше LEFT JOIN icon
             // без deleted_at и COALESCE(i._id, 1) — см. LiveIconIdOrUnknown).
             long curIconId = LiveIconIdOrUnknown(db, icons, curIcon);
-            sql = "insert into currency (name, iso_code, icon_id, uuid) \n" +
-                    "select t.name, t.iso, t.icon_id, t.uuid from (select ? name, ? iso, ? icon_id, ? uuid) t\n" +
-                    "where not exists (select 1 from currency c where t.iso  = c.iso_code ) ";
-            db.execSQL(sql, new Object[]{curName, curIso, curIconId, UUID.randomUUID().toString()});
-
-            if (!added)
-                added = WalletFillData.GetAffectedRowsCount(db) > 0;
+            // Валюта «уже есть» — только среди живых: удалённая с тем же кодом не мешает
+            // завести новую (android-wallet#54). Формат не несёт символа, а currency.symbol
+            // NOT NULL, поэтому берём родной символ валюты (код ISO — запасной), точность по
+            // ISO 4217; «в эквиваленте» — по умолчанию.
+            if (!liveCurrencyExists(db, curIso)) {
+                long curId = WalletDbCRUD.InsertCurrency(db, curName, curIso,
+                        currencySymbolFor(curIso), currencyPrecisionFor(curIso), (int) curIconId, true);
+                if (!added) added = curId > 0;
+            }
 
             // uuid — a.uuid (ТОТ ЖЕ, что у самого account), не свежий случайный:
             // wallet-api/schema/table/account_operating.sql требует
@@ -245,7 +302,7 @@ public class WalletImportData {
                     "join account a\n" +
                     "on a.name  = t.name\n" +
                     "join currency c\n" +
-                    "on c.iso_code = t.cur_name\n" +
+                    "on c.iso_code = t.cur_name and c.deleted_at is null\n" +
                     "where not exists (select 1 from account_operating ao where ao._id = a._id and ao.currency_id=c._id)";
             db.execSQL(sql, new String[]{accName, curIso});
 
