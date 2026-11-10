@@ -10,6 +10,6 @@
         android:layout_height="62dp"
         android:background="@drawable/bg_icon_cell"
         android:contentDescription="@null"
-        android:padding="13dp"
+        android:clipToOutline="true" android:padding="2dp"
         android:scaleType="fitCenter"/>
 </FrameLayout>
