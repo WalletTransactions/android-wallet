@@ -40,10 +40,13 @@ public class ResetDataActivity extends AppCompatActivity {
     /** Все таблицы БД — порядок неважен: {@link #onHardWipe} откладывает проверку внешних
      *  ключей на конец транзакции ({@code PRAGMA defer_foreign_keys}), как и {@code SyncEngine}
      *  при applyRow. */
-    private static final String[] ALL_TABLES = {
+    static final String[] ALL_TABLES = {
             WalletContract.OperationEntry.TABLE_NAME,
             WalletContract.OperationLinkEntry.TABLE_NAME,
             WalletContract.AccountOperatingEntry.TABLE_NAME,
+            // account_asset ссылается на account по FK: без неё физическое удаление счетов
+            // падает на COMMIT и вся очистка откатывается (баг на P20, 2026-11-10).
+            WalletContract.AccountAssetEntry.TABLE_NAME,
             WalletContract.AccountEntry.TABLE_NAME,
             WalletContract.CurrencyConversionEntry.TABLE_NAME,
             WalletContract.CurrencyPairRateEntry.TABLE_NAME,
@@ -175,6 +178,20 @@ public class ResetDataActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * Физически удаляет строки всех таблиц из {@link #ALL_TABLES} и сбрасывает счётчики
+     * {@code _id}. Как SyncEngine.applyRow, откладывает проверку FK на COMMIT, поэтому порядок
+     * DELETE не важен — но таблица с FK, которой нет в списке, валит COMMIT. Вызывать внутри
+     * транзакции.
+     */
+    static void deleteAllRows(SQLiteDatabase db) {
+        db.execSQL("PRAGMA defer_foreign_keys = ON");
+        for (String table : ALL_TABLES) {
+            db.execSQL("DELETE FROM " + table);
+        }
+        db.execSQL("DELETE FROM sqlite_sequence");
+    }
+
     private void runHardWipe(boolean reseed) {
         setBusy(true, getString(R.string.reset_hard_busy));
 
@@ -183,13 +200,7 @@ public class ResetDataActivity extends AppCompatActivity {
                 SQLiteDatabase db = Singleton.instance.getWritableDatabase(this);
                 db.beginTransaction();
                 try {
-                    // Как SyncEngine.applyRow — откладывает проверку FK на COMMIT, поэтому
-                    // порядок DELETE по ALL_TABLES ниже не важен.
-                    db.execSQL("PRAGMA defer_foreign_keys = ON");
-                    for (String table : ALL_TABLES) {
-                        db.execSQL("DELETE FROM " + table);
-                    }
-                    db.execSQL("DELETE FROM sqlite_sequence");
+                    deleteAllRows(db);
                     if (reseed) WalletFillData.InsertFirstDictionary(db, this);
                     db.setTransactionSuccessful();
                 } finally {
