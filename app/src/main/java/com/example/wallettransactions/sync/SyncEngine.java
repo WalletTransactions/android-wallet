@@ -12,6 +12,7 @@ import android.database.sqlite.SQLiteException;
 import android.util.Log;
 
 import com.example.wallettransactions.AppSettings;
+import com.example.wallettransactions.Data.OwnIconNames;
 import com.example.wallettransactions.Data.WalletContract;
 import com.example.wallettransactions.Data.WalletDbHelper;
 import com.example.wallettransactions.Singleton;
@@ -1312,19 +1313,7 @@ final class SyncEngine {
 
         /** «<имя> (своя)», занято — «<имя> (своя 2)», «(своя 3)», … среди живых иконок. */
         static String freeOwnName(SQLiteDatabase db, String name) {
-            String candidate = Texts.get(R.string.icon_own_suffix, name);
-            for (int n = 2; nameTaken(db, candidate); n++) candidate = Texts.get(R.string.icon_own_suffix_n, name, n);
-            return candidate;
-        }
-
-        private static boolean nameTaken(SQLiteDatabase db, String name) {
-            Cursor c = db.rawQuery("SELECT 1 FROM icon WHERE name=? AND deleted_at IS NULL LIMIT 1",
-                    new String[]{name});
-            try {
-                return c.moveToFirst();
-            } finally {
-                c.close();
-            }
+            return OwnIconNames.freeOwnName(db, name);
         }
     }
 

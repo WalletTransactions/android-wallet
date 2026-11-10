@@ -24,7 +24,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     // Видны DbInit: он сверяет версию файла, не открывая базу через helper.
     static final String DATABASE_NAME = "wallet.db";
 
-    static final int DATABASE_VERSION = 89;
+    static final int DATABASE_VERSION = 90;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -389,6 +389,86 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         db.execSQL("UPDATE " + table + " SET " + origin + " = " + WalletContract.IconEntry.ORIGIN_LOCAL
                 + " WHERE " + dirty + " = 1");
         db.execSQL("UPDATE " + table + " SET " + dirty + " = 0 WHERE " + dirty + " <> 0");
+    }
+
+    /**
+     * v90 (android-wallet#50, openspec fix-icon-reset-substitutes): прежний «Удалить данные»
+     * с «Иконки» мягко удалял и иконки с сервера, а пересев заводил свои с теми же именами.
+     * Иконки в push не уходят — на сервере они живы ({@code dirty = 1}: удаление только
+     * локальное; tombstone из pull — {@code dirty = 0}, его не трогаем). Возвращаем их:
+     * <ul>
+     *   <li>живая своя с тем же именем и той же картинкой — та же иконка: её счета и валюты
+     *   перевешиваются на серверную, своя мягко удаляется;</li>
+     *   <li>своя с другой картинкой — переименовывается в «<имя> (своя)» ({@link OwnIconNames});</li>
+     *   <li>с тем же именем жива другая иконка с сервера — эта остаётся удалённой.</li>
+     * </ul>
+     * Возврат — {@code deleted_at = NULL, dirty = 0} одним UPDATE: {@code dirty} меняется 1→0,
+     * {@code trg_icon_dirty} молчит. Затем {@link WalletFillData#RepairOrphanedIconLinks}, как
+     * v78: счета/валюты на удалённых иконках — на живую с тем же именем. Перевешенные строки
+     * становятся dirty и уходят в push с тем же {@code icon_uuid}, что давал заместитель.
+     */
+    static void reviveServerIconsV90(SQLiteDatabase db, Context context) {
+        String icon = WalletContract.IconEntry.TABLE_NAME;
+        List<long[]> sameImage = new ArrayList<>();   // {серверная, своя}
+        List<Long> renameOwn = new ArrayList<>();
+        List<Long> revive = new ArrayList<>();
+        Set<String> takenByRevived = new HashSet<>();
+        Cursor c = db.rawQuery("SELECT s._id, s.name,"
+                + " (SELECT o._id FROM " + icon + " o WHERE o.name = s.name AND o.deleted_at IS NULL LIMIT 1),"
+                + " (SELECT o.origin FROM " + icon + " o WHERE o.name = s.name AND o.deleted_at IS NULL LIMIT 1),"
+                + " (SELECT o.image = s.image FROM " + icon + " o WHERE o.name = s.name AND o.deleted_at IS NULL LIMIT 1)"
+                + " FROM " + icon + " s"
+                + " WHERE s.origin = " + WalletContract.IconEntry.ORIGIN_SERVER
+                + " AND s.deleted_at IS NOT NULL AND s.dirty = 1 ORDER BY s._id", null);
+        try {
+            while (c.moveToNext()) {
+                long server = c.getLong(0);
+                String name = c.getString(1);
+                if (!takenByRevived.add(name)) continue; // два удалённых с одним именем — первый
+                if (!c.isNull(2)) {
+                    if (c.getInt(3) != WalletContract.IconEntry.ORIGIN_LOCAL) continue;
+                    if (c.getInt(4) == 1) sameImage.add(new long[]{server, c.getLong(2)});
+                    else renameOwn.add(c.getLong(2));
+                }
+                revive.add(server);
+            }
+        } finally {
+            c.close();
+        }
+        if (revive.isEmpty() && sameImage.isEmpty()) {
+            WalletFillData.RepairOrphanedIconLinks(db, context);
+            return;
+        }
+        Log.i("WalletDbHelper", "v90: revive server icons " + revive.size()
+                + ", drop own duplicates " + sameImage.size() + ", rename own " + renameOwn.size());
+
+        long now = System.currentTimeMillis();
+        for (long[] pair : sameImage) {
+            String[] args = {String.valueOf(pair[0]), String.valueOf(pair[1])};
+            // Только живые: удалённые и так невидимы, а UPDATE отправил бы их удаление повторно.
+            db.execSQL("UPDATE " + WalletContract.AccountEntry.TABLE_NAME
+                    + " SET icon_id = ? WHERE icon_id = ? AND deleted_at IS NULL", args);
+            db.execSQL("UPDATE " + WalletContract.CurrencyEntry.TABLE_NAME
+                    + " SET icon_id = ? WHERE icon_id = ? AND deleted_at IS NULL", args);
+            db.execSQL("UPDATE " + icon + " SET deleted_at = ? WHERE _id = ?",
+                    new Object[]{now, pair[1]});
+        }
+        for (long own : renameOwn) {
+            String name = null;
+            Cursor n = db.rawQuery("SELECT name FROM " + icon + " WHERE _id = ?", new String[]{String.valueOf(own)});
+            try {
+                if (n.moveToFirst()) name = n.getString(0);
+            } finally {
+                n.close();
+            }
+            if (name == null) continue;
+            db.execSQL("UPDATE " + icon + " SET name = ? WHERE _id = ?",
+                    new Object[]{OwnIconNames.freeOwnName(db, name), own});
+        }
+        for (long server : revive) {
+            db.execSQL("UPDATE " + icon + " SET deleted_at = NULL, dirty = 0 WHERE _id = ?", new Object[]{server});
+        }
+        WalletFillData.RepairOrphanedIconLinks(db, context);
     }
 
     /**
@@ -1320,6 +1400,10 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             if (oldVersion < 89) {
                 // v89: капитальные активы (capital-assets) — account_asset, is_revaluation, перечит ledger.
                 upgradeToCapitalAssetsV89(db);
+            }
+            if (oldVersion < 90) {
+                // v90 (android-wallet#50): вернуть иконки с сервера, удалённые прежним «Удалить данные».
+                reviveServerIconsV90(db, mContext);
             }
             return;
         }

@@ -168,6 +168,18 @@ public class WalletFillData {
         return db.insert(WalletContract.IconEntry.TABLE_NAME, null, values);
     }
 
+    /**
+     * Иконка набора: живая иконка с этим именем уже есть (с сервера или своя) — её {@code _id},
+     * своя не заводится (android-wallet#50). Иначе пересев после «Удалить данные» заводил бы
+     * свою рядом с живой иконкой с сервера, а голая вставка упёрлась бы в {@code uq_icon_name}
+     * и молча вернула бы {@code -1}. На чистой базе имён нет — заводится как раньше.
+     */
+    private static long SeedIcon(SQLiteDatabase db, String name, long iconType, String resourceName) {
+        long existing = GetIconIdByName(db, name);
+        if (existing >= 0) return existing;
+        return InsertIconEntry(db, name, iconType, resourceName);
+    }
+
     /** {@code seed.json}-вариант — имя drawable-ресурса вместо {@code R.drawable.*} id, см. {@link #ResolveDrawableId}. */
     private static Long InsertIconEntry(SQLiteDatabase db, String name, long iconType, String resourceName) {
         return InsertIconEntry(db, name, iconType, ResolveDrawableId(resourceName));
@@ -336,7 +348,7 @@ public class WalletFillData {
         for (int i = 0; i < currencies.length(); i++) {
             try {
                 JSONObject c = currencies.getJSONObject(i);
-                long iconId = InsertIconEntry(db, c.getString("icon"), ICO_CATEGORY_FLAGS, c.getString("icon_resource"));
+                long iconId = SeedIcon(db, c.getString("icon"), ICO_CATEGORY_FLAGS, c.getString("icon_resource"));
                 String iso = c.getString("iso");
                 InsertCurrencyEntry(db, CurrencyNames.displayName(iso, c.getString("name"), locale), iso,
                         c.getString("symbol"), iconId, c.optInt("precision", 2));
@@ -358,7 +370,7 @@ public class WalletFillData {
         for (int i = 0; i < flags.length(); i++) {
             try {
                 JSONObject f = flags.getJSONObject(i);
-                InsertIconEntry(db, f.getString("name"), ICO_CATEGORY_FLAGS, f.getString("resource"));
+                SeedIcon(db, f.getString("name"), ICO_CATEGORY_FLAGS, f.getString("resource"));
             } catch (JSONException e) {
                 Log.e("WalletFillData", "seed.json flag_icons#" + i, e);
             }
@@ -381,7 +393,7 @@ public class WalletFillData {
         for (int i = 0; i < currencies.length(); i++) {
             try {
                 JSONObject c = currencies.getJSONObject(i);
-                InsertIconEntry(db, c.getString("icon"), ICO_CATEGORY_FLAGS, c.getString("icon_resource"));
+                SeedIcon(db, c.getString("icon"), ICO_CATEGORY_FLAGS, c.getString("icon_resource"));
             } catch (JSONException e) {
                 Log.e("WalletFillData", "seed.json currencies#" + i, e);
             }
@@ -455,7 +467,7 @@ public class WalletFillData {
         for (int i = 0; i < icons.length(); i++) {
             try {
                 JSONObject ic = icons.getJSONObject(i);
-                InsertIconEntry(db, ic.getString("name"), ICO_CATEGORY_ACCOUNT, ic.getString("resource"));
+                SeedIcon(db, ic.getString("name"), ICO_CATEGORY_ACCOUNT, ic.getString("resource"));
             } catch (JSONException e) {
                 Log.e("WalletFillData", "seed.json category_icons#" + i, e);
             }
@@ -599,7 +611,7 @@ public class WalletFillData {
     // FindAccountIdByName/аналогах: имя/iso мягко удалённой строки не занято (см.
     // WalletDbHelper.createPartialUniqueIndexes), и релинк после ResetIcons должен
     // найти свежепосеянную живую иконку, а не старую мягко удалённую с тем же именем.
-    private static long GetIconIdByName(SQLiteDatabase db, String iconName) {
+    static long GetIconIdByName(SQLiteDatabase db, String iconName) {
         Cursor c = db.rawQuery("SELECT _id FROM " + WalletContract.IconEntry.TABLE_NAME
                 + " WHERE name = ? AND " + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL",
                 new String[]{iconName});
@@ -735,7 +747,17 @@ public class WalletFillData {
      * symbol/даты), и осиротил бы всё то же самое. Не нашедшееся по имени (кастомная иконка не
      * из seed.json) откатывается на "unknown" — единственный оставшийся приемлемый фолбэк раз
      * пересев уже случился.
+     * <p>
+     * Иконки с сервера ({@code origin = 0}) не трогаются ни в одном режиме (android-wallet#50):
+     * в push иконки не уходят, так что удаление осталось бы только на телефоне, pull его не
+     * отменил бы, а синк остался бы без заместителей для своих иконок. Удалить их может только
+     * администратор на сайте (icon-sync). Пересев не заводит свою иконку с именем живой
+     * серверной ({@link #SeedIcon}) — счета и валюты перепривязываются к серверной.
      */
+    /** Своя иконка ({@code origin = 1}) — только такие удаляет {@link #ResetIcons}. */
+    private static final String OWN_ICON = WalletContract.IconEntry.COLUMN_ORIGIN + " = "
+            + WalletContract.IconEntry.ORIGIN_LOCAL;
+
     public static void ResetIcons(SQLiteDatabase db, Context context, boolean reseed) {
         if (!reseed) {
             // uq_icon_name — частичный индекс (deleted_at IS NULL, см. WalletDbHelper.
@@ -745,6 +767,7 @@ public class WalletFillData {
             delIcon.put(WalletContract.IconEntry.COLUMN_DELETED_AT, System.currentTimeMillis());
             db.update(WalletContract.IconEntry.TABLE_NAME, delIcon,
                     WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL"
+                            + " AND " + OWN_ICON
                             + " AND " + WalletContract.IconEntry._ID + " NOT IN ("
                             + "SELECT " + WalletContract.AccountEntry.COLUMN_ICON_ID
                             + " FROM " + WalletContract.AccountEntry.TABLE_NAME
@@ -787,7 +810,7 @@ public class WalletFillData {
         ContentValues delIcon = new ContentValues();
         delIcon.put(WalletContract.IconEntry.COLUMN_DELETED_AT, System.currentTimeMillis());
         db.update(WalletContract.IconEntry.TABLE_NAME, delIcon,
-                WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL", null);
+                WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL AND " + OWN_ICON, null);
 
         SeedDefaultCategoryIcons(db, context);
         SeedDefaultCurrencyFlagIcons(db, context);
@@ -851,7 +874,7 @@ public class WalletFillData {
      * если и она вдруг не нашлась). Если живая уже есть — просто отдаёт её {@code _id},
      * ничего не пишет.
      */
-    private static long EnsureLiveUnknownIcon(SQLiteDatabase db, Context context) {
+    static long EnsureLiveUnknownIcon(SQLiteDatabase db, Context context) {
         long id = GetIconIdByName(db, "unknown");
         if (id >= 0) return id;
         Resources = context.getResources();

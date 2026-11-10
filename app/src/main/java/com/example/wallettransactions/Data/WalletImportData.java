@@ -8,7 +8,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
-import com.example.wallettransactions.DataItems.Icon;
 import com.example.wallettransactions.DataItems.IconList;
 import com.example.wallettransactions.DataItems.Operations.OperationItem;
 import com.example.wallettransactions.DateUtils;
@@ -176,6 +175,20 @@ public class WalletImportData {
     }
 
     /**
+     * Живая иконка с этим именем, иначе живая {@code unknown} (android-wallet#50). Ищем в
+     * базе, а не в кэше {@link IconList}: кэш мог пережить удаление иконок. Раньше не
+     * найденная иконка давала {@code icon_id = 1} — а это могла быть и удалённая иконка
+     * (22 счёта владельца на удалённой {@code Groceries}).
+     */
+    static long LiveIconIdOrUnknown(SQLiteDatabase db, IconList icons, String iconName) {
+        long id = iconName == null || iconName.isEmpty() ? -1 : WalletFillData.GetIconIdByName(db, iconName);
+        if (id < 0) id = WalletFillData.GetIconIdByName(db, "unknown");
+        // Последний шанс — заглушка из кэша: Singleton.loadIconList заводит её в базе сам.
+        if (id < 0 && icons != null && icons.getUnknownIcon() != null) id = icons.getUnknownIcon().getId();
+        return id;
+    }
+
+    /**
      * Общее ядро для CSV- и JSON-путей импорта счёта (см. {@link #ParseAndInsertAccount}
      * и {@link #ParseAndInsertJsonAccount}) — раньше было продублировано, теперь один
      * источник правды для вставки счёта + (опционально) его валюты.
@@ -191,12 +204,7 @@ public class WalletImportData {
         // счета («Ещё → Удалить все операции»), и тогда UPDATE уходил по мёртвому id,
         // INSERT не выполнялся, а импорт возвращал 0 без единой ошибки.
         Integer accId = FindAccountIdByName(db, accName);
-        int iconId;
-        Icon icon = icons.getIconByName(iconName);
-        if (icon == null)
-            iconId = 1;
-        else
-            iconId = icon.getId();
+        int iconId = (int) LiveIconIdOrUnknown(db, icons, iconName);
 
         if (accId != null)
             added = WalletDbCRUD.UpdateAccount(db, accId, accName, accComment, iconId, false)>0;
@@ -215,12 +223,13 @@ public class WalletImportData {
         String sql;
 
         if (curName != null && !curName.isEmpty()) {
+            // Иконка валюты — тем же путём, что у счёта: только живая (раньше LEFT JOIN icon
+            // без deleted_at и COALESCE(i._id, 1) — см. LiveIconIdOrUnknown).
+            long curIconId = LiveIconIdOrUnknown(db, icons, curIcon);
             sql = "insert into currency (name, iso_code, icon_id, uuid) \n" +
-                    "select t.name, t.iso, COALESCE (i._id,1), t.uuid from (select ? name, ? iso, ? icon_name, ? uuid) t\n" +
-                    "left join  icon i \n" +
-                    "on i.name  = t.icon_name\n"+
+                    "select t.name, t.iso, t.icon_id, t.uuid from (select ? name, ? iso, ? icon_id, ? uuid) t\n" +
                     "where not exists (select 1 from currency c where t.iso  = c.iso_code ) ";
-            db.execSQL(sql, new String[]{curName, curIso, curIcon, UUID.randomUUID().toString()});
+            db.execSQL(sql, new Object[]{curName, curIso, curIconId, UUID.randomUUID().toString()});
 
             if (!added)
                 added = WalletFillData.GetAffectedRowsCount(db) > 0;

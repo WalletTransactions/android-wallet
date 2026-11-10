@@ -67,7 +67,13 @@ final class IconSubstitutes {
         return substituteFor(name, image == null ? null : sha256Hex(image));
     }
 
-    /** Индекс по живым иконкам с сервера из локальной базы. */
+    /**
+     * Индекс по иконкам с сервера из локальной базы: живым и удалённым только на телефоне
+     * (android-wallet#50). Иконки в push не уходят, поэтому {@code deleted_at} с
+     * {@code dirty = 1} — локальное удаление (прежняя версия «Удалить данные» удаляла и
+     * иконки с сервера), на сервере иконка жива и ссылка на неё проходит FK. Tombstone из
+     * pull приходит с {@code dirty = 0} — такая иконка на сервере удалена и не берётся.
+     */
     static IconSubstitutes load(SQLiteDatabase db) {
         IconSubstitutes subs = new IconSubstitutes();
         Cursor c = db.rawQuery("SELECT " + WalletContract.IconEntry.COLUMN_UUID
@@ -75,7 +81,8 @@ final class IconSubstitutes {
                 + ", " + WalletContract.IconEntry.COLUMN_IMAGE
                 + " FROM " + WalletContract.IconEntry.TABLE_NAME
                 + " WHERE " + WalletContract.IconEntry.COLUMN_ORIGIN + " = " + WalletContract.IconEntry.ORIGIN_SERVER
-                + " AND " + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL"
+                + " AND (" + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL"
+                + " OR " + WalletContract.IconEntry.COLUMN_DIRTY + " = 1)"
                 + " ORDER BY " + WalletContract.IconEntry._ID, null);
         try {
             while (c.moveToNext()) {

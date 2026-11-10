@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -128,15 +127,24 @@ public class HardWipeCacheInvalidationTest {
         return new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
     }
 
-    @Test(expected = SQLiteConstraintException.class)
-    public void importAfterHardWipe_withoutCacheReload_hitsForeignKeyConstraint() throws Exception {
+    /**
+     * Раньше здесь ждали {@code FOREIGN KEY constraint failed}: импорт брал {@code icon_id} из
+     * протухшего кэша. С android-wallet#50 иконку счёта импорт ищет в базе
+     * ({@code WalletImportData.LiveIconIdOrUnknown}) — протухший кэш иконок ему больше не мешает.
+     */
+    @Test
+    public void importAfterHardWipe_withoutCacheReload_takesLiveIconFromDb() throws Exception {
         // Прогреваем Singleton.iconList ДО вайпа — так же, как ImportActivity успевает
         // прочитать иконки на предыдущем экране до открытия ResetDataActivity.
         Singleton.instance.getIconList(context);
 
-        hardWipeAndReseed(); // баг: тут раньше не было reload* — кэш остаётся протухшим
+        hardWipeAndReseed(); // без reload* — кэш иконок протухший
 
-        WalletImportData.FillOperationDataFromJson(context, importPayload());
+        WalletImportData.ImportResult result =
+                WalletImportData.FillOperationDataFromJson(context, importPayload());
+
+        assertTrue("skipped: " + result.skipped, result.skipped.isEmpty());
+        assertEquals(1, result.imported);
     }
 
     @Test

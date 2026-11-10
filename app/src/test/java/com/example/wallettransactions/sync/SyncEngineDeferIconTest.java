@@ -185,6 +185,66 @@ public class SyncEngineDeferIconTest {
                 log.getProblems().contains("нет иконки-заместителя для «Моё фото»: строка отложена"));
     }
 
+    // ── android-wallet#50: иконки с сервера, удалённые только на телефоне ───────────
+
+    /**
+     * Сценарий спеки «Иконка с сервера удалена только на телефоне»: прежний «Удалить данные»
+     * мягко удалил все иконки с сервера ({@code dirty = 1}), пересев завёл свои с теми же
+     * именами. Заместитель находится — ни одна строка не откладывается.
+     */
+    @Test
+    public void serverIconDeletedLocally_isSubstitute_nothingDeferred() throws Exception {
+        long serverHouseware = deletedIcon("Houseware", new byte[]{5}, 1);
+        deletedIcon("unknown", new byte[]{7}, 1);
+        long ownHouseware = icon("Houseware", new byte[]{6}, WalletContract.IconEntry.ORIGIN_LOCAL, 0);
+        long ownPhoto = icon("Моё фото", new byte[]{8}, WalletContract.IconEntry.ORIGIN_LOCAL, 0);
+        long accHouse = account("Дом", ownHouseware);
+        long accPhoto = account("Фото", ownPhoto);
+        long op = operation(accHouse, accPhoto);
+
+        RecordingApi api = new RecordingApi(context);
+        SyncLog log = new SyncLog();
+        SyncEngine.pushDirty(db, api, log);
+
+        assertTrue(log.getProblems().toString(), log.getProblems().isEmpty());
+        JSONObject changes = api.pushed.get(0);
+        JSONArray accounts = changes.getJSONArray("account");
+        assertEquals(2, accounts.length());
+        for (int i = 0; i < accounts.length(); i++) {
+            JSONObject row = accounts.getJSONObject(i);
+            if (row.getString("uuid").equals(uuidOf("account", accHouse))) {
+                assertEquals(uuidOf("icon", serverHouseware), row.getString("icon_uuid"));
+            } else {
+                assertEquals("без совпадений — локально удалённая unknown с сервера",
+                        IconSubstitutes.UNKNOWN_NAME, nameOfIconByUuid(row.getString("icon_uuid")));
+            }
+        }
+        assertEquals(1, changes.getJSONArray("operation").length());
+        assertEquals(0, intOf("operation", op, "dirty"));
+        assertEquals(ownHouseware, intOf("account", accHouse, "icon_id"));
+    }
+
+    /** Сценарий спеки «Иконка удалена на сервере»: tombstone из pull ({@code dirty = 0}) не заместитель. */
+    @Test
+    public void serverIconDeletedByServer_isNotSubstitute() throws Exception {
+        deletedIcon("Houseware", new byte[]{5}, 0);
+        long unknown = icon("unknown", new byte[]{7}, WalletContract.IconEntry.ORIGIN_SERVER, 0);
+        long own = icon("Houseware", new byte[]{5}, WalletContract.IconEntry.ORIGIN_LOCAL, 0);
+        long acc = account("Дом", own);
+
+        Map<String, JSONArray> byTable = SyncEngine.collectDirtyByTable(db, new ArrayList<>());
+
+        JSONArray accounts = byTable.get("account");
+        for (int i = 0; i < accounts.length(); i++) {
+            JSONObject row = accounts.getJSONObject(i);
+            if (row.getString("uuid").equals(uuidOf("account", acc))) {
+                assertEquals(uuidOf("icon", unknown), row.getString("icon_uuid"));
+                return;
+            }
+        }
+        throw new AssertionError("счёт не попал в push");
+    }
+
     @Test
     public void deferDependents_defersWholeChainButKeepsUnrelatedRows() throws Exception {
         Map<String, JSONArray> byTable = new LinkedHashMap<>();
@@ -235,6 +295,29 @@ public class SyncEngineDeferIconTest {
         cv.put("uuid", java.util.UUID.randomUUID().toString());
         cv.put("dirty", dirty);
         return db.insertOrThrow("icon", null, cv);
+    }
+
+    /** Иконка с сервера, мягко удалённая: {@code dirty = 1} — на телефоне, {@code 0} — tombstone из pull. */
+    private long deletedIcon(String name, byte[] image, int dirty) {
+        ContentValues cv = new ContentValues();
+        cv.put("name", name);
+        cv.put("image", image);
+        cv.put("icon_type", 0);
+        cv.put("origin", WalletContract.IconEntry.ORIGIN_SERVER);
+        cv.put("uuid", java.util.UUID.randomUUID().toString());
+        cv.put("deleted_at", 1_000L);
+        cv.put("dirty", dirty);
+        return db.insertOrThrow("icon", null, cv);
+    }
+
+    private String nameOfIconByUuid(String uuid) {
+        Cursor c = db.rawQuery("SELECT name FROM icon WHERE uuid=?", new String[]{uuid});
+        try {
+            assertTrue(uuid, c.moveToFirst());
+            return c.getString(0);
+        } finally {
+            c.close();
+        }
     }
 
     private long account(String name, long iconId) {
