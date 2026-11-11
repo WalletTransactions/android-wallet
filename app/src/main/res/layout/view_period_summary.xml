@@ -293,6 +293,72 @@
                     tools:text="156 940 ₽"/>
             </LinearLayout>
         </LinearLayout>
+        <!-- Сверка «Итога» с «Доход − Расход» (.github-private#1): Итог — разница балансов
+             ликвидных кошельков, а доход и расход не знают про переводы в капитал и обратно
+             и про курс. Две строки закрывают разницу: Итог = Доход − Расход + «В капитал /
+             из капитала» + «Курсовая разница». Нулевая строка скрыта.
+             BaseTabActivity.refreshReconciliationRows. -->
+        <LinearLayout
+            android:id="@+id/capitalFlowRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:baselineAligned="true"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:letterSpacing="0.07"
+                android:text="@string/summary_capital_flow"
+                android:textAllCaps="true"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="10.5sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/capitalFlowSum"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="−1 000 ₽"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/fxDiffRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:baselineAligned="true"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:letterSpacing="0.07"
+                android:text="@string/summary_fx_diff"
+                android:textAllCaps="true"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="10.5sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/fxDiffSum"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="−1 000 ₽"/>
+        </LinearLayout>
     </LinearLayout>
 
     <!-- Активный фильтр: виден, когда фильтр задан (BaseTabActivity.refreshFilterBanner) -->

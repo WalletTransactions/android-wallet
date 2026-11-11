@@ -251,6 +251,43 @@ public abstract class BaseTabActivity extends AppCompatActivity {
                 currencyEq, AdapterUtils.Operation.expanse);
 
         refreshCapitalRow(db, currencyEq);
+        refreshReconciliationRows(db, currencyEq,
+                clBalance.getTotalAmountEq() - opBalance.getTotalAmountEq(),
+                reportIncome.getTotal().getTotalAmountEq() - reportExpanse.getTotal().getTotalAmountEq(),
+                clBalance.getApproxEq() || opBalance.getApproxEq(),
+                clBalance.isIncomplete() || opBalance.isIncomplete());
+    }
+
+    /** Меньше этого (в валюте эквивалента) разница — округление, строку не показываем. */
+    private static final double RECONCILIATION_EPSILON = 0.5;
+
+    /**
+     * Строки «В капитал / из капитала» и «Курсовая разница» под «Итогом»: вместе с
+     * «Доход − Расход» они дают «Итог» всегда — вторая строка это остаток, поэтому равенство
+     * сходится даже при неполных курсах. Нулевая строка скрыта.
+     */
+    private void refreshReconciliationRows(SQLiteDatabase db, Currency currencyEq,
+                                           double total, double incomeMinusExpense,
+                                           boolean approx, boolean incomplete) {
+        View flowRow = findViewById(R.id.capitalFlowRow);
+        View fxRow = findViewById(R.id.fxDiffRow);
+        if (flowRow == null || fxRow == null) return;
+        EquivalentResult flow = WalletDbLoader.GenerateCapitalFlowForPeriod(db, getDateFrom(), getDateTo(), currencyEq);
+        double flowEq = flow.getTotalAmountEq();
+        double fx = total - incomeMinusExpense - flowEq;
+
+        boolean showFlow = Math.abs(flowEq) >= RECONCILIATION_EPSILON;
+        boolean showFx = Math.abs(fx) >= RECONCILIATION_EPSILON;
+        flowRow.setVisibility(showFlow ? View.VISIBLE : View.GONE);
+        fxRow.setVisibility(showFx ? View.VISIBLE : View.GONE);
+        if (showFlow) {
+            AdapterUtils.setAmountText(findViewById(R.id.capitalFlowSum), flowEq, currencyEq,
+                    flow.getApproxEq(), flow.isIncomplete());
+        }
+        if (showFx) {
+            AdapterUtils.setAmountText(findViewById(R.id.fxDiffSum), fx, currencyEq,
+                    approx || flow.getApproxEq(), incomplete || flow.isIncomplete());
+        }
     }
 
     /**

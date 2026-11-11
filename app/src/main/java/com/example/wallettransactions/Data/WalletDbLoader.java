@@ -382,6 +382,40 @@ public abstract class WalletDbLoader {
     }
 
     /**
+     * Движение денег между ликвидными кошельками и активами за период, в валюте эквивалента
+     * (android-wallet issue .github-private#1): слагаемое, которого не хватает в равенстве
+     * «Итог = Доход − Расход + движение + курсовая разница». «Итог» — разница балансов только
+     * ликвидных кошельков, а «Доход»/«Расход» считают актив обычным кошельком, поэтому:
+     * <ul>
+     *   <li>перевод ликвидный → актив (и доход на актив) уменьшает «Итог» без расхода — со знаком «−»;</li>
+     *   <li>перевод актив → ликвидный (и расход с актива) увеличивает «Итог» без дохода — «+»;</li>
+     *   <li>актив ↔ актив и переоценка в «Итог» не попадают — их нет в сумме.</li>
+     * </ul>
+     * Операция без курса на дату в сумму не входит, результат помечается неполным.
+     */
+    public static EquivalentResult GenerateCapitalFlowForPeriod(SQLiteDatabase db, Date dateFrom,
+                                                                 Date dateTo, Currency currencyEq) {
+        String sql = "SELECT round(sum(CASE WHEN ta._id IS NOT NULL THEN -o.amount_eq ELSE o.amount_eq END), 2) net, "
+                + "sum(CASE WHEN o.amount_eq IS NULL THEN 1 ELSE 0 END) missing, "
+                + "sum(CASE WHEN o.currency_id <> o.to_currency_id THEN 1 ELSE 0 END) converted "
+                + "FROM v_operation_eq o "
+                + "LEFT JOIN account_asset fa ON fa._id = o.acc_fr_id AND fa.deleted_at IS NULL "
+                + "LEFT JOIN account_asset ta ON ta._id = o.acc_to_id AND ta.deleted_at IS NULL "
+                + "WHERE o.date BETWEEN '" + DateUtils.DateToStr(dateFrom) + "' AND '" + DateUtils.DateToStr(dateTo) + "' "
+                + "AND o.to_currency_id = " + currencyEq.getId() + " "
+                + "AND o.is_revaluation = 0 "
+                + "AND ((fa._id IS NULL) <> (ta._id IS NULL))";
+        Cursor c = db.rawQuery(sql, null);
+        try {
+            if (!c.moveToFirst()) return new EquivalentResult(0.0, false, false);
+            double net = c.isNull(0) ? 0 : c.getDouble(0);
+            return new EquivalentResult(net, c.getInt(2) > 0, c.getInt(1) > 0);
+        } finally {
+            c.close();
+        }
+    }
+
+    /**
      * Баланс счёта в его валюте по всем живым проводкам с датой не позже {@code dateInclusive}
      * (строка формата базы, сравнение строк — как у остальных запросов). Для диалога
      * переоценки: Δ = новая оценка − этот баланс на конец выбранного дня.

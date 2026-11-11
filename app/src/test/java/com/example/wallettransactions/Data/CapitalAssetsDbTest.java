@@ -344,6 +344,61 @@ public class CapitalAssetsDbTest {
                 .getTotalAmountEq(), 0.001);
     }
 
+    // ── .github-private#1: сверка «Итога» с «Доход − Расход» ───────────────
+
+    @Test
+    public void capitalFlow_closesGapBetweenTotalAndIncomeMinusExpense() {
+        int card = wallet("Карта", rub);
+        int flat = wallet("Квартира", rub);
+        int deposit = wallet("Вклад", rub);
+        int salary = category("Зарплата", 0);
+        int food = category("Продукты", 0);
+        WalletDbCRUD.SetAccountAsset(db, flat, 1, true);
+        WalletDbCRUD.SetAccountAsset(db, deposit, 3, true);
+        op("2026-04-01 10:00", salary, card, 1_000_000);   // до периода
+        op("2026-05-02 10:00", salary, card, 200);          // доход, ликвидный
+        op("2026-05-03 10:00", card, food, 50);             // расход, ликвидный
+        op("2026-05-04 10:00", card, flat, 400_000);        // покупка актива: −400 000
+        op("2026-05-05 10:00", salary, deposit, 30);        // доход прямо на актив: −30
+        op("2026-05-06 10:00", flat, card, 1_000);          // возврат из актива: +1 000
+        op("2026-05-07 10:00", flat, deposit, 5);           // актив ↔ актив: 0
+        WalletDbCRUD.WriteRevaluation(db, flat, "2026-05-08", 2_000_000, 2, "");   // переоценка: 0
+
+        AccountList accounts = loadAccounts();
+        CurrencyList currencies = currencies();
+        Currency eq = currencies.getCurrencyById(rub);
+        Date from = DateUtils.StrToDate("2026-05-01 00:00");
+        Date to = DateUtils.StrToDate("2026-06-01 00:00");
+
+        double total = WalletDbLoader.GenerateReportGetBalanceToDate(db, to, eq, null).getTotalAmountEq()
+                - WalletDbLoader.GenerateReportGetBalanceToDate(db, from, eq, null).getTotalAmountEq();
+        double income = WalletDbLoader.GenerateIncomeReportByAccount(db, from, to, accounts, currencies, eq, null)
+                .getTotal().getTotalAmountEq();
+        double expense = WalletDbLoader.GenerateExpanseReportByAccount(db, from, to, accounts, currencies, eq, null)
+                .getTotal().getTotalAmountEq();
+        EquivalentResult flow = WalletDbLoader.GenerateCapitalFlowForPeriod(db, from, to, eq);
+
+        assertEquals(-400_000 - 30 + 1_000, flow.getTotalAmountEq(), 0.001);
+        assertFalse(flow.isIncomplete());
+        // Без валютных расхождений остатка нет: Итог = Доход − Расход + движение.
+        assertEquals(total, income - expense + flow.getTotalAmountEq(), 0.001);
+    }
+
+    @Test
+    public void capitalFlow_withoutRate_isIncomplete_andSkipsOperation() {
+        int card = wallet("Карта", rub);
+        int house = wallet("Дом", eur);
+        WalletDbCRUD.SetAccountAsset(db, house, 1, true);
+        int salary = category("Зарплата", 0);
+        op("2026-05-02 10:00", salary, house, 100);   // EUR → RUB курса нет
+        EquivalentResult flow = WalletDbLoader.GenerateCapitalFlowForPeriod(db,
+                DateUtils.StrToDate("2026-05-01 00:00"), DateUtils.StrToDate("2026-06-01 00:00"),
+                currencies().getCurrencyById(rub));
+
+        assertTrue(flow.isIncomplete());
+        assertEquals(0, flow.getTotalAmountEq(), 0.001);
+    }
+
     // ── 6.1 перенос категории в актив ───────────────────────────────────────
 
     @Test
