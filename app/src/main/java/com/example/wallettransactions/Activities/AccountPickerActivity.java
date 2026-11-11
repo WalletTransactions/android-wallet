@@ -182,6 +182,7 @@ public class AccountPickerActivity extends AppCompatActivity {
 
         findViewById(R.id.btnAddAccountRow).setVisibility(mCatalogMode ? View.VISIBLE : View.GONE);
 
+        mRenderedRevision = PeriodFilterState.get(this).getRevision();
         buildRows();
 
         // Тип задан слотом операции — переключать его нельзя, поэтому и показывать нечего.
@@ -246,6 +247,44 @@ public class AccountPickerActivity extends AppCompatActivity {
                 .show();
     }
 
+    /** Ревизия данных, под которую собран список, — см. {@link #reloadIfStale()}. */
+    private int mRenderedRevision;
+
+    /**
+     * Данные сменились, пока экран был открыт: после архивации со списанием остатка
+     * стартует фоновый синк, и его итог (а с ним и правка/удаление счёта, сделанные сразу
+     * после архивации) долетает уже после onActivityResult — без этого строка удалённой
+     * категории оставалась на экране.
+     */
+    private final Runnable mOnDataChanged = this::reloadIfStale;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        reloadIfStale();
+        PeriodFilterState.get(this).addDataChangedListener(mOnDataChanged);
+    }
+
+    @Override
+    protected void onPause() {
+        PeriodFilterState.get(this).removeDataChangedListener(mOnDataChanged);
+        super.onPause();
+    }
+
+    private void reloadIfStale() {
+        int revision = PeriodFilterState.get(this).getRevision();
+        if (mAdapter == null || revision == mRenderedRevision) return;
+        refreshRows();
+    }
+
+    /** Перечитывает справочник из базы и перестраивает видимый список. */
+    private void refreshRows() {
+        mRenderedRevision = PeriodFilterState.get(this).getRevision();
+        Singleton.instance.reloadAccounts(this);
+        buildRows();
+        applyFilters();
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -255,10 +294,7 @@ public class AccountPickerActivity extends AppCompatActivity {
             case REQUEST_EDIT_ACCOUNT:
             case REQUEST_ADD_WALLET:
             case REQUEST_ADD_CATEGORY:
-                if (resultCode == RESULT_OK) {
-                    buildRows();
-                    applyFilters();
-                }
+                if (resultCode == RESULT_OK) refreshRows();
                 break;
         }
     }
