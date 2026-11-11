@@ -253,9 +253,14 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         refreshCapitalRow(db, currencyEq);
         refreshReconciliationRows(db, currencyEq,
                 clBalance.getTotalAmountEq() - opBalance.getTotalAmountEq(),
-                reportIncome.getTotal().getTotalAmountEq() - reportExpanse.getTotal().getTotalAmountEq(),
+                orZero(reportIncome.getTotal()) - orZero(reportExpanse.getTotal()),
                 clBalance.getApproxEq() || opBalance.getApproxEq(),
                 clBalance.isIncomplete() || opBalance.isIncomplete());
+    }
+
+    /** У отчёта без строк сумма null — для сверки это ноль. */
+    private static double orZero(EquivalentResult r) {
+        return r.getTotalAmountEq() == null ? 0 : r.getTotalAmountEq();
     }
 
     /** Меньше этого (в валюте эквивалента) разница — округление, строку не показываем. */
