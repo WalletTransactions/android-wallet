@@ -75,6 +75,7 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView hideRecentsHint;
     private FrameLayout switchRemind;
     private FrameLayout switchPickerKeyboard;
+    private FrameLayout switchCapitalInSummary;
     private TextView walletSortValue;
     private TextView categorySortValue;
     private TextView rowRemindTime;
@@ -106,6 +107,7 @@ public class SettingsActivity extends AppCompatActivity {
         hideRecentsHint = findViewById(R.id.hideRecentsHint);
         switchRemind = findViewById(R.id.switchRemind);
         switchPickerKeyboard = findViewById(R.id.switchPickerKeyboard);
+        switchCapitalInSummary = findViewById(R.id.switchCapitalInSummary);
         walletSortValue = findViewById(R.id.walletSortValue);
         categorySortValue = findViewById(R.id.categorySortValue);
         rowRemindTime = findViewById(R.id.rowRemindTime);
@@ -133,6 +135,7 @@ public class SettingsActivity extends AppCompatActivity {
         paintSecurity();
         applySwitchState(switchRemind, AppSettings.isRemindOn(this));
         applySwitchState(switchPickerKeyboard, AppSettings.isPickerKeyboardOn(this));
+        applySwitchState(switchCapitalInSummary, AppSettings.isCapitalInSummaryOn(this));
         paintSortValues();
 
         paintRemindTime();
@@ -225,8 +228,13 @@ public class SettingsActivity extends AppCompatActivity {
                 .show();
     }
 
-    /** Экспорт базы (файл .db) или JSON — см. {@link ExportActivity}. Импорт —
-     *  на уровень выше, в «Ещё» ({@link MoreActivity#onMoreImport}). */
+    /** Импорт CSV/JSON (счета, операции, курсы валют) — см. {@link ImportActivity}.
+     *  До 2026-11-11 пункт стоял в «Ещё». */
+    public void onImportFile(View view) {
+        startActivity(new Intent(this, ImportActivity.class));
+    }
+
+    /** Экспорт базы (файл .db) или JSON — см. {@link ExportActivity}. */
     public void onExportDatabase(View view) {
         startActivity(new Intent(this, ExportActivity.class));
     }
@@ -457,6 +465,13 @@ public class SettingsActivity extends AppCompatActivity {
 
     public void onTogglePickerKeyboard(View view) {
         AppSettings.setPickerKeyboardOn(this, toggleSwitch(switchPickerKeyboard));
+    }
+
+    /** Табы перечитывают итоги по ревизии состояния — поднимаем её, иначе при
+     *  возврате строки «Капитал» остались бы как были. */
+    public void onToggleCapitalInSummary(View view) {
+        AppSettings.setCapitalInSummaryOn(this, toggleSwitch(switchCapitalInSummary));
+        com.example.wallettransactions.PeriodFilterState.get(this).markDataChanged();
     }
 
     public void onPickWalletSort(View view) {

@@ -164,7 +164,6 @@
     <string name="activity_integrations_link_status_value_text">Не подключено</string>
     <string name="activity_integrations_text_4">Подключение к Telegram</string>
     <string name="activity_integrations_text_5">Открыть веб-версию</string>
-    <string name="activity_integrations_text_6">в браузере</string>
     <string name="activity_integrations_text_7">Автоматическая синхронизация</string>
     <string name="activity_integrations_row_auto_connect_interval_text">раз в час</string>
     <string name="activity_integrations_text_8">Синхронизировать сейчас</string>

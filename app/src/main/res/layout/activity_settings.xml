@@ -119,14 +119,19 @@
 
             <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_settings_text_3"/>
             <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:layout_marginBottom="22dp">
+
+            <LinearLayout
                 android:id="@+id/rowMainCurrency"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:background="@drawable/bg_card"
                 android:padding="16dp"
-                android:layout_marginBottom="22dp"
                 android:onClick="onPickMainCurrency">
 
                 <TextView
@@ -152,6 +157,56 @@
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"/>
+            </LinearLayout>
+
+            <View style="@style/MoreRowDivider"/>
+
+            <!-- Строки «Капитал» / «Всего с капиталом» в карточке итогов табов
+                 (AppSettings.isCapitalInSummaryOn). Какие активы входят во «Всего с
+                 капиталом» — галочка на самом активе. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_capital_in_summary"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextPrimary"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="@string/settings_capital_in_summary_hint"
+                        android:textSize="12.5sp"
+                        android:textColor="@color/colorTextSecondary"/>
+                </LinearLayout>
+
+                <FrameLayout
+                    android:id="@+id/switchCapitalInSummary"
+                    android:layout_width="46dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/bg_switch_off"
+                    android:onClick="onToggleCapitalInSummary">
+                    <View
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_margin="2dp"
+                        android:background="@drawable/bg_switch_thumb"/>
+                </FrameLayout>
+            </LinearLayout>
             </LinearLayout>
 
             <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_settings_text_5"/>
@@ -559,8 +614,33 @@
                 android:background="@drawable/bg_card"
                 android:layout_marginBottom="22dp">
 
-                <!-- Импорт — на уровень выше, в «Ещё» (activity_more.xml, rowImport):
-                     сюда доходят только через «Ещё» → «Настройки», а импорт нужен сразу. -->
+                <!-- Импорт — с 2026-11-11 снова здесь, рядом с экспортом (до этого стоял в «Ещё»). -->
+                <LinearLayout
+                    android:id="@+id/rowImport"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp"
+                    android:onClick="onImportFile">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/activity_more_text_7"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorTextPrimary"/>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_chevron_right"/>
+                </LinearLayout>
+
+                <View style="@style/MoreRowDivider"/>
+
                 <LinearLayout
                     android:id="@+id/rowExport"
                     android:layout_width="match_parent"

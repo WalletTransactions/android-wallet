@@ -186,43 +186,6 @@
 
                 <View style="@style/MoreRowDivider"/>
 
-                <!-- Веб-версию отдаёт тот же гейтвей (GET / → wallet-web), что и API синка,
-                     поэтому открывается «Адрес сервера» выше — в браузере по умолчанию. -->
-                <LinearLayout
-                    android:id="@+id/rowOpenWeb"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:padding="16dp"
-                    android:onClick="onOpenWeb">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/activity_integrations_text_5"
-                        android:textSize="14.5sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/colorTextPrimary"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/activity_integrations_text_6"
-                        android:textSize="13sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/colorTextSecondary"
-                        android:layout_marginEnd="6dp"/>
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/ic_chevron_right"/>
-                </LinearLayout>
-
-                <View style="@style/MoreRowDivider"/>
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

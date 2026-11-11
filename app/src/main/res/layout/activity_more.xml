@@ -4,7 +4,8 @@
   Панель нижней навигации подключена (view_bottom_nav, активный таб «Ещё»).
 
   Блок «Интеграции» (сервер, Google, Telegram, синхронизация) — с 2026-10-11 отдельный
-  экран activity_integrations.xml, здесь на него одна строка.
+  экран activity_integrations.xml, здесь на него одна строка; рядом — «Открыть веб-версию».
+  «Импорт из файла» с 2026-11-11 живёт в «Настройках» → «Данные», рядом с экспортом.
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -97,7 +98,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Сервер, Google, Telegram, веб-версия, синхронизация — отдельный экран
+            <!-- Сервер, Google, Telegram, синхронизация — отдельный экран
                  «Интеграции» (IntegrationsActivity), до 2026-10-11 стояли блоком здесь. -->
             <LinearLayout
                 android:id="@+id/rowIntegrationsCard"
@@ -110,6 +111,15 @@
                 <LinearLayout android:id="@+id/rowIntegrations" style="@style/MoreRow" android:onClick="onMoreIntegrations">
                     <TextView style="@style/MoreRowGlyph" android:text="⇄"/>
                     <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_4"/>
+                    <ImageView style="@style/MoreRowChevron"/>
+                </LinearLayout>
+                <View style="@style/MoreRowDivider"/>
+
+                <!-- Веб-версия — с «Интеграций» сюда (2026-11-11): нужна чаще, чем остальное
+                     там. Открывает «Адрес сервера» (тот же гейтвей) в браузере. -->
+                <LinearLayout android:id="@+id/rowOpenWeb" style="@style/MoreRow" android:onClick="onMoreOpenWeb">
+                    <TextView style="@style/MoreRowGlyph" android:text="◎"/>
+                    <TextView style="@style/MoreRowLabel" android:text="@string/activity_integrations_text_5"/>
                     <ImageView style="@style/MoreRowChevron"/>
                 </LinearLayout>
             </LinearLayout>
@@ -134,13 +144,6 @@
                 <LinearLayout android:id="@+id/rowIcons" style="@style/MoreRow" android:onClick="onMoreIcons">
                     <TextView style="@style/MoreRowGlyph" android:text="▦"/>
                     <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_6"/>
-                    <ImageView style="@style/MoreRowChevron"/>
-                </LinearLayout>
-                <View style="@style/MoreRowDivider"/>
-
-                <LinearLayout android:id="@+id/rowImport" style="@style/MoreRow" android:onClick="onMoreImport">
-                    <TextView style="@style/MoreRowGlyph" android:text="↧"/>
-                    <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_7"/>
                     <ImageView style="@style/MoreRowChevron"/>
                 </LinearLayout>
                 <View style="@style/MoreRowDivider"/>

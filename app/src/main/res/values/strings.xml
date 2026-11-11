@@ -161,7 +161,6 @@
     <string name="activity_integrations_link_status_value_text">Not connected</string>
     <string name="activity_integrations_text_4">Connect Telegram</string>
     <string name="activity_integrations_text_5">Open the web version</string>
-    <string name="activity_integrations_text_6">in the browser</string>
     <string name="activity_integrations_text_7">Automatic sync</string>
     <string name="activity_integrations_row_auto_connect_interval_text">every hour</string>
     <string name="activity_integrations_text_8">Sync now</string>

@@ -1,12 +1,17 @@
 package com.example.wallettransactions.Activities;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.R;
+import com.example.wallettransactions.security.AppLock;
 import com.example.wallettransactions.sync.AiApiClient;
 
 import org.json.JSONException;
@@ -19,7 +24,8 @@ import java.io.IOException;
  *
  * Блок «Интеграции» (сервер, связь с Google аккаунтом, Telegram, синхронизация)
  * до 2026-10-11 стоял прямо здесь — теперь это отдельный экран
- * {@link IntegrationsActivity}, отсюда на него одна строка.
+ * {@link IntegrationsActivity}, отсюда на него одна строка; рядом — «Открыть
+ * веб-версию». «Импорт из файла» — в «Настройках» → «Данные».
  *
  * Общей шапки (период, фильтр, состояние денег) на этом экране нет — он ничего не
  * показывает за период, — но нижняя панель и её кнопка «+» те же, что на остальных
@@ -124,13 +130,23 @@ public class MoreActivity extends BaseTabActivity {
         startActivity(new Intent(this, IconManagerActivity.class));
     }
 
-    /** Импорт CSV/JSON (счета, операции, курсы валют) — на уровень выше «Настроек»:
-     *  нужен сразу, не спрятанным на отдельном экране вглубь. Экспорт остался там же
-     *  ({@link SettingsActivity#onExportDatabase}) — его вызывают заметно реже. */
-    public void onMoreImport(View view) {
-        startActivity(new Intent(this, ImportActivity.class));
+    /**
+     * Веб-версия живёт на том же гейтвее, что и синк, — открываем «Адрес сервера»
+     * в браузере по умолчанию. До 2026-11-11 пункт стоял на «Интеграциях».
+     * Браузера может не быть вовсе (или адрес кривой) — тогда тост, а не падение.
+     */
+    public void onMoreOpenWeb(View view) {
+        String url = AppSettings.getServerBaseUrl(this);
+        try {
+            AppLock.allowNextLeave();
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, getString(R.string.integrations_no_browser, url), Toast.LENGTH_LONG).show();
+        }
     }
 
+    /** Импорт CSV/JSON — с 2026-11-11 в «Настройках» → «Данные», рядом с экспортом
+     *  ({@link SettingsActivity#onImportFile}). */
     public void onMoreSettings(View view) {
         startActivity(new Intent(this, SettingsActivity.class));
     }

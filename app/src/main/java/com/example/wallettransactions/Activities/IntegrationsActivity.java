@@ -39,8 +39,9 @@ import java.util.Set;
  * списком переходов.
  *
  * Здесь: адрес сервера, связь с Google аккаунтом (вход, которым сервер узнаёт
- * пользователя), Telegram-бот для ввода трат, веб-версия, автоматическая
- * синхронизация с уведомлениями и ручной синк.
+ * пользователя), Telegram-бот для ввода трат, автоматическая синхронизация с
+ * уведомлениями и ручной синк. «Открыть веб-версию» с 2026-11-11 — на «Ещё»
+ * ({@link MoreActivity#onMoreOpenWeb}).
  *
  * Панель нижней навигации не подключена — это экран «вглубь», как «Настройки».
  */
@@ -139,21 +140,6 @@ public class IntegrationsActivity extends AppCompatActivity {
                 })
                 .setNegativeButton(R.string.action_cancel, null)
                 .show();
-    }
-
-    /**
-     * Веб-версия живёт на том же гейтвее, что и синк, — открываем «Адрес сервера»
-     * в браузере по умолчанию. Браузера может не быть вовсе (или адрес кривой) —
-     * тогда тост, а не падение.
-     */
-    public void onOpenWeb(View view) {
-        String url = AppSettings.getServerBaseUrl(this);
-        try {
-            com.example.wallettransactions.security.AppLock.allowNextLeave();
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, getString(R.string.integrations_no_browser, url), Toast.LENGTH_LONG).show();
-        }
     }
 
     /** Открывает вход через Google (org/docs/TODO_mobile_sync.md, Фаза 1) —
