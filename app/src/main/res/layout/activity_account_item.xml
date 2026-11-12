@@ -5,7 +5,27 @@
     android:background="@color/colorBackground"
     android:orientation="vertical">
 
-    <include layout="@layout/view_screen_header"/>
+    <!-- Общую шапку не трогаем: правого слота нет у остальных экранов «вглубь».
+         Кнопка фильтра лежит поверх неё справа — тот же значок и размер, что у
+         btnFilter на ленте (view_tab_actions.xml). Тап — AccountItemActivity.btnFilterClick. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <include layout="@layout/view_screen_header"/>
+
+        <ImageButton
+            android:id="@+id/btnAccountFilter"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="end"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="14dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:contentDescription="@string/view_tab_actions_btn_filter_content_description"
+            android:src="@drawable/ic_filter"
+            android:onClick="btnFilterClick"/>
+    </FrameLayout>
 
     <ScrollView
         android:layout_width="match_parent"

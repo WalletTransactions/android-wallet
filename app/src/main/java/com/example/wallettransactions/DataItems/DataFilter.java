@@ -3,6 +3,7 @@ package com.example.wallettransactions.DataItems;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class DataFilter {
 
@@ -127,20 +128,11 @@ public class DataFilter {
      */
     public String getSQLFilter(String[] fields){
 
-        String accRes="";
-        String accountsSQL = String.join(",",  getAccounts());
-
-        if (!accountsSQL.isEmpty()) {
-            for (String field : fields) {
-                if (!accRes.isEmpty())
-                    accRes = accRes + " OR ";
-
-                accRes = accRes + "(" + field + " in (" + accountsSQL + "))\n";
-            }
-            accRes = " AND (" +accRes+")\n";
-        }
-
-        StringBuilder sql = new StringBuilder(accRes);
+        StringBuilder sql = new StringBuilder();
+        // Две группы — кошельки и категории: внутри группы «ИЛИ», между группами «И»
+        // (operations-filter). Пустая группа ничего не ограничивает.
+        sql.append(accountGroupSql(fields, true));
+        sql.append(accountGroupSql(fields, false));
         sql.append(operationKind.getSQLFilter());
 
         if (!searchText.trim().isEmpty()) {
@@ -156,6 +148,26 @@ public class DataFilter {
         if (eqMax != null) sql.append(" AND amount_eq <= ").append(eqMax).append("\n");
 
         return sql.toString();
+    }
+
+    /**
+     * Условие одной группы счетов: операция проходит, если хотя бы одна её сторона
+     * (любая из {@code fields}) входит в группу. Пустая группа — пустая строка.
+     */
+    private String accountGroupSql(String[] fields, boolean wallets) {
+        List<String> ids = new ArrayList<>();
+        for (AccountItem item : accountList) {
+            if (item.isOperatingAccount() == wallets) ids.add(String.valueOf(item.getId()));
+        }
+        if (ids.isEmpty()) return "";
+
+        String idList = String.join(",", ids);
+        StringBuilder group = new StringBuilder();
+        for (String field : fields) {
+            if (group.length() > 0) group.append(" OR ");
+            group.append("(").append(field).append(" in (").append(idList).append("))\n");
+        }
+        return " AND (" + group + ")\n";
     }
 
     /** Экранирует кавычку (SQL-строка) и служебные для LIKE символы % и _ (ESCAPE '\'). */

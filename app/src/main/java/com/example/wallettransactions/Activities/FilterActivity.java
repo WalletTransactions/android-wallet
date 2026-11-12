@@ -68,6 +68,18 @@ public class FilterActivity extends AppCompatActivity {
     /** «Показать N» — N считает {@link #updateApplyButtonCount()} по ещё не применённому выбору. */
     private TextView btnApply;
 
+    /** Крестики очистки по одному параметру (similar-search) — видны, только пока параметр задан. */
+    private View clearSearch;
+    private View clearKind;
+    private View clearAmountMin;
+    private View clearAmountMax;
+    private View clearEqMin;
+    private View clearEqMax;
+    private View clearCategories;
+    private View clearWallets;
+    private View chevronCategories;
+    private View chevronWallets;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,6 +93,7 @@ public class FilterActivity extends AppCompatActivity {
         setupKind();
         setupAmountRanges();
         restoreSelection(getIntent().getStringExtra(MainActivity.cFilterAccountList));
+        setupClearButtons();
 
         // Слушатели — после того, как поля заполнены исходным состоянием: иначе
         // восстановление сохранённого текста само по себе гоняло бы лишние запросы.
@@ -109,6 +122,63 @@ public class FilterActivity extends AppCompatActivity {
         int count = WalletDbLoader.CountOperations(Singleton.instance.getReadableDatabase(this),
                 state.getDateFrom(), state.getDateTo(), state.getCurrencyEq(this), buildPreviewFilter());
         btnApply.setText(getString(R.string.filter_apply_count, count));
+        refreshClearButtons();
+    }
+
+    // ── Крестики очистки по одному параметру ──────────────────────────────────
+
+    private void setupClearButtons() {
+        clearSearch = findViewById(R.id.btnClearSearch);
+        clearKind = findViewById(R.id.btnClearKind);
+        clearAmountMin = findViewById(R.id.btnClearAmountMin);
+        clearAmountMax = findViewById(R.id.btnClearAmountMax);
+        clearEqMin = findViewById(R.id.btnClearEqMin);
+        clearEqMax = findViewById(R.id.btnClearEqMax);
+        clearCategories = findViewById(R.id.btnClearCategories);
+        clearWallets = findViewById(R.id.btnClearWallets);
+        chevronCategories = findViewById(R.id.chevronCategories);
+        chevronWallets = findViewById(R.id.chevronWallets);
+
+        clearSearch.setOnClickListener(v -> inputSearchText.setText(""));
+        clearAmountMin.setOnClickListener(v -> inputAmountMin.setText(""));
+        clearAmountMax.setOnClickListener(v -> inputAmountMax.setText(""));
+        clearEqMin.setOnClickListener(v -> inputEqMin.setText(""));
+        clearEqMax.setOnClickListener(v -> inputEqMax.setText(""));
+        clearKind.setOnClickListener(v -> pickKind(DataFilter.OperationKind.all));
+        clearCategories.setOnClickListener(v -> {
+            selectedCategories.clear();
+            updateSummary(selectedCategories, categorySummary);
+            updateApplyButtonCount();
+        });
+        clearWallets.setOnClickListener(v -> {
+            selectedWallets.clear();
+            updateSummary(selectedWallets, walletSummary);
+            updateApplyButtonCount();
+        });
+    }
+
+    /**
+     * Крестик виден только у заданного параметра; в строках счетов он занимает место
+     * шеврона — выбор уже сделан, и открыть пикер можно тапом по самой строке.
+     */
+    private void refreshClearButtons() {
+        if (clearSearch == null) return;
+
+        setVisible(clearSearch, inputSearchText.getText().length() > 0);
+        setVisible(clearKind, selectedKind != DataFilter.OperationKind.all);
+        setVisible(clearAmountMin, inputAmountMin.getText().length() > 0);
+        setVisible(clearAmountMax, inputAmountMax.getText().length() > 0);
+        setVisible(clearEqMin, inputEqMin.getText().length() > 0);
+        setVisible(clearEqMax, inputEqMax.getText().length() > 0);
+
+        setVisible(clearCategories, !selectedCategories.isEmpty());
+        setVisible(chevronCategories, selectedCategories.isEmpty());
+        setVisible(clearWallets, !selectedWallets.isEmpty());
+        setVisible(chevronWallets, selectedWallets.isEmpty());
+    }
+
+    private static void setVisible(View view, boolean visible) {
+        view.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
     private DataFilter buildPreviewFilter() {

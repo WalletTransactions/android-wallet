@@ -35,6 +35,7 @@
     <string name="filter_picker_categories">Счёт затрат</string>
     <string name="filter_picker_wallets">Кошелёк</string>
     <string name="filter_all">Все</string>
+    <string name="filter_clear_content_description">Очистить</string>
     <plurals name="filter_selected_count">
         <item quantity="one">%d выбрано</item>
         <item quantity="few">%d выбрано</item>

@@ -296,6 +296,7 @@
     <string name="activity_transaction_btn_up_content_description">Back</string>
     <string name="activity_transaction_screen_title_text">New operation</string>
     <string name="activity_transaction_btn_delete_content_description">Delete operation</string>
+    <string name="activity_transaction_btn_similar_content_description">Find similar</string>
     <string name="activity_transaction_text_1">Expense</string>
     <string name="activity_transaction_text_2">Income</string>
     <string name="activity_transaction_text_3">Transfer</string>
