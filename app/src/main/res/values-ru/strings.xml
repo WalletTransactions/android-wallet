@@ -299,6 +299,7 @@
     <string name="activity_transaction_btn_up_content_description">Назад</string>
     <string name="activity_transaction_screen_title_text">Новая операция</string>
     <string name="activity_transaction_btn_delete_content_description">Удалить операцию</string>
+    <string name="activity_transaction_btn_similar_content_description">Найти подобные</string>
     <string name="activity_transaction_text_1">Расход</string>
     <string name="activity_transaction_text_2">Доход</string>
     <string name="activity_transaction_text_3">Перевод</string>

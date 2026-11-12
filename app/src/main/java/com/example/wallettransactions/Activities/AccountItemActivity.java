@@ -156,6 +156,18 @@ public class AccountItemActivity extends AppCompatActivity {
         finish();
     }
 
+    /**
+     * Операции этого счёта (operations-filter): прежний фильтр снимается целиком, остаётся
+     * только он. «Операции» поднимаются так же, как по тапу строки в «Кошельках» и «Отчётах».
+     */
+    public void btnFilterClick(View view) {
+        PeriodFilterState.get(this).presetFilter(this,
+                java.util.Collections.singletonList(account.getId()), null, null);
+
+        startActivity(new Intent(this, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+    }
+
     private void updateSaveButton() {
         boolean changed =
                 !editAccName.getText().toString().trim().equals(originalName)

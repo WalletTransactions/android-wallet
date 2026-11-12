@@ -42,6 +42,19 @@
         <item name="android:importantForAccessibility">no</item>
     </style>
 
+    <!-- Крестик очистки одного параметра на экране «Фильтр» (similar-search). Скрыт, пока
+         параметр не задан; показывает и прячет его FilterActivity. -->
+    <style name="FilterClearButton">
+        <item name="android:layout_width">32dp</item>
+        <item name="android:layout_height">32dp</item>
+        <item name="android:background">@null</item>
+        <item name="android:padding">6dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:src">@drawable/ic_clear</item>
+        <item name="android:tint">@color/colorTextSecondary</item>
+        <item name="android:visibility">gone</item>
+    </style>
+
     <!-- Подпись такого чипа: текстовые свойства FilterChip плюс зазор до иконки
          (бывший drawablePadding). -->
     <style name="FilterChipIconLabel">

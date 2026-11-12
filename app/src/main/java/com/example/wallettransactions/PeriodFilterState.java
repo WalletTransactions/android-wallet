@@ -197,6 +197,23 @@ public final class PeriodFilterState {
         setEqRange(ctx, null, null);
     }
 
+    /**
+     * Готовый фильтр одним действием (openspec similar-search): прежний фильтр снимается
+     * целиком — включая текст, суммы и вид, — и ставится только переданное. Так открывают
+     * «Операции» из экрана счёта и из «Найти подобные». {@code kind} и {@code searchText}
+     * могут быть null / пустыми — тогда вид «Все», текста нет.
+     */
+    public void presetFilter(Context ctx, Collection<Integer> ids, DataFilter.OperationKind kind,
+                             String searchText) {
+        // Каждый сеттер сам ничего не делает, если значение то же, — поэтому повтор с теми же
+        // данными не поднимает ревизию (в отличие от clearFilter + установка заново).
+        setAccountIds(ctx, ids);
+        setOperationKind(ctx, kind != null ? kind : DataFilter.OperationKind.all);
+        setSearchText(ctx, searchText);
+        setAmountRange(ctx, null, null);
+        setEqRange(ctx, null, null);
+    }
+
     /** Названия выбранных счетов — для строки-резюме фильтра в шапке. */
     public List<String> getAccountNames(Context ctx) {
         AccountList accounts = Singleton.instance.getAccounts(ctx);

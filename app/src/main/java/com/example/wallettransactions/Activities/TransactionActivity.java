@@ -404,6 +404,8 @@ public class TransactionActivity extends AppCompatActivity {
         aiHint.setVisibility(hint == null || hint.isEmpty() ? View.GONE : View.VISIBLE);
         // Удалить можно только уже существующую операцию.
         mBtnDelete.setVisibility(mIsEdit ? View.VISIBLE : View.GONE);
+        // Подобные ищем только у уже сохранённой операции (similar-search).
+        findViewById(R.id.btnSimilar).setVisibility(mIsEdit ? View.VISIBLE : View.GONE);
 
         mCalDateTime = Calendar.getInstance();
         mCalDateTime.setTime(mDateTime);
@@ -505,6 +507,23 @@ public class TransactionActivity extends AppCompatActivity {
         if (mOpUuid == null) return WalletDbCRUD.InsertOperation(db, dateStr, fromId, toId, amount, comment);
         long id = WalletDbCRUD.InsertOperationWithUuid(db, mOpUuid, dateStr, fromId, toId, amount, comment);
         return id == WalletDbCRUD.UUID_TAKEN ? -1 : id;
+    }
+
+    /**
+     * «Найти подобные»: прежний фильтр снимается целиком и ставится то, что сейчас на
+     * экране, — категория, кошелёк, непустой комментарий и вид (см.
+     * {@link com.example.wallettransactions.DataItems.SimilarFilter}); затем поднимаются «Операции».
+     */
+    public void btnSimilarClick(View view) {
+        com.example.wallettransactions.DataItems.SimilarFilter similar =
+                com.example.wallettransactions.DataItems.SimilarFilter.of(
+                        mAccFrom, mAccTo, mComment.getText().toString());
+        PeriodFilterState.get(this).presetFilter(this, similar.getAccountIds(),
+                similar.getKind(), similar.getSearchText());
+
+        startActivity(new Intent(this, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+        finish();
     }
 
     /**

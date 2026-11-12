@@ -54,18 +54,51 @@
             android:orientation="vertical">
 
             <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_filter_text_2"/>
-            <EditText
-                android:id="@+id/inputSearchText"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
-                android:background="@drawable/bg_input_pill"
-                android:hint="@string/activity_filter_input_search_text_hint"
-                android:paddingLeft="18dp"
-                android:paddingRight="18dp"
-                android:textSize="14sp"
-                android:layout_marginBottom="22dp"/>
+                android:layout_marginBottom="22dp">
 
-            <TextView style="@style/SettingsGroupLabel" android:text="@string/activity_filter_text_3"/>
+                <EditText
+                    android:id="@+id/inputSearchText"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_input_pill"
+                    android:hint="@string/activity_filter_input_search_text_hint"
+                    android:paddingLeft="18dp"
+                    android:paddingRight="44dp"
+                    android:textSize="14sp"/>
+
+                <ImageButton
+                    android:id="@+id/btnClearSearch"
+                    style="@style/FilterClearButton"
+                    android:layout_gravity="end|center_vertical"
+                    android:layout_marginEnd="8dp"
+                    android:contentDescription="@string/filter_clear_content_description"/>
+            </FrameLayout>
+
+            <!-- Крестик типа — в строке заголовка, а не после чипов: на узких экранах
+                 четвёртый элемент ряда отнимал ширину, и «Перевод» переносился по слогам.
+                 Высота строки постоянна, чтобы чипы не прыгали, когда крестик скрыт. -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="28dp"
+                android:layout_marginBottom="3dp">
+
+                <TextView style="@style/SettingsGroupLabel"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginBottom="0dp"
+                    android:text="@string/activity_filter_text_3"/>
+
+                <ImageButton
+                    android:id="@+id/btnClearKind"
+                    style="@style/FilterClearButton"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:contentDescription="@string/filter_clear_content_description"/>
+            </FrameLayout>
             <LinearLayout
                 android:id="@+id/chipGroupKind"
                 android:layout_width="match_parent"
@@ -113,7 +146,9 @@
                         android:text="@string/activity_filter_text_8" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
                     <TextView android:id="@+id/categorySummary" android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="@string/activity_filter_category_summary_text" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/colorTextSecondary" android:layout_marginEnd="6dp"/>
-                    <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
+                    <ImageView android:id="@+id/chevronCategories" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
+                    <ImageButton android:id="@+id/btnClearCategories" style="@style/FilterClearButton"
+                        android:contentDescription="@string/filter_clear_content_description"/>
                 </LinearLayout>
 
                 <LinearLayout
@@ -130,7 +165,9 @@
                         android:text="@string/activity_filter_text_9" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
                     <TextView android:id="@+id/walletSummary" android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="@string/activity_filter_wallet_summary_text" android:textSize="13sp" android:textStyle="bold" android:textColor="@color/colorTextSecondary" android:layout_marginEnd="6dp"/>
-                    <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
+                    <ImageView android:id="@+id/chevronWallets" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
+                    <ImageButton android:id="@+id/btnClearWallets" style="@style/FilterClearButton"
+                        android:contentDescription="@string/filter_clear_content_description"/>
                 </LinearLayout>
             </LinearLayout>
 
@@ -141,17 +178,27 @@
                 android:orientation="horizontal"
                 android:layout_marginBottom="22dp">
 
-                <EditText android:id="@+id/inputAmountMin" android:layout_width="0dp" android:layout_height="match_parent"
-                    android:layout_weight="1" android:background="@drawable/bg_input_pill" android:gravity="center"
-                    android:hint="@string/activity_filter_input_amount_min_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+                    <EditText android:id="@+id/inputAmountMin" android:layout_width="match_parent" android:layout_height="match_parent"
+                        android:background="@drawable/bg_input_pill" android:gravity="center" android:paddingLeft="30dp" android:paddingRight="30dp"
+                        android:hint="@string/activity_filter_input_amount_min_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                    <ImageButton android:id="@+id/btnClearAmountMin" style="@style/FilterClearButton"
+                        android:layout_gravity="end|center_vertical" android:layout_marginEnd="4dp"
+                        android:contentDescription="@string/filter_clear_content_description"/>
+                </FrameLayout>
 
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:layout_marginLeft="8dp" android:layout_marginRight="8dp" android:layout_gravity="center_vertical"
                     android:text="—" android:textColor="@color/colorTextSecondary"/>
 
-                <EditText android:id="@+id/inputAmountMax" android:layout_width="0dp" android:layout_height="match_parent"
-                    android:layout_weight="1" android:background="@drawable/bg_input_pill" android:gravity="center"
-                    android:hint="@string/activity_filter_input_amount_max_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+                    <EditText android:id="@+id/inputAmountMax" android:layout_width="match_parent" android:layout_height="match_parent"
+                        android:background="@drawable/bg_input_pill" android:gravity="center" android:paddingLeft="30dp" android:paddingRight="30dp"
+                        android:hint="@string/activity_filter_input_amount_max_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                    <ImageButton android:id="@+id/btnClearAmountMax" style="@style/FilterClearButton"
+                        android:layout_gravity="end|center_vertical" android:layout_marginEnd="4dp"
+                        android:contentDescription="@string/filter_clear_content_description"/>
+                </FrameLayout>
             </LinearLayout>
 
             <!-- Текст дописывает FilterActivity: валюта эквивалента общая для всех табов
@@ -164,17 +211,27 @@
                 android:orientation="horizontal"
                 android:layout_marginBottom="24dp">
 
-                <EditText android:id="@+id/inputEqMin" android:layout_width="0dp" android:layout_height="match_parent"
-                    android:layout_weight="1" android:background="@drawable/bg_input_pill" android:gravity="center"
-                    android:hint="@string/activity_filter_input_eq_min_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+                    <EditText android:id="@+id/inputEqMin" android:layout_width="match_parent" android:layout_height="match_parent"
+                        android:background="@drawable/bg_input_pill" android:gravity="center" android:paddingLeft="30dp" android:paddingRight="30dp"
+                        android:hint="@string/activity_filter_input_eq_min_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                    <ImageButton android:id="@+id/btnClearEqMin" style="@style/FilterClearButton"
+                        android:layout_gravity="end|center_vertical" android:layout_marginEnd="4dp"
+                        android:contentDescription="@string/filter_clear_content_description"/>
+                </FrameLayout>
 
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:layout_marginLeft="8dp" android:layout_marginRight="8dp" android:layout_gravity="center_vertical"
                     android:text="—" android:textColor="@color/colorTextSecondary"/>
 
-                <EditText android:id="@+id/inputEqMax" android:layout_width="0dp" android:layout_height="match_parent"
-                    android:layout_weight="1" android:background="@drawable/bg_input_pill" android:gravity="center"
-                    android:hint="@string/activity_filter_input_eq_max_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                <FrameLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1">
+                    <EditText android:id="@+id/inputEqMax" android:layout_width="match_parent" android:layout_height="match_parent"
+                        android:background="@drawable/bg_input_pill" android:gravity="center" android:paddingLeft="30dp" android:paddingRight="30dp"
+                        android:hint="@string/activity_filter_input_eq_max_hint" android:inputType="numberDecimal" android:textSize="13.5sp" android:textStyle="bold"/>
+                    <ImageButton android:id="@+id/btnClearEqMax" style="@style/FilterClearButton"
+                        android:layout_gravity="end|center_vertical" android:layout_marginEnd="4dp"
+                        android:contentDescription="@string/filter_clear_content_description"/>
+                </FrameLayout>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

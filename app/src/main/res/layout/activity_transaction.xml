@@ -48,7 +48,24 @@
             android:fontFamily="@font/caprasimo"
             android:text="@string/activity_transaction_screen_title_text"
             android:textColor="@color/colorTextPrimary"
-            android:textSize="20sp"/>
+            android:textSize="20sp"
+            android:maxLines="1"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="14sp"
+            android:autoSizeMaxTextSize="20sp"
+            android:autoSizeStepGranularity="1sp"/>
+
+        <!-- «Найти подобные» (similar-search): только при правке существующей операции. -->
+        <ImageButton
+            android:id="@+id/btnSimilar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:contentDescription="@string/activity_transaction_btn_similar_content_description"
+            android:src="@drawable/ic_filter"
+            android:visibility="gone"
+            android:onClick="btnSimilarClick"/>
 
         <!-- Только для правки существующей операции — см. TransactionActivity.onCreate. -->
         <ImageButton

@@ -33,6 +33,7 @@
     <string name="filter_picker_categories">Expense category</string>
     <string name="filter_picker_wallets">Wallet</string>
     <string name="filter_all">All</string>
+    <string name="filter_clear_content_description">Clear</string>
     <plurals name="filter_selected_count">
         <item quantity="one">%d selected</item>
         <item quantity="other">%d selected</item>
