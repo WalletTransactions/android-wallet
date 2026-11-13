@@ -46,7 +46,7 @@
     <string name="summary_net_worth">Total with capital</string>
     <string name="summary_capital_flow">To / from capital</string>
     <string name="summary_fx_diff">Exchange rate difference</string>
-    <string name="sync_healed_ledger_reread">Reloading the wallet from the server to pick up capital assets</string>
+    <string name="sync_healed_ledger_reread">Reloading the wallet from the server to pick up new data (assets, loans)</string>
     <string name="settings_capital_in_summary">Capital in totals</string>
     <string name="settings_capital_in_summary_hint">“Capital” and “Total with capital” rows under the totals</string>
 </resources>
