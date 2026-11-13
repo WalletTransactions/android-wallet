@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Признак займа у кошелька (openspec debts): «Заём», при включённом — контрагент, срок
+  возврата и комментарий к займу. Карточка кошелька (AccountItemActivity); с «Капитальным
+  активом» взаимоисключающий — DebtFields прячет одно, пока отмечено другое.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/debtFields"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <CheckBox
+        android:id="@+id/checkIsDebt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/debt_is_loan"
+        android:textColor="@color/colorTextPrimary"
+        android:textSize="15sp"
+        android:buttonTint="@color/colorPrimary"
+        android:layout_marginBottom="8dp"/>
+
+    <LinearLayout
+        android:id="@+id/debtDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/debt_counterparty_label"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            android:textColor="@color/colorTextSecondary"/>
+
+        <TextView
+            android:id="@+id/debtCounterparty"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center_vertical"
+            android:background="?android:attr/selectableItemBackground"
+            android:text="@string/debt_counterparty_none"
+            android:textColor="@color/colorPrimary"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/debt_due_label"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            android:textColor="@color/colorTextSecondary"/>
+
+        <TextView
+            android:id="@+id/debtDueDate"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center_vertical"
+            android:background="?android:attr/selectableItemBackground"
+            android:text="@string/debt_due_none"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="16sp"/>
+
+        <EditText
+            android:id="@+id/debtComment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/debt_comment_hint"
+            android:inputType="textCapSentences"
+            android:textColor="@color/colorTextPrimary"
+            android:textColorHint="@color/colorTextSecondary"
+            android:textSize="15sp"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/debt_balance_hint"
+            android:textSize="12sp"
+            android:textColor="@color/colorTextSecondary"
+            android:layout_marginBottom="8dp"/>
+    </LinearLayout>
+</LinearLayout>

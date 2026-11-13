@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Russian: debts and counterparties (openspec debts). -->
+<resources>
+    <string name="debt_is_loan">Заём (мне должны или я должен)</string>
+    <string name="debt_counterparty_label">Контрагент</string>
+    <string name="debt_counterparty_none">Выбрать контрагента</string>
+    <string name="debt_due_label">Срок возврата</string>
+    <string name="debt_due_none">Без срока</string>
+    <string name="debt_due_clear">Убрать срок</string>
+    <string name="debt_comment_hint">Комментарий к займу</string>
+    <string name="debt_pick_counterparty">Контрагент</string>
+    <string name="debt_new_counterparty">+ Новый контрагент…</string>
+    <string name="debt_new_counterparty_title">Новый контрагент</string>
+    <string name="debt_counterparty_name_hint">Имя</string>
+    <string name="debt_counterparty_exists">«%1$s» уже есть — выбран он</string>
+    <string name="debt_error_no_counterparty">Выберите, с кем заём</string>
+    <string name="debt_balance_hint">Знак остатка — направление: «+» мне должны, «−» я должен</string>
+    <string name="debt_action_give">Дать в долг</string>
+    <string name="debt_action_take">Взять в долг</string>
+    <string name="debt_action_return">Вернуть</string>
+    <string name="debt_pick_loan">Заём</string>
+    <string name="debt_new_loan">+ Новый заём в %1$s</string>
+    <string name="debt_loan_row">%1$s   %2$s</string>
+    <string name="debt_return_nothing">Нет займов с остатком</string>
+    <string name="debt_overpay_title">Больше, чем долг</string>
+    <string name="debt_overpay_message">Остаток займа %1$s, вводите %2$s. Излишек развернёт долг в обратную сторону. Сохранить?</string>
+    <string name="debt_overpay_ok">Сохранить</string>
+    <string name="debt_loan_failed">Не удалось завести заём</string>
+</resources>

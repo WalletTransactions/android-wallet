@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English: debts and counterparties (openspec debts). -->
+<resources>
+    <string name="debt_is_loan">Loan (someone owes me or I owe)</string>
+    <string name="debt_counterparty_label">Counterparty</string>
+    <string name="debt_counterparty_none">Choose a counterparty</string>
+    <string name="debt_due_label">Due date</string>
+    <string name="debt_due_none">No due date</string>
+    <string name="debt_due_clear">Remove due date</string>
+    <string name="debt_comment_hint">Loan comment</string>
+    <string name="debt_pick_counterparty">Counterparty</string>
+    <string name="debt_new_counterparty">+ New counterparty…</string>
+    <string name="debt_new_counterparty_title">New counterparty</string>
+    <string name="debt_counterparty_name_hint">Name</string>
+    <string name="debt_counterparty_exists">«%1$s» already exists — selected it</string>
+    <string name="debt_error_no_counterparty">Choose who the loan is with</string>
+    <string name="debt_balance_hint">Balance sign is the direction: + they owe me, − I owe them</string>
+    <string name="debt_action_give">Lend</string>
+    <string name="debt_action_take">Borrow</string>
+    <string name="debt_action_return">Repay</string>
+    <string name="debt_pick_loan">Loan</string>
+    <string name="debt_new_loan">+ New loan in %1$s</string>
+    <string name="debt_loan_row">%1$s   %2$s</string>
+    <string name="debt_return_nothing">No loans with a balance to repay</string>
+    <string name="debt_overpay_title">More than owed</string>
+    <string name="debt_overpay_message">The loan balance is %1$s, you enter %2$s. The rest will turn the loan the other way. Save anyway?</string>
+    <string name="debt_overpay_ok">Save</string>
+    <string name="debt_loan_failed">Could not create the loan</string>
+</resources>

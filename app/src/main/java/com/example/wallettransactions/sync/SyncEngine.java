@@ -1769,7 +1769,7 @@ final class SyncEngine {
         String counterparty = localUuid(db, "counterparty", row.getString("counterparty_uuid"));
         if (counterparty == null) {
             Log.w(TAG, "account_debt " + uuid + ": контрагент " + row.getString("counterparty_uuid")
-                    + " ещё не применён — строка отложена");
+                    + " ещё не применён — строка отложена"); // not UI: лог
             return false;
         }
         ContentValues cv = new ContentValues();

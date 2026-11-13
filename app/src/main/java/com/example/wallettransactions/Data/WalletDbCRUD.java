@@ -607,6 +607,21 @@ public class WalletDbCRUD {
         }
     }
 
+    /** uuid живого контрагента по _id или null — для экранов вне пакета Data. */
+    public static String CounterpartyUuid(SQLiteDatabase db, int id) {
+        return counterpartyUuid(db, id);
+    }
+
+    /**
+     * Имя контрагента по имени кошелька-займа: хвост « · <ISO>» и « · <ISO> · N» шаблона
+     * {@link #DebtWalletName} отбрасывается («Александ Кулигин · EUR» → «Александ Кулигин»),
+     * другое имя — как есть, без пробелов по краям.
+     */
+    public static String SuggestCounterpartyName(String walletName) {
+        if (walletName == null) return "";
+        return walletName.replaceFirst("\\s*·\\s*[A-Z]{3}(\\s*·\\s*\\d+)?\\s*$", "").trim(); // not UI: pattern
+    }
+
     /** uuid живого контрагента по _id или null. */
     static String counterpartyUuid(SQLiteDatabase db, int id) {
         Cursor c = db.rawQuery("SELECT " + WalletContract.CounterpartyEntry.COLUMN_UUID
