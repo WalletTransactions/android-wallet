@@ -52,7 +52,11 @@ issue `.github-private#10` и общие для четырёх парных chan
 - `counterparty`: `_id INTEGER PRIMARY KEY AUTOINCREMENT`, `name TEXT NOT
   NULL`, `comment TEXT NOT NULL DEFAULT ''`, `icon_uuid TEXT NULL`,
   `is_archived INT NOT NULL DEFAULT 0`, колонки синка (`SYNC_COLUMNS_DDL`),
-  уникальный индекс `lower(trim(name))` среди живых.
+  частичный уникальный индекс `uq_counterparty_name` по
+  `AccountNames.keySql(name)` среди живых — тот же ключ, что у
+  `uq_account_name` (регистр и «ё»/«е»), совпадает с серверным
+  `lower(btrim(translate(name, 'Ёё', 'Ее')))` (wallet-api `000036`). Пробелы
+  по краям обрезаются при вводе, до записи.
 - `account_debt`: `_id INTEGER PRIMARY KEY` (= `account._id`, uuid = uuid
   счёта), `counterparty_uuid TEXT NOT NULL`, `comment TEXT NOT NULL DEFAULT
   ''`, `due_date TEXT NULL` (`yyyy-MM-dd`), колонки синка, FK на
@@ -82,14 +86,27 @@ issue `.github-private#10` и общие для четырёх парных chan
   `account_debt`, `operation` — совпадает с `kApplyOrder` wallet-api.
 - `collectDirtyByTable`: `counterparty` — `uuid, name, comment, icon_uuid,
   is_archived, deleted`; `account_debt` — `uuid, counterparty_uuid, comment,
-  due_date, deleted` (ключи по `openapi.yaml` wallet-api).
+  due_date, deleted` (ключи по `openapi.yaml` wallet-api, схемы
+  `CounterpartyPushRow` / `AccountDebtPushRow`). `icon_uuid` и `due_date` на
+  сервере необязательны и nullable, но клиент отправляет их всегда (`null` —
+  «нет»): отсутствие ключа сервер трактует как «оставить прежнее», и снятие
+  срока на телефоне иначе не доехало бы. `due_date` — строго `yyyy-MM-dd`,
+  другое — `400 invalid_row`.
 - `applyCounterparty`; `applyAccountDebt` ищет родительский счёт и
   контрагента по uuid, нет — пропуск с логом.
 - `resolveAccountConflicts` расширяется: `409 duplicate_name` по
-  `counterparty` переклеивает uuid строки на выжившую и обновляет
+  `counterparty` (сервер отдаёт `existing_uuid`, как для `account`)
+  переклеивает uuid строки на выжившую и обновляет
   `account_debt.counterparty_uuid`.
-- `409 counterparty_in_use` на удаление контрагента — вернуть строку
-  (`deleted_at = NULL`), оставить dirty, показать в списке (design D12).
+- `409 counterparty_in_use` на удаление контрагента — тело `{"error":
+  "counterparty_in_use", "table": "counterparty", "uuid": …}`; по `uuid`
+  вернуть строку (`deleted_at = NULL`), оставить dirty, показать в списке
+  (design D12). Батч откатывается целиком, поэтому остальные строки
+  остаются dirty и уходят следующим push.
+- `409 missing_reference` для `account_debt` (кошелёк без
+  `account_operating` или неизвестный контрагент) при соблюдении
+  `TABLE_ORDER` и D12 не ожидается; если пришёл — обычная обработка
+  `missing_reference`, без особого случая.
 - `touchesAccounts` учитывает обе таблицы (перезагрузка кэша).
 
 ### D4. Модель и кэш

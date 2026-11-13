@@ -1,15 +1,15 @@
 # Tasks
 
 Номер шага БД ниже — `vN`: следующая свободная версия на момент реализации
-(сейчас в коде `DATABASE_VERSION = 90`). Перед началом убедиться, что
-парный change wallet-api (`counterparty` и `account_debt` в синке)
-реализован хотя бы на test — без него push молча теряет данные (design,
-Risks). Юнит-тесты — `bash gradlew testProdDebugUnitTest` (корневой
+(сейчас в коде `DATABASE_VERSION = 90`). Парный change wallet-api влит
+(wallet-api#25, миграция `000036`, версия 0.4.0); перед началом убедиться,
+что 0.4.0 выкачена хотя бы на test — без неё push молча теряет данные
+(design, Risks). Юнит-тесты — `bash gradlew testProdDebugUnitTest` (корневой
 `testDebugUnitTest` запускает 0 тестов приложения).
 
 ## 1. Схема и модель
 
-- [ ] 1.1 `WalletContract.CounterpartyEntry`, `AccountDebtEntry`, `CounterpartyContactEntry`; DDL по design D1 (`CreateCounterpartyEntry`, `CreateAccountDebtEntry`, локальная `counterparty_contact`), вызов в `onCreate`; шаг `vN` в `onUpgrade`: таблицы, `createDirtyTrigger` для двух синхронизируемых, `createUuidIndex`, уникальный индекс имени, флаг перечита ledger. Проверка: Robolectric-тест — `onCreate` и апгрейд с предыдущей версии дают одинаковую схему, уникальность имени срабатывает.
+- [ ] 1.1 `WalletContract.CounterpartyEntry`, `AccountDebtEntry`, `CounterpartyContactEntry`; DDL по design D1 (`CreateCounterpartyEntry`, `CreateAccountDebtEntry`, локальная `counterparty_contact`), вызов в `onCreate`; шаг `vN` в `onUpgrade`: таблицы, `createDirtyTrigger` для двух синхронизируемых, `createUuidIndex`, уникальный индекс имени `uq_counterparty_name` по `AccountNames.keySql`, флаг перечита ledger. Проверка: Robolectric-тест — `onCreate` и апгрейд с предыдущей версии дают одинаковую схему, уникальность имени срабатывает для «вася»/«Вася» и «Алена»/«Алёна».
 - [ ] 1.2 `CounterpartyItem`, `AccountOperatingItem.DebtInfo`; `LoadAccounts` читает `account_debt` (живые строки); `LoadCounterparties`. Проверка: юнит-тест загрузки кошелька с долгом, с мягко удалённым `account_debt`, контрагента без долгов.
 - [ ] 1.3 `WalletDbCRUD`: `CreateCounterparty`/`RenameCounterparty`/`ArchiveCounterparty`/`DeleteCounterparty` (отказ при живых займах), `SetAccountDebt`/`ClearAccountDebt` (вставка, оживление той же строки, мягкое удаление; отказ для категории и для актива), `CreateDebtWallet(db, counterparty, currency)` с именем «<имя> · <ISO>» и суффиксами « · 2». Проверка: Robolectric-тесты на сценарии `specs/debts` — контрагент, дубль имени, новый заём, второй заём, кошелёк-актив.
 - [ ] 1.4 Колонка `is_debt_wallet` для каждой стороны в `v_operation`/`v_operation_eq` (`CreateViews`, пересоздание в шаге `vN`), design D5. Проверка: тест — проводка с долговым кошельком даёт 1 на нужной стороне, обычная — 0; доход и расход периода не изменились.
@@ -17,8 +17,8 @@ Risks). Юнит-тесты — `bash gradlew testProdDebugUnitTest` (корне
 
 ## 2. Синк
 
-- [ ] 2.1 `SyncEngine`: `counterparty`, `account_debt` в `TABLE_ORDER` после `account_asset`, `collectDirtyByTable` (ключи по `openapi.yaml` wallet-api), `applyCounterparty`, `applyAccountDebt`, `touchesAccounts`. Проверка: Robolectric-тест — dirty-строки уходят с нужными ключами; входящие применяются, `account_debt` без контрагента пропускается с логом.
-- [ ] 2.2 Конфликты: `resolveAccountConflicts` переклеивает `counterparty.uuid` и `account_debt.counterparty_uuid` при `409 duplicate_name`; `409 counterparty_in_use` оживляет контрагента и оставляет dirty. Проверка: тесты на сценарии «Один и тот же контрагент на двух устройствах» и «Удаление при параллельном долге».
+- [ ] 2.1 `SyncEngine`: `counterparty`, `account_debt` в `TABLE_ORDER` после `account_asset`, `collectDirtyByTable` (ключи по `openapi.yaml` wallet-api), `applyCounterparty`, `applyAccountDebt`, `touchesAccounts`. Проверка: Robolectric-тест — dirty-строки уходят с нужными ключами, `icon_uuid` и `due_date` присутствуют и при `null`; входящие применяются, `account_debt` без контрагента пропускается с логом.
+- [ ] 2.2 Конфликты: `resolveAccountConflicts` переклеивает `counterparty.uuid` и `account_debt.counterparty_uuid` при `409 duplicate_name`; `409 counterparty_in_use` (по `uuid` из тела) оживляет контрагента и оставляет dirty; остальные строки откатанного батча уходят следующим push. Проверка: тесты на сценарии «Один и тот же контрагент на двух устройствах» и «Удаление при параллельном долге».
 - [ ] 2.3 Однократный перечит ledger и повторная пометка dirty всех живых `counterparty`/`account_debt` при первом синке после обновления (спека `sync-run`); `pullAll` при флаге сбрасывает только курсор ledger. Проверка: тесты — pull идёт с 0, reference-курсор и `ledger_id` не тронуты, строки dirty, второй проход — с сохранённой позиции.
 - [ ] 2.4 `docs/ARCHITECTURE.md`: синк `counterparty`/`account_debt`, порядок таблиц, перечит. Проверка: раздел описывает порядок и условие перечита.
 
