@@ -44,6 +44,38 @@ public class AccountOperatingItem extends AccountItem {
         return asset != null;
     }
 
+    /**
+     * Признак долгового кошелька (openspec debts, design D4) из живой строки
+     * {@code account_debt}. {@code null} — не долговой. Знак баланса — направление:
+     * «+» мне должны, «−» я должен.
+     */
+    public static final class DebtInfo {
+        public final String counterpartyUuid;
+        public final String comment;
+        /** Срок возврата {@code yyyy-MM-dd} или {@code null}. */
+        public final String dueDate;
+
+        public DebtInfo(String counterpartyUuid, String comment, String dueDate) {
+            this.counterpartyUuid = counterpartyUuid;
+            this.comment = comment == null ? "" : comment;
+            this.dueDate = dueDate;
+        }
+    }
+
+    private DebtInfo debt;
+
+    public DebtInfo getDebt() {
+        return debt;
+    }
+
+    public void setDebt(DebtInfo debt) {
+        this.debt = debt;
+    }
+
+    public boolean isDebt() {
+        return debt != null;
+    }
+
     public AccountOperatingItem(Integer id, String name, String comment, Icon icon, boolean isArchived,
                                  Currency currency, AccountItem.SystemKind systemKind, AccountItem.Kind kind)
     {

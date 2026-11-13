@@ -223,6 +223,23 @@ erDiagram
         int include_in_net_worth
         text comment
     }
+    account_debt {
+        int _id PK "= account._id, v91"
+        text counterparty_uuid FK
+        text comment
+        text due_date "yyyy-MM-dd или null"
+    }
+    counterparty {
+        int _id PK "v91"
+        text name
+        text comment
+        text icon_uuid
+        int is_archived
+    }
+    counterparty_contact {
+        text counterparty_uuid PK "v91, локальная"
+        text lookup_key
+    }
     operation {
         int _id PK
         text date
@@ -258,6 +275,9 @@ erDiagram
     icon ||--o{ currency : ""
     account ||--o| account_operating : "расширяет"
     account_operating ||--o| account_asset : "актив"
+    account_operating ||--o| account_debt : "заём"
+    counterparty ||--o{ account_debt : "uuid"
+    counterparty ||--o| counterparty_contact : "uuid"
     account ||--o{ operation : "acc_fr_id / acc_to_id"
     currency ||--o{ account_operating : ""
     currency ||--o{ currency_pair : "base / quote"
@@ -332,6 +352,29 @@ erDiagram
 Исключение из дохода и расхода идёт по `system_kind`, поэтому две системные
 «Переоценки» с разных устройств безвредны.
 
+### Долги: контрагенты и займы (v91)
+
+Заём — обычный кошелёк со строкой `account_debt` (openspec `debts`, design D1) по
+образцу `account_asset`: `_id` = `account._id`, `uuid` = `account.uuid`, колонки
+`counterparty_uuid`, `comment`, `due_date` (`yyyy-MM-dd` или `null`) и колонки синка.
+Знак баланса — направление: «+» мне должны, «−» я должен. Один заём — один кошелёк;
+у контрагента их может быть несколько, в том числе в одной валюте
+(`WalletDbCRUD.CreateDebtWallet`: имя «<контрагент> · <ISO>», при совпадении —
+« · 2», « · 3»). Снятие признака — мягкое удаление, повторная пометка оживляет ту же
+строку (`SetAccountDebt`/`ClearAccountDebt`). Кошелёк не бывает сразу активом и
+займом: `SetAccountDebt` отказывает активу, `SetAccountAsset` — займу.
+
+Контрагент — синхронизируемая `counterparty` (имя, комментарий, `icon_uuid`,
+`is_archived`). Имя уникально среди живых тем же ключом, что у счёта
+(`uq_counterparty_name` по `AccountNames.keySql`, как на сервере); пробелы по краям
+обрезаются до записи (`NormalizeCounterpartyName`). Удалить можно только без живых
+займов (`DeleteCounterparty` → `hasDebts`). Займ ссылается на контрагента по uuid,
+поэтому переименование кошельки не трогает. Привязка к контакту телефона —
+локальная `counterparty_contact` без колонок синка и без dirty-триггера.
+
+Признак читают `LoadAccounts` (`AccountOperatingItem.DebtInfo`, `null` — не заём) и
+`LoadCounterparties`.
+
 ### Представления
 
 | Представление | Что делает |
@@ -340,8 +383,8 @@ erDiagram
 | `v_account_expanse` | Счёта без валюты, то есть категории |
 | `v_currency_conversion` | Раскрывает каждую пару в **два** направления: прямое и обратное с флагом `is_reverse` |
 | `v_currency_conversion_rate` | Курс на дату с уже применённым `1.0/rate` для обратного направления; через `UNION` добавляет тождественный курс 1 валюты к себе с датой `2000-01-01` |
-| `v_operation` | Операция с именами счётов и валютой; `is_revaluation` — 1, если одна из сторон — счёт с `system_kind = 3` (v89) |
-| `v_operation_eq` | Операция с курсом на свою дату и суммой в эквиваленте; пробрасывает `is_revaluation` |
+| `v_operation` | Операция с именами счётов и валютой; `is_revaluation` — 1, если одна из сторон — счёт с `system_kind = 3` (v89); `acc_from_is_debt`/`acc_to_is_debt` — 1, если сторона — заём (живая `account_debt`, v91) |
+| `v_operation_eq` | Операция с курсом на свою дату и суммой в эквиваленте; пробрасывает `is_revaluation`, `acc_from_is_debt`, `acc_to_is_debt` |
 
 `is_revaluation` — единственное место, где решается «это переоценка». Её используют
 отчёты дохода и расхода (`GenerateIncomeReportByAccount`/`GenerateExpanseReportByAccount`)
@@ -470,7 +513,13 @@ round(vccr.rate * (coalesce(opt.amount_to, 0) - coalesce(opf.amount_fr, 0)), 2) 
 
 ## Миграции
 
-`DATABASE_VERSION = 89` в `WalletDbHelper` (v89 — таблица `account_asset` с триггером
+`DATABASE_VERSION = 91` в `WalletDbHelper` (v91 — таблицы `counterparty`,
+`account_debt` с триггерами dirty и индексами uuid, локальная `counterparty_contact`,
+колонки `acc_from_is_debt`/`acc_to_is_debt` во вьюхах и тот же флаг перечита
+ledger, что у v89, `upgradeToDebtsV91`, см. «Долги: контрагенты и займы»;
+`CreateViews` сама создаёт таблицы долгов (`CreateDebtTables`, `IF NOT EXISTS`) —
+вьюхи джойнят `account_debt`, а их пересоздают и шаги до v91; v90 — возврат
+серверных иконок; v89 — таблица `account_asset` с триггером
 dirty и индексом uuid, колонка `is_revaluation` во вьюхах и флаг однократного
 перечита ledger, `upgradeToCapitalAssetsV89`, см. «Капитальные активы и
 „Переоценка“» и «Синхронизация»; общие `createSyncTriggers`/`createUuidIndexes`

@@ -10,6 +10,7 @@ import android.util.Pair;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
+import com.example.wallettransactions.DataItems.Accounts.CounterpartyItem;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
 import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyPairList;
@@ -957,6 +958,10 @@ public abstract class WalletDbLoader {
                 // Признак актива (capital-assets) — только живая строка и только у кошелька.
                 +", aa."+ WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE
                 +", aa."+ WalletContract.AccountAssetEntry.COLUMN_INCLUDE_IN_NET_WORTH
+                // Признак долга (debts) — так же, только живая строка у кошелька.
+                +", ad."+ WalletContract.AccountDebtEntry.COLUMN_COUNTERPARTY_UUID
+                +", ad."+ WalletContract.AccountDebtEntry.COLUMN_COMMENT + " debt_comment"
+                +", ad."+ WalletContract.AccountDebtEntry.COLUMN_DUE_DATE
 
                 +" FROM "+ WalletContract.AccountEntry.TABLE_NAME
                 +" a left join "+ WalletContract.AccountOperatingEntry.TABLE_NAME
@@ -965,6 +970,9 @@ public abstract class WalletDbLoader {
                 +" left join "+ WalletContract.AccountAssetEntry.TABLE_NAME
                 +" aa on aa." + WalletContract.AccountAssetEntry._ID + "=ao." + WalletContract.AccountOperatingEntry._ID
                 +" and aa." + WalletContract.AccountAssetEntry.COLUMN_DELETED_AT + " is null"
+                +" left join "+ WalletContract.AccountDebtEntry.TABLE_NAME
+                +" ad on ad." + WalletContract.AccountDebtEntry._ID + "=ao." + WalletContract.AccountOperatingEntry._ID
+                +" and ad." + WalletContract.AccountDebtEntry.COLUMN_DELETED_AT + " is null"
                 +" left join "+ WalletContract.CurrencyEntry.TABLE_NAME
                 +" c on c." +WalletContract.CurrencyEntry._ID + "=ao."+WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID+"\n"
                 +" WHERE a." + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL";
@@ -986,6 +994,9 @@ public abstract class WalletDbLoader {
             int curIdColumnIndex = cursor.getColumnIndex(WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID);
             int assetTypeColumnIndex = cursor.getColumnIndex(WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE);
             int includeColumnIndex = cursor.getColumnIndex(WalletContract.AccountAssetEntry.COLUMN_INCLUDE_IN_NET_WORTH);
+            int counterpartyColumnIndex = cursor.getColumnIndex(WalletContract.AccountDebtEntry.COLUMN_COUNTERPARTY_UUID);
+            int debtCommentColumnIndex = cursor.getColumnIndex("debt_comment");
+            int dueDateColumnIndex = cursor.getColumnIndex(WalletContract.AccountDebtEntry.COLUMN_DUE_DATE);
 
 
             while (cursor.moveToNext()) {
@@ -1007,6 +1018,9 @@ public abstract class WalletDbLoader {
                 AccountOperatingItem.AssetInfo asset = cursor.isNull(assetTypeColumnIndex) ? null
                         : new AccountOperatingItem.AssetInfo(cursor.getInt(assetTypeColumnIndex),
                                 cursor.getInt(includeColumnIndex) != 0);
+                AccountOperatingItem.DebtInfo debt = cursor.isNull(counterpartyColumnIndex) ? null
+                        : new AccountOperatingItem.DebtInfo(cursor.getString(counterpartyColumnIndex),
+                                cursor.getString(debtCommentColumnIndex), cursor.getString(dueDateColumnIndex));
 
                 AccountItem account = accounts.getAccountById(currentID);
 
@@ -1014,13 +1028,17 @@ public abstract class WalletDbLoader {
                     if (curId != 0) {
                         AccountOperatingItem wallet = new AccountOperatingItem(currentID, currentName, currentComment, icon, currentIsArchived, currencyList.getCurrencyById(curId), currentSystemKind, currentKind);
                         wallet.setAsset(asset);
+                        wallet.setDebt(debt);
                         accounts.put(currentID, wallet);
                     } else
                         accounts.put(currentID, new AccountItem(currentID, currentName, currentComment, icon, currentIsArchived, currentSystemKind, currentKind));
                 }
                 else {
                     account.update(currentName, currentComment, icon, currentIsArchived, currentSystemKind, currentKind);
-                    if (account instanceof AccountOperatingItem) ((AccountOperatingItem) account).setAsset(asset);
+                    if (account instanceof AccountOperatingItem) {
+                        ((AccountOperatingItem) account).setAsset(asset);
+                        ((AccountOperatingItem) account).setDebt(debt);
+                    }
                 }
             }
             accounts.notifyObservers();
@@ -1029,6 +1047,34 @@ public abstract class WalletDbLoader {
         }
         WalletDbLoader.UpdateAccountsOperatingBalance(db, accounts);
 
+    }
+
+    /**
+     * Живые контрагенты (openspec debts, design D4), по имени без учёта регистра. Архивные
+     * тоже — экран «Контрагенты» показывает их отдельно, а займы архивного не теряются.
+     */
+    public static List<CounterpartyItem>
+            LoadCounterparties(SQLiteDatabase db) {
+        List<CounterpartyItem> out = new ArrayList<>();
+        Cursor c = db.rawQuery("SELECT " + WalletContract.CounterpartyEntry._ID
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_UUID
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_NAME
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_COMMENT
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_ICON_UUID
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_IS_ARCHIVED
+                + " FROM " + WalletContract.CounterpartyEntry.TABLE_NAME
+                + " WHERE " + WalletContract.CounterpartyEntry.COLUMN_DELETED_AT + " IS NULL"
+                + " ORDER BY " + AccountNames.keySql(WalletContract.CounterpartyEntry.COLUMN_NAME), null);
+        try {
+            while (c.moveToNext()) {
+                out.add(new CounterpartyItem(
+                        c.getInt(0), c.getString(1), c.getString(2), c.getString(3),
+                        c.isNull(4) ? null : c.getString(4), c.getInt(5) != 0));
+            }
+        } finally {
+            c.close();
+        }
+        return out;
     }
 
     /**

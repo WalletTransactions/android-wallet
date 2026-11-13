@@ -414,6 +414,12 @@ public class WalletDbCRUD {
         db.update(WalletContract.AccountAssetEntry.TABLE_NAME, cvAsset,
                 WalletContract.AccountAssetEntry._ID + "=? AND "
                         + WalletContract.AccountAssetEntry.COLUMN_DELETED_AT + " IS NULL", new String[]{id});
+        // То же для признака долга (debts): займ без кошелька не живёт.
+        ContentValues cvDebt = new ContentValues();
+        cvDebt.put(WalletContract.AccountDebtEntry.COLUMN_DELETED_AT, now);
+        db.update(WalletContract.AccountDebtEntry.TABLE_NAME, cvDebt,
+                WalletContract.AccountDebtEntry._ID + "=? AND "
+                        + WalletContract.AccountDebtEntry.COLUMN_DELETED_AT + " IS NULL", new String[]{id});
 
         ContentValues cvAcc = new ContentValues();
         cvAcc.put(WalletContract.AccountEntry.COLUMN_DELETED_AT, now);
@@ -451,6 +457,11 @@ public class WalletDbCRUD {
         } finally {
             c.close();
         }
+        // Кошелёк и актив, и долг — не предлагается (debts, сценарий «Кошелёк уже актив»).
+        if (IsDebtWallet(db, accountId)) {
+            Log.w(TAG, "SetAccountAsset: account id=" + accountId + " is a debt wallet");
+            return false;
+        }
 
         ContentValues cv = new ContentValues();
         cv.put(WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE, assetType);
@@ -483,6 +494,306 @@ public class WalletDbCRUD {
                 + " WHERE aa." + WalletContract.AccountAssetEntry.COLUMN_DELETED_AT + " IS NULL LIMIT 1", null);
         try {
             return c.moveToFirst();
+        } finally {
+            c.close();
+        }
+    }
+
+    // ── Долги (openspec debts) ─────────────────────────────────────────────────
+
+    /** Результат {@link #DeleteCounterparty}. */
+    public enum DeleteCounterpartyResult { deleted, hasDebts, notFound }
+
+    /** Имя контрагента для записи: пробелы по краям обрезаются (design D1). */
+    public static String NormalizeCounterpartyName(String name) {
+        return name == null ? "" : name.trim();
+    }
+
+    /**
+     * _id живого контрагента с тем же именем (регистр, «ё»/«е», пробелы по краям — правило
+     * {@link AccountNames}, индекс {@code uq_counterparty_name}) или -1.
+     */
+    public static int GetCounterpartyIdByName(SQLiteDatabase db, String name) {
+        Cursor c = db.rawQuery("SELECT " + WalletContract.CounterpartyEntry._ID
+                + " FROM " + WalletContract.CounterpartyEntry.TABLE_NAME
+                + " WHERE " + AccountNames.sameSql(WalletContract.CounterpartyEntry.COLUMN_NAME)
+                + " AND " + WalletContract.CounterpartyEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{NormalizeCounterpartyName(name)});
+        try {
+            return c.moveToFirst() ? c.getInt(0) : -1;
+        } finally {
+            c.close();
+        }
+    }
+
+    /**
+     * Заводит контрагента. Имя занято (сценарии «Дубль имени», «Дубль имени через „ё“») или
+     * пустое — ничего не пишет и возвращает -1: экран предлагает выбрать существующего
+     * через {@link #GetCounterpartyIdByName}.
+     */
+    public static int CreateCounterparty(SQLiteDatabase db, String name, String comment) {
+        String clean = NormalizeCounterpartyName(name);
+        if (clean.isEmpty() || GetCounterpartyIdByName(db, clean) > 0) return -1;
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.CounterpartyEntry.COLUMN_NAME, clean);
+        cv.put(WalletContract.CounterpartyEntry.COLUMN_COMMENT, comment == null ? "" : comment);
+        cv.put(WalletContract.CounterpartyEntry.COLUMN_IS_ARCHIVED, 0);
+        cv.put(WalletContract.CounterpartyEntry.COLUMN_UUID, UUID.randomUUID().toString());
+        long id = db.insert(WalletContract.CounterpartyEntry.TABLE_NAME, null, cv);
+        return id > 0 ? (int) id : -1;
+    }
+
+    /** Переименование; false — имя пустое или занято другим живым контрагентом. */
+    public static boolean RenameCounterparty(SQLiteDatabase db, int id, String name) {
+        String clean = NormalizeCounterpartyName(name);
+        if (clean.isEmpty()) return false;
+        int other = GetCounterpartyIdByName(db, clean);
+        if (other > 0 && other != id) return false;
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.CounterpartyEntry.COLUMN_NAME, clean);
+        return db.update(WalletContract.CounterpartyEntry.TABLE_NAME, cv,
+                WalletContract.CounterpartyEntry._ID + "=? AND "
+                        + WalletContract.CounterpartyEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{String.valueOf(id)}) > 0;
+    }
+
+    /** Комментарий контрагента. */
+    public static void UpdateCounterpartyComment(SQLiteDatabase db, int id, String comment) {
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.CounterpartyEntry.COLUMN_COMMENT, comment == null ? "" : comment);
+        db.update(WalletContract.CounterpartyEntry.TABLE_NAME, cv,
+                WalletContract.CounterpartyEntry._ID + "=?", new String[]{String.valueOf(id)});
+    }
+
+    /** Архив и разархив: займы остаются, контрагент пропадает из выбора при вводе. */
+    public static void ArchiveCounterparty(SQLiteDatabase db, int id, boolean archived) {
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.CounterpartyEntry.COLUMN_IS_ARCHIVED, archived ? 1 : 0);
+        db.update(WalletContract.CounterpartyEntry.TABLE_NAME, cv,
+                WalletContract.CounterpartyEntry._ID + "=?", new String[]{String.valueOf(id)});
+    }
+
+    /**
+     * Мягкое удаление контрагента — только без живых займов (сценарий «Удаление контрагента
+     * с долгом»; design D12). Локальная привязка к контакту уходит вместе с ним.
+     */
+    public static DeleteCounterpartyResult DeleteCounterparty(SQLiteDatabase db, int id) {
+        String uuid = counterpartyUuid(db, id);
+        if (uuid == null) return DeleteCounterpartyResult.notFound;
+        if (CountLiveDebts(db, uuid) > 0) {
+            Log.w(TAG, "Refused to delete counterparty id=" + id + " — it has live debts");
+            return DeleteCounterpartyResult.hasDebts;
+        }
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.CounterpartyEntry.COLUMN_DELETED_AT, System.currentTimeMillis());
+        db.update(WalletContract.CounterpartyEntry.TABLE_NAME, cv,
+                WalletContract.CounterpartyEntry._ID + "=?", new String[]{String.valueOf(id)});
+        db.delete(WalletContract.CounterpartyContactEntry.TABLE_NAME,
+                WalletContract.CounterpartyContactEntry.COLUMN_COUNTERPARTY_UUID + "=?", new String[]{uuid});
+        return DeleteCounterpartyResult.deleted;
+    }
+
+    /** Сколько живых долговых кошельков у контрагента (живая строка {@code account_debt} у живого счёта). */
+    public static int CountLiveDebts(SQLiteDatabase db, String counterpartyUuid) {
+        Cursor c = db.rawQuery("SELECT count(*) FROM " + WalletContract.AccountDebtEntry.TABLE_NAME + " ad"
+                + " JOIN " + WalletContract.AccountEntry.TABLE_NAME + " a ON a._id = ad._id AND a.deleted_at IS NULL"
+                + " WHERE ad." + WalletContract.AccountDebtEntry.COLUMN_COUNTERPARTY_UUID + " = ?"
+                + " AND ad." + WalletContract.AccountDebtEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{counterpartyUuid});
+        try {
+            return c.moveToFirst() ? c.getInt(0) : 0;
+        } finally {
+            c.close();
+        }
+    }
+
+    /** uuid живого контрагента по _id или null. */
+    static String counterpartyUuid(SQLiteDatabase db, int id) {
+        Cursor c = db.rawQuery("SELECT " + WalletContract.CounterpartyEntry.COLUMN_UUID
+                + " FROM " + WalletContract.CounterpartyEntry.TABLE_NAME
+                + " WHERE " + WalletContract.CounterpartyEntry._ID + "=? AND "
+                + WalletContract.CounterpartyEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{String.valueOf(id)});
+        try {
+            return c.moveToFirst() ? c.getString(0) : null;
+        } finally {
+            c.close();
+        }
+    }
+
+    /** Есть ли у счёта живая строка {@code account_debt}. */
+    public static boolean IsDebtWallet(SQLiteDatabase db, int accountId) {
+        Cursor c = db.rawQuery("SELECT 1 FROM " + WalletContract.AccountDebtEntry.TABLE_NAME
+                + " WHERE " + WalletContract.AccountDebtEntry._ID + "=? AND "
+                + WalletContract.AccountDebtEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{String.valueOf(accountId)});
+        try {
+            return c.moveToFirst();
+        } finally {
+            c.close();
+        }
+    }
+
+    /** Есть ли у счёта живая строка {@code account_asset}. */
+    static boolean isAssetWallet(SQLiteDatabase db, int accountId) {
+        Cursor c = db.rawQuery("SELECT 1 FROM " + WalletContract.AccountAssetEntry.TABLE_NAME
+                + " WHERE " + WalletContract.AccountAssetEntry._ID + "=? AND "
+                + WalletContract.AccountAssetEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{String.valueOf(accountId)});
+        try {
+            return c.moveToFirst();
+        } finally {
+            c.close();
+        }
+    }
+
+    /**
+     * Помечает кошелёк займом контрагента или меняет комментарий/срок (design D1). Строка
+     * одна на счёт: снятая раньше оживает с тем же uuid. Отказ (false, ничего не записано):
+     * счёт не живой кошелёк (категория, удалён), кошелёк — капитальный актив, контрагент
+     * не найден среди живых.
+     *
+     * @param dueDate срок {@code yyyy-MM-dd} или null
+     */
+    public static boolean SetAccountDebt(SQLiteDatabase db, int accountId, String counterpartyUuid,
+                                         String comment, String dueDate) {
+        String id = String.valueOf(accountId);
+        String uuid;
+        Cursor c = db.rawQuery("SELECT a." + WalletContract.AccountEntry.COLUMN_UUID
+                + " FROM " + WalletContract.AccountEntry.TABLE_NAME + " a"
+                + " JOIN " + WalletContract.AccountOperatingEntry.TABLE_NAME + " ao ON ao."
+                + WalletContract.AccountOperatingEntry._ID + " = a." + WalletContract.AccountEntry._ID
+                + " AND ao." + WalletContract.AccountOperatingEntry.COLUMN_DELETED_AT + " IS NULL"
+                + " WHERE a." + WalletContract.AccountEntry._ID + " = ? AND a."
+                + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL", new String[]{id});
+        try {
+            if (!c.moveToFirst()) {
+                Log.w(TAG, "SetAccountDebt: account id=" + accountId + " is not a live wallet");
+                return false;
+            }
+            uuid = c.getString(0);
+        } finally {
+            c.close();
+        }
+        if (isAssetWallet(db, accountId)) {
+            Log.w(TAG, "SetAccountDebt: account id=" + accountId + " is an asset");
+            return false;
+        }
+        if (counterpartyUuid == null || countRowsByUuid(db, WalletContract.CounterpartyEntry.TABLE_NAME, counterpartyUuid) == 0) {
+            Log.w(TAG, "SetAccountDebt: unknown counterparty " + counterpartyUuid);
+            return false;
+        }
+
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.AccountDebtEntry.COLUMN_COUNTERPARTY_UUID, counterpartyUuid);
+        cv.put(WalletContract.AccountDebtEntry.COLUMN_COMMENT, comment == null ? "" : comment);
+        if (dueDate == null) cv.putNull(WalletContract.AccountDebtEntry.COLUMN_DUE_DATE);
+        else cv.put(WalletContract.AccountDebtEntry.COLUMN_DUE_DATE, dueDate);
+        cv.putNull(WalletContract.AccountDebtEntry.COLUMN_DELETED_AT);
+        int updated = db.update(WalletContract.AccountDebtEntry.TABLE_NAME, cv,
+                WalletContract.AccountDebtEntry._ID + "=?", new String[]{id});
+        if (updated > 0) return true;
+
+        cv.put(WalletContract.AccountDebtEntry._ID, accountId);
+        // uuid = account.uuid — тот же инвариант, что у account_operating и account_asset.
+        cv.put(WalletContract.AccountDebtEntry.COLUMN_UUID, uuid);
+        return db.insert(WalletContract.AccountDebtEntry.TABLE_NAME, null, cv) > 0;
+    }
+
+    /** Снимает признак долга — мягкое удаление строки, операции кошелька не трогаются. */
+    public static void ClearAccountDebt(SQLiteDatabase db, int accountId) {
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.AccountDebtEntry.COLUMN_DELETED_AT, System.currentTimeMillis());
+        db.update(WalletContract.AccountDebtEntry.TABLE_NAME, cv,
+                WalletContract.AccountDebtEntry._ID + "=? AND "
+                        + WalletContract.AccountDebtEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{String.valueOf(accountId)});
+    }
+
+    /**
+     * «Новый заём» (сценарии «Новый заём», «Второй заём в той же валюте»): кошелёк
+     * «<имя> · <ISO>» в валюте займа с живой строкой {@code account_debt}; имя занято любым
+     * живым счётом — « · 2», « · 3»… Иконка — иконка контрагента, если она есть на телефоне,
+     * иначе «unknown». Вызывать в транзакции: при отказе на середине кошелёк без признака
+     * долга не должен остаться.
+     *
+     * @return _id нового кошелька или -1 (контрагент не найден, нет иконки, валюта не найдена)
+     */
+    public static int CreateDebtWallet(SQLiteDatabase db, int counterpartyId, int currencyId,
+                                       String comment, String dueDate) {
+        String cpUuid = null, cpName = null, cpIcon = null;
+        Cursor c = db.rawQuery("SELECT " + WalletContract.CounterpartyEntry.COLUMN_UUID
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_NAME
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_ICON_UUID
+                + " FROM " + WalletContract.CounterpartyEntry.TABLE_NAME
+                + " WHERE " + WalletContract.CounterpartyEntry._ID + "=? AND "
+                + WalletContract.CounterpartyEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{String.valueOf(counterpartyId)});
+        try {
+            if (c.moveToFirst()) {
+                cpUuid = c.getString(0);
+                cpName = c.getString(1);
+                cpIcon = c.isNull(2) ? null : c.getString(2);
+            }
+        } finally {
+            c.close();
+        }
+        if (cpUuid == null) return -1;
+
+        String iso = null;
+        c = db.rawQuery("SELECT " + WalletContract.CurrencyEntry.COLUMN_ISO_NAME
+                + " FROM " + WalletContract.CurrencyEntry.TABLE_NAME
+                + " WHERE " + WalletContract.CurrencyEntry._ID + "=? AND "
+                + WalletContract.CurrencyEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{String.valueOf(currencyId)});
+        try {
+            if (c.moveToFirst()) iso = c.getString(0);
+        } finally {
+            c.close();
+        }
+        if (iso == null) return -1;
+
+        int iconId = debtWalletIconId(db, cpIcon);
+        if (iconId <= 0) {
+            Log.w(TAG, "CreateDebtWallet: no icon");
+            return -1;
+        }
+
+        String base = DebtWalletName(cpName, iso);
+        String name = base;
+        for (int n = 2; GetAccountIdByName(db, name) > 0; n++) name = base + " · " + n; // not UI: name pattern
+
+        long walletId = InsertOperatingAccount(db, name, "", iconId, currencyId);
+        if (walletId <= 0) return -1;
+        if (!SetAccountDebt(db, (int) walletId, cpUuid, comment, dueDate)) return -1;
+        return (int) walletId;
+    }
+
+    /** Имя кошелька займа «<имя контрагента> · <код валюты>» (спека, «Долговой кошелёк»). */
+    public static String DebtWalletName(String counterpartyName, String iso) {
+        return counterpartyName + " · " + iso; // not UI: name pattern
+    }
+
+    private static int debtWalletIconId(SQLiteDatabase db, String iconUuid) {
+        Cursor c = db.rawQuery("SELECT " + WalletContract.IconEntry._ID
+                + " FROM " + WalletContract.IconEntry.TABLE_NAME
+                + " WHERE (" + WalletContract.IconEntry.COLUMN_UUID + " = ? OR "
+                + WalletContract.IconEntry.COLUMN_NAME + " = 'unknown')"
+                + " AND " + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL"
+                + " ORDER BY CASE WHEN " + WalletContract.IconEntry.COLUMN_UUID + " = ? THEN 0 ELSE 1 END LIMIT 1",
+                new String[]{iconUuid == null ? "" : iconUuid, iconUuid == null ? "" : iconUuid});
+        try {
+            return c.moveToFirst() ? c.getInt(0) : -1;
+        } finally {
+            c.close();
+        }
+    }
+
+    private static int countRowsByUuid(SQLiteDatabase db, String table, String uuid) {
+        Cursor c = db.rawQuery("SELECT count(*) FROM " + table + " WHERE uuid = ? AND deleted_at IS NULL",
+                new String[]{uuid});
+        try {
+            return c.moveToFirst() ? c.getInt(0) : 0;
         } finally {
             c.close();
         }

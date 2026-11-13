@@ -1,7 +1,7 @@
 # Tasks
 
 Номер шага БД ниже — `vN`: следующая свободная версия на момент реализации
-(сейчас в коде `DATABASE_VERSION = 90`). Парный change wallet-api влит
+(реализовано как `vN = 91`). Парный change wallet-api влит
 (wallet-api#25, миграция `000036`, версия 0.4.0); перед началом убедиться,
 что 0.4.0 выкачена хотя бы на test — без неё push молча теряет данные
 (design, Risks). Юнит-тесты — `bash gradlew testProdDebugUnitTest` (корневой
@@ -9,11 +9,11 @@
 
 ## 1. Схема и модель
 
-- [ ] 1.1 `WalletContract.CounterpartyEntry`, `AccountDebtEntry`, `CounterpartyContactEntry`; DDL по design D1 (`CreateCounterpartyEntry`, `CreateAccountDebtEntry`, локальная `counterparty_contact`), вызов в `onCreate`; шаг `vN` в `onUpgrade`: таблицы, `createDirtyTrigger` для двух синхронизируемых, `createUuidIndex`, уникальный индекс имени `uq_counterparty_name` по `AccountNames.keySql`, флаг перечита ledger. Проверка: Robolectric-тест — `onCreate` и апгрейд с предыдущей версии дают одинаковую схему, уникальность имени срабатывает для «вася»/«Вася» и «Алена»/«Алёна».
-- [ ] 1.2 `CounterpartyItem`, `AccountOperatingItem.DebtInfo`; `LoadAccounts` читает `account_debt` (живые строки); `LoadCounterparties`. Проверка: юнит-тест загрузки кошелька с долгом, с мягко удалённым `account_debt`, контрагента без долгов.
-- [ ] 1.3 `WalletDbCRUD`: `CreateCounterparty`/`RenameCounterparty`/`ArchiveCounterparty`/`DeleteCounterparty` (отказ при живых займах), `SetAccountDebt`/`ClearAccountDebt` (вставка, оживление той же строки, мягкое удаление; отказ для категории и для актива), `CreateDebtWallet(db, counterparty, currency)` с именем «<имя> · <ISO>» и суффиксами « · 2». Проверка: Robolectric-тесты на сценарии `specs/debts` — контрагент, дубль имени, новый заём, второй заём, кошелёк-актив.
-- [ ] 1.4 Колонка `is_debt_wallet` для каждой стороны в `v_operation`/`v_operation_eq` (`CreateViews`, пересоздание в шаге `vN`), design D5. Проверка: тест — проводка с долговым кошельком даёт 1 на нужной стороне, обычная — 0; доход и расход периода не изменились.
-- [ ] 1.5 `docs/ARCHITECTURE.md`: «Схема базы» (`counterparty`, `account_debt`, `counterparty_contact`), «Миграции» (шаг `vN`). Проверка: разделы описывают таблицы и шаг.
+- [x] 1.1 `WalletContract.CounterpartyEntry`, `AccountDebtEntry`, `CounterpartyContactEntry`; DDL по design D1 (`CreateCounterpartyEntry`, `CreateAccountDebtEntry`, локальная `counterparty_contact`), вызов в `onCreate`; шаг `vN` в `onUpgrade`: таблицы, `createDirtyTrigger` для двух синхронизируемых, `createUuidIndex`, уникальный индекс имени `uq_counterparty_name` по `AccountNames.keySql`, флаг перечита ledger. Проверка: Robolectric-тест — `onCreate` и апгрейд с предыдущей версии дают одинаковую схему, уникальность имени срабатывает для «вася»/«Вася» и «Алена»/«Алёна».
+- [x] 1.2 `CounterpartyItem`, `AccountOperatingItem.DebtInfo`; `LoadAccounts` читает `account_debt` (живые строки); `LoadCounterparties`. Проверка: юнит-тест загрузки кошелька с долгом, с мягко удалённым `account_debt`, контрагента без долгов.
+- [x] 1.3 `WalletDbCRUD`: `CreateCounterparty`/`RenameCounterparty`/`ArchiveCounterparty`/`DeleteCounterparty` (отказ при живых займах), `SetAccountDebt`/`ClearAccountDebt` (вставка, оживление той же строки, мягкое удаление; отказ для категории и для актива), `CreateDebtWallet(db, counterparty, currency)` с именем «<имя> · <ISO>» и суффиксами « · 2». Проверка: Robolectric-тесты на сценарии `specs/debts` — контрагент, дубль имени, новый заём, второй заём, кошелёк-актив.
+- [x] 1.4 Колонка `is_debt_wallet` для каждой стороны в `v_operation`/`v_operation_eq` (`CreateViews`, пересоздание в шаге `vN`), design D5. Проверка: тест — проводка с долговым кошельком даёт 1 на нужной стороне, обычная — 0; доход и расход периода не изменились.
+- [x] 1.5 `docs/ARCHITECTURE.md`: «Схема базы» (`counterparty`, `account_debt`, `counterparty_contact`), «Миграции» (шаг `vN`). Проверка: разделы описывают таблицы и шаг.
 
 ## 2. Синк
 

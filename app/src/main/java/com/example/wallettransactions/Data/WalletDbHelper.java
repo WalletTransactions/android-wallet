@@ -24,7 +24,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     // Видны DbInit: он сверяет версию файла, не открывая базу через helper.
     static final String DATABASE_NAME = "wallet.db";
 
-    static final int DATABASE_VERSION = 90;
+    static final int DATABASE_VERSION = 91;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -65,6 +65,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         CreateCurrencyEntry(db);
         CreateAccountOperatingEntry(db);
         CreateAccountAssetEntry(db);
+        CreateDebtTables(db);
         CreateRate(db);
         CreateRecurringOperation(db);
         createSyncReloadSeen(db);
@@ -171,6 +172,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
      */
     private void createPartialUniqueIndexes(SQLiteDatabase db) {
         createAccountNameIndex(db);
+        if (tableExists(db, WalletContract.CounterpartyEntry.TABLE_NAME)) createCounterpartyNameIndex(db);
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS uq_currency_name ON "
                 + WalletContract.CurrencyEntry.TABLE_NAME + " (" + WalletContract.CurrencyEntry.COLUMN_NAME
                 + ") WHERE " + WalletContract.CurrencyEntry.COLUMN_DELETED_AT + " IS NULL");
@@ -194,6 +196,17 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                 + WalletContract.AccountEntry.TABLE_NAME + " ("
                 + AccountNames.keySql(WalletContract.AccountEntry.COLUMN_NAME)
                 + ") WHERE " + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL");
+    }
+
+    /**
+     * v91 (openspec debts, design D1): имя контрагента уникально среди живых тем же ключом,
+     * что у счёта, — как {@code uq_counterparty_name} на сервере (wallet-api 000036).
+     */
+    private static void createCounterpartyNameIndex(SQLiteDatabase db) {
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS uq_counterparty_name ON "
+                + WalletContract.CounterpartyEntry.TABLE_NAME + " ("
+                + AccountNames.keySql(WalletContract.CounterpartyEntry.COLUMN_NAME)
+                + ") WHERE " + WalletContract.CounterpartyEntry.COLUMN_DELETED_AT + " IS NULL");
     }
 
     /**
@@ -254,6 +267,11 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         // См. createSyncTriggers: шаги v72/v82 идут раньше v89, где таблица появляется.
         if (tableExists(db, WalletContract.AccountAssetEntry.TABLE_NAME)) {
             createUuidIndex(db, WalletContract.AccountAssetEntry.TABLE_NAME);
+        }
+        // counterparty / account_debt — шаг v91, та же оговорка.
+        if (tableExists(db, WalletContract.CounterpartyEntry.TABLE_NAME)) {
+            createUuidIndex(db, WalletContract.CounterpartyEntry.TABLE_NAME);
+            createUuidIndex(db, WalletContract.AccountDebtEntry.TABLE_NAME);
         }
         createUuidIndex(db, WalletContract.CurrencyEntry.TABLE_NAME);
         createUuidIndex(db, WalletContract.CurrencyPairEntry.TABLE_NAME);
@@ -592,6 +610,10 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         if (tableExists(db, WalletContract.AccountAssetEntry.TABLE_NAME)) {
             createDirtyTrigger(db, WalletContract.AccountAssetEntry.TABLE_NAME, WalletContract.AccountAssetEntry._ID);
         }
+        if (tableExists(db, WalletContract.CounterpartyEntry.TABLE_NAME)) {
+            createDirtyTrigger(db, WalletContract.CounterpartyEntry.TABLE_NAME, WalletContract.CounterpartyEntry._ID);
+            createDirtyTrigger(db, WalletContract.AccountDebtEntry.TABLE_NAME, WalletContract.AccountDebtEntry._ID);
+        }
         createDirtyTrigger(db, WalletContract.CurrencyEntry.TABLE_NAME, WalletContract.CurrencyEntry._ID);
         createDirtyTrigger(db, WalletContract.CurrencyPairEntry.TABLE_NAME, WalletContract.CurrencyPairEntry._ID);
         createDirtyTrigger(db, WalletContract.IconEntry.TABLE_NAME, WalletContract.IconEntry._ID);
@@ -898,6 +920,10 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     }
 
     private void CreateViews(SQLiteDatabase db) {
+        // v91: v_operation джойнит account_debt. Шаги апгрейда до v91 (v84, v89) тоже
+        // пересоздают вьюхи — таблица к этому моменту должна существовать; триггеры и
+        // индексы ей добавит сам шаг v91.
+        CreateDebtTables(db);
 
         // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1): все представления ниже
         // получили фильтр deleted_at IS NULL — мягко удалённая строка не должна
@@ -991,6 +1017,11 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                 // system_kind = 3. Тот же признак, что у wallet-api (без фильтра deleted_at
                 // по счёту); доход, расход и плитки-фильтры исключают is_revaluation = 1.
                 ", case when acf.system_kind = 3 or act.system_kind = 3 then 1 else 0 end is_revaluation\n" +
+                // v91 (debts, design D5): сторона — долговой кошелёк (живая строка account_debt).
+                // Нужна пикеру, подписи в ленте и «В долг / из долга»; доход и расход не меняет —
+                // переводы между кошельками в них и так не входят.
+                ", case when adf._id is not null then 1 else 0 end acc_from_is_debt\n" +
+                ", case when adt._id is not null then 1 else 0 end acc_to_is_debt\n" +
                 "from operation o \n" +
                 "join account acf\n" +
                 "on acf._id = o.acc_fr_id \n" +
@@ -1000,6 +1031,10 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                 "on aof._id  = acf._id and aof.deleted_at is null\n" +
                 "left join account_operating aot \n" +
                 "on  aot._id  =  act._id and aot.deleted_at is null\n" +
+                "left join account_debt adf\n" +
+                "on adf._id = acf._id and adf.deleted_at is null\n" +
+                "left join account_debt adt\n" +
+                "on adt._id = act._id and adt.deleted_at is null\n" +
                 "where o.deleted_at is null;");
 
         db.execSQL("drop VIEW IF EXISTS v_operation_eq;\n");
@@ -1007,18 +1042,18 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE VIEW v_operation_eq\n" +
                 "as\n" +
                 "select o._id, o.date, o.acc_fr_id, o.acc_to_id, o.amount, o.comment , o.acc_fr_name, o.acc_from_is_operating, o.acc_to_name, o.acc_to_is_operating,o.currency_id, o.to_currency_id, \n" +
-                "o.max_date_rate, r.rate , round(r.rate*o.amount,2) amount_eq, o.is_revaluation \n" +
+                "o.max_date_rate, r.rate , round(r.rate*o.amount,2) amount_eq, o.is_revaluation, o.acc_from_is_debt, o.acc_to_is_debt \n" +
                 "from\n" +
                 "(\n" +
                 "select o._id, o.date, o.acc_fr_id, o.acc_to_id, o.amount, o.comment , o.acc_fr_name, o.acc_from_is_operating,\n" +
-                "o.acc_to_name, o.acc_to_is_operating, o.currency_id, cc._id to_currency_id, max(rld.date) max_date_rate , cc._id, o.is_revaluation \n" +
+                "o.acc_to_name, o.acc_to_is_operating, o.currency_id, cc._id to_currency_id, max(rld.date) max_date_rate , cc._id, o.is_revaluation, o.acc_from_is_debt, o.acc_to_is_debt \n" +
                 "  from v_operation o\n" +
                 "  cross join currency cc \n" +
                 "  left join v_currency_conversion_rate rld\n" +
                 "    on rld.from_currency_id = o.currency_id and rld.to_currency_id =cc._id and o.date >= rld.date\n" +
                 " where cc.deleted_at is null\n" +
                 " group by o._id, o.date, o.acc_fr_id, o.acc_to_id, o.amount, o.comment , o.acc_fr_name, o.acc_from_is_operating, o.acc_to_name, o.acc_to_is_operating, \n" +
-                " o.currency_id,  cc._id, o.is_revaluation \n" +
+                " o.currency_id,  cc._id, o.is_revaluation, o.acc_from_is_debt, o.acc_to_is_debt \n" +
                 " ) o \n" +
                 "left join v_currency_conversion_rate r\n" +
                 "  on r.to_currency_id =o.to_currency_id and r.from_currency_id = o.currency_id and o.max_date_rate = r.date;\n");
@@ -1088,6 +1123,51 @@ CONSTRAINT fk_currencies_id FOREIGN KEY (currency_id) REFERENCES currencies (_id
         CreateAccountAssetEntry(db);
         createDirtyTrigger(db, WalletContract.AccountAssetEntry.TABLE_NAME, WalletContract.AccountAssetEntry._ID);
         createUuidIndex(db, WalletContract.AccountAssetEntry.TABLE_NAME);
+        CreateViews(db);
+        if (mContext != null) com.example.wallettransactions.AppSettings.setLedgerRereadPending(mContext, true);
+    }
+
+    /**
+     * v91 (openspec debts, design D1): {@code counterparty}, {@code account_debt} и локальная
+     * {@code counterparty_contact}. {@code IF NOT EXISTS} — вызывается из onCreate, из шага
+     * v91 и из {@link #CreateViews} (вьюхи джойнят {@code account_debt}).
+     */
+    static void CreateDebtTables(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + WalletContract.CounterpartyEntry.TABLE_NAME + " (\n"
+                + WalletContract.CounterpartyEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, \n"
+                + WalletContract.CounterpartyEntry.COLUMN_NAME + " TEXT NOT NULL, \n"
+                + WalletContract.CounterpartyEntry.COLUMN_COMMENT + " TEXT NOT NULL DEFAULT '', \n"
+                + WalletContract.CounterpartyEntry.COLUMN_ICON_UUID + " TEXT, \n"
+                + WalletContract.CounterpartyEntry.COLUMN_IS_ARCHIVED + " INTEGER NOT NULL DEFAULT 0, \n"
+                + SYNC_COLUMNS_DDL + ");");
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + WalletContract.AccountDebtEntry.TABLE_NAME + " (\n"
+                + WalletContract.AccountDebtEntry._ID + " INTEGER PRIMARY KEY, \n"
+                + WalletContract.AccountDebtEntry.COLUMN_COUNTERPARTY_UUID + " TEXT NOT NULL, \n"
+                + WalletContract.AccountDebtEntry.COLUMN_COMMENT + " TEXT NOT NULL DEFAULT '', \n"
+                + WalletContract.AccountDebtEntry.COLUMN_DUE_DATE + " TEXT, \n"
+                + SYNC_COLUMNS_DDL + ",\n"
+                + " CONSTRAINT fk_account_debt_id FOREIGN KEY ("
+                + WalletContract.AccountDebtEntry._ID + ") REFERENCES "
+                + WalletContract.AccountEntry.TABLE_NAME + " (" + WalletContract.AccountEntry._ID + "));");
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + WalletContract.CounterpartyContactEntry.TABLE_NAME + " (\n"
+                + WalletContract.CounterpartyContactEntry.COLUMN_COUNTERPARTY_UUID + " TEXT PRIMARY KEY, \n"
+                + WalletContract.CounterpartyContactEntry.COLUMN_LOOKUP_KEY + " TEXT NOT NULL);");
+        createCounterpartyNameIndex(db);
+    }
+
+    /**
+     * Шаг v91 (openspec debts, design D2): таблицы долгов с триггерами dirty и индексами uuid,
+     * вьюхи с {@code acc_from_is_debt}/{@code acc_to_is_debt} и флаг однократного перечита
+     * ledger — прежняя версия пропускала строки {@code counterparty}/{@code account_debt} в
+     * pull, а курсор уходил дальше. Тот же флаг, что у v89: если оба шага идут подряд,
+     * перечит один.
+     */
+    void upgradeToDebtsV91(SQLiteDatabase db) {
+        CreateDebtTables(db);
+        createDirtyTrigger(db, WalletContract.CounterpartyEntry.TABLE_NAME, WalletContract.CounterpartyEntry._ID);
+        createDirtyTrigger(db, WalletContract.AccountDebtEntry.TABLE_NAME, WalletContract.AccountDebtEntry._ID);
+        createUuidIndex(db, WalletContract.CounterpartyEntry.TABLE_NAME);
+        createUuidIndex(db, WalletContract.AccountDebtEntry.TABLE_NAME);
         CreateViews(db);
         if (mContext != null) com.example.wallettransactions.AppSettings.setLedgerRereadPending(mContext, true);
     }
@@ -1404,6 +1484,10 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             if (oldVersion < 90) {
                 // v90 (android-wallet#50): вернуть иконки с сервера, удалённые прежним «Удалить данные».
                 reviveServerIconsV90(db, mContext);
+            }
+            if (oldVersion < 91) {
+                // v91: долги (debts) — counterparty, account_debt, counterparty_contact, перечит ledger.
+                upgradeToDebtsV91(db);
             }
             return;
         }
