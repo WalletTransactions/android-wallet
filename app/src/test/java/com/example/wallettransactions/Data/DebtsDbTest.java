@@ -16,10 +16,13 @@ import android.database.sqlite.SQLiteDatabase;
 import androidx.test.core.app.ApplicationProvider;
 
 import com.example.wallettransactions.AppSettings;
+import com.example.wallettransactions.DateUtils;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.DataItems.Accounts.CounterpartyItem;
+import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
+import com.example.wallettransactions.DataItems.Operations.EquivalentResult;
 import com.example.wallettransactions.DataItems.IconList;
 
 import org.junit.After;
@@ -28,6 +31,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -327,7 +331,179 @@ public class DebtsDbTest {
                 + " WHERE acc_from_is_operating = 0 AND acc_to_is_operating = 1"), 1e-9);
     }
 
+    // ── 3.1 итоги долгов ────────────────────────────────────────────────────
+
+    @Test
+    public void giveLoan_liquidDrops_owedToMeGrows_totalWithDebtsUnchanged() {
+        int card = wallet("Карта", rub);
+        int salary = category("Зарплата");
+        op("2026-01-01 10:00", salary, card, 1000);
+        Date before = DateUtils.StrToDate("2026-01-05 00:00");
+        int cp = WalletDbCRUD.CreateCounterparty(db, "Вася", "");
+        int loan = WalletDbCRUD.CreateDebtWallet(db, cp, rub, "", null);
+        op("2026-01-10 10:00", card, loan, 100);
+        Date after = DateUtils.StrToDate("2026-01-20 00:00");
+        Currency eq = currencies().getCurrencyById(rub);
+
+        assertEquals(1000, WalletDbLoader.GenerateReportGetBalanceToDate(db, before, eq, null).getTotalAmountEq(), 1e-9);
+        assertEquals("ликвидный итог без займа", 900,
+                WalletDbLoader.GenerateReportGetBalanceToDate(db, after, eq, null).getTotalAmountEq(), 1e-9);
+        WalletDbLoader.DebtsResult d0 = WalletDbLoader.GenerateDebtsToDate(db, before, eq);
+        WalletDbLoader.DebtsResult d1 = WalletDbLoader.GenerateDebtsToDate(db, after, eq);
+        assertTrue(d1.hasDebts);
+        assertEquals(0, d0.owedToMe.getTotalAmountEq(), 1e-9);
+        assertEquals(100, d1.owedToMe.getTotalAmountEq(), 1e-9);
+        assertEquals(0, d1.iOwe.getTotalAmountEq(), 1e-9);
+        assertEquals(d0.totalWithDebts.getTotalAmountEq(), d1.totalWithDebts.getTotalAmountEq(), 1e-9);
+        assertEquals(1000, d1.totalWithDebts.getTotalAmountEq(), 1e-9);
+        // «Всего с капиталом» займа тоже не содержит — у него своя строка.
+        assertEquals(900, WalletDbLoader.GenerateCapitalToDate(db, after, eq).netWorth.getTotalAmountEq(), 1e-9);
+    }
+
+    @Test
+    public void iOwe_isPositiveSumOfNegativeLoans() {
+        int card = wallet("Карта", rub);
+        int cpA = WalletDbCRUD.CreateCounterparty(db, "Банк", "");
+        int cpB = WalletDbCRUD.CreateCounterparty(db, "Петя", "");
+        int took = WalletDbCRUD.CreateDebtWallet(db, cpA, rub, "", null);
+        int gave = WalletDbCRUD.CreateDebtWallet(db, cpB, rub, "", null);
+        op("2026-01-10 10:00", took, card, 300);   // взял в долг
+        op("2026-01-11 10:00", card, gave, 50);    // дал в долг
+        Currency eq = currencies().getCurrencyById(rub);
+
+        WalletDbLoader.DebtsResult d = WalletDbLoader.GenerateDebtsToDate(db, DateUtils.StrToDate("2026-02-01 00:00"), eq);
+        assertEquals(50, d.owedToMe.getTotalAmountEq(), 1e-9);
+        assertEquals(300, d.iOwe.getTotalAmountEq(), 1e-9);
+        assertEquals("ликвидные 250 + 50 − 300", 0, d.totalWithDebts.getTotalAmountEq(), 1e-9);
+    }
+
+    @Test
+    public void noRate_loanLeftOut_totalsIncomplete() {
+        int eur = currency("Евро", "EUR", "€");
+        int card = wallet("Карта", eur);
+        int cp = WalletDbCRUD.CreateCounterparty(db, "Вася", "");
+        int loan = WalletDbCRUD.CreateDebtWallet(db, cp, eur, "", null);
+        op("2026-01-10 10:00", card, loan, 100);   // EUR → RUB курса нет
+        Currency eq = currencies().getCurrencyById(rub);
+
+        WalletDbLoader.DebtsResult d = WalletDbLoader.GenerateDebtsToDate(db, DateUtils.StrToDate("2026-02-01 00:00"), eq);
+        assertTrue(d.owedToMe.isIncomplete());
+        assertEquals(0, d.owedToMe.getTotalAmountEq(), 1e-9);
+        assertFalse(d.iOwe.isIncomplete());
+        assertTrue(d.totalWithDebts.isIncomplete());
+    }
+
+    @Test
+    public void noDebts_hasDebtsFalse() {
+        int card = wallet("Карта", rub);
+        op("2026-01-10 10:00", category("Зарплата"), card, 100);
+        WalletDbLoader.DebtsResult d = WalletDbLoader.GenerateDebtsToDate(db,
+                DateUtils.StrToDate("2026-02-01 00:00"), currencies().getCurrencyById(rub));
+        assertFalse(d.hasDebts);
+        assertFalse(WalletDbLoader.HasDebtWallets(db));
+    }
+
+    @Test
+    public void balanceRows_markDebt() {
+        int card = wallet("Карта", rub);
+        int cp = WalletDbCRUD.CreateCounterparty(db, "Вася", "");
+        int loan = WalletDbCRUD.CreateDebtWallet(db, cp, rub, "", null);
+        op("2026-01-10 10:00", card, loan, 100);
+        Date d = DateUtils.StrToDate("2026-02-01 00:00");
+        for (WalletDbLoader.WalletBalanceRow row : WalletDbLoader.LoadBalancesPerWallet(db, d, d,
+                currencies().getCurrencyById(rub))) {
+            if (row.accountId == loan) {
+                assertTrue(row.isDebt());
+                assertFalse(row.isLiquid());
+                assertEquals(WalletDbCRUD.counterpartyUuid(db, cp), row.debtCounterpartyUuid);
+            } else {
+                assertTrue(row.isLiquid());
+            }
+        }
+    }
+
+    // ── 3.2 сверка периода ──────────────────────────────────────────────────
+
+    @Test
+    public void reconciliation_incomeMinusExpensePlusDebtFlow_equalsLiquidChange() {
+        int card = wallet("Карта", rub);
+        int salary = category("Зарплата");
+        int food = category("Продукты");
+        int writeOff = category("Списание долгов");
+        int cpA = WalletDbCRUD.CreateCounterparty(db, "Вася", "");
+        int cpB = WalletDbCRUD.CreateCounterparty(db, "Банк", "");
+        int gave = WalletDbCRUD.CreateDebtWallet(db, cpA, rub, "", null);
+        int took = WalletDbCRUD.CreateDebtWallet(db, cpB, rub, "", null);
+        op("2026-04-01 10:00", salary, card, 10_000);   // до периода
+        op("2026-05-02 10:00", salary, card, 500);      // доход
+        op("2026-05-03 10:00", card, food, 200);        // расход
+        op("2026-05-04 10:00", card, gave, 100);        // дал в долг: −100
+        op("2026-05-05 10:00", gave, card, 30);         // вернули часть: +30
+        op("2026-05-06 10:00", took, card, 1_000);      // взял в долг: +1000
+        op("2026-05-07 10:00", gave, writeOff, 70);     // простил остаток: расход 70, «Итог» не изменился
+        op("2026-05-08 10:00", writeOff, took, 1_000);  // меня простили: доход 1000
+
+        AccountList accounts = loadAccounts();
+        CurrencyList currencies = currencies();
+        Currency eq = currencies.getCurrencyById(rub);
+        Date from = DateUtils.StrToDate("2026-05-01 00:00");
+        Date to = DateUtils.StrToDate("2026-06-01 00:00");
+
+        double total = WalletDbLoader.GenerateReportGetBalanceToDate(db, to, eq, null).getTotalAmountEq()
+                - WalletDbLoader.GenerateReportGetBalanceToDate(db, from, eq, null).getTotalAmountEq();
+        double income = WalletDbLoader.GenerateIncomeReportByAccount(db, from, to, accounts, currencies, eq, null)
+                .getTotal().getTotalAmountEq();
+        double expense = WalletDbLoader.GenerateExpanseReportByAccount(db, from, to, accounts, currencies, eq, null)
+                .getTotal().getTotalAmountEq();
+        EquivalentResult flow = WalletDbLoader.GenerateDebtFlowForPeriod(db, from, to, eq);
+
+        assertEquals(500 - 200 - 100 + 30 + 1_000, total, 0.001);
+        assertEquals(1_500, income, 0.001);
+        assertEquals(270, expense, 0.001);
+        assertEquals(-100 + 30 + 1_000 + 70 - 1_000, flow.getTotalAmountEq(), 0.001);
+        assertFalse(flow.isIncomplete());
+        assertEquals(total, income - expense + flow.getTotalAmountEq(), 0.001);
+        // Займы не трогают движение капитала.
+        assertEquals(0, WalletDbLoader.GenerateCapitalFlowForPeriod(db, from, to, eq).getTotalAmountEq(), 0.001);
+    }
+
+    @Test
+    public void reconciliation_specScenario_income500_expense200_lent100() {
+        int card = wallet("Карта", rub);
+        int salary = category("Зарплата");
+        int food = category("Продукты");
+        int loan = WalletDbCRUD.CreateDebtWallet(db, WalletDbCRUD.CreateCounterparty(db, "Вася", ""), rub, "", null);
+        op("2026-05-02 10:00", salary, card, 500);
+        op("2026-05-03 10:00", card, food, 200);
+        op("2026-05-04 10:00", card, loan, 100);
+        Currency eq = currencies().getCurrencyById(rub);
+        Date from = DateUtils.StrToDate("2026-05-01 00:00");
+        Date to = DateUtils.StrToDate("2026-06-01 00:00");
+
+        double total = WalletDbLoader.GenerateReportGetBalanceToDate(db, to, eq, null).getTotalAmountEq()
+                - WalletDbLoader.GenerateReportGetBalanceToDate(db, from, eq, null).getTotalAmountEq();
+        assertEquals(200, total, 0.001);
+        assertEquals(-100, WalletDbLoader.GenerateDebtFlowForPeriod(db, from, to, eq).getTotalAmountEq(), 0.001);
+    }
+
     // ── helpers ─────────────────────────────────────────────────────────────
+
+    private int category(String name) {
+        return (int) insert("account", "name", name, "comment", "", "icon_id", iconId,
+                "system_kind", 0, "kind", 0, "uuid", java.util.UUID.randomUUID().toString());
+    }
+
+    private long op(String date, int from, int to, double amount) {
+        return WalletDbCRUD.InsertOperation(db, date, from, to, amount, "");
+    }
+
+    private CurrencyList currencies() {
+        IconList icons = new IconList();
+        WalletDbLoader.LoadIcons(db, icons);
+        CurrencyList list = new CurrencyList();
+        WalletDbLoader.LoadCurrencyList(db, list, icons);
+        return list;
+    }
 
     /** sql объектов долгов из sqlite_master — для сравнения onCreate и апгрейда. */
     private Map<String, String> debtSchema() {
