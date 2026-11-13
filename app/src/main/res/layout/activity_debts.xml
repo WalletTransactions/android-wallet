@@ -38,6 +38,21 @@
             android:textStyle="bold"
             android:fontFamily="@font/caprasimo"
             android:textColor="@color/colorTextPrimary"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp"
+            android:text="@string/counterparties_title"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13.5sp"
+            android:textStyle="bold"
+            android:onClick="onOpenCounterparties"/>
     </LinearLayout>
 
     <ScrollView

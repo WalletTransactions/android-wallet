@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран «Контрагенты» (openspec debts, design D7/D10): живые контрагенты, ниже — архивные;
+  «+ Новый», «Из контактов» (системный выбор контакта, без разрешения READ_CONTACTS).
+  Строки строит CounterpartiesActivity. Открывается с экрана «Долги».
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="10dp">
+
+        <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:src="@drawable/ic_nav_back"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="@string/counterparties_title"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/caprasimo"
+            android:textColor="@color/colorTextPrimary"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingBottom="10dp">
+
+        <TextView
+            style="@style/FilterChip"
+            android:text="@string/counterparties_add"
+            android:onClick="onAddCounterparty"/>
+
+        <TextView
+            style="@style/FilterChip"
+            android:layout_marginEnd="0dp"
+            android:text="@string/counterparties_from_contacts"
+            android:onClick="onPickContact"/>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:id="@+id/counterpartiesEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:text="@string/counterparties_empty"
+                android:textColor="@color/colorTextHint"
+                android:textSize="13sp"
+                android:visibility="gone"/>
+
+            <LinearLayout
+                android:id="@+id/counterpartiesList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"/>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -71,6 +71,10 @@ public class DebtsActivity extends AppCompatActivity {
         finish();
     }
 
+    public void onOpenCounterparties(View view) {
+        startActivity(new Intent(this, CounterpartiesActivity.class));
+    }
+
     private void render() {
         renderedRevision = PeriodFilterState.get(this).getRevision();
         SQLiteDatabase db = Singleton.instance.getReadableDatabase(this);

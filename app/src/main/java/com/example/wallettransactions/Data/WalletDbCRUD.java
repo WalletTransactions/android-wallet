@@ -593,6 +593,28 @@ public class WalletDbCRUD {
         return DeleteCounterpartyResult.deleted;
     }
 
+    /** Привязка к контакту телефона (design D7) — только локальная, без синка. */
+    public static void SetCounterpartyContact(SQLiteDatabase db, String counterpartyUuid, String lookupKey) {
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.CounterpartyContactEntry.COLUMN_COUNTERPARTY_UUID, counterpartyUuid);
+        cv.put(WalletContract.CounterpartyContactEntry.COLUMN_LOOKUP_KEY, lookupKey);
+        db.insertWithOnConflict(WalletContract.CounterpartyContactEntry.TABLE_NAME, null, cv,
+                SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    /** {@code LOOKUP_KEY} контакта контрагента или null. */
+    public static String GetCounterpartyContact(SQLiteDatabase db, String counterpartyUuid) {
+        Cursor c = db.rawQuery("SELECT " + WalletContract.CounterpartyContactEntry.COLUMN_LOOKUP_KEY
+                + " FROM " + WalletContract.CounterpartyContactEntry.TABLE_NAME
+                + " WHERE " + WalletContract.CounterpartyContactEntry.COLUMN_COUNTERPARTY_UUID + " = ?",
+                new String[]{counterpartyUuid});
+        try {
+            return c.moveToFirst() ? c.getString(0) : null;
+        } finally {
+            c.close();
+        }
+    }
+
     /** Сколько живых долговых кошельков у контрагента (живая строка {@code account_debt} у живого счёта). */
     public static int CountLiveDebts(SQLiteDatabase db, String counterpartyUuid) {
         Cursor c = db.rawQuery("SELECT count(*) FROM " + WalletContract.AccountDebtEntry.TABLE_NAME + " ad"

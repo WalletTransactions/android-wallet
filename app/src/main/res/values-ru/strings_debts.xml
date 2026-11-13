@@ -53,4 +53,18 @@
     <string name="debt_forgive_failed">Не записано: проверьте сумму</string>
     <string name="debt_action_card">Карточка займа: срок, комментарий</string>
     <string name="debt_action_operations">Операции займа</string>
+    <string name="counterparties_title">Контрагенты</string>
+    <string name="counterparties_add">+ Новый</string>
+    <string name="counterparties_from_contacts">Из контактов</string>
+    <string name="counterparties_archived">В архиве</string>
+    <string name="counterparties_empty">Контрагентов пока нет</string>
+    <string name="counterparty_rename">Переименовать</string>
+    <string name="counterparty_archive">В архив</string>
+    <string name="counterparty_unarchive">Из архива</string>
+    <string name="counterparty_delete">Удалить</string>
+    <string name="counterparty_open_contact">Открыть контакт</string>
+    <string name="counterparty_delete_has_debts">Нельзя удалить: у «%1$s» есть займы. Отправьте в архив или сначала снимите займы.</string>
+    <string name="counterparty_name_taken">«%1$s» уже есть</string>
+    <string name="counterparty_no_contacts_app">Нет приложения контактов — введите имя вручную</string>
+    <string name="counterparty_loans">займов: %1$d</string>
 </resources>

@@ -53,4 +53,18 @@
     <string name="debt_forgive_failed">Nothing written: check the amount</string>
     <string name="debt_action_card">Loan card: due date, comment</string>
     <string name="debt_action_operations">Loan operations</string>
+    <string name="counterparties_title">Counterparties</string>
+    <string name="counterparties_add">+ New</string>
+    <string name="counterparties_from_contacts">From contacts</string>
+    <string name="counterparties_archived">Archived</string>
+    <string name="counterparties_empty">No counterparties yet</string>
+    <string name="counterparty_rename">Rename</string>
+    <string name="counterparty_archive">Archive</string>
+    <string name="counterparty_unarchive">Unarchive</string>
+    <string name="counterparty_delete">Delete</string>
+    <string name="counterparty_open_contact">Open contact</string>
+    <string name="counterparty_delete_has_debts">Can\'t delete: %1$s has loans. Archive instead, or remove the loans first.</string>
+    <string name="counterparty_name_taken">«%1$s» is already taken</string>
+    <string name="counterparty_no_contacts_app">No contacts app — type the name instead</string>
+    <string name="counterparty_loans">%1$d loans</string>
 </resources>
