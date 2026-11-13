@@ -182,7 +182,10 @@ public final class SyncRunner {
         startConnectionIfFresh(ctx, db);
         SyncApiClient api = new SyncApiClient(ctx, TokenStore.getAccessToken(ctx));
         return runSteps(new Steps() {
-            @Override public void push(SyncLog l) throws IOException, JSONException { SyncEngine.pushDirty(db, api, l); }
+            @Override public void push(SyncLog l) throws IOException, JSONException {
+                SyncEngine.redirtyDebtsIfPending(db, ctx, l);
+                SyncEngine.pushDirty(db, api, l);
+            }
             @Override public void pull(SyncLog l) throws IOException, JSONException { SyncEngine.pullAll(db, api, ctx, l); }
             @Override public void purge() { SyncEngine.purgeTombstones(db); }
             @Override public boolean connecting() { return AppSettings.isLedgerConnectionPending(ctx); }

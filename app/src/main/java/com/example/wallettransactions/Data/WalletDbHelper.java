@@ -1169,7 +1169,10 @@ CONSTRAINT fk_currencies_id FOREIGN KEY (currency_id) REFERENCES currencies (_id
         createUuidIndex(db, WalletContract.CounterpartyEntry.TABLE_NAME);
         createUuidIndex(db, WalletContract.AccountDebtEntry.TABLE_NAME);
         CreateViews(db);
-        if (mContext != null) com.example.wallettransactions.AppSettings.setLedgerRereadPending(mContext, true);
+        if (mContext != null) {
+            com.example.wallettransactions.AppSettings.setLedgerRereadPending(mContext, true);
+            com.example.wallettransactions.AppSettings.setDebtsRedirtyPending(mContext, true);
+        }
     }
 
     private void InsertAccountOperatingEntry(SQLiteDatabase db, long accId, long curId) {

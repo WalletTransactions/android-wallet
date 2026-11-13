@@ -17,10 +17,10 @@
 
 ## 2. Синк
 
-- [ ] 2.1 `SyncEngine`: `counterparty`, `account_debt` в `TABLE_ORDER` после `account_asset`, `collectDirtyByTable` (ключи по `openapi.yaml` wallet-api), `applyCounterparty`, `applyAccountDebt`, `touchesAccounts`. Проверка: Robolectric-тест — dirty-строки уходят с нужными ключами, `icon_uuid` и `due_date` присутствуют и при `null`; входящие применяются, `account_debt` без контрагента пропускается с логом.
-- [ ] 2.2 Конфликты: `resolveAccountConflicts` переклеивает `counterparty.uuid` и `account_debt.counterparty_uuid` при `409 duplicate_name`; `409 counterparty_in_use` (по `uuid` из тела) оживляет контрагента и оставляет dirty; остальные строки откатанного батча уходят следующим push. Проверка: тесты на сценарии «Один и тот же контрагент на двух устройствах» и «Удаление при параллельном долге».
-- [ ] 2.3 Однократный перечит ledger и повторная пометка dirty всех живых `counterparty`/`account_debt` при первом синке после обновления (спека `sync-run`); `pullAll` при флаге сбрасывает только курсор ledger. Проверка: тесты — pull идёт с 0, reference-курсор и `ledger_id` не тронуты, строки dirty, второй проход — с сохранённой позиции.
-- [ ] 2.4 `docs/ARCHITECTURE.md`: синк `counterparty`/`account_debt`, порядок таблиц, перечит. Проверка: раздел описывает порядок и условие перечита.
+- [x] 2.1 `SyncEngine`: `counterparty`, `account_debt` в `TABLE_ORDER` после `account_asset`, `collectDirtyByTable` (ключи по `openapi.yaml` wallet-api), `applyCounterparty`, `applyAccountDebt`, `touchesAccounts`. Проверка: Robolectric-тест — dirty-строки уходят с нужными ключами, `icon_uuid` и `due_date` присутствуют и при `null`; входящие применяются, `account_debt` без контрагента пропускается с логом.
+- [x] 2.2 Конфликты: `resolveAccountConflicts` переклеивает `counterparty.uuid` и `account_debt.counterparty_uuid` при `409 duplicate_name`; `409 counterparty_in_use` (по `uuid` из тела) оживляет контрагента и оставляет dirty; остальные строки откатанного батча уходят следующим push. Проверка: тесты на сценарии «Один и тот же контрагент на двух устройствах» и «Удаление при параллельном долге».
+- [x] 2.3 Однократный перечит ledger и повторная пометка dirty всех живых `counterparty`/`account_debt` при первом синке после обновления (спека `sync-run`); `pullAll` при флаге сбрасывает только курсор ledger. Проверка: тесты — pull идёт с 0, reference-курсор и `ledger_id` не тронуты, строки dirty, второй проход — с сохранённой позиции.
+- [x] 2.4 `docs/ARCHITECTURE.md`: синк `counterparty`/`account_debt`, порядок таблиц, перечит. Проверка: раздел описывает порядок и условие перечита.
 
 ## 3. Балансы и итоги
 

@@ -126,8 +126,11 @@ public final class LedgerConnection {
             ContentValues asset = new ContentValues();
             asset.put("uuid", serverUuid);
             db.update("account_asset", asset, "_id = ?", new String[]{Long.toString(accountId)});
+            // Признак займа (debts) — тот же инвариант uuid.
+            db.update("account_debt", asset, "_id = ?", new String[]{Long.toString(accountId)});
         } else {
             db.delete("account_asset", "_id = ?", new String[]{Long.toString(accountId)});
+            db.delete("account_debt", "_id = ?", new String[]{Long.toString(accountId)});
             db.delete("account_operating", "_id = ?", new String[]{Long.toString(accountId)});
         }
     }
@@ -210,6 +213,11 @@ public final class LedgerConnection {
             // Неотправленные признаки активов (capital-assets) — раньше счетов: account_asset
             // ссылается на account, и удаление счёта упёрлось бы во внешний ключ.
             db.delete("account_asset", "dirty <> 0", null);
+            // Займы (debts) — так же раньше счетов; контрагенты — только без ссылок от
+            // оставшихся (синкнутых) займов.
+            db.delete("account_debt", "dirty <> 0", null);
+            db.delete("counterparty", "dirty <> 0"
+                    + " AND uuid NOT IN (SELECT counterparty_uuid FROM account_debt)", null);
             db.delete("account_operating", "dirty <> 0"
                     + " AND _id NOT IN (SELECT acc_fr_id FROM operation)"
                     + " AND _id NOT IN (SELECT acc_to_id FROM operation)", null);

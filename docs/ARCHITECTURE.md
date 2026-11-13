@@ -727,6 +727,34 @@ ledger уходил дальше. Поэтому шаг БД v89 поднима�
 применённой страницы (или если поток пуст) — обрыв дальше продолжает с сохранённого
 курсора. Свежая установка флага не получает: курсор и так 0.
 
+### Долги в синке (v91)
+
+Порядок таблиц — `account_operating`, `account_asset`, `counterparty`, `account_debt`,
+`operation` (как `kApplyOrder` wallet-api); в `PURGE_ORDER` `account_debt` идёт перед
+`account_operating`, `counterparty` — после `account`. Push: `counterparty` —
+`uuid, name, comment, icon_uuid, is_archived, deleted`; `account_debt` —
+`uuid, counterparty_uuid, comment, due_date, deleted`. `icon_uuid` и `due_date` уходят
+**всегда**, `null` — «нет»: отсутствие ключа сервер понимает как «оставить прежнее», и
+снятый срок не доехал бы. Pull: `applyCounterparty`; `applyAccountDebt` откладывает
+строку (`PullDeferredRows`), пока нет счёта с тем же uuid или контрагента, и пишет
+`counterparty_uuid` в местном написании.
+
+Конфликты:
+- `409 duplicate_name` по `counterparty` (тот же контрагент заведён на двух
+  устройствах) — `resolveCounterpartyConflict` берёт uuid выжившего и переклеивает на
+  него `account_debt.counterparty_uuid` и `counterparty_contact`; батч уходит заново.
+- `409 counterparty_in_use` (удаление контрагента, у которого на сервере остался
+  заём; батч откачен) — `reviveCounterparty` снимает `deleted_at`, строка остаётся
+  dirty, новый раунд.
+- Контрагент пришёл pull'ом удалённым, а у живого займа здесь он указан — остаётся
+  живым и dirty (design D12).
+
+После шага v91 перечит ledger идёт тем же флагом, что у v89, а второй флаг
+`AppSettings.isDebtsRedirtyPending` один раз помечает dirty все живые `counterparty`
+и `account_debt` перед push (`SyncEngine.redirtyDebtsIfPending` из
+`SyncRunner`): если APK вышел раньше сервера, push пропускал незнакомые таблицы, а
+клиент снимал dirty. Флаг снимается сразу — дальше строки держит сам dirty.
+
 ### Удалённые строки
 
 Удаление в UI мягкое (`deleted_at`), строка нужна только до отправки на сервер

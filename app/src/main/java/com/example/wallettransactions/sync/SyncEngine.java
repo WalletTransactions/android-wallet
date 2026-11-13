@@ -128,7 +128,8 @@ final class SyncEngine {
     /** См. javadoc класса, "Порядок применения pull" — icon первым: на него ссылаются account/currency. */
     private static final String[] TABLE_ORDER = {
             "icon", "currency", "currency_pair", "currency_pair_rate", "currency_conversion",
-            "account", "account_operating", "account_asset", "operation", "operation_link",
+            "account", "account_operating", "account_asset", "counterparty", "account_debt",
+            "operation", "operation_link",
     };
 
     /**
@@ -292,6 +293,18 @@ final class SyncEngine {
                 // == 0 — строки с таким uuid здесь нет вовсе (сервер прислал
                 // что-то, чего в этой базе никогда не было) — самим нечем
                 // помочь, падаем как раньше.
+                // debts (design D3/D12): удаление контрагента, у которого на сервере остался
+                // живой заём, — батч откачен. Контрагент возвращается (deleted_at = NULL) и
+                // остаётся dirty, остальные строки порции и так dirty — новый раунд.
+                String inUse = parseCounterpartyInUse(result.status, result.body);
+                if (inUse != null && reviveCounterparty(db, inUse) > 0) {
+                    Log.w(TAG, "push: counterparty_in_use (" + inUse + "), restored (round " + round + "): "
+                            + result.body);
+                    log.healed(Texts.get(R.string.sync_healed_counterparty_in_use));
+                    healed = true;
+                    break;
+                }
+
                 MissingReference missing = parseMissingReference(result.status, result.body);
                 if (missing != null && redirty(db, missing.table, missing.uuid) > 0) {
                     String detail = Texts.get(R.string.sync_healed_missing_reference, missing.table + "/" + missing.uuid);
@@ -325,6 +338,57 @@ final class SyncEngine {
                 throw new IllegalStateException("push: self-healing did not converge in " + MAX_SELF_HEAL_ROUNDS
                         + " rounds — looks like a conflict loop, stopping");
             }
+        }
+    }
+
+    /**
+     * uuid контрагента из тела {@code 409 counterparty_in_use} ({@code {error, table, uuid}},
+     * wallet-api {@code CounterpartyInUseError}) или {@code null} — другой отказ. Только JSON,
+     * без БД — для юнит-теста.
+     */
+    static String parseCounterpartyInUse(int httpStatus, JSONObject body) {
+        if (httpStatus != 409 || body == null) return null;
+        if (!"counterparty_in_use".equals(body.optString("error", null))) return null;
+        if (!"counterparty".equals(body.optString("table", null))) return null;
+        String uuid = body.optString("uuid", null);
+        return uuid == null || uuid.isEmpty() ? null : uuid;
+    }
+
+    /**
+     * Возвращает удалённого контрагента: {@code deleted_at = NULL}, dirty поднимает триггер.
+     * 0 — такой строки здесь нет или она уже живая: самим нечем помочь.
+     */
+    static int reviveCounterparty(SQLiteDatabase db, String uuid) {
+        String local = localUuid(db, "counterparty", uuid);
+        if (local == null) return 0;
+        ContentValues cv = new ContentValues();
+        cv.putNull("deleted_at");
+        cv.put("dirty", 1);
+        return db.update("counterparty", cv, "uuid=? AND deleted_at IS NOT NULL", new String[]{local});
+    }
+
+    /**
+     * Однократная повторная отправка займов и контрагентов после шага БД v91 (openspec debts,
+     * spec sync-run, design D2): все живые строки {@code counterparty}/{@code account_debt}
+     * помечаются dirty, флаг снимается сразу — дальше их держит сам dirty, и упавший push
+     * отправит их следующим синком.
+     */
+    static void redirtyDebtsIfPending(SQLiteDatabase db, Context ctx, SyncLog log) {
+        if (!AppSettings.isDebtsRedirtyPending(ctx)) return;
+        db.execSQL("UPDATE counterparty SET dirty = 1 WHERE deleted_at IS NULL AND dirty <> 1");
+        db.execSQL("UPDATE account_debt SET dirty = 1 WHERE deleted_at IS NULL AND dirty <> 1");
+        AppSettings.setDebtsRedirtyPending(ctx, false);
+        if (hasRows(db, "SELECT 1 FROM counterparty WHERE deleted_at IS NULL LIMIT 1")) {
+            log.healed(Texts.get(R.string.sync_healed_debts_redirty));
+        }
+    }
+
+    private static boolean hasRows(SQLiteDatabase db, String sql) {
+        Cursor c = db.rawQuery(sql, null);
+        try {
+            return c.moveToFirst();
+        } finally {
+            c.close();
         }
     }
 
@@ -418,6 +482,8 @@ final class SyncEngine {
         displayType.put("currency_pair_rate", Texts.get(R.string.sync_type_rate));
         displayType.put("account", Texts.get(R.string.sync_type_account));
         displayType.put("account_asset", Texts.get(R.string.sync_type_asset));
+        displayType.put("counterparty", Texts.get(R.string.sync_type_counterparty));
+        displayType.put("account_debt", Texts.get(R.string.sync_type_debt));
         displayType.put("operation", Texts.get(R.string.sync_type_operation));
 
         Iterator<String> tables = portion.keys();
@@ -636,6 +702,36 @@ final class SyncEngine {
                     return row;
                 }));
 
+        putOrdered(byTable, "counterparty", collect(db,
+                // debts (design D3): ключи — CounterpartyPushRow wallet-api. icon_uuid уходит
+                // всегда, null — «без иконки»: отсутствие ключа сервер понимает как «оставить
+                // прежнее», и снятая иконка не доехала бы.
+                "SELECT uuid, name, comment, icon_uuid, is_archived, deleted_at FROM counterparty WHERE dirty=1",
+                c -> {
+                    JSONObject row = new JSONObject();
+                    row.put("uuid", c.getString(0));
+                    row.put("name", c.getString(1));
+                    row.put("comment", c.getString(2));
+                    row.put("icon_uuid", c.isNull(3) ? JSONObject.NULL : c.getString(3));
+                    row.put("is_archived", c.getInt(4) != 0);
+                    row.put("deleted", !c.isNull(5));
+                    return row;
+                }));
+
+        putOrdered(byTable, "account_debt", collect(db,
+                // debts (design D3): AccountDebtPushRow. due_date — всегда, null снимает срок
+                // (по той же причине, что icon_uuid выше). uuid — тот же, что у счёта.
+                "SELECT uuid, counterparty_uuid, comment, due_date, deleted_at FROM account_debt WHERE dirty=1",
+                c -> {
+                    JSONObject row = new JSONObject();
+                    row.put("uuid", c.getString(0));
+                    row.put("counterparty_uuid", c.getString(1));
+                    row.put("comment", c.getString(2));
+                    row.put("due_date", c.isNull(3) ? JSONObject.NULL : c.getString(3));
+                    row.put("deleted", !c.isNull(4));
+                    return row;
+                }));
+
         putOrdered(byTable, "operation", collect(db,
                 "SELECT uuid, date, acc_fr_id, acc_to_id, CAST(amount AS TEXT), comment, deleted_at FROM operation WHERE dirty=1",
                 c -> {
@@ -816,10 +912,14 @@ final class SyncEngine {
     static void resolveAccountConflicts(SQLiteDatabase db, JSONArray conflicts) throws JSONException {
         for (int i = 0; i < conflicts.length(); i++) {
             JSONObject conflict = conflicts.getJSONObject(i);
-            if (!"account".equals(conflict.optString("table"))
-                    || !"duplicate_name".equals(conflict.optString("reason"))) {
+            if (!"duplicate_name".equals(conflict.optString("reason"))) {
                 continue; // сегодня единственная осмысленная причина, см. sync_repo.cpp
             }
+            if ("counterparty".equals(conflict.optString("table"))) {
+                resolveCounterpartyConflict(db, conflict);
+                continue;
+            }
+            if (!"account".equals(conflict.optString("table"))) continue;
             String ourUuid = conflict.optString("uuid", null);
             String survivorUuid = conflict.optString("existing_uuid", null);
             // Защитно: старый сервер без поля "uuid" в конфликте (до фикса
@@ -844,10 +944,51 @@ final class SyncEngine {
             // account_asset.uuid — тот же инвариант (capital-assets), иначе признак актива
             // ушёл бы со старым uuid несуществующего на сервере счёта.
             db.update("account_asset", cvOp, "uuid=?", new String[]{ourUuid});
+            // account_debt.uuid — тот же инвариант (debts).
+            db.update("account_debt", cvOp, "uuid=?", new String[]{ourUuid});
 
             Log.i(TAG, "account uuid " + ourUuid + " переклеен на существующий " + survivorUuid
                     + " (конфликт имени счёта)"); // not UI: лог
         }
+    }
+
+    /**
+     * 409 duplicate_name по {@code counterparty} (debts, design D3): тот же контрагент заведён
+     * на другом устройстве. Своя строка берёт uuid выжившего, ссылки займов
+     * ({@code account_debt.counterparty_uuid}) и привязка к контакту переклеиваются. Если
+     * выживший уже пришёл pull'ом и живёт здесь отдельной строкой, своя строка мягко
+     * удаляется локально без отправки — иначе uq_counterparty_name не дал бы сменить имя.
+     */
+    private static void resolveCounterpartyConflict(SQLiteDatabase db, JSONObject conflict) {
+        String ourUuid = conflict.optString("uuid", null);
+        String survivorUuid = conflict.optString("existing_uuid", null);
+        if (ourUuid == null || survivorUuid == null) return;
+        String ours = localUuid(db, "counterparty", ourUuid);
+        if (ours == null) {
+            Log.w(TAG, "resolveCounterpartyConflict: локальный counterparty uuid=" + ourUuid
+                    + " не найден (уже переклеен раньше?)"); // not UI: лог
+            return;
+        }
+        String survivorLocal = localUuid(db, "counterparty", survivorUuid);
+        if (survivorLocal != null && !survivorLocal.equals(ours)) {
+            // Выживший уже здесь: своя строка — дубль, её некому отправлять.
+            db.delete("counterparty", "uuid=?", new String[]{ours});
+        } else {
+            ContentValues cv = new ContentValues();
+            cv.put("uuid", survivorUuid);
+            db.update("counterparty", cv, "uuid=?", new String[]{ours});
+            survivorLocal = survivorUuid;
+        }
+        ContentValues ref = new ContentValues();
+        ref.put("counterparty_uuid", survivorLocal);
+        db.update("account_debt", ref, "counterparty_uuid=?", new String[]{ours});
+        ContentValues contact = new ContentValues();
+        contact.put("counterparty_uuid", survivorLocal);
+        db.updateWithOnConflict("counterparty_contact", contact, "counterparty_uuid=?", new String[]{ours},
+                SQLiteDatabase.CONFLICT_IGNORE);
+        db.delete("counterparty_contact", "counterparty_uuid=?", new String[]{ours});
+        Log.i(TAG, "counterparty uuid " + ourUuid + " переклеен на существующий " + survivorUuid
+                + " (конфликт имени контрагента)"); // not UI: лог
     }
 
     // ── PULL ─────────────────────────────────────────────────────────────────
@@ -1021,7 +1162,8 @@ final class SyncEngine {
         }
 
         boolean touchedAccounts = touched.contains("account") || touched.contains("account_operating")
-                || touched.contains("account_asset");
+                || touched.contains("account_asset") || touched.contains("account_debt")
+                || touched.contains("counterparty");
         boolean touchedIcons = touched.contains("icon");
         boolean touchedCurrencies = touched.contains("currency");
         boolean touchedCurrencyPairs = touched.contains("currency_pair") || touched.contains("currency_pair_rate");
@@ -1197,6 +1339,8 @@ final class SyncEngine {
             case "account": return applyAccount(db, row, log, iconGuard);
             case "account_operating": return applyAccountOperating(db, row);
             case "account_asset": return applyAccountAsset(db, row, log);
+            case "counterparty": return applyCounterparty(db, row, log);
+            case "account_debt": return applyAccountDebt(db, row, log);
             case "operation": return applyOperation(db, row, log);
             case "operation_link": return applyOperationLink(db, row);
             case "icon": applyIcon(db, row, newIconBlobs, log); return true;
@@ -1560,6 +1704,95 @@ final class SyncEngine {
         return true;
     }
 
+    /**
+     * Контрагент (debts, design D3/D12). Пришёл удалённым, а у живого займа здесь он ещё
+     * указан — займ не теряется: контрагент остаётся живым и уходит push'ем снова (сервер
+     * сам ответит {@code counterparty_in_use}, если займ уже есть и там).
+     */
+    private static boolean applyCounterparty(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+        String uuid = row.getString("uuid");
+        ContentValues cv = new ContentValues();
+        cv.put("name", row.getString("name"));
+        cv.put("comment", row.optString("comment", ""));
+        cv.put("icon_uuid", row.isNull("icon_uuid") ? null : row.optString("icon_uuid", null));
+        cv.put("is_archived", row.optBoolean("is_archived", false) ? 1 : 0);
+        applySyncColumns(cv, row);
+        String local = localUuid(db, "counterparty", uuid);
+        boolean keepAlive = rowIsDeleted(row) && local != null && hasLiveDebt(db, local);
+        if (keepAlive) {
+            cv.putNull("deleted_at");
+            Log.w(TAG, "counterparty " + uuid + " пришёл удалённым, но у займа он есть — оставлен"); // not UI: лог
+        }
+        try {
+            if (local != null) {
+                updateFromServer(db, "counterparty", cv, local);
+                if (keepAlive) {
+                    ContentValues dirty = new ContentValues();
+                    dirty.put("dirty", 1);
+                    db.update("counterparty", dirty, "uuid=?", new String[]{local});
+                }
+            } else {
+                cv.put("uuid", uuid);
+                db.insertOrThrow("counterparty", null, cv);
+            }
+            log.pull(Texts.get(R.string.sync_type_counterparty), pullAction(rowIsDeleted(row) && !keepAlive, local == null));
+        } catch (SQLiteException e) {
+            // uq_counterparty_name: свой неотправленный с тем же именем — разрулит push (duplicate_name).
+            Log.w(TAG, "upsert counterparty uuid=" + uuid + " не удался: " + e.getMessage());
+        }
+        return true;
+    }
+
+    private static boolean hasLiveDebt(SQLiteDatabase db, String counterpartyUuid) {
+        Cursor c = db.rawQuery("SELECT 1 FROM account_debt ad JOIN account a ON a._id = ad._id"
+                + " AND a.deleted_at IS NULL WHERE ad.counterparty_uuid = ? AND ad.deleted_at IS NULL LIMIT 1",
+                new String[]{counterpartyUuid});
+        try {
+            return c.moveToFirst();
+        } finally {
+            c.close();
+        }
+    }
+
+    /**
+     * Признак займа (debts, design D3). Счёт или контрагент ещё не пришли — строка
+     * откладывается с логом ({@link PullDeferredRows}) и применяется, когда родитель придёт.
+     * {@code counterparty_uuid} пишется в местном написании uuid контрагента.
+     */
+    private static boolean applyAccountDebt(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
+        String uuid = row.getString("uuid");
+        Long accountId = findIdByUuid(db, "account", uuid);
+        if (accountId == null) {
+            Log.w(TAG, "account_debt " + uuid + ": account ещё не применён — строка отложена");
+            return false;
+        }
+        String counterparty = localUuid(db, "counterparty", row.getString("counterparty_uuid"));
+        if (counterparty == null) {
+            Log.w(TAG, "account_debt " + uuid + ": контрагент " + row.getString("counterparty_uuid")
+                    + " ещё не применён — строка отложена");
+            return false;
+        }
+        ContentValues cv = new ContentValues();
+        cv.put("counterparty_uuid", counterparty);
+        cv.put("comment", row.optString("comment", ""));
+        cv.put("due_date", row.isNull("due_date") ? null : row.optString("due_date", null));
+        applySyncColumns(cv, row);
+        try {
+            String local = localUuid(db, "account_debt", uuid);
+            if (local != null) {
+                updateFromServer(db, "account_debt", cv, local);
+            } else {
+                cv.put("_id", accountId);
+                cv.put("uuid", localUuid(db, "account", uuid));
+                db.insertOrThrow("account_debt", null, cv);
+            }
+            log.pull(Texts.get(R.string.sync_type_debt), pullAction(rowIsDeleted(row), local == null));
+        } catch (SQLiteException e) {
+            Log.w(TAG, "upsert account_debt uuid=" + uuid + " не удался: " + e.getMessage());
+        }
+        return true;
+    }
+
     private static boolean applyOperation(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
         String uuid = row.getString("uuid");
         Long accFr = findIdByUuid(db, "account", row.getString("acc_fr_uuid"));
@@ -1609,7 +1842,8 @@ final class SyncEngine {
      * освобождает свой удалённый счёт. Тот же состав, что {@link #TABLE_ORDER}.
      */
     static final List<String> PURGE_ORDER = Arrays.asList(
-            "operation_link", "operation", "account_asset", "account_operating", "account", "currency_conversion",
+            "operation_link", "operation", "account_asset", "account_debt", "account_operating", "account",
+            "counterparty", "currency_conversion",
             "currency_pair_rate", "currency_pair", "currency", "icon");
 
     static boolean isSyncTable(String table) {
