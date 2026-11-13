@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English: «Ask about the app» row and screen (openspec docs-assistant, task 3.1). -->
+<resources>
+    <string name="more_docs_title">Ask about the app</string>
+    <string name="more_docs_hint">Answers from the app description</string>
+    <string name="docs_question_hint">Your question…</string>
+    <string name="docs_ask">Ask</string>
+    <string name="docs_searching">Looking for an answer…</string>
+    <string name="docs_sources">Sources: %1$s</string>
+    <string name="docs_err_network">No network. Try again later.</string>
+    <string name="docs_err_unavailable">Answer service unavailable</string>
+    <string name="docs_err_relogin">Sign in again</string>
+    <string name="docs_err_bad_request">The question couldn\'t be accepted</string>
+</resources>

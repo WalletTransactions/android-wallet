@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран «Вопрос по приложению» (DocsAssistantActivity): один вопрос — один ответ по
+  описанию приложения через wallet-docs. Экран «вглубь», шапка как у «ИИ»
+  (activity_ai.xml). Поведение — openspec changes/docs-assistant.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="6dp">
+
+        <ImageButton
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:src="@drawable/ic_nav_back"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="@string/more_docs_title"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/caprasimo"
+            android:textColor="@color/colorTextPrimary"/>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/toolbar"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingTop="10dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="24dp">
+
+            <LinearLayout style="@style/AiCard">
+
+                <EditText
+                    android:id="@+id/editQuestion"
+                    style="@style/AiValue"
+                    android:minLines="3"
+                    android:maxLength="1000"
+                    android:gravity="top|start"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:hint="@string/docs_question_hint"/>
+
+                <Button
+                    android:id="@+id/btnAsk"
+                    style="@style/AiButtonPrimary"
+                    android:enabled="false"
+                    android:text="@string/docs_ask"
+                    android:onClick="onAsk"/>
+
+                <TextView
+                    android:id="@+id/tvError"
+                    style="@style/AiWarning"/>
+            </LinearLayout>
+
+            <!-- «Ищу ответ…» или ответ с источниками -->
+            <LinearLayout
+                android:id="@+id/answerBox"
+                style="@style/AiCard"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvAnswer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="14.5sp"
+                    android:textIsSelectable="true"
+                    android:textColor="@color/colorTextPrimary"/>
+
+                <TextView
+                    android:id="@+id/tvSources"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:textSize="12.5sp"
+                    android:textColor="@color/colorTextSecondary"
+                    android:visibility="gone"/>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</RelativeLayout>

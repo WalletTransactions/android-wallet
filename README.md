@@ -54,7 +54,8 @@ app/src/main/java/com/example/wallettransactions/
   Data/          SQLite: схема (WalletContract), миграции (WalletDbHelper), CRUD, импорт/экспорт
   DataItems/     модели: операции, счета, валюты и курсы, фильтры
   sync/          синхронизация с сервером: AuthSession, SyncApiClient, SyncEngine, SyncRunner, SyncWorker;
-                 AiApiClient — клиент wallet-ai
+                 AiApiClient — клиент wallet-ai; DocsApiClient — клиент wallet-docs
+                 («Ещё → Вопрос по приложению», пункт виден только при доступном сервисе)
   ai/            экран «ИИ» без UI: разбор ответа wallet-ai, сверка черновика с базой, тексты
   Views/         свои view: график курса, кадрирование иконки
 datepickupview/  модуль выбора даты

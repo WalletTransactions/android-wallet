@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Русский: пункт и экран «Вопрос по приложению» (openspec docs-assistant, задача 3.1). -->
+<resources>
+    <string name="more_docs_title">Вопрос по приложению</string>
+    <string name="more_docs_hint">Ответ по описанию приложения</string>
+    <string name="docs_question_hint">Ваш вопрос…</string>
+    <string name="docs_ask">Спросить</string>
+    <string name="docs_searching">Ищу ответ…</string>
+    <string name="docs_sources">Источники: %1$s</string>
+    <string name="docs_err_network">Нет сети. Попробуйте позже.</string>
+    <string name="docs_err_unavailable">Сервис ответов недоступен</string>
+    <string name="docs_err_relogin">Войдите заново</string>
+    <string name="docs_err_bad_request">Вопрос не принят</string>
+</resources>
