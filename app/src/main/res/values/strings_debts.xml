@@ -26,4 +26,12 @@
     <string name="debt_overpay_message">The loan balance is %1$s, you enter %2$s. The rest will turn the loan the other way. Save anyway?</string>
     <string name="debt_overpay_ok">Save</string>
     <string name="debt_loan_failed">Could not create the loan</string>
+    <string name="debts_title">Debts</string>
+    <string name="debts_owed_to_me">They owe me</string>
+    <string name="debts_i_owe">I owe</string>
+    <string name="debts_show_closed">Show closed loans</string>
+    <string name="debts_empty">No loans yet. Mark a wallet as a loan on its card, or pick «Lend» / «Borrow» when adding an operation.</string>
+    <string name="debts_overdue">overdue since %1$s</string>
+    <string name="debts_due">due %1$s</string>
+    <string name="debts_closed">closed</string>
 </resources>

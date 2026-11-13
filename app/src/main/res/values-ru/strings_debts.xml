@@ -26,4 +26,12 @@
     <string name="debt_overpay_message">Остаток займа %1$s, вводите %2$s. Излишек развернёт долг в обратную сторону. Сохранить?</string>
     <string name="debt_overpay_ok">Сохранить</string>
     <string name="debt_loan_failed">Не удалось завести заём</string>
+    <string name="debts_title">Долги</string>
+    <string name="debts_owed_to_me">Мне должны</string>
+    <string name="debts_i_owe">Я должен</string>
+    <string name="debts_show_closed">Показывать закрытые</string>
+    <string name="debts_empty">Займов пока нет. Отметьте кошелёк займом на его карточке или выберите «Дать в долг» / «Взять в долг» при вводе операции.</string>
+    <string name="debts_overdue">просрочен с %1$s</string>
+    <string name="debts_due">до %1$s</string>
+    <string name="debts_closed">закрыт</string>
 </resources>
