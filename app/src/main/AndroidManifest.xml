@@ -195,6 +195,15 @@
              должен пересоздавать экран: ожидание разбора привязано к нему.
              singleTop — повторное «Поделиться» при открытом экране приходит в
              onNewIntent, а не складывает в задачу ещё один экран «ИИ». -->
+        <!-- «Вопрос по приложению» (openspec docs-assistant): поворот не пересоздаёт экран,
+             вопрос и ответ остаются; закрытие стирает их. -->
+        <activity android:name=".Activities.DocsAssistantActivity"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:label="Кошелёк"
+                android:windowSoftInputMode="adjustResize"
+                android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+                android:exported="false"/>
+
         <activity android:name=".Activities.AiActivity"
                 android:launchMode="singleTop"
                 android:theme="@style/AppTheme.NoActionBar"

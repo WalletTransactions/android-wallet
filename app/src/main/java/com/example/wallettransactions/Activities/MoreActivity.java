@@ -13,6 +13,7 @@ import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.security.AppLock;
 import com.example.wallettransactions.sync.AiApiClient;
+import com.example.wallettransactions.sync.DocsApiClient;
 
 import org.json.JSONException;
 
@@ -36,6 +37,9 @@ public class MoreActivity extends BaseTabActivity {
     /** ИИ уже подтверждён сервером — на время жизни экрана повторно не спрашиваем. */
     private boolean aiAvailable;
 
+    /** Раздел «Вопрос по приложению» подтверждён сервером ({@code 200} на статусе) — повторно не спрашиваем. */
+    private boolean docsAvailable;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,6 +51,7 @@ public class MoreActivity extends BaseTabActivity {
     protected void onResume() {
         super.onResume();
         refreshAiRow();
+        refreshDocsRow();
     }
 
     /**
@@ -97,6 +102,45 @@ public class MoreActivity extends BaseTabActivity {
         row.setEnabled(enabled);
         row.setAlpha(enabled ? 1f : 0.5f);
         ((TextView) findViewById(R.id.rowAiHint)).setText(hint);
+    }
+
+    /**
+     * Пункт «Вопрос по приложению»: скрыт по умолчанию, появляется только после {@code 200}
+     * на {@code GET /api/docs/status}; любой другой ответ, сеть или отсутствие входа — скрыт
+     * без сообщений. Запрос в фоне — открытие экрана не ждёт (openspec docs-assistant, D1).
+     */
+    private void refreshDocsRow() {
+        if (!AiApiClient.hasSession(this)) {
+            docsAvailable = false;
+            setDocsRow(false);
+            return;
+        }
+        if (docsAvailable) return;
+        final Context app = getApplicationContext();
+        new Thread(() -> {
+            boolean visible = false;
+            if (AiApiClient.refreshSession(app) == AiApiClient.SessionState.OK) {
+                try {
+                    visible = DocsApiClient.isVisibleFor(DocsApiClient.create(app).status());
+                } catch (IOException e) {
+                    // нет сети — пункт скрыт
+                }
+            }
+            final boolean show = visible;
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                docsAvailable = show;
+                setDocsRow(show);
+            });
+        }).start();
+    }
+
+    private void setDocsRow(boolean visible) {
+        findViewById(R.id.rowDocsCard).setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    public void onMoreDocs(View view) {
+        startActivity(new Intent(this, DocsAssistantActivity.class));
     }
 
     public void onMoreAi(View view) {
