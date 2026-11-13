@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
+import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.R;
@@ -265,7 +266,8 @@ public class StatementImportActivity extends AppCompatActivity {
 
     public void onPickWallet(View view) {
         startActivityForResult(AccountPickerActivity.buildIntent(this, getString(R.string.statement_wallet_picker),
-                AccountPickerActivity.cSelectedTypeOperationAccounts, walletId), REQUEST_WALLET);
+                AccountPickerActivity.cSelectedTypeOperationAccounts, walletId)
+                .putExtra(AccountPickerActivity.cHideDebts, true), REQUEST_WALLET);
     }
 
     private void setFile(Uri uri, String mime) {
@@ -300,7 +302,9 @@ public class StatementImportActivity extends AppCompatActivity {
         if (id <= 0) return 0;
         DraftReconciler.State s = DraftReconciler.stateById(Singleton.instance.getReadableDatabase(this), id);
         AccountItem a = Singleton.instance.getAccounts(this).getAccountById(id);
-        return s == DraftReconciler.State.OK && a != null && a.isOperatingAccount() ? id : 0;
+        // Заём (debts, D13) кошельком выписки не предлагается — выписка банка, а не долга.
+        boolean debt = a instanceof AccountOperatingItem && ((AccountOperatingItem) a).isDebt();
+        return s == DraftReconciler.State.OK && a != null && a.isOperatingAccount() && !debt ? id : 0;
     }
 
     private void showPick() {

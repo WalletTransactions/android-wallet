@@ -430,6 +430,21 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
         }
     }
 
+    /** «Дал в долг · Вася» или null, если перевод не с займом. */
+    private String debtLabelText(OperationItem tran) {
+        if (tran.DebtLabel == null) return null;
+        int res;
+        switch (tran.DebtLabel) {
+            case GAVE: res = R.string.debt_label_gave; break;
+            case TOOK: res = R.string.debt_label_took; break;
+            case REPAID: res = R.string.debt_label_repaid; break;
+            default: res = R.string.debt_label_returned; break;
+        }
+        String label = context.getString(res);
+        return tran.DebtCounterparty == null ? label
+                : context.getString(R.string.debt_label_with, label, tran.DebtCounterparty);
+    }
+
     private View getTransferView(OperationItem tran, View convertView, ViewGroup parent) {
         View listItem = convertView;
         TransferHolder holder;
@@ -453,8 +468,13 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
 
         // Пустой комментарий занимал бы целую строку высоты ни за чем.
         boolean hasComment = tran.Comment != null && !tran.Comment.trim().isEmpty();
-        holder.tvComment.setText(tran.Comment);
-        holder.tvComment.setVisibility(hasComment ? View.VISIBLE : View.GONE);
+        // Заём (debts, D6): «Дал в долг · Вася» перед комментарием — подпись считается при
+        // загрузке ленты (WalletDbLoader.AttachDebtLabels).
+        String debt = debtLabelText(tran);
+        String commentLine = debt == null ? tran.Comment
+                : hasComment ? debt + " — " + tran.Comment.trim() : debt;
+        holder.tvComment.setText(commentLine);
+        holder.tvComment.setVisibility(commentLine != null && !commentLine.trim().isEmpty() ? View.VISIBLE : View.GONE);
 
         AdapterUtils.setAmountExpanseText(holder.tvOut, tran.Amount, tran.getCurrency());
 

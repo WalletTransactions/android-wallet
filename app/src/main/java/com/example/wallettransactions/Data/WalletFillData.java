@@ -716,6 +716,14 @@ public class WalletFillData {
                         + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL",
                 new String[]{String.valueOf(AccountItem.SystemKind.NONE.getValue())});
 
+        // Займы (debts, D14): признак уходит вместе с удалёнными кошельками — живой
+        // account_debt у удалённого счёта синк отправил бы на несуществующий кошелёк.
+        // Контрагенты остаются: это справочник людей, а не данные операций.
+        cv = new ContentValues();
+        cv.put(WalletContract.AccountDebtEntry.COLUMN_DELETED_AT, now);
+        db.update(WalletContract.AccountDebtEntry.TABLE_NAME, cv,
+                WalletContract.AccountDebtEntry.COLUMN_DELETED_AT + " IS NULL", null);
+
         // Правила повторяющихся операций живут только локально (без deleted_at) и без
         // своих счетов смысла не имеют — удаляем их физически вместе со счетами.
         db.delete(WalletContract.RecurringOperationEntry.TABLE_NAME, null, null);

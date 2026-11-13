@@ -36,4 +36,9 @@
     <string name="debts_closed">closed</string>
     <string name="summary_total_with_debts">Total with debts</string>
     <string name="summary_debt_flow">Lent / repaid</string>
+    <string name="debt_label_gave">Lent</string>
+    <string name="debt_label_took">Borrowed</string>
+    <string name="debt_label_repaid">Repaid my debt</string>
+    <string name="debt_label_returned">Got repaid</string>
+    <string name="debt_label_with">%1$s · %2$s</string>
 </resources>

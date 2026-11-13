@@ -1352,7 +1352,53 @@ public abstract class WalletDbLoader {
             cursor.close();
         }
         AttachLinkedOperations(db, transactions, accounts, toCurrency);
+        AttachDebtLabels(db, transactions, accounts);
         transactions.notifyObservers();
+    }
+
+    /**
+     * Подписи «Дал в долг» / «Взял в долг» / «Вернул долг» / «Мне вернули» (openspec debts,
+     * design D6): все живые проводки займов — по всем датам, не только периода ленты, —
+     * считаются одним проходом {@link DebtLabels#compute}; строке ленты достаётся подпись её
+     * самой или второй ноги валютного перевода (там заём — получатель моста «Transfer»).
+     */
+    static void AttachDebtLabels(SQLiteDatabase db, OperationList transactions, AccountList accounts) {
+        if (transactions.isEmpty() || !HasDebtWallets(db)) return;
+        List<DebtLabels.Posting> postings = new ArrayList<>();
+        Map<Integer, Integer> loanOf = new HashMap<>();
+        Cursor c = db.rawQuery("SELECT o._id, o.date, o.acc_fr_id, o.acc_to_id, o.amount, "
+                + "adf._id IS NOT NULL, adt._id IS NOT NULL FROM operation o "
+                + "LEFT JOIN account_debt adf ON adf._id = o.acc_fr_id AND adf.deleted_at IS NULL "
+                + "LEFT JOIN account_debt adt ON adt._id = o.acc_to_id AND adt.deleted_at IS NULL "
+                + "WHERE o.deleted_at IS NULL AND (adf._id IS NULL) <> (adt._id IS NULL)", null);
+        try {
+            while (c.moveToNext()) {
+                boolean toLoan = c.getInt(6) != 0;
+                int loan = toLoan ? c.getInt(3) : c.getInt(2);
+                double amount = c.getDouble(4);
+                postings.add(new DebtLabels.Posting(c.getInt(0), c.getString(1), loan, toLoan ? amount : -amount));
+                loanOf.put(c.getInt(0), loan);
+            }
+        } finally {
+            c.close();
+        }
+        if (postings.isEmpty()) return;
+        Map<Integer, DebtLabels.Label> labels = DebtLabels.compute(postings);
+        Map<String, String> names = new HashMap<>();
+        for (CounterpartyItem cp : LoadCounterparties(db)) names.put(cp.uuid, cp.name);
+
+        for (int i = 0; i < transactions.size(); i++) {
+            OperationItem op = transactions.get(i);
+            int id = op.IdTran;
+            if (!labels.containsKey(id) && op.LinkedLeg != null) id = op.LinkedLeg.IdTran;
+            DebtLabels.Label label = labels.get(id);
+            if (label == null) continue;
+            op.DebtLabel = label;
+            AccountItem loan = accounts.getAccountById(loanOf.get(id));
+            if (loan instanceof AccountOperatingItem && ((AccountOperatingItem) loan).isDebt()) {
+                op.DebtCounterparty = names.get(((AccountOperatingItem) loan).getDebt().counterpartyUuid);
+            }
+        }
     }
 
     /**

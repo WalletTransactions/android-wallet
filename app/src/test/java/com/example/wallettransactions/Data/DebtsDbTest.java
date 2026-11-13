@@ -486,6 +486,23 @@ public class DebtsDbTest {
         assertEquals(-100, WalletDbLoader.GenerateDebtFlowForPeriod(db, from, to, eq).getTotalAmountEq(), 0.001);
     }
 
+    // ── 6.1 сброс ───────────────────────────────────────────────────────────
+
+    @Test
+    public void resetOperationsAndAccounts_dropsLoanFlags_keepsCounterparties() {
+        int card = wallet("Карта", rub);
+        int cp = WalletDbCRUD.CreateCounterparty(db, "Вася", "");
+        int loan = WalletDbCRUD.CreateDebtWallet(db, cp, rub, "", null);
+        op("2026-01-10 10:00", card, loan, 100);
+
+        WalletFillData.ResetOperationsAndAccounts(db, context, false);
+
+        assertEquals(0, intQuery("SELECT count(*) FROM account_debt WHERE deleted_at IS NULL"));
+        assertEquals(1, intQuery("SELECT dirty FROM account_debt WHERE _id = " + loan));
+        assertEquals("контрагент остаётся", 1, intQuery("SELECT count(*) FROM counterparty WHERE deleted_at IS NULL"));
+        assertFalse(WalletDbLoader.HasDebtWallets(db));
+    }
+
     // ── helpers ─────────────────────────────────────────────────────────────
 
     private int category(String name) {
