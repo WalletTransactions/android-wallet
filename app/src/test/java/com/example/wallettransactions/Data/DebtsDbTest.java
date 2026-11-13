@@ -486,6 +486,45 @@ public class DebtsDbTest {
         assertEquals(-100, WalletDbLoader.GenerateDebtFlowForPeriod(db, from, to, eq).getTotalAmountEq(), 0.001);
     }
 
+    // ── 5.4 прощение ────────────────────────────────────────────────────────
+
+    @Test
+    public void forgiveDebtToMe_expenseOnWriteOffCategory_balanceZero() {
+        int card = wallet("Карта", usd);
+        int loan = WalletDbCRUD.CreateDebtWallet(db, WalletDbCRUD.CreateCounterparty(db, "Вася", ""), usd, "", null);
+        op("2026-05-01 10:00", card, loan, 100);
+        int cat = WalletDbCRUD.GetOrCreateDebtWriteOffCategory(db, "Списание долгов");
+
+        assertEquals(WalletDbCRUD.WriteOffResult.written,
+                WalletDbCRUD.ForgiveDebt(db, loan, cat, "2026-05-10", 100, 2, "Долг прощён"));
+
+        assertEquals(0, WalletDbCRUD.RoundedWalletBalance(db, loan, 2), 1e-9);
+        assertEquals(loan, intQuery("SELECT acc_fr_id FROM operation WHERE acc_to_id = " + cat));
+        assertEquals("2026-05-10 23:59", stringQuery("SELECT date FROM operation WHERE acc_to_id = " + cat));
+        assertEquals("обычная категория, не системная", 0,
+                intQuery("SELECT system_kind FROM account WHERE _id = " + cat));
+        assertEquals("заводится один раз", cat, WalletDbCRUD.GetOrCreateDebtWriteOffCategory(db, "Списание долгов"));
+        // Расход периода: прощение — настоящий расход.
+        assertEquals(100.0, doubleQuery("SELECT coalesce(sum(amount), 0) FROM v_operation"
+                + " WHERE acc_from_is_operating = 1 AND acc_to_is_operating = 0"), 1e-9);
+    }
+
+    @Test
+    public void forgivenByThem_incomeFromWriteOffCategory() {
+        int card = wallet("Карта", usd);
+        int loan = WalletDbCRUD.CreateDebtWallet(db, WalletDbCRUD.CreateCounterparty(db, "Банк", ""), usd, "", null);
+        op("2026-05-01 10:00", loan, card, 100);   // взял в долг
+        int cat = WalletDbCRUD.GetOrCreateDebtWriteOffCategory(db, "Списание долгов");
+
+        assertEquals(WalletDbCRUD.WriteOffResult.written,
+                WalletDbCRUD.ForgiveDebt(db, loan, cat, "2026-05-10", 100, 2, ""));
+
+        assertEquals(0, WalletDbCRUD.RoundedWalletBalance(db, loan, 2), 1e-9);
+        assertEquals(cat, intQuery("SELECT acc_fr_id FROM operation WHERE acc_to_id = " + loan));
+        assertEquals(WalletDbCRUD.WriteOffResult.zero,
+                WalletDbCRUD.ForgiveDebt(db, loan, cat, "2026-05-11", 1, 2, ""));
+    }
+
     // ── 6.1 сброс ───────────────────────────────────────────────────────────
 
     @Test

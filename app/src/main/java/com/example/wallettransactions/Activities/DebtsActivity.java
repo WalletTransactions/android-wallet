@@ -163,12 +163,154 @@ public class DebtsActivity extends AppCompatActivity {
             row.addView(sub);
         }
 
-        row.setOnClickListener(v -> {
+        row.setOnClickListener(v -> showLoanActions(loan, wallet));
+        return row;
+    }
+
+    // ── действия с займом (спека «Карточка займа», «Прощение долга») ────────────
+
+    private static final int REQUEST_FORGIVE_CATEGORY = 410;
+
+    /** Заём, который прощают, пока открыт диалог; null — диалога нет. */
+    private DebtsList.Loan forgiveLoan;
+    private AccountOperatingItem forgiveWallet;
+    private int forgiveCategoryId;
+    private String forgiveDay;
+    private androidx.appcompat.app.AlertDialog forgiveDialog;
+    private android.widget.EditText forgiveAmount;
+    private TextView forgiveCategoryView;
+    private TextView forgiveDateView;
+
+    private void showLoanActions(DebtsList.Loan loan, AccountOperatingItem wallet) {
+        List<String> items = new ArrayList<>();
+        List<Runnable> actions = new ArrayList<>();
+        if (!loan.isClosed() && wallet != null) {
+            items.add(getString(R.string.debt_action_return));
+            actions.add(() -> startReturn(loan));
+            items.add(getString(R.string.debt_forgive));
+            actions.add(() -> showForgive(loan, wallet));
+        }
+        items.add(getString(R.string.debt_action_card));
+        actions.add(() -> {
             Intent edit = new Intent(this, AccountItemActivity.class);
             edit.putExtra(AccountItemActivity.ARG_ACCOUNT_ID, loan.accountId);
             startActivity(edit);
         });
-        return row;
+        items.add(getString(R.string.debt_action_operations));
+        actions.add(() -> {
+            PeriodFilterState.get(this).presetFilter(this,
+                    java.util.Collections.singletonList(loan.accountId), null, null);
+            startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+        });
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(loan.name)
+                .setItems(items.toArray(new String[0]), (d, which) -> actions.get(which).run())
+                .show();
+    }
+
+    /**
+     * «Вернуть» (спека «Направление перевода по действию»): форма операции — перевод, заём на
+     * нужной стороне по знаку остатка, сумма — весь остаток; кошелёк выбирает пользователь.
+     */
+    private void startReturn(DebtsList.Loan loan) {
+        Intent op = new Intent(this, TransactionActivity.class);
+        op.putExtra(TransactionActivity.cKind, "transfer"); // not UI: kind key
+        if (loan.balance > 0) op.putExtra(TransactionActivity.cFrom, loan.accountId);
+        else op.putExtra(TransactionActivity.cTo, loan.accountId);
+        op.putExtra(TransactionActivity.cAmount, Math.abs(loan.balance));
+        startActivity(op);
+    }
+
+    private void showForgive(DebtsList.Loan loan, AccountOperatingItem wallet) {
+        forgiveLoan = loan;
+        forgiveWallet = wallet;
+        forgiveDay = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date());
+        android.database.sqlite.SQLiteDatabase wdb = Singleton.instance.getWritableDatabase(this);
+        forgiveCategoryId = com.example.wallettransactions.Data.WalletDbCRUD.GetOrCreateDebtWriteOffCategory(
+                wdb, getString(R.string.debt_writeoff_category));
+        reloadAccounts(wdb);
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(20), dp(8), dp(20), 0);
+        Currency c = wallet.getCurrency();
+        TextView amountLabel = text(getString(R.string.debt_forgive_amount, c != null ? c.getSymbol() : ""),
+                12, R.color.colorTextSecondary, false);
+        box.addView(amountLabel);
+        forgiveAmount = new android.widget.EditText(this);
+        forgiveAmount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        forgiveAmount.setText(AdapterUtils.plainNumber(Math.abs(loan.balance)));
+        box.addView(forgiveAmount);
+        forgiveCategoryView = text("", 15, R.color.colorPrimary, true);
+        forgiveCategoryView.setPadding(0, dp(12), 0, dp(12));
+        forgiveCategoryView.setOnClickListener(v -> {
+            Intent pick = AccountPickerActivity.buildIntent(this, getString(R.string.debt_forgive),
+                    AccountPickerActivity.cSelectedTypeChargeAccounts, forgiveCategoryId);
+            pick.putExtra(AccountPickerActivity.cHideSystem, true);
+            startActivityForResult(pick, REQUEST_FORGIVE_CATEGORY);
+        });
+        box.addView(forgiveCategoryView);
+        forgiveDateView = text("", 15, R.color.colorPrimary, true);
+        forgiveDateView.setPadding(0, dp(4), 0, dp(12));
+        forgiveDateView.setOnClickListener(v -> com.example.wallettransactions.CalendarPicker.show(this,
+                (Date) null, (y, m, d) -> {
+                    forgiveDay = String.format(Locale.ROOT, "%04d-%02d-%02d", y, m + 1, d);
+                    paintForgive();
+                }));
+        box.addView(forgiveDateView);
+        paintForgive();
+
+        String cp = loan.name;
+        forgiveDialog = new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(loan.balance > 0 ? getString(R.string.debt_forgive_title_me, cp)
+                        : getString(R.string.debt_forgive_title_them, cp))
+                .setView(box)
+                .setPositiveButton(R.string.debt_forgive, (d, w) -> writeForgive())
+                .setNegativeButton(android.R.string.cancel, null)
+                .setOnDismissListener(d -> forgiveDialog = null)
+                .show();
+    }
+
+    private void paintForgive() {
+        AccountItem cat = Singleton.instance.getAccounts(this).getAccountById(forgiveCategoryId);
+        forgiveCategoryView.setText(getString(R.string.debt_forgive_category, cat != null ? cat.getDisplayName() : "—"));
+        forgiveDateView.setText(getString(R.string.debt_forgive_date, forgiveDay));
+    }
+
+    private void writeForgive() {
+        double amount;
+        try {
+            amount = Double.parseDouble(forgiveAmount.getText().toString().replace(',', '.').trim());
+        } catch (NumberFormatException e) {
+            amount = 0;
+        }
+        android.database.sqlite.SQLiteDatabase wdb = Singleton.instance.getWritableDatabase(this);
+        Currency c = forgiveWallet.getCurrency();
+        com.example.wallettransactions.Data.WalletDbCRUD.WriteOffResult r =
+                com.example.wallettransactions.Data.WalletDbCRUD.ForgiveDebt(wdb, forgiveLoan.accountId,
+                        forgiveCategoryId, forgiveDay, amount, c != null ? c.getPrecision() : 2,
+                        getString(R.string.debt_forgive_comment));
+        boolean ok = r == com.example.wallettransactions.Data.WalletDbCRUD.WriteOffResult.written;
+        android.widget.Toast.makeText(this, ok ? R.string.debt_forgive_done : R.string.debt_forgive_failed,
+                android.widget.Toast.LENGTH_SHORT).show();
+        if (ok) {
+            PeriodFilterState.get(this).markDataChanged();
+            render();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_FORGIVE_CATEGORY || resultCode != RESULT_OK || data == null) return;
+        int id = data.getIntExtra(AccountPickerActivity.cAccountId, 0);
+        if (id > 0) forgiveCategoryId = id;
+        if (forgiveDialog != null) paintForgive();
+    }
+
+    private void reloadAccounts(android.database.sqlite.SQLiteDatabase db) {
+        WalletDbLoader.LoadAccounts(db, Singleton.instance.getAccounts(this),
+                Singleton.instance.getCurrencyList(this), Singleton.instance.getIconList(this), null);
     }
 
     private TextView text(String s, int sp, int color, boolean bold) {

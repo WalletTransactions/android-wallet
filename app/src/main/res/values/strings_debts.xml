@@ -41,4 +41,16 @@
     <string name="debt_label_repaid">Repaid my debt</string>
     <string name="debt_label_returned">Got repaid</string>
     <string name="debt_label_with">%1$s · %2$s</string>
+    <string name="debt_writeoff_category">Debt write-off</string>
+    <string name="debt_forgive">Forgive</string>
+    <string name="debt_forgive_title_me">Forgive what %1$s owes me</string>
+    <string name="debt_forgive_title_them">%1$s forgives my debt</string>
+    <string name="debt_forgive_amount">Amount, %1$s</string>
+    <string name="debt_forgive_category">Category: %1$s</string>
+    <string name="debt_forgive_date">Date: %1$s</string>
+    <string name="debt_forgive_comment">Debt forgiven</string>
+    <string name="debt_forgive_done">Written</string>
+    <string name="debt_forgive_failed">Nothing written: check the amount</string>
+    <string name="debt_action_card">Loan card: due date, comment</string>
+    <string name="debt_action_operations">Loan operations</string>
 </resources>

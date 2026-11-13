@@ -41,4 +41,16 @@
     <string name="debt_label_repaid">Вернул долг</string>
     <string name="debt_label_returned">Мне вернули</string>
     <string name="debt_label_with">%1$s · %2$s</string>
+    <string name="debt_writeoff_category">Списание долгов</string>
+    <string name="debt_forgive">Простить</string>
+    <string name="debt_forgive_title_me">Простить долг: %1$s</string>
+    <string name="debt_forgive_title_them">Мне простили долг: %1$s</string>
+    <string name="debt_forgive_amount">Сумма, %1$s</string>
+    <string name="debt_forgive_category">Категория: %1$s</string>
+    <string name="debt_forgive_date">Дата: %1$s</string>
+    <string name="debt_forgive_comment">Долг прощён</string>
+    <string name="debt_forgive_done">Записано</string>
+    <string name="debt_forgive_failed">Не записано: проверьте сумму</string>
+    <string name="debt_action_card">Карточка займа: срок, комментарий</string>
+    <string name="debt_action_operations">Операции займа</string>
 </resources>

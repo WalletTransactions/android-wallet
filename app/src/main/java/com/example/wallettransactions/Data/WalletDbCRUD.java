@@ -906,6 +906,36 @@ public class WalletDbCRUD {
         return id > 0 ? WriteOffResult.written : WriteOffResult.failed;
     }
 
+    /**
+     * «Простить» (openspec debts, D8): проводка «заём → категория» (расход) при остатке
+     * &gt; 0 и «категория → заём» (доход) при &lt; 0, на {@code amount} в валюте займа, на конец
+     * дня — как списание при архивации. Категория обычная: прощение — настоящий расход или
+     * доход и попадает в отчёты.
+     *
+     * @return zero — остаток нулевой, прощать нечего; failed — нет категории или суммы
+     */
+    public static WriteOffResult ForgiveDebt(SQLiteDatabase db, int loanId, int categoryId, String day,
+                                             double amount, int precision, String comment) {
+        double balance = RoundedWalletBalance(db, loanId, precision);
+        if (balance == 0) return WriteOffResult.zero;
+        if (categoryId <= 0 || amount <= 0) return WriteOffResult.failed;
+        String endOfDay = day + " 23:59";
+        long id = balance > 0
+                ? InsertOperation(db, endOfDay, loanId, categoryId, amount, comment)
+                : InsertOperation(db, endOfDay, categoryId, loanId, amount, comment);
+        return id > 0 ? WriteOffResult.written : WriteOffResult.failed;
+    }
+
+    /**
+     * Категория прощения по умолчанию — обычная (не системная, {@code system_kind = 0}) с этим
+     * именем: есть — она, нет — заводится при первом использовании (спека «Прощение долга»).
+     */
+    public static int GetOrCreateDebtWriteOffCategory(SQLiteDatabase db, String name) {
+        int id = GetAccountIdByName(db, name);
+        if (id > 0) return id;
+        return createCategory(db, name, "unknown", AccountItem.SystemKind.NONE.getValue()); // not UI: icon name
+    }
+
     /** Итог {@link #MoveCategoryToAsset}: сколько перенесено и сколько пропущено без курса. */
     public static final class MoveResult {
         public final int moved;
