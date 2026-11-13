@@ -48,7 +48,6 @@ public class DebtsActivity extends AppCompatActivity {
 
     private LinearLayout list;
     private CheckBox showClosed;
-    private int renderedRevision = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,9 +61,10 @@ public class DebtsActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Вернулись с карточки займа или после синка — перечитать.
-        int revision = PeriodFilterState.get(this).getRevision();
-        if (revision != renderedRevision) render();
+        // Вернулись с формы операции («Вернуть»), карточки займа или после синка —
+        // перечитать всегда: форма операции ревизию данных не поднимает, а запросы
+        // экрана лёгкие (остатки займов и список контрагентов).
+        render();
     }
 
     public void btnUp(View view) {
@@ -76,7 +76,6 @@ public class DebtsActivity extends AppCompatActivity {
     }
 
     private void render() {
-        renderedRevision = PeriodFilterState.get(this).getRevision();
         SQLiteDatabase db = Singleton.instance.getReadableDatabase(this);
         Currency eq = PeriodFilterState.get(this).getCurrencyEq(this);
         Date asOf = tomorrow();
@@ -219,6 +218,8 @@ public class DebtsActivity extends AppCompatActivity {
     private void startReturn(DebtsList.Loan loan) {
         Intent op = new Intent(this, TransactionActivity.class);
         op.putExtra(TransactionActivity.cKind, "transfer"); // not UI: kind key
+        // Дата обязательна: форма разбирает её без проверки на null (как у «+» на табах).
+        op.putExtra(TransactionActivity.cDate, com.example.wallettransactions.DateUtils.DateToStr(new Date()));
         if (loan.balance > 0) op.putExtra(TransactionActivity.cFrom, loan.accountId);
         else op.putExtra(TransactionActivity.cTo, loan.accountId);
         op.putExtra(TransactionActivity.cAmount, Math.abs(loan.balance));
