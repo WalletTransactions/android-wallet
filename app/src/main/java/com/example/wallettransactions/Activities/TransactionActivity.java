@@ -1080,6 +1080,13 @@ public class TransactionActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.operation_error_amount_zero, Toast.LENGTH_SHORT).show();
             return;
         }
+        // Заём на заём (debts) — не операция пользователя, а ошибка выбора: не пишем.
+        AccountOperatingItem fromW = asWallet(mAccFrom), toW = asWallet(mAccTo);
+        if (fromW != null && toW != null && fromW.isDebt() && toW.isDebt()) {
+            Toast.makeText(this, R.string.debt_error_loan_to_loan, Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (askOverpay(db, amount)) return;
 
         values.put(WalletContract.OperationEntry.COLUMN_DATE, dateStr);
         values.put(WalletContract.OperationEntry.COLUMN_FROM, mAccFrom.getId());
@@ -1113,7 +1120,8 @@ public class TransactionActivity extends AppCompatActivity {
             mSaved = true;
             // Кошелёк операции: у расхода и перевода — списания, у дохода — зачисления.
             AccountItem wallet = mKind == Kind.income ? mAccTo : mAccFrom;
-            if (wallet != null && wallet.isOperatingAccount())
+            AccountOperatingItem lastAsWallet = asWallet(wallet);
+            if (wallet != null && wallet.isOperatingAccount() && (lastAsWallet == null || !lastAsWallet.isDebt()))
                 AppSettings.setLastWalletId(this, wallet.getId());
 
             Intent resultIntent = new Intent();
@@ -1326,8 +1334,14 @@ public class TransactionActivity extends AppCompatActivity {
 
     private void openAccountPicker(String title, AccountItem current, AccountItem pair,
                                    int selectedType, int requestCode) {
-        startActivityForResult(AccountPickerActivity.buildIntent(this, title, selectedType,
-                current == null ? 0 : current.getId(), pair, priorityIds(selectedType)), requestCode);
+        Intent intent = AccountPickerActivity.buildIntent(this, title, selectedType,
+                current == null ? 0 : current.getId(), pair, priorityIds(selectedType));
+        // Долги (debts, design D6): над статьями — «Дать в долг» / «Взять в долг» / «Вернуть»;
+        // среди кошельков новой операции займов нет, при правке — видны.
+        intent.putExtra(AccountPickerActivity.cDebtActions,
+                requestCode == AccountSelectTop && selectedType == AccountPickerActivity.cSelectedTypeChargeAccounts);
+        intent.putExtra(AccountPickerActivity.cHideDebts, !mIsEdit);
+        startActivityForResult(intent, requestCode);
     }
 
 
@@ -1346,6 +1360,12 @@ public class TransactionActivity extends AppCompatActivity {
 
         AccountItem picked = accountById(accountId);
 
+        int debtDirection = data.getIntExtra(AccountPickerActivity.cDebtDirection, 0);
+        if (debtDirection != 0 && picked != null) {
+            applyDebtPick(picked, debtDirection);
+            return;
+        }
+
         if (requestCode == AccountSelectCommission) {
             mAccCommission = picked;
             bindSlot(mImgCommissionAccount, mEditCommissionAccount, mAccCommission);
@@ -1362,6 +1382,67 @@ public class TransactionActivity extends AppCompatActivity {
 
         renderSlots();
         updateSaveButton();
+    }
+
+    /**
+     * Результат «Дать в долг» / «Взять в долг» / «Вернуть» (debts, design D6): операция
+     * становится переводом между кошельком из нижней строки и займом, в нужную сторону.
+     */
+    private void applyDebtPick(AccountItem loan, int direction) {
+        AccountItem wallet = getBottom();
+        // «Ваш кошелёк» — только обычный: заём на заём перевода не бывает (debts; проверка на
+        // Pixel 8 Pro — подставленный «последний кошелёк» оказался займом).
+        AccountOperatingItem asLoan = asWallet(wallet);
+        if (wallet != null && (!wallet.isOperatingAccount() || wallet.getId().equals(loan.getId())
+                || (asLoan != null && asLoan.isDebt()))) wallet = null;
+        mTopByKind.put(mKind, getTop());
+        mKind = Kind.transfer;
+        if (direction == com.example.wallettransactions.Data.DebtDirection.WALLET_TO_LOAN) {
+            mAccFrom = wallet;
+            mAccTo = loan;
+        } else {
+            mAccFrom = loan;
+            mAccTo = wallet;
+        }
+        mAmountToUserEdited = false;
+        renderKind();
+        updateSaveButton();
+    }
+
+    /** Подтверждённая переплата — второй вызов SaveClick не спрашивает снова. */
+    private boolean mOverpayConfirmed;
+
+    /**
+     * Переплата займа (debts, D11): перевод гасит остаток и переходит через ноль — сначала
+     * предупреждение. Только для новой операции: при правке старая проводка уже в остатке.
+     *
+     * @return true — спросили, сохранение ждёт ответа
+     */
+    private boolean askOverpay(SQLiteDatabase db, double amount) {
+        if (mIsEdit || mOverpayConfirmed) return false;
+        AccountOperatingItem to = asWallet(mAccTo);
+        AccountOperatingItem from = asWallet(mAccFrom);
+        boolean toDebt = to != null && to.isDebt();
+        boolean fromDebt = from != null && from.isDebt();
+        if (toDebt == fromDebt) return false;
+        AccountOperatingItem loan = toDebt ? to : from;
+        // Сумма в валюте займа: у разновалютного перевода получатель считает вторую ногу.
+        double inLoanCurrency = toDebt && isCrossCurrencyActive()
+                ? parseAmount(mEditAmountTo.getText().toString()) : amount;
+        double balance = WalletDbLoader.LoadAccountBalance(db, loan.getId());
+        if (!com.example.wallettransactions.Data.DebtDirection.isOverpay(balance, toDebt, inLoanCurrency)) return false;
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(R.string.debt_overpay_title)
+                .setMessage(getString(R.string.debt_overpay_message,
+                        DebtPickFlow.money(Math.abs(balance), loan.getCurrency()),
+                        DebtPickFlow.money(inLoanCurrency, loan.getCurrency())))
+                .setPositiveButton(R.string.debt_overpay_ok, (d, w) -> {
+                    mOverpayConfirmed = true;
+                    SaveClick(null);
+                })
+                .setNegativeButton(android.R.string.cancel, null) // спека «Отказ»: форма как была
+                .show();
+        return true;
     }
 
     // ── Комиссия за перевод ───────────────────────────────────────────────────

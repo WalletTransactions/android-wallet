@@ -48,6 +48,13 @@ public class OperationItem {
     public double Amount;
     public Double AmountEq;
     public String Comment;
+    /**
+     * Подпись перевода с займом (openspec debts, design D6) — вычисляется при загрузке
+     * ленты ({@code WalletDbLoader.AttachDebtLabels}), в базе не хранится; null — не заём.
+     */
+    public com.example.wallettransactions.Data.DebtLabels.Label DebtLabel;
+    /** Имя контрагента займа для подписи; null — не заём. */
+    public String DebtCounterparty;
 
     public AccountItem AccFrom;
     public AccountItem AccTo;

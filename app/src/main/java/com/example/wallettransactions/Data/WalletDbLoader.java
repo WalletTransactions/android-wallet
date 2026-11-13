@@ -10,6 +10,7 @@ import android.util.Pair;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
+import com.example.wallettransactions.DataItems.Accounts.CounterpartyItem;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
 import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyPairList;
@@ -129,6 +130,11 @@ public abstract class WalletDbLoader {
         public final Integer assetType;
         /** Входит ли актив во «Всего с капиталом»; у ликвидного кошелька всегда true. */
         public final boolean includeInNetWorth;
+        /**
+         * uuid контрагента займа (debts) из живой строки {@code account_debt}; {@code null} —
+         * не долговой кошелёк.
+         */
+        public final String debtCounterpartyUuid;
 
         public WalletBalanceRow(int accountId, String name, double balance,
                                 String currencySymbol, double balanceEq,
@@ -140,6 +146,15 @@ public abstract class WalletDbLoader {
                                 String currencySymbol, double balanceEq,
                                 boolean hasEq, boolean approx,
                                 Integer assetType, boolean includeInNetWorth) {
+            this(accountId, name, balance, currencySymbol, balanceEq, hasEq, approx, assetType,
+                    includeInNetWorth, null);
+        }
+
+        public WalletBalanceRow(int accountId, String name, double balance,
+                                String currencySymbol, double balanceEq,
+                                boolean hasEq, boolean approx,
+                                Integer assetType, boolean includeInNetWorth,
+                                String debtCounterpartyUuid) {
             this.accountId      = accountId;
             this.name           = name;
             this.balance        = balance;
@@ -149,10 +164,20 @@ public abstract class WalletDbLoader {
             this.approx         = approx;
             this.assetType      = assetType;
             this.includeInNetWorth = includeInNetWorth;
+            this.debtCounterpartyUuid = debtCounterpartyUuid;
         }
 
         public boolean isAsset() {
             return assetType != null;
+        }
+
+        public boolean isDebt() {
+            return debtCounterpartyUuid != null;
+        }
+
+        /** Ликвидный — ни актив, ни заём: только такие входят в «Итог» карточки (debts, D9). */
+        public boolean isLiquid() {
+            return !isAsset() && !isDebt();
         }
     }
 
@@ -172,10 +197,13 @@ public abstract class WalletDbLoader {
                 // than silently converting 1:1.
                 "round(vccr.rate * (coalesce(opt.amount_to, 0) - coalesce(opf.amount_fr, 0)), 2) balance_eq, " +
                 // capital-assets: признак актива — тем же запросом, итоги разбиваются по нему.
-                "aa.asset_type, coalesce(aa.include_in_net_worth, 1) include_in_net_worth " +
+                "aa.asset_type, coalesce(aa.include_in_net_worth, 1) include_in_net_worth, " +
+                // debts (design D9): признак займа — так же, итоги делятся и по нему.
+                "ad.counterparty_uuid debt_counterparty_uuid " +
                 "FROM v_account_operating vao " +
                 "JOIN currency c ON vao.currency_id = c._id " +
                 "LEFT JOIN account_asset aa ON aa._id = vao._id AND aa.deleted_at IS NULL " +
+                "LEFT JOIN account_debt ad ON ad._id = vao._id AND ad.deleted_at IS NULL " +
                 // deleted_at IS NULL — с v72 WalletDbCRUD.DeleteOperation стал мягким;
                 // без фильтра баланс продолжал бы учитывать удалённые проводки.
                 "LEFT JOIN (SELECT acc_to_id, round(sum(amount), 2) amount_to FROM operation " +
@@ -211,6 +239,7 @@ public abstract class WalletDbLoader {
             int colCurrencyId = cursor.getColumnIndex("currency_id");
             int colAssetType  = cursor.getColumnIndex("asset_type");
             int colInclude    = cursor.getColumnIndex("include_in_net_worth");
+            int colDebt       = cursor.getColumnIndex("debt_counterparty_uuid");
 
             while (cursor.moveToNext()) {
                 boolean hasEq  = !cursor.isNull(colEq);
@@ -225,7 +254,8 @@ public abstract class WalletDbLoader {
                         hasEq,
                         approx,
                         cursor.isNull(colAssetType) ? null : cursor.getInt(colAssetType),
-                        cursor.getInt(colInclude) != 0
+                        cursor.getInt(colInclude) != 0,
+                        cursor.isNull(colDebt) ? null : cursor.getString(colDebt)
                 ));
             }
         } finally {
@@ -315,8 +345,8 @@ public abstract class WalletDbLoader {
         boolean hasAprox = false, incomplete = false;
         for (WalletBalanceRow row : rows) {
             // capital-assets: итог карточки — только ликвидные кошельки, капитал —
-            // GenerateCapitalToDate из тех же строк.
-            if (row.isAsset()) continue;
+            // GenerateCapitalToDate из тех же строк; займы (debts) — GenerateDebtsToDate.
+            if (!row.isLiquid()) continue;
             if (!row.hasEq) {
                 // No rate at all: converting 1:1 would inflate the total, so the wallet is
                 // left out and the sum is reported as incomplete rather than merely rounded.
@@ -357,6 +387,9 @@ public abstract class WalletDbLoader {
         boolean capApprox = false, capIncomplete = false, nwApprox = false, nwIncomplete = false;
         boolean hasAssets = false;
         for (WalletBalanceRow row : rows) {
+            // Займы (debts) не входят ни в капитал, ни во «Всего с капиталом» — у них своя
+            // строка «Всего с долгами» (GenerateDebtsToDate).
+            if (row.isDebt()) continue;
             boolean inNetWorth = !row.isAsset() || row.includeInNetWorth;
             if (row.isAsset()) {
                 hasAssets = true;
@@ -379,6 +412,121 @@ public abstract class WalletDbLoader {
         return new CapitalResult(hasAssets,
                 new EquivalentResult(capital, capApprox, capIncomplete),
                 new EquivalentResult(netWorth, nwApprox, nwIncomplete));
+    }
+
+    /** Итоги долгов на дату — см. {@link #GenerateDebtsToDate}. */
+    public static class DebtsResult {
+        /** Есть ли в леджере хоть один живой заём; нет — строк долгов не показывают. */
+        public final boolean hasDebts;
+        /** «Мне должны» — сумма положительных остатков займов. */
+        public final EquivalentResult owedToMe;
+        /** «Я должен» — сумма модулей отрицательных остатков, положительное число. */
+        public final EquivalentResult iOwe;
+        /** «Всего с долгами» = ликвидные + «Мне должны» − «Я должен». */
+        public final EquivalentResult totalWithDebts;
+
+        public DebtsResult(boolean hasDebts, EquivalentResult owedToMe, EquivalentResult iOwe,
+                           EquivalentResult totalWithDebts) {
+            this.hasDebts = hasDebts;
+            this.owedToMe = owedToMe;
+            this.iOwe = iOwe;
+            this.totalWithDebts = totalWithDebts;
+        }
+    }
+
+    /**
+     * «Мне должны», «Я должен» и «Всего с долгами» на дату в валюте эквивалента (openspec
+     * debts, design D9) из того же {@link #LoadBalancesPerWallet}, что и ликвидный итог, с
+     * той же неполнотой: заём без курса не пересчитывается 1:1, а помечает сумму неполной.
+     * Знак — по остатку в валюте займа, а не в эквиваленте: без курса направление
+     * всё равно известно.
+     */
+    public static DebtsResult GenerateDebtsToDate(SQLiteDatabase db, Date date, Currency currencyEq) {
+        List<WalletBalanceRow> rows = LoadBalancesPerWallet(db, date, date, currencyEq);
+        double owed = 0, owe = 0, liquid = 0;
+        boolean owedApprox = false, owedIncomplete = false;
+        boolean oweApprox = false, oweIncomplete = false;
+        boolean liqApprox = false, liqIncomplete = false;
+        for (WalletBalanceRow row : rows) {
+            if (row.isLiquid()) {
+                if (row.hasEq) {
+                    liquid += row.balanceEq;
+                    if (row.approx) liqApprox = true;
+                } else {
+                    liqIncomplete = true;
+                }
+                continue;
+            }
+            if (!row.isDebt() || row.balance == 0) continue;
+            if (row.balance > 0) {
+                if (row.hasEq) {
+                    owed += row.balanceEq;
+                    if (row.approx) owedApprox = true;
+                } else {
+                    owedIncomplete = true;
+                }
+            } else {
+                if (row.hasEq) {
+                    owe -= row.balanceEq;
+                    if (row.approx) oweApprox = true;
+                } else {
+                    oweIncomplete = true;
+                }
+            }
+        }
+        return new DebtsResult(HasDebtWallets(db),
+                new EquivalentResult(owed, owedApprox, owedIncomplete),
+                new EquivalentResult(owe, oweApprox, oweIncomplete),
+                new EquivalentResult(liquid + owed - owe, liqApprox || owedApprox || oweApprox,
+                        liqIncomplete || owedIncomplete || oweIncomplete));
+    }
+
+    /** Есть ли хоть один живой заём (живая {@code account_debt} у живого счёта). */
+    public static boolean HasDebtWallets(SQLiteDatabase db) {
+        Cursor c = db.rawQuery("SELECT 1 FROM " + WalletContract.AccountDebtEntry.TABLE_NAME + " ad"
+                + " JOIN " + WalletContract.AccountEntry.TABLE_NAME + " a ON a._id = ad._id AND a.deleted_at IS NULL"
+                + " WHERE ad." + WalletContract.AccountDebtEntry.COLUMN_DELETED_AT + " IS NULL LIMIT 1", null);
+        try {
+            return c.moveToFirst();
+        } finally {
+            c.close();
+        }
+    }
+
+    /**
+     * «В долг / из долга» за период в валюте эквивалента (openspec debts, design D9) —
+     * слагаемое сверки «На конец − На начало = Доход − Расход + В долг / из долга + …».
+     * «Итог» — только ликвидные, а займ для дохода и расхода — обычный кошелёк, поэтому
+     * считаются проводки, где ровно одна сторона — заём, а другая не актив:
+     * <ul>
+     *   <li>ликвидный → заём (выдача, возврат своего долга) — «−»;</li>
+     *   <li>заём → ликвидный (взял в долг, мне вернули) — «+»;</li>
+     *   <li>заём ↔ категория (прощение) — с тем же знаком: прощение уже в доходе или расходе,
+     *   а «Итог» не изменился, и эта строка их гасит.</li>
+     * </ul>
+     * Заём ↔ заём и заём ↔ актив в «Итог» не попадают. Операция без курса на дату в сумму
+     * не входит, результат помечается неполным.
+     */
+    public static EquivalentResult GenerateDebtFlowForPeriod(SQLiteDatabase db, Date dateFrom,
+                                                              Date dateTo, Currency currencyEq) {
+        String sql = "SELECT round(sum(CASE WHEN o.acc_to_is_debt = 1 THEN -o.amount_eq ELSE o.amount_eq END), 2) net, "
+                + "sum(CASE WHEN o.amount_eq IS NULL THEN 1 ELSE 0 END) missing, "
+                + "sum(CASE WHEN o.currency_id <> o.to_currency_id THEN 1 ELSE 0 END) converted "
+                + "FROM v_operation_eq o "
+                + "LEFT JOIN account_asset fa ON fa._id = o.acc_fr_id AND fa.deleted_at IS NULL "
+                + "LEFT JOIN account_asset ta ON ta._id = o.acc_to_id AND ta.deleted_at IS NULL "
+                + "WHERE o.date BETWEEN '" + DateUtils.DateToStr(dateFrom) + "' AND '" + DateUtils.DateToStr(dateTo) + "' "
+                + "AND o.to_currency_id = " + currencyEq.getId() + " "
+                + "AND o.acc_from_is_debt <> o.acc_to_is_debt "
+                + "AND fa._id IS NULL AND ta._id IS NULL";
+        Cursor c = db.rawQuery(sql, null);
+        try {
+            if (!c.moveToFirst()) return new EquivalentResult(0.0, false, false);
+            double net = c.isNull(0) ? 0 : c.getDouble(0);
+            return new EquivalentResult(net, c.getInt(2) > 0, c.getInt(1) > 0);
+        } finally {
+            c.close();
+        }
     }
 
     /**
@@ -957,6 +1105,10 @@ public abstract class WalletDbLoader {
                 // Признак актива (capital-assets) — только живая строка и только у кошелька.
                 +", aa."+ WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE
                 +", aa."+ WalletContract.AccountAssetEntry.COLUMN_INCLUDE_IN_NET_WORTH
+                // Признак долга (debts) — так же, только живая строка у кошелька.
+                +", ad."+ WalletContract.AccountDebtEntry.COLUMN_COUNTERPARTY_UUID
+                +", ad."+ WalletContract.AccountDebtEntry.COLUMN_COMMENT + " debt_comment"
+                +", ad."+ WalletContract.AccountDebtEntry.COLUMN_DUE_DATE
 
                 +" FROM "+ WalletContract.AccountEntry.TABLE_NAME
                 +" a left join "+ WalletContract.AccountOperatingEntry.TABLE_NAME
@@ -965,6 +1117,9 @@ public abstract class WalletDbLoader {
                 +" left join "+ WalletContract.AccountAssetEntry.TABLE_NAME
                 +" aa on aa." + WalletContract.AccountAssetEntry._ID + "=ao." + WalletContract.AccountOperatingEntry._ID
                 +" and aa." + WalletContract.AccountAssetEntry.COLUMN_DELETED_AT + " is null"
+                +" left join "+ WalletContract.AccountDebtEntry.TABLE_NAME
+                +" ad on ad." + WalletContract.AccountDebtEntry._ID + "=ao." + WalletContract.AccountOperatingEntry._ID
+                +" and ad." + WalletContract.AccountDebtEntry.COLUMN_DELETED_AT + " is null"
                 +" left join "+ WalletContract.CurrencyEntry.TABLE_NAME
                 +" c on c." +WalletContract.CurrencyEntry._ID + "=ao."+WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID+"\n"
                 +" WHERE a." + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL";
@@ -986,6 +1141,9 @@ public abstract class WalletDbLoader {
             int curIdColumnIndex = cursor.getColumnIndex(WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID);
             int assetTypeColumnIndex = cursor.getColumnIndex(WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE);
             int includeColumnIndex = cursor.getColumnIndex(WalletContract.AccountAssetEntry.COLUMN_INCLUDE_IN_NET_WORTH);
+            int counterpartyColumnIndex = cursor.getColumnIndex(WalletContract.AccountDebtEntry.COLUMN_COUNTERPARTY_UUID);
+            int debtCommentColumnIndex = cursor.getColumnIndex("debt_comment");
+            int dueDateColumnIndex = cursor.getColumnIndex(WalletContract.AccountDebtEntry.COLUMN_DUE_DATE);
 
 
             while (cursor.moveToNext()) {
@@ -1007,6 +1165,9 @@ public abstract class WalletDbLoader {
                 AccountOperatingItem.AssetInfo asset = cursor.isNull(assetTypeColumnIndex) ? null
                         : new AccountOperatingItem.AssetInfo(cursor.getInt(assetTypeColumnIndex),
                                 cursor.getInt(includeColumnIndex) != 0);
+                AccountOperatingItem.DebtInfo debt = cursor.isNull(counterpartyColumnIndex) ? null
+                        : new AccountOperatingItem.DebtInfo(cursor.getString(counterpartyColumnIndex),
+                                cursor.getString(debtCommentColumnIndex), cursor.getString(dueDateColumnIndex));
 
                 AccountItem account = accounts.getAccountById(currentID);
 
@@ -1014,13 +1175,17 @@ public abstract class WalletDbLoader {
                     if (curId != 0) {
                         AccountOperatingItem wallet = new AccountOperatingItem(currentID, currentName, currentComment, icon, currentIsArchived, currencyList.getCurrencyById(curId), currentSystemKind, currentKind);
                         wallet.setAsset(asset);
+                        wallet.setDebt(debt);
                         accounts.put(currentID, wallet);
                     } else
                         accounts.put(currentID, new AccountItem(currentID, currentName, currentComment, icon, currentIsArchived, currentSystemKind, currentKind));
                 }
                 else {
                     account.update(currentName, currentComment, icon, currentIsArchived, currentSystemKind, currentKind);
-                    if (account instanceof AccountOperatingItem) ((AccountOperatingItem) account).setAsset(asset);
+                    if (account instanceof AccountOperatingItem) {
+                        ((AccountOperatingItem) account).setAsset(asset);
+                        ((AccountOperatingItem) account).setDebt(debt);
+                    }
                 }
             }
             accounts.notifyObservers();
@@ -1029,6 +1194,34 @@ public abstract class WalletDbLoader {
         }
         WalletDbLoader.UpdateAccountsOperatingBalance(db, accounts);
 
+    }
+
+    /**
+     * Живые контрагенты (openspec debts, design D4), по имени без учёта регистра. Архивные
+     * тоже — экран «Контрагенты» показывает их отдельно, а займы архивного не теряются.
+     */
+    public static List<CounterpartyItem>
+            LoadCounterparties(SQLiteDatabase db) {
+        List<CounterpartyItem> out = new ArrayList<>();
+        Cursor c = db.rawQuery("SELECT " + WalletContract.CounterpartyEntry._ID
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_UUID
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_NAME
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_COMMENT
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_ICON_UUID
+                + ", " + WalletContract.CounterpartyEntry.COLUMN_IS_ARCHIVED
+                + " FROM " + WalletContract.CounterpartyEntry.TABLE_NAME
+                + " WHERE " + WalletContract.CounterpartyEntry.COLUMN_DELETED_AT + " IS NULL"
+                + " ORDER BY " + AccountNames.keySql(WalletContract.CounterpartyEntry.COLUMN_NAME), null);
+        try {
+            while (c.moveToNext()) {
+                out.add(new CounterpartyItem(
+                        c.getInt(0), c.getString(1), c.getString(2), c.getString(3),
+                        c.isNull(4) ? null : c.getString(4), c.getInt(5) != 0));
+            }
+        } finally {
+            c.close();
+        }
+        return out;
     }
 
     /**
@@ -1159,7 +1352,53 @@ public abstract class WalletDbLoader {
             cursor.close();
         }
         AttachLinkedOperations(db, transactions, accounts, toCurrency);
+        AttachDebtLabels(db, transactions, accounts);
         transactions.notifyObservers();
+    }
+
+    /**
+     * Подписи «Дал в долг» / «Взял в долг» / «Вернул долг» / «Мне вернули» (openspec debts,
+     * design D6): все живые проводки займов — по всем датам, не только периода ленты, —
+     * считаются одним проходом {@link DebtLabels#compute}; строке ленты достаётся подпись её
+     * самой или второй ноги валютного перевода (там заём — получатель моста «Transfer»).
+     */
+    static void AttachDebtLabels(SQLiteDatabase db, OperationList transactions, AccountList accounts) {
+        if (transactions.isEmpty() || !HasDebtWallets(db)) return;
+        List<DebtLabels.Posting> postings = new ArrayList<>();
+        Map<Integer, Integer> loanOf = new HashMap<>();
+        Cursor c = db.rawQuery("SELECT o._id, o.date, o.acc_fr_id, o.acc_to_id, o.amount, "
+                + "adf._id IS NOT NULL, adt._id IS NOT NULL FROM operation o "
+                + "LEFT JOIN account_debt adf ON adf._id = o.acc_fr_id AND adf.deleted_at IS NULL "
+                + "LEFT JOIN account_debt adt ON adt._id = o.acc_to_id AND adt.deleted_at IS NULL "
+                + "WHERE o.deleted_at IS NULL AND (adf._id IS NULL) <> (adt._id IS NULL)", null);
+        try {
+            while (c.moveToNext()) {
+                boolean toLoan = c.getInt(6) != 0;
+                int loan = toLoan ? c.getInt(3) : c.getInt(2);
+                double amount = c.getDouble(4);
+                postings.add(new DebtLabels.Posting(c.getInt(0), c.getString(1), loan, toLoan ? amount : -amount));
+                loanOf.put(c.getInt(0), loan);
+            }
+        } finally {
+            c.close();
+        }
+        if (postings.isEmpty()) return;
+        Map<Integer, DebtLabels.Label> labels = DebtLabels.compute(postings);
+        Map<String, String> names = new HashMap<>();
+        for (CounterpartyItem cp : LoadCounterparties(db)) names.put(cp.uuid, cp.name);
+
+        for (int i = 0; i < transactions.size(); i++) {
+            OperationItem op = transactions.get(i);
+            int id = op.IdTran;
+            if (!labels.containsKey(id) && op.LinkedLeg != null) id = op.LinkedLeg.IdTran;
+            DebtLabels.Label label = labels.get(id);
+            if (label == null) continue;
+            op.DebtLabel = label;
+            AccountItem loan = accounts.getAccountById(loanOf.get(id));
+            if (loan instanceof AccountOperatingItem && ((AccountOperatingItem) loan).isDebt()) {
+                op.DebtCounterparty = names.get(((AccountOperatingItem) loan).getDebt().counterpartyUuid);
+            }
+        }
     }
 
     /**

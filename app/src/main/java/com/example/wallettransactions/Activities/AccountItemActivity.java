@@ -59,6 +59,8 @@ public class AccountItemActivity extends AppCompatActivity {
     /** Признак актива на входе (capital-assets); null — обычный кошелёк или категория. */
     private AccountOperatingItem.AssetInfo originalAsset;
     private AssetFields assetFields;
+    /** Признак займа (debts); null — категория. */
+    private DebtFields debtFields;
     /** Лист «Списать остаток?», пока открыт (archive-wallet-writeoff). */
     private ArchiveWriteOffDialog writeOffDialog;
 
@@ -105,7 +107,12 @@ public class AccountItemActivity extends AppCompatActivity {
             operatingGroup.setVisibility(View.VISIBLE);
             refreshCurrencyUI();
             originalAsset = ((AccountOperatingItem) account).getAsset();
-            assetFields = new AssetFields(this, originalAsset, true, this::updateSaveButton);
+            assetFields = new AssetFields(this, originalAsset, true, () -> {
+                updateSaveButton();
+                if (debtFields != null) debtFields.refresh();
+            });
+            debtFields = new DebtFields(this, ((AccountOperatingItem) account).getDebt(),
+                    account.getName(), this::updateSaveButton);
             // «Переоценить» — только у актива, сохранённого как актив (не у только что отмеченного).
             findViewById(R.id.btnRevaluate).setVisibility(originalAsset != null ? View.VISIBLE : View.GONE);
         } else {
@@ -175,7 +182,8 @@ public class AccountItemActivity extends AppCompatActivity {
                 || checkIsArchive.isChecked() != originalArchived
                 || selectedIconId != originalIconId
                 || (selectedCurrency != null && selectedCurrency.getId() != originalCurrencyId)
-                || (assetFields != null && assetFields.differsFrom(originalAsset));
+                || (assetFields != null && assetFields.differsFrom(originalAsset))
+                || (debtFields != null && debtFields.differs());
         btnSave.setEnabled(changed);
         btnSave.setAlpha(changed ? 1f : 0.4f);
     }
@@ -231,6 +239,7 @@ public class AccountItemActivity extends AppCompatActivity {
         // Поле имени у системного счёта отключено, но исходное имя всё равно
         // навязываем: правило опознаёт системность именно по нему.
         if (account.isSystem()) name = originalName;
+        if (debtFields != null && !debtFields.validate()) return;
 
         SQLiteDatabase db = new WalletDbHelper(this).getWritableDatabase();
         if (WalletDbCRUD.IsAccountNameTaken(db, name, account.getId())) {
@@ -307,6 +316,11 @@ public class AccountItemActivity extends AppCompatActivity {
                 } else {
                     WalletDbCRUD.ClearAccountAsset(db, account.getId());
                 }
+            }
+            // Заём (debts): после снятия актива — иначе SetAccountDebt откажет «уже актив».
+            if (debtFields != null && !debtFields.save(db, account.getId())) {
+                Toast.makeText(this, R.string.debt_error_no_counterparty, Toast.LENGTH_LONG).show();
+                return; // без setTransactionSuccessful — откат правок
             }
             if (writeOffCategoryId > 0) {
                 WalletDbCRUD.WriteOffResult r = WalletDbCRUD.WriteOffBalance(db, account.getId(),

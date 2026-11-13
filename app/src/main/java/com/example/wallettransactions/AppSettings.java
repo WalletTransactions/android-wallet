@@ -49,6 +49,7 @@ public final class AppSettings {
     private static final String PREF_DEFERRED_ROWS_RESYNC_DONE = "deferredRowsResyncDone";
     private static final String PREF_FULL_RELOAD_PENDING = "syncFullReloadPending";
     private static final String PREF_LEDGER_REREAD_PENDING = "syncLedgerRereadPending";
+    private static final String PREF_DEBTS_REDIRTY_PENDING = "debts_redirty_pending";
     private static final String PREF_LAST_SYNC_SUCCESS_AT = "lastSyncSuccessAt";
     private static final String PREF_LEDGER_CONNECTION_PENDING = "ledgerConnectionPending";
     private static final String PREF_LEDGER_CONNECTION_DECISION = "ledgerConnectionDecision";
@@ -506,6 +507,21 @@ public final class AppSettings {
 
     public static void setLedgerRereadPending(Context ctx, boolean pending) {
         prefs(ctx).edit().putBoolean(PREF_LEDGER_REREAD_PENDING, pending).commit();
+    }
+
+    /**
+     * Повторно отправить все живые {@code counterparty}/{@code account_debt} (openspec debts,
+     * design D2, spec sync-run): поднимает шаг БД v91. Если APK вышел раньше сервера, push
+     * молча пропускал незнакомые серверу таблицы, а клиент снимал dirty — строки не доехали
+     * бы никогда. {@code SyncEngine.pushDirty} при флаге помечает их dirty и снимает флаг.
+     * Пишется синхронно ({@code commit}).
+     */
+    public static boolean isDebtsRedirtyPending(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_DEBTS_REDIRTY_PENDING, false);
+    }
+
+    public static void setDebtsRedirtyPending(Context ctx, boolean pending) {
+        prefs(ctx).edit().putBoolean(PREF_DEBTS_REDIRTY_PENDING, pending).commit();
     }
 
     /**

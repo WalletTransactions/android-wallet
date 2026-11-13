@@ -6,6 +6,8 @@
     <string name="sync_type_rate">Курс</string>
     <string name="sync_type_account">Счёт</string>
     <string name="sync_type_asset">Признак актива</string>
+    <string name="sync_type_counterparty">Контрагент</string>
+    <string name="sync_type_debt">Признак займа</string>
     <string name="sync_type_operation">Операция</string>
     <string name="sync_type_icon">Иконка</string>
     <string name="sync_action_sent">Отправлено</string>
@@ -21,6 +23,8 @@
 
     <string name="sync_no_changes">Изменений нет — локальные данные уже совпадают с сервером.</string>
     <string name="sync_healed_name_conflict">конфликт имени счёта — переклеено, отправляю повторно</string>
+    <string name="sync_healed_counterparty_in_use">у контрагента есть заём — возвращён, отправляю повторно</string>
+    <string name="sync_healed_debts_redirty">займы и контрагенты: отправляю повторно после обновления</string>
     <string name="sync_healed_missing_reference">нет на сервере: %1$s — помечено заново, отправляю повторно</string>
     <string name="sync_healed_resync">Повторная загрузка с сервера — подтягиваю пропущенные данные</string>
     <string name="sync_healed_ledger_changed">Сервер сменил кошелёк — загружаю его заново</string>

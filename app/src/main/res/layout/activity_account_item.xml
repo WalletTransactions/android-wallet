@@ -148,6 +148,9 @@
             <!-- Капитальный актив (capital-assets) — только у кошелька -->
             <include layout="@layout/view_asset_fields"/>
 
+            <!-- Заём (debts) — только у кошелька; с активом взаимоисключающий -->
+            <include layout="@layout/view_debt_fields"/>
+
             <Button
                 android:id="@+id/btnRevaluate"
                 style="?android:attr/borderlessButtonStyle"

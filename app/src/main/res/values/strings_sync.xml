@@ -6,6 +6,8 @@
     <string name="sync_type_rate">Rate</string>
     <string name="sync_type_account">Account</string>
     <string name="sync_type_asset">Asset flag</string>
+    <string name="sync_type_counterparty">Counterparty</string>
+    <string name="sync_type_debt">Loan flag</string>
     <string name="sync_type_operation">Operation</string>
     <string name="sync_type_icon">Icon</string>
     <string name="sync_action_sent">Sent</string>
@@ -20,6 +22,8 @@
 
     <string name="sync_no_changes">No changes — local data already matches the server.</string>
     <string name="sync_healed_name_conflict">account name conflict — relinked, sending again</string>
+    <string name="sync_healed_counterparty_in_use">counterparty is still used by a loan — restored, sending again</string>
+    <string name="sync_healed_debts_redirty">loans and counterparties: sending them again after the update</string>
     <string name="sync_healed_missing_reference">missing on the server: %1$s — marked again, sending again</string>
     <string name="sync_healed_resync">Reloading from the server — fetching missed data</string>
     <string name="sync_healed_ledger_changed">The server switched the wallet — loading it again</string>

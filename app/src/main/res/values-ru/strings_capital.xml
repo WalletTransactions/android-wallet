@@ -46,7 +46,7 @@
     <string name="summary_net_worth">Всего с капиталом</string>
     <string name="summary_capital_flow">В капитал / из капитала</string>
     <string name="summary_fx_diff">Курсовая разница</string>
-    <string name="sync_healed_ledger_reread">Повторная загрузка кошелька с сервера — подтягиваю признаки активов</string>
+    <string name="sync_healed_ledger_reread">Повторная загрузка кошелька с сервера — подтягиваю новые данные (активы, займы)</string>
     <string name="settings_capital_in_summary">Капитал в итогах</string>
     <string name="settings_capital_in_summary_hint">строки «Капитал» и «Всего с капиталом» под итогами</string>
 </resources>

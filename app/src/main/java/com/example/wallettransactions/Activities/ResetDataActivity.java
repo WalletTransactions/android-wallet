@@ -47,6 +47,10 @@ public class ResetDataActivity extends AppCompatActivity {
             // account_asset ссылается на account по FK: без неё физическое удаление счетов
             // падает на COMMIT и вся очистка откатывается (баг на P20, 2026-11-10).
             WalletContract.AccountAssetEntry.TABLE_NAME,
+            // account_debt — тот же FK на account (debts, v91).
+            WalletContract.AccountDebtEntry.TABLE_NAME,
+            WalletContract.CounterpartyEntry.TABLE_NAME,
+            WalletContract.CounterpartyContactEntry.TABLE_NAME,
             WalletContract.AccountEntry.TABLE_NAME,
             WalletContract.CurrencyConversionEntry.TABLE_NAME,
             WalletContract.CurrencyPairRateEntry.TABLE_NAME,

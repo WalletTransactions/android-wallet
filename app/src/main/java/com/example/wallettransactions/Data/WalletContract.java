@@ -146,6 +146,57 @@ public class WalletContract {
         public final static int TYPE_OTHER = 3;
     }
 
+    /**
+     * Контрагент долга (v91, openspec debts, design D1): человек или организация, с которой
+     * есть займы. Общий для всех участников леджера, синкается таблицей {@code counterparty}
+     * (wallet-api, миграция 000036). Имя уникально среди живых по
+     * {@link AccountNames#keySql} — индекс {@code uq_counterparty_name}.
+     */
+    public static final class CounterpartyEntry implements BaseColumns {
+        public final static String TABLE_NAME = "counterparty";
+        public final static String _ID = BaseColumns._ID;
+        public final static String COLUMN_NAME = "name";
+        public final static String COLUMN_COMMENT = "comment";
+        /** uuid иконки или {@code null} — без иконки. */
+        public final static String COLUMN_ICON_UUID = "icon_uuid";
+        public final static String COLUMN_IS_ARCHIVED = "is_archived";
+        public final static String COLUMN_UUID = "uuid";
+        public final static String COLUMN_DIRTY = "dirty";
+        public final static String COLUMN_DELETED_AT = "deleted_at";
+        public final static String COLUMN_UPDATED_BY_DEVICE = "updated_by_device";
+    }
+
+    /**
+     * Признак долгового кошелька (v91, openspec debts, design D1) — по образцу
+     * {@link AccountAssetEntry}: {@code _id} = {@code account._id}, {@code uuid} =
+     * {@code account.uuid}. Один заём — один кошелёк; знак баланса — направление долга
+     * («+» мне должны, «−» я должен). Снятие признака — мягкое удаление, повторная
+     * пометка оживляет ту же строку.
+     */
+    public static final class AccountDebtEntry implements BaseColumns {
+        public final static String TABLE_NAME = "account_debt";
+        public final static String _ID = BaseColumns._ID;
+        public final static String COLUMN_COUNTERPARTY_UUID = "counterparty_uuid";
+        public final static String COLUMN_COMMENT = "comment";
+        /** Срок возврата {@code yyyy-MM-dd} или {@code null}. */
+        public final static String COLUMN_DUE_DATE = "due_date";
+        public final static String COLUMN_UUID = "uuid";
+        public final static String COLUMN_DIRTY = "dirty";
+        public final static String COLUMN_DELETED_AT = "deleted_at";
+        public final static String COLUMN_UPDATED_BY_DEVICE = "updated_by_device";
+    }
+
+    /**
+     * Привязка контрагента к контакту телефона (v91, design D7) — только локальная:
+     * без колонок синка и без dirty-триггера, на другом устройстве связь заводится заново.
+     */
+    public static final class CounterpartyContactEntry {
+        public final static String TABLE_NAME = "counterparty_contact";
+        public final static String COLUMN_COUNTERPARTY_UUID = "counterparty_uuid";
+        /** {@code ContactsContract.Contacts.LOOKUP_KEY} выбранного контакта. */
+        public final static String COLUMN_LOOKUP_KEY = "lookup_key";
+    }
+
     public static final class CurrencyEntry implements BaseColumns {
         public final static String TABLE_NAME = "currency";
 

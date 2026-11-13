@@ -114,6 +114,10 @@ public class MoreActivity extends BaseTabActivity {
     }
 
     /** Правила, по которым операции заводятся сами — ежедневно/еженедельно/ежемесячно/ежегодно. */
+    public void onMoreDebts(View view) {
+        startActivity(new Intent(this, DebtsActivity.class));
+    }
+
     public void onMoreRecurring(View view) {
         startActivity(new Intent(this, RecurringOperationListActivity.class));
     }

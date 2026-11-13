@@ -91,6 +91,38 @@
             android:onClick="onKindFilterClick"/>
     </LinearLayout>
 
+    <!-- Долги (debts): при выборе статьи расхода/дохода — «Дать в долг», «Взять в долг»,
+         «Вернуть»; результат — перевод между кошельком и займом -->
+    <LinearLayout
+        android:id="@+id/rowDebtActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingBottom="10dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/debtActionGive"
+            style="@style/FilterChip"
+            android:text="@string/debt_action_give"
+            android:onClick="onDebtActionClick"/>
+
+        <TextView
+            android:id="@+id/debtActionTake"
+            style="@style/FilterChip"
+            android:text="@string/debt_action_take"
+            android:onClick="onDebtActionClick"/>
+
+        <TextView
+            android:id="@+id/debtActionReturn"
+            style="@style/FilterChip"
+            android:layout_marginEnd="0dp"
+            android:text="@string/debt_action_return"
+            android:onClick="onDebtActionClick"/>
+    </LinearLayout>
+
     <EditText
         android:id="@+id/searchInput"
         android:layout_width="match_parent"

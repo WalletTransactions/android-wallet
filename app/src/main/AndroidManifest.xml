@@ -129,6 +129,18 @@
                     android:value="com.example.wallettransactions.Activities.CurrencyPairListActivity"/>
         </activity>
         <activity
+                android:name=".Activities.CounterpartiesActivity"
+                android:label="@string/counterparties_title"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:exported="false">
+        </activity>
+        <activity
+                android:name=".Activities.DebtsActivity"
+                android:label="@string/debts_title"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:exported="false">
+        </activity>
+        <activity
                 android:name=".Activities.AccountActivity"
                 android:label="@string/title_activity_account"
                 android:theme="@style/AppTheme.NoActionBar"

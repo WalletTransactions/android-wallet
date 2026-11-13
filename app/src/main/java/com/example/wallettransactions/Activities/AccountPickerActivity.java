@@ -93,6 +93,15 @@ public class AccountPickerActivity extends AppCompatActivity {
      * при архивации кошелька идёт только на обычную категорию (archive-wallet-writeoff, D8).
      */
     public final static String cHideSystem = "AccountPicker.HideSystem";
+    /**
+     * Над статьями — «Дать в долг», «Взять в долг», «Вернуть» (openspec debts, design D6).
+     * Результат тогда — кошелёк займа в {@link #cAccountId} и {@link #cDebtDirection}.
+     */
+    public final static String cDebtActions = "AccountPicker.DebtActions";
+    /** Не предлагать займы среди кошельков — ввод новой операции (спека, «Долговой кошелёк в обычном пикере»). */
+    public final static String cHideDebts = "AccountPicker.HideDebts";
+    /** На выходе: {@code DebtDirection.WALLET_TO_LOAN}/{@code LOAN_TO_WALLET}; нет — обычный выбор. */
+    public final static String cDebtDirection = "AccountPicker.DebtDirection";
 
     private static final int REQUEST_EDIT_ACCOUNT = 300;
     private static final int REQUEST_ADD_WALLET   = 301;
@@ -181,6 +190,9 @@ public class AccountPickerActivity extends AppCompatActivity {
         mCategorySort = AppSettings.getPickerSort(this, false);
 
         findViewById(R.id.btnAddAccountRow).setVisibility(mCatalogMode ? View.VISIBLE : View.GONE);
+        boolean debtActions = !mCatalogMode && selectedType == cSelectedTypeChargeAccounts
+                && getIntent().getBooleanExtra(cDebtActions, false);
+        findViewById(R.id.rowDebtActions).setVisibility(debtActions ? View.VISIBLE : View.GONE);
 
         mRenderedRevision = PeriodFilterState.get(this).getRevision();
         buildRows();
@@ -231,6 +243,26 @@ public class AccountPickerActivity extends AppCompatActivity {
 
     public void btnUp(View view) {
         finish();
+    }
+
+    /** «Дать в долг» / «Взять в долг» / «Вернуть» — см. {@link DebtPickFlow}. */
+    public void onDebtActionClick(View view) {
+        int id = view.getId();
+        com.example.wallettransactions.Data.DebtDirection.Action action =
+                id == R.id.debtActionGive ? com.example.wallettransactions.Data.DebtDirection.Action.GIVE
+                : id == R.id.debtActionTake ? com.example.wallettransactions.Data.DebtDirection.Action.TAKE
+                : com.example.wallettransactions.Data.DebtDirection.Action.RETURN;
+        int pairId = getIntent().getIntExtra(cPairAccountId, 0);
+        AccountItem pair = pairId > 0 ? Singleton.instance.getAccounts(this).getAccountById(pairId) : null;
+        DebtPickFlow.start(this, action,
+                pair instanceof AccountOperatingItem ? (AccountOperatingItem) pair : null,
+                (loanId, direction) -> {
+                    Intent result = new Intent();
+                    result.putExtra(cAccountId, loanId);
+                    result.putExtra(cDebtDirection, direction);
+                    setResult(RESULT_OK, result);
+                    finish();
+                });
     }
 
     /** Тот же выбор, что на табе «Кошельки»: справочник — второе место, где счета заводят. */
@@ -350,6 +382,7 @@ public class AccountPickerActivity extends AppCompatActivity {
         AccountList accounts = Singleton.instance.getAccounts(this);
         Currency currencyEq = currencyEq();
         boolean hideSystem = getIntent().getBooleanExtra(cHideSystem, false);
+        boolean hideDebts = !mCatalogMode && getIntent().getBooleanExtra(cHideDebts, false);
 
         mWalletRows.clear();
         mCategoryRows.clear();
@@ -374,6 +407,11 @@ public class AccountPickerActivity extends AppCompatActivity {
             // пишет диалог переоценки актива. В справочнике она видна.
             if (!mCatalogMode && account.isSystemRevaluation()) continue;
             if (hideSystem && account.isSystem()) continue;
+            // Займы (debts) — при вводе новой операции не предлагаются; уже выбранный
+            // (правка операции) остаётся.
+            if (hideDebts && account instanceof AccountOperatingItem
+                    && ((AccountOperatingItem) account).isDebt()
+                    && account.getId() != mCurrentAccountId) continue;
 
             if (account.isOperatingAccount()) {
                 mWalletRows.add(new Row(account, balances.get(account.getId())));

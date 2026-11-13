@@ -55,6 +55,14 @@
                 </LinearLayout>
                 <View style="@style/MoreRowDivider"/>
 
+                <!-- Долги (openspec debts) -->
+                <LinearLayout android:id="@+id/rowDebts" style="@style/MoreRow" android:onClick="onMoreDebts">
+                    <TextView style="@style/MoreRowGlyph" android:text="⇆"/>
+                    <TextView style="@style/MoreRowLabel" android:text="@string/debts_title"/>
+                    <ImageView style="@style/MoreRowChevron"/>
+                </LinearLayout>
+                <View style="@style/MoreRowDivider"/>
+
                 <LinearLayout android:id="@+id/rowRecurring" style="@style/MoreRow" android:onClick="onMoreRecurring">
                     <TextView style="@style/MoreRowGlyph" android:text="↻"/>
                     <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_2"/>

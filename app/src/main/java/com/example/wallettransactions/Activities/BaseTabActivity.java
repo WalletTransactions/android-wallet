@@ -251,6 +251,7 @@ public abstract class BaseTabActivity extends AppCompatActivity {
                 currencyEq, AdapterUtils.Operation.expanse);
 
         refreshCapitalRow(db, currencyEq);
+        refreshDebtRows(db, currencyEq);
         refreshReconciliationRows(db, currencyEq,
                 clBalance.getTotalAmountEq() - opBalance.getTotalAmountEq(),
                 orZero(reportIncome.getTotal()) - orZero(reportExpanse.getTotal()),
@@ -279,7 +280,17 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         if (flowRow == null || fxRow == null) return;
         EquivalentResult flow = WalletDbLoader.GenerateCapitalFlowForPeriod(db, getDateFrom(), getDateTo(), currencyEq);
         double flowEq = flow.getTotalAmountEq();
-        double fx = total - incomeMinusExpense - flowEq;
+        // Займы (debts, D9): выдача и возврат — своя строка, иначе ушли бы в «Курсовую разницу».
+        View debtRow = findViewById(R.id.debtFlowRow);
+        EquivalentResult debtFlow = WalletDbLoader.GenerateDebtFlowForPeriod(db, getDateFrom(), getDateTo(), currencyEq);
+        double debtEq = debtFlow.getTotalAmountEq();
+        boolean showDebt = debtRow != null && Math.abs(debtEq) >= RECONCILIATION_EPSILON;
+        if (debtRow != null) debtRow.setVisibility(showDebt ? View.VISIBLE : View.GONE);
+        if (showDebt) {
+            AdapterUtils.setAmountText(findViewById(R.id.debtFlowSum), debtEq, currencyEq,
+                    debtFlow.getApproxEq(), debtFlow.isIncomplete());
+        }
+        double fx = total - incomeMinusExpense - flowEq - debtEq;
 
         boolean showFlow = Math.abs(flowEq) >= RECONCILIATION_EPSILON;
         boolean showFx = Math.abs(fx) >= RECONCILIATION_EPSILON;
@@ -291,8 +302,32 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         }
         if (showFx) {
             AdapterUtils.setAmountText(findViewById(R.id.fxDiffSum), fx, currencyEq,
-                    approx || flow.getApproxEq(), incomplete || flow.isIncomplete());
+                    approx || flow.getApproxEq() || debtFlow.getApproxEq(),
+                    incomplete || flow.isIncomplete() || debtFlow.isIncomplete());
         }
+    }
+
+    /**
+     * «Мне должны», «Я должен», «Всего с долгами» на конец периода (openspec debts, D9) —
+     * только если в леджере есть хоть один заём (спека «Нет долгов»).
+     */
+    private void refreshDebtRows(SQLiteDatabase db, Currency currencyEq) {
+        View owedRow = findViewById(R.id.debtOwedRow);
+        View oweRow = findViewById(R.id.debtOweRow);
+        View totalRow = findViewById(R.id.debtTotalRow);
+        if (owedRow == null || oweRow == null || totalRow == null) return;
+        WalletDbLoader.DebtsResult debts = WalletDbLoader.GenerateDebtsToDate(db, getDateTo(), currencyEq);
+        int visibility = debts.hasDebts ? View.VISIBLE : View.GONE;
+        owedRow.setVisibility(visibility);
+        oweRow.setVisibility(visibility);
+        totalRow.setVisibility(visibility);
+        if (!debts.hasDebts) return;
+        AdapterUtils.setAmountText(findViewById(R.id.debtOwedSum), debts.owedToMe, currencyEq,
+                AdapterUtils.Operation.transfer);
+        AdapterUtils.setAmountText(findViewById(R.id.debtOweSum), debts.iOwe, currencyEq,
+                AdapterUtils.Operation.transfer);
+        AdapterUtils.setAmountText(findViewById(R.id.debtTotalSum), debts.totalWithDebts, currencyEq,
+                AdapterUtils.Operation.transfer);
     }
 
     /**
@@ -488,6 +523,9 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         int id = AppSettings.getLastWalletId(this);
         AccountItem item = id > 0 ? accounts.getAccountById(id) : null;
         if (item == null || !item.isOperatingAccount() || item.getIsArchived()) return null;
+        // Заём (debts) кошельком новой операции не подставляем: он не «мой кошелёк».
+        if (item instanceof com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem
+                && ((com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem) item).isDebt()) return null;
         return item;
     }
 
