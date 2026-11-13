@@ -29,10 +29,19 @@ public final class DebtsList {
         /** {@code yyyy-MM-dd} или null. */
         public final String dueDate;
         public final String comment;
+        /** Остаток пересчитан по курсу — валюта займа не валюта эквивалента. */
+        public final boolean converted;
 
         public Loan(int accountId, String name, String counterpartyUuid, double balance, Double balanceEq,
                     String currencySymbol, int precision, String dueDate, String comment) {
+            this(accountId, name, counterpartyUuid, balance, balanceEq, currencySymbol, precision, dueDate,
+                    comment, false);
+        }
+
+        public Loan(int accountId, String name, String counterpartyUuid, double balance, Double balanceEq,
+                    String currencySymbol, int precision, String dueDate, String comment, boolean converted) {
             this.accountId = accountId;
+            this.converted = converted;
             this.name = name;
             this.counterpartyUuid = counterpartyUuid;
             this.balance = balance;
@@ -63,6 +72,8 @@ public final class DebtsList {
         public double totalEq;
         /** Хоть у одного займа нет курса — {@link #totalEq} неполная. */
         public boolean incomplete;
+        /** Хоть один заём пересчитан по курсу — сумма приблизительная («≈»). */
+        public boolean approx;
 
         Group(String counterpartyUuid, String name) {
             this.counterpartyUuid = counterpartyUuid;
@@ -86,6 +97,7 @@ public final class DebtsList {
             }
             g.loans.add(loan);
             if (loan.balanceEq != null) g.totalEq += loan.balanceEq;
+            if (loan.converted && !loan.isClosed()) g.approx = true;
             else if (!loan.isClosed()) g.incomplete = true;
         }
         List<Group> out = new ArrayList<>(byCp.values());

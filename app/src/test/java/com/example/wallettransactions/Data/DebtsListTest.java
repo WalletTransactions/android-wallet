@@ -67,6 +67,14 @@ public class DebtsListTest {
     }
 
     @Test
+    public void approx_onlyWhenSomeLoanConverted() {
+        DebtsList.Loan eur = new DebtsList.Loan(1, "e", VASYA, 0, 0.0, "€", 2, null, "", false);
+        assertFalse(DebtsList.group(Arrays.asList(eur), names, true).get(0).approx);
+        DebtsList.Loan rub = new DebtsList.Loan(2, "r", VASYA, 1000, 11.2, "₽", 2, null, "", true);
+        assertTrue(DebtsList.group(Arrays.asList(eur, rub), names, true).get(0).approx);
+    }
+
+    @Test
     public void noRate_groupIncomplete_amountStillShownInLoanCurrency() {
         List<DebtsList.Group> g = DebtsList.group(Arrays.asList(
                 loan(1, VASYA, 100, null, null), loan(2, VASYA, 20, 20.0, null)), names, false);

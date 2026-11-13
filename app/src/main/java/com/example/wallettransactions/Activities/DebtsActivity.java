@@ -107,7 +107,8 @@ public class DebtsActivity extends AppCompatActivity {
                     row != null ? row.balance : 0,
                     row == null ? Double.valueOf(0) : row.hasEq ? Double.valueOf(row.balanceEq) : null,
                     c != null ? c.getSymbol() : "", c != null ? c.getPrecision() : 2,
-                    w.getDebt().dueDate, w.getDebt().comment));
+                    w.getDebt().dueDate, w.getDebt().comment,
+                    c != null && eq != null && c.getId() != eq.getId()));
         }
         Map<String, String> names = new HashMap<>();
         for (CounterpartyItem c : WalletDbLoader.LoadCounterparties(db)) names.put(c.uuid, c.name);
@@ -130,7 +131,7 @@ public class DebtsActivity extends AppCompatActivity {
         TextView name = text(g.name, 16, R.color.colorTextPrimary, true);
         row.addView(name, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         TextView total = text("", 15, R.color.colorTextPrimary, true);
-        AdapterUtils.setAmountText(total, g.totalEq, eq, true, g.incomplete);
+        AdapterUtils.setAmountText(total, g.totalEq, eq, g.approx, g.incomplete);
         row.addView(total);
         return row;
     }
