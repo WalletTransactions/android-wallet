@@ -525,6 +525,18 @@ public class DebtsDbTest {
                 WalletDbCRUD.ForgiveDebt(db, loan, cat, "2026-05-11", 1, 2, ""));
     }
 
+    @Test
+    public void forgiveDateTime_today_isCurrentTime_otherDay_isEndOfDay() {
+        java.util.Calendar c = java.util.Calendar.getInstance();
+        c.set(2026, java.util.Calendar.NOVEMBER, 13, 18, 41, 7);
+        java.util.Date now = c.getTime();
+        // Сегодня — «сейчас», чтобы карточка периода (до текущего момента) видела прощение сразу.
+        assertEquals("2026-11-13 18:41", WalletDbCRUD.ForgiveDateTime("2026-11-13", now));
+        // Прошлый и будущий дни — конец дня, как раньше.
+        assertEquals("2026-11-12 23:59", WalletDbCRUD.ForgiveDateTime("2026-11-12", now));
+        assertEquals("2026-11-14 23:59", WalletDbCRUD.ForgiveDateTime("2026-11-14", now));
+    }
+
     // ── 6.1 сброс ───────────────────────────────────────────────────────────
 
     @Test
