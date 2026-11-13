@@ -941,11 +941,23 @@ public class WalletDbCRUD {
         double balance = RoundedWalletBalance(db, loanId, precision);
         if (balance == 0) return WriteOffResult.zero;
         if (categoryId <= 0 || amount <= 0) return WriteOffResult.failed;
-        String endOfDay = day + " 23:59";
+        String when = ForgiveDateTime(day, new java.util.Date());
         long id = balance > 0
-                ? InsertOperation(db, endOfDay, loanId, categoryId, amount, comment)
-                : InsertOperation(db, endOfDay, categoryId, loanId, amount, comment);
+                ? InsertOperation(db, when, loanId, categoryId, amount, comment)
+                : InsertOperation(db, when, categoryId, loanId, amount, comment);
         return id > 0 ? WriteOffResult.written : WriteOffResult.failed;
+    }
+
+    /**
+     * Момент проводки прощения: за сегодня — текущее время ({@code yyyy-MM-dd HH:mm}), иначе
+     * карточка периода, считающая долги до «сейчас», не видела бы прощение до полуночи, а
+     * экран «Долги» (на завтра 00:00) — видел; за любой другой день — конец дня
+     * ({@code yyyy-MM-dd 23:59}).
+     */
+    static String ForgiveDateTime(String day, java.util.Date now) {
+        java.text.SimpleDateFormat dayFmt = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT);
+        if (!dayFmt.format(now).equals(day)) return day + " 23:59";
+        return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.ROOT).format(now);
     }
 
     /**
