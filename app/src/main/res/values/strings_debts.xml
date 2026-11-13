@@ -34,4 +34,6 @@
     <string name="debts_overdue">overdue since %1$s</string>
     <string name="debts_due">due %1$s</string>
     <string name="debts_closed">closed</string>
+    <string name="summary_total_with_debts">Total with debts</string>
+    <string name="summary_debt_flow">Lent / repaid</string>
 </resources>

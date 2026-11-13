@@ -114,10 +114,18 @@ public class AccountActivity extends BaseTabActivity {
                     close.balance, close.balanceEq, close.hasEq, close.approx,
                     netEq, netEqComputable, netNative);
             row.isAsset = close.isAsset();
+            row.isDebt = close.isDebt();
+            // Закрытый заём (нулевой остаток) в секцию «Долги» не входит — его видно на
+            // экране «Долги» за «Показывать закрытые» (спека, «Таб „Кошельки“»).
+            if (row.isDebt && Math.abs(close.balance) < 0.005) continue;
             result.add(row);
         }
         boolean hasAssets = false;
-        for (WalletRow r : result) hasAssets |= r.isAsset;
+        boolean hasDebts = false;
+        for (WalletRow r : result) {
+            hasAssets |= r.isAsset;
+            hasDebts |= r.isDebt;
+        }
 
         // Fattest wallet at the end of the period first. Wallets whose currency has no rate to
         // currencyEq at all are not comparable with the rest, so they sink below every wallet
@@ -130,13 +138,14 @@ public class AccountActivity extends BaseTabActivity {
                         b.closeHasEq ? b.closeEq : b.closeBal,
                         a.closeHasEq ? a.closeEq : a.closeBal)));
 
-        if (!hasAssets) return result;
+        if (!hasAssets && !hasDebts) return result;
         // capital-assets: «Ликвидные», затем «Капитал» — каждая секция со своей суммой на
         // конец периода; сортировка «самый толстый первым» — внутри секции. Секцию, которую
         // фильтр опустошил, не показываем вовсе.
         List<WalletRow> liquid = new ArrayList<>();
         List<WalletRow> assets = new ArrayList<>();
-        for (WalletRow r : result) (r.isAsset ? assets : liquid).add(r);
+        List<WalletRow> debts = new ArrayList<>();
+        for (WalletRow r : result) (r.isDebt ? debts : r.isAsset ? assets : liquid).add(r);
         List<WalletRow> sectioned = new ArrayList<>();
         if (!liquid.isEmpty()) {
             sectioned.add(WalletRow.header(getString(R.string.wallets_section_liquid), liquid));
@@ -145,6 +154,11 @@ public class AccountActivity extends BaseTabActivity {
         if (!assets.isEmpty()) {
             sectioned.add(WalletRow.header(getString(R.string.wallets_section_capital), assets));
             sectioned.addAll(assets);
+        }
+        // debts: займы — отдельной секцией после ликвидных и капитала.
+        if (!debts.isEmpty()) {
+            sectioned.add(WalletRow.header(getString(R.string.debts_title), debts));
+            sectioned.addAll(debts);
         }
         return sectioned;
     }
@@ -201,6 +215,8 @@ public class AccountActivity extends BaseTabActivity {
         final double netNative;
         /** Капитальный актив (capital-assets) — строка секции «Капитал». */
         boolean isAsset;
+        /** Заём (debts) — строка секции «Долги». */
+        boolean isDebt;
         /** Не null — это заголовок секции, а не кошелёк: closeEq/closeHasEq — сумма секции. */
         String headerTitle;
 
