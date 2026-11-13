@@ -67,4 +67,5 @@
     <string name="counterparty_name_taken">«%1$s» is already taken</string>
     <string name="counterparty_no_contacts_app">No contacts app — type the name instead</string>
     <string name="counterparty_loans">%1$d loans</string>
+    <string name="debt_error_loan_to_loan">Both sides are loans — choose your own wallet</string>
 </resources>

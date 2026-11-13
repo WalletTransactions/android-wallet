@@ -1080,6 +1080,12 @@ public class TransactionActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.operation_error_amount_zero, Toast.LENGTH_SHORT).show();
             return;
         }
+        // Заём на заём (debts) — не операция пользователя, а ошибка выбора: не пишем.
+        AccountOperatingItem fromW = asWallet(mAccFrom), toW = asWallet(mAccTo);
+        if (fromW != null && toW != null && fromW.isDebt() && toW.isDebt()) {
+            Toast.makeText(this, R.string.debt_error_loan_to_loan, Toast.LENGTH_LONG).show();
+            return;
+        }
         if (askOverpay(db, amount)) return;
 
         values.put(WalletContract.OperationEntry.COLUMN_DATE, dateStr);
@@ -1114,7 +1120,8 @@ public class TransactionActivity extends AppCompatActivity {
             mSaved = true;
             // Кошелёк операции: у расхода и перевода — списания, у дохода — зачисления.
             AccountItem wallet = mKind == Kind.income ? mAccTo : mAccFrom;
-            if (wallet != null && wallet.isOperatingAccount())
+            AccountOperatingItem lastAsWallet = asWallet(wallet);
+            if (wallet != null && wallet.isOperatingAccount() && (lastAsWallet == null || !lastAsWallet.isDebt()))
                 AppSettings.setLastWalletId(this, wallet.getId());
 
             Intent resultIntent = new Intent();
@@ -1383,7 +1390,11 @@ public class TransactionActivity extends AppCompatActivity {
      */
     private void applyDebtPick(AccountItem loan, int direction) {
         AccountItem wallet = getBottom();
-        if (wallet != null && (!wallet.isOperatingAccount() || wallet.getId().equals(loan.getId()))) wallet = null;
+        // «Ваш кошелёк» — только обычный: заём на заём перевода не бывает (debts; проверка на
+        // Pixel 8 Pro — подставленный «последний кошелёк» оказался займом).
+        AccountOperatingItem asLoan = asWallet(wallet);
+        if (wallet != null && (!wallet.isOperatingAccount() || wallet.getId().equals(loan.getId())
+                || (asLoan != null && asLoan.isDebt()))) wallet = null;
         mTopByKind.put(mKind, getTop());
         mKind = Kind.transfer;
         if (direction == com.example.wallettransactions.Data.DebtDirection.WALLET_TO_LOAN) {

@@ -88,8 +88,9 @@ public class DebtsActivity extends AppCompatActivity {
             // Ноль — без знака и цвета: «−0,00 €» у «Я должен» читалось бы как долг.
             AdapterUtils.setAmountText(owed, totals.owedToMe, eq, totals.owedToMe.getTotalAmountEq() > 0
                     ? AdapterUtils.Operation.deposit : AdapterUtils.Operation.transfer);
-            AdapterUtils.setAmountText(owe, totals.iOwe, eq, totals.iOwe.getTotalAmountEq() > 0
-                    ? AdapterUtils.Operation.expanse : AdapterUtils.Operation.transfer);
+            // «Я должен» — положительной суммой: минус перед ней читался бы как двойное отрицание.
+            AdapterUtils.setAmountText(owe, totals.iOwe, eq, AdapterUtils.Operation.transfer);
+            if (totals.iOwe.getTotalAmountEq() > 0) owe.setTextColor(ContextCompat.getColor(this, R.color.colorexpanse));
         }
 
         Map<Integer, WalletDbLoader.WalletBalanceRow> balances = new HashMap<>();

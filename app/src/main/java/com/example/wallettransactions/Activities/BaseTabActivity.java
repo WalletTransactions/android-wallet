@@ -523,6 +523,9 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         int id = AppSettings.getLastWalletId(this);
         AccountItem item = id > 0 ? accounts.getAccountById(id) : null;
         if (item == null || !item.isOperatingAccount() || item.getIsArchived()) return null;
+        // Заём (debts) кошельком новой операции не подставляем: он не «мой кошелёк».
+        if (item instanceof com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem
+                && ((com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem) item).isDebt()) return null;
         return item;
     }
 
