@@ -3,6 +3,7 @@ package com.example.wallettransactions.Data;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Operations.OperationItem;
 
 import org.json.JSONArray;
@@ -19,7 +20,7 @@ import java.util.Set;
 
 /**
  * Экспорт БД в тот же JSON, что понимает {@link WalletImportData#FillOperationDataFromJson}
- * ("accounts"/"currency_pairs"/"rates"/"operations" — см. javadoc-схему там). Симметрично
+ * ("counterparties"/"accounts"/"currency_pairs"/"rates"/"operations" — см. javadoc-схему там). Симметрично
  * тулу tools/moneylover, который пишет trans.json в этом же формате.
  * <p>
  * Операции реконструируются из operation + operation_link обратно в форму "leg"/"commission"
@@ -34,9 +35,15 @@ public class WalletExportData {
     private static JSONObject buildSchemaComment() throws JSONException {
         JSONObject c = new JSONObject();
         c.put("_", "Разделы опциональны, но присутствуют всегда (даже пустыми) — ниже форма их элементов."); // not UI: описание формата внутри файла
+        c.put("counterparties", "{\"name\": str, \"comment\"?: str, \"icon\"?: str (=\"unknown\"), " +
+                "\"archived\"?: bool (=false)} — контрагенты долгов; применяются раньше счетов."); // not UI
         c.put("accounts", "{\"name\": str, \"comment\"?: str (=name), \"icon\"?: str (=\"unknown\"), " +
-                "\"currency\"?: {\"name\"?: str (=iso), \"iso\": str, \"icon\"?: str}} " +
-                "— без \"currency\" это счёт-категория (без своего баланса)."); // not UI
+                "\"currency\"?: {\"name\"?: str (=iso), \"iso\": str, \"icon\"?: str}, " +
+                "\"debt\"?: {\"counterparty\": str (имя), \"comment\"?: str, \"due_date\"?: \"YYYY-MM-DD\"}, " + // not UI
+                "\"asset\"?: {\"type\": \"real_estate\"|\"vehicle\"|\"other\", \"include_in_net_worth\"?: bool (=true), " +
+                "\"comment\"?: str}, \"system\"?: \"revaluation\"} " +
+                "— без \"currency\" это счёт-категория (без своего баланса); \"debt\" и \"asset\" — " + // not UI
+                "только у кошелька и взаимоисключающие; \"system\" — у системной категории переоценки."); // not UI
         c.put("currency_pairs", "{\"symbol\": str, \"base\": str (ISO валюты), \"quote\": str (ISO валюты)}"); // not UI
         c.put("rates", "{\"symbol\": str (как в currency_pairs), \"date\": \"YYYY-MM-DD\", \"rate\": number}"); // not UI
         c.put("operations", "{\"date\": \"YYYY-MM-DD\", \"from\": str (имя счёта), \"to\": str (имя счёта), " + // not UI
@@ -50,6 +57,7 @@ public class WalletExportData {
     public static JSONObject BuildExportJson(SQLiteDatabase db) throws JSONException {
         JSONObject root = new JSONObject();
         root.put("_comment", buildSchemaComment());
+        root.put("counterparties", buildCounterparties(db));
         root.put("accounts", buildAccounts(db));
         root.put("currency_pairs", buildCurrencyPairs(db));
         root.put("rates", buildRates(db));
@@ -65,7 +73,14 @@ public class WalletExportData {
                         " ic." + WalletContract.IconEntry.COLUMN_NAME + " icon_name," +
                         " c." + WalletContract.CurrencyEntry.COLUMN_NAME + " cur_name," +
                         " c." + WalletContract.CurrencyEntry.COLUMN_ISO_NAME + " cur_iso," +
-                        " cic." + WalletContract.IconEntry.COLUMN_NAME + " cur_icon_name" +
+                        " cic." + WalletContract.IconEntry.COLUMN_NAME + " cur_icon_name," +
+                        " a." + WalletContract.AccountEntry.COLUMN_SYSTEM_KIND + " system_kind," +
+                        " cp." + WalletContract.CounterpartyEntry.COLUMN_NAME + " debt_cp," +
+                        " ad." + WalletContract.AccountDebtEntry.COLUMN_COMMENT + " debt_comment," +
+                        " ad." + WalletContract.AccountDebtEntry.COLUMN_DUE_DATE + " debt_due," +
+                        " aa." + WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE + " asset_type," +
+                        " aa." + WalletContract.AccountAssetEntry.COLUMN_INCLUDE_IN_NET_WORTH + " asset_nw," +
+                        " aa." + WalletContract.AccountAssetEntry.COLUMN_COMMENT + " asset_comment" +
                         " FROM " + WalletContract.AccountEntry.TABLE_NAME + " a" +
                         " LEFT JOIN " + WalletContract.IconEntry.TABLE_NAME + " ic" +
                         "   ON ic." + WalletContract.IconEntry._ID + " = a." + WalletContract.AccountEntry.COLUMN_ICON_ID +
@@ -76,6 +91,15 @@ public class WalletExportData {
                         "   ON c." + WalletContract.CurrencyEntry._ID + " = ao." + WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID +
                         " LEFT JOIN " + WalletContract.IconEntry.TABLE_NAME + " cic" +
                         "   ON cic." + WalletContract.IconEntry._ID + " = c." + WalletContract.CurrencyEntry.COLUMN_ICON_ID +
+                        " LEFT JOIN " + WalletContract.AccountDebtEntry.TABLE_NAME + " ad" +
+                        "   ON ad." + WalletContract.AccountDebtEntry._ID + " = a." + WalletContract.AccountEntry._ID +
+                        "  AND ad." + WalletContract.AccountDebtEntry.COLUMN_DELETED_AT + " IS NULL" +
+                        " LEFT JOIN " + WalletContract.CounterpartyEntry.TABLE_NAME + " cp" +
+                        "   ON cp." + WalletContract.CounterpartyEntry.COLUMN_UUID + " = ad." + WalletContract.AccountDebtEntry.COLUMN_COUNTERPARTY_UUID +
+                        "  AND cp." + WalletContract.CounterpartyEntry.COLUMN_DELETED_AT + " IS NULL" +
+                        " LEFT JOIN " + WalletContract.AccountAssetEntry.TABLE_NAME + " aa" +
+                        "   ON aa." + WalletContract.AccountAssetEntry._ID + " = a." + WalletContract.AccountEntry._ID +
+                        "  AND aa." + WalletContract.AccountAssetEntry.COLUMN_DELETED_AT + " IS NULL" +
                         " WHERE a." + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL" +
                         " ORDER BY a." + WalletContract.AccountEntry._ID, null);
         try {
@@ -93,7 +117,61 @@ public class WalletExportData {
                     currency.put("icon", c.isNull(5) ? "" : c.getString(5));
                     acc.put("currency", currency);
                 }
+                if (c.getInt(6) == AccountItem.SystemKind.REVALUATION.getValue())
+                    acc.put("system", "revaluation");
+                if (!c.isNull(7)) {
+                    JSONObject debt = new JSONObject();
+                    debt.put("counterparty", c.getString(7));
+                    debt.put("comment", c.isNull(8) ? "" : c.getString(8));
+                    if (!c.isNull(9)) debt.put("due_date", c.getString(9));
+                    acc.put("debt", debt);
+                }
+                if (!c.isNull(10)) {
+                    JSONObject asset = new JSONObject();
+                    asset.put("type", assetTypeName(c.getInt(10)));
+                    asset.put("include_in_net_worth", c.getInt(11) != 0);
+                    asset.put("comment", c.isNull(12) ? "" : c.getString(12));
+                    acc.put("asset", asset);
+                }
                 arr.put(acc);
+            }
+        } finally {
+            c.close();
+        }
+        return arr;
+    }
+
+    /** Имя типа актива в файле; зеркало {@link WalletImportData#assetTypeFromName}. */
+    static String assetTypeName(int type) {
+        switch (type) {
+            case WalletContract.AccountAssetEntry.TYPE_REAL_ESTATE: return "real_estate";
+            case WalletContract.AccountAssetEntry.TYPE_VEHICLE: return "vehicle";
+            default: return "other";
+        }
+    }
+
+    /** Живые контрагенты по порядку создания. Привязка к контакту телефона (локальная) не выгружается. */
+    private static JSONArray buildCounterparties(SQLiteDatabase db) throws JSONException {
+        JSONArray arr = new JSONArray();
+        Cursor c = db.rawQuery(
+                "SELECT cp." + WalletContract.CounterpartyEntry.COLUMN_NAME + "," +
+                        " cp." + WalletContract.CounterpartyEntry.COLUMN_COMMENT + "," +
+                        " ic." + WalletContract.IconEntry.COLUMN_NAME + "," +
+                        " cp." + WalletContract.CounterpartyEntry.COLUMN_IS_ARCHIVED +
+                        " FROM " + WalletContract.CounterpartyEntry.TABLE_NAME + " cp" +
+                        " LEFT JOIN " + WalletContract.IconEntry.TABLE_NAME + " ic" +
+                        "   ON ic." + WalletContract.IconEntry.COLUMN_UUID + " = cp." + WalletContract.CounterpartyEntry.COLUMN_ICON_UUID +
+                        "  AND ic." + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL" +
+                        " WHERE cp." + WalletContract.CounterpartyEntry.COLUMN_DELETED_AT + " IS NULL" +
+                        " ORDER BY cp." + WalletContract.CounterpartyEntry._ID, null);
+        try {
+            while (c.moveToNext()) {
+                JSONObject cp = new JSONObject();
+                cp.put("name", c.getString(0));
+                cp.put("comment", c.isNull(1) ? "" : c.getString(1));
+                cp.put("icon", c.isNull(2) ? "unknown" : c.getString(2));
+                cp.put("archived", c.getInt(3) != 0);
+                arr.put(cp);
             }
         } finally {
             c.close();

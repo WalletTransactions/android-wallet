@@ -339,9 +339,14 @@ public class WalletImportData {
     /**
      * JSON-эквивалент {@link #ParseAndInsertAccount} — см. {@link #FillOperationDataFromJson}.
      * Ожидаемый элемент массива "accounts":
-     * {@code {"name": "...", "comment": "...", "icon": "...", "currency": {"name": "...", "iso": "...", "icon": "..."}}}
+     * {@code {"name": "...", "comment": "...", "icon": "...", "currency": {"name": "...", "iso": "...", "icon": "..."},
+     * "debt": {"counterparty": "...", "comment": "...", "due_date": "yyyy-MM-dd"},
+     * "asset": {"type": "real_estate|vehicle|other", "include_in_net_worth": true, "comment": "..."},
+     * "system": "revaluation"}}
      * "comment"/"icon" опциональны (по умолчанию — имя счёта и "unknown"); "currency" опциональна —
-     * без неё это счёт-категория без своего баланса, как строка без валюты в CSV.
+     * без неё это счёт-категория без своего баланса, как строка без валюты в CSV. "debt"/"asset" —
+     * только у кошелька и взаимоисключающие; нарушение — JSONException до любой записи, так что
+     * элемент пропускается целиком (см. openspec json-debts-assets-format).
      */
     private static int ParseAndInsertJsonAccount(SQLiteDatabase db, IconList icons, JSONObject obj) throws JSONException {
         String accName = obj.getString("name");
@@ -358,7 +363,141 @@ public class WalletImportData {
             curIcon = currency.optString("icon", "");
         }
 
-        return InsertOrUpdateAccount(db, icons, accName, accComment, iconName, curName, curIso, curIcon);
+        JSONObject debt = obj.optJSONObject("debt");
+        JSONObject asset = obj.optJSONObject("asset");
+        String system = obj.optString("system", "");
+        String dueDate = null;
+        int assetType = 0;
+        if (debt != null || asset != null) {
+            // Всё проверяем до записи: пропущенный элемент не должен оставлять полусозданный счёт.
+            if (debt != null && asset != null)
+                throw new JSONException("debt and asset are mutually exclusive"); // not UI: причина пропуска
+            if (currency == null)
+                throw new JSONException("debt/asset need a wallet (currency)"); // not UI
+            Integer existing = FindAccountIdByName(db, accName);
+            if (debt != null) {
+                if (debt.getString("counterparty").trim().isEmpty())
+                    throw new JSONException("debt.counterparty is empty"); // not UI
+                dueDate = parseDueDate(debt.optString("due_date", ""));
+                if (existing != null && WalletDbCRUD.isAssetWallet(db, existing))
+                    throw new JSONException("wallet is already an asset"); // not UI
+            } else {
+                assetType = assetTypeFromName(asset.getString("type"));
+                if (existing != null && WalletDbCRUD.IsDebtWallet(db, existing))
+                    throw new JSONException("wallet is already a debt"); // not UI
+            }
+        }
+
+        int result;
+        if ("revaluation".equals(system) && currency == null && revaluationCategoryExists(db)) {
+            // Системная «Переоценка» уже есть (завели сами или пришла синком) — второй не заводим.
+            result = 0;
+        } else {
+            result = InsertOrUpdateAccount(db, icons, accName, accComment, iconName, curName, curIso, curIcon);
+            if ("revaluation".equals(system) && currency == null) stampRevaluation(db, accName);
+        }
+
+        if (debt != null) {
+            String cpName = debt.getString("counterparty");
+            int cpId = WalletDbCRUD.GetCounterpartyIdByName(db, cpName);
+            if (cpId <= 0) cpId = WalletDbCRUD.CreateCounterparty(db, cpName, "");
+            Integer accId = FindAccountIdByName(db, accName);
+            if (cpId <= 0 || accId == null || !WalletDbCRUD.SetAccountDebt(db, accId,
+                    WalletDbCRUD.CounterpartyUuid(db, cpId), debt.optString("comment", ""), dueDate))
+                throw new JSONException("could not mark wallet as debt"); // not UI
+        } else if (asset != null) {
+            Integer accId = FindAccountIdByName(db, accName);
+            if (accId == null || !WalletDbCRUD.SetAccountAsset(db, accId, assetType,
+                    asset.optBoolean("include_in_net_worth", true)))
+                throw new JSONException("could not mark wallet as asset"); // not UI
+            ContentValues cv = new ContentValues();
+            cv.put(WalletContract.AccountAssetEntry.COLUMN_COMMENT, asset.optString("comment", ""));
+            db.update(WalletContract.AccountAssetEntry.TABLE_NAME, cv,
+                    WalletContract.AccountAssetEntry._ID + "=?", new String[]{String.valueOf(accId)});
+        }
+        return result;
+    }
+
+    /** {@code real_estate|vehicle|other} → тип {@code account_asset}; иное — JSONException. */
+    static int assetTypeFromName(String name) throws JSONException {
+        switch (name) {
+            case "real_estate": return WalletContract.AccountAssetEntry.TYPE_REAL_ESTATE;
+            case "vehicle": return WalletContract.AccountAssetEntry.TYPE_VEHICLE;
+            case "other": return WalletContract.AccountAssetEntry.TYPE_OTHER;
+            default: throw new JSONException("unknown asset.type: " + name); // not UI
+        }
+    }
+
+    /** Пусто — срока нет (null); иначе строго {@code yyyy-MM-dd}. */
+    private static String parseDueDate(String value) throws JSONException {
+        if (value == null || value.isEmpty()) return null;
+        SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+        f.setLenient(false);
+        try {
+            f.parse(value);
+        } catch (ParseException e) {
+            throw new JSONException("bad debt.due_date: " + value); // not UI
+        }
+        if (!value.matches("\\d{4}-\\d{2}-\\d{2}")) throw new JSONException("bad debt.due_date: " + value); // not UI
+        return value;
+    }
+
+    private static boolean revaluationCategoryExists(SQLiteDatabase db) {
+        Cursor c = db.rawQuery("SELECT 1 FROM " + WalletContract.AccountEntry.TABLE_NAME
+                + " WHERE " + WalletContract.AccountEntry.COLUMN_SYSTEM_KIND + "=? AND "
+                + WalletContract.AccountEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{String.valueOf(AccountItem.SystemKind.REVALUATION.getValue())});
+        try {
+            return c.moveToFirst();
+        } finally {
+            c.close();
+        }
+    }
+
+    private static void stampRevaluation(SQLiteDatabase db, String accName) {
+        ContentValues cv = new ContentValues();
+        cv.put(WalletContract.AccountEntry.COLUMN_SYSTEM_KIND, AccountItem.SystemKind.REVALUATION.getValue());
+        db.update(WalletContract.AccountEntry.TABLE_NAME, cv,
+                AccountNames.sameSql(WalletContract.AccountEntry.COLUMN_NAME), new String[]{accName});
+    }
+
+    /**
+     * Элемент "counterparties": {@code {"name": "...", "comment": "...", "icon": "...", "archived": false}}.
+     * Живой контрагент с тем же именем (правило {@link WalletDbCRUD#GetCounterpartyIdByName})
+     * обновляется, иначе заводится. Иконка — по имени среди живых; нет такой или "unknown" — без иконки.
+     */
+    private static void ParseAndInsertJsonCounterparty(SQLiteDatabase db, JSONObject obj) throws JSONException {
+        String name = obj.getString("name");
+        if (WalletDbCRUD.NormalizeCounterpartyName(name).isEmpty())
+            throw new JSONException("counterparty name is empty"); // not UI
+        String comment = obj.optString("comment", "");
+        boolean archived = obj.optBoolean("archived", false);
+
+        int id = WalletDbCRUD.GetCounterpartyIdByName(db, name);
+        if (id > 0) WalletDbCRUD.UpdateCounterpartyComment(db, id, comment);
+        else id = WalletDbCRUD.CreateCounterparty(db, name, comment);
+        if (id <= 0) throw new JSONException("could not create counterparty"); // not UI
+
+        WalletDbCRUD.ArchiveCounterparty(db, id, archived);
+        ContentValues cv = new ContentValues();
+        String iconUuid = iconUuidByName(db, obj.optString("icon", "unknown"));
+        if (iconUuid == null) cv.putNull(WalletContract.CounterpartyEntry.COLUMN_ICON_UUID);
+        else cv.put(WalletContract.CounterpartyEntry.COLUMN_ICON_UUID, iconUuid);
+        db.update(WalletContract.CounterpartyEntry.TABLE_NAME, cv,
+                WalletContract.CounterpartyEntry._ID + "=?", new String[]{String.valueOf(id)});
+    }
+
+    private static String iconUuidByName(SQLiteDatabase db, String iconName) {
+        if (iconName == null || iconName.isEmpty() || "unknown".equals(iconName)) return null;
+        Cursor c = db.rawQuery("SELECT " + WalletContract.IconEntry.COLUMN_UUID
+                + " FROM " + WalletContract.IconEntry.TABLE_NAME
+                + " WHERE " + WalletContract.IconEntry.COLUMN_NAME + "=? AND "
+                + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL LIMIT 1", new String[]{iconName});
+        try {
+            return c.moveToFirst() ? c.getString(0) : null;
+        } finally {
+            c.close();
+        }
     }
 
     public static ImportResult FillOperationDataFromFile(Context context, InputStream fileStream) throws ParseException, IOException {
@@ -634,11 +773,12 @@ public class WalletImportData {
         // Новый — JSONObject с опциональными "accounts"/"currency_pairs"/"rates"/
         // "operations" (см. комментарий-схему выше FillOperationDataFromJson).
         String text = readAll(fileStream).trim();
-        JSONArray accountsArr = null, pairsArr = null, ratesArr = null, opsArr;
+        JSONArray counterpartiesArr = null, accountsArr = null, pairsArr = null, ratesArr = null, opsArr;
         if (text.startsWith("[")) {
             opsArr = new JSONArray(text);
         } else {
             JSONObject root = new JSONObject(text);
+            counterpartiesArr = root.optJSONArray("counterparties");
             accountsArr = root.optJSONArray("accounts");
             pairsArr = root.optJSONArray("currency_pairs");
             ratesArr = root.optJSONArray("rates");
@@ -650,8 +790,19 @@ public class WalletImportData {
 
         db.beginTransaction();
         try {
-            // Порядок разделов принципиален: счета заводят валюты, нужные парам;
-            // пары нужны курсам по symbol; счета нужны операциям по имени.
+            // Порядок разделов принципиален: контрагенты нужны блокам "debt" счетов;
+            // счета заводят валюты, нужные парам; пары нужны курсам по symbol;
+            // счета нужны операциям по имени.
+            if (counterpartiesArr != null) {
+                for (int i = 0; i < counterpartiesArr.length(); i++) {
+                    try {
+                        ParseAndInsertJsonCounterparty(db, counterpartiesArr.getJSONObject(i));
+                        res.imported++;
+                    } catch (JSONException e) {
+                        res.skipped.add("counterparties#" + i + " — " + e.getMessage());
+                    }
+                }
+            }
             if (accountsArr != null) {
                 for (int i = 0; i < accountsArr.length(); i++) {
                     try {
