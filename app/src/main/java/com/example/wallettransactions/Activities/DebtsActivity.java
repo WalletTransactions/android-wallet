@@ -4,10 +4,13 @@ import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -15,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.example.wallettransactions.AdapterUtils;
+import com.example.wallettransactions.Chips;
 import com.example.wallettransactions.Data.DebtsList;
 import com.example.wallettransactions.Data.WalletDbLoader;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
@@ -38,7 +42,8 @@ import java.util.Map;
  * Экран «Долги» (openspec debts, спека «Экран „Долги“», design D10): итоги «Мне должны» /
  * «Я должен» в валюте эквивалента с признаком неполноты, контрагенты по модулю остатка,
  * под каждым — займы с остатком в своей валюте, сроком и пометкой «просрочен». Займы с
- * нулевым остатком — за переключателем «Показывать закрытые». Тап по займу — карточка
+ * нулевым остатком без архива видны с пометкой «закрыт», архивные — за переключателем
+ * «Показывать архивные»; поиск по контрагенту и чипы направления. Тап по займу — карточка
  * кошелька, где меняются контрагент, срок и комментарий.
  *
  * <p>Остатки — на сегодня по всем проводкам ({@code LoadBalancesPerWallet} с завтрашней
@@ -47,15 +52,49 @@ import java.util.Map;
 public class DebtsActivity extends AppCompatActivity {
 
     private LinearLayout list;
-    private CheckBox showClosed;
+    private CheckBox showArchived;
+    private TextView chipAll, chipOwedToMe, chipIOwe;
+
+    // Состояние фильтров живёт на экране и сбрасывается при каждом его создании
+    // (openspec wallets-filter-and-debt-autoarchive, D4).
+    private DebtsList.Direction direction = DebtsList.Direction.ALL;
+    private String query = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_debts);
         list = findViewById(R.id.debtsList);
-        showClosed = findViewById(R.id.debtsShowClosed);
-        showClosed.setOnCheckedChangeListener((b, c) -> render());
+        showArchived = findViewById(R.id.debtsShowArchived);
+        showArchived.setOnCheckedChangeListener((b, c) -> render());
+        EditText search = findViewById(R.id.debtsSearch);
+        search.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void afterTextChanged(Editable s) {
+                query = s.toString();
+                render();
+            }
+        });
+        chipAll = findViewById(R.id.debtsChipAll);
+        chipOwedToMe = findViewById(R.id.debtsChipOwedToMe);
+        chipIOwe = findViewById(R.id.debtsChipIOwe);
+        chipAll.setOnClickListener(v -> setDirection(DebtsList.Direction.ALL));
+        chipOwedToMe.setOnClickListener(v -> setDirection(DebtsList.Direction.OWED_TO_ME));
+        chipIOwe.setOnClickListener(v -> setDirection(DebtsList.Direction.I_OWE));
+        paintChips();
+    }
+
+    private void setDirection(DebtsList.Direction d) {
+        direction = d;
+        paintChips();
+        render();
+    }
+
+    private void paintChips() {
+        Chips.paint(this, chipAll, direction == DebtsList.Direction.ALL);
+        Chips.paint(this, chipOwedToMe, direction == DebtsList.Direction.OWED_TO_ME);
+        Chips.paint(this, chipIOwe, direction == DebtsList.Direction.I_OWE);
     }
 
     @Override
@@ -112,14 +151,18 @@ public class DebtsActivity extends AppCompatActivity {
                     row == null ? Double.valueOf(0) : row.hasEq ? Double.valueOf(row.balanceEq) : null,
                     c != null ? c.getSymbol() : "", c != null ? c.getPrecision() : 2,
                     w.getDebt().dueDate, w.getDebt().comment,
-                    c != null && eq != null && c.getId() != eq.getId()));
+                    c != null && eq != null && c.getId() != eq.getId(),
+                    Boolean.TRUE.equals(w.getIsArchived())));
         }
         Map<String, String> names = new HashMap<>();
         for (CounterpartyItem c : WalletDbLoader.LoadCounterparties(db)) names.put(c.uuid, c.name);
 
-        List<DebtsList.Group> groups = DebtsList.group(loans, names, showClosed.isChecked());
+        List<DebtsList.Group> groups = DebtsList.group(loans, names, showArchived.isChecked(), direction, query);
         list.removeAllViews();
-        findViewById(R.id.debtsEmpty).setVisibility(groups.isEmpty() ? View.VISIBLE : View.GONE);
+        TextView empty = findViewById(R.id.debtsEmpty);
+        // Займы есть, но фильтры всё скрыли — «Ничего не найдено»; займов нет вообще — подсказка.
+        empty.setText(loans.isEmpty() ? R.string.debts_empty : R.string.debts_nothing_found);
+        empty.setVisibility(groups.isEmpty() ? View.VISIBLE : View.GONE);
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date());
         for (DebtsList.Group g : groups) {
             list.addView(groupHeader(g, eq));

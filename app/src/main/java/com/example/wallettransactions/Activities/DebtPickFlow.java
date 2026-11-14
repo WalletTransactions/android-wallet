@@ -34,7 +34,8 @@ import java.util.List;
  *
  * <p>Новые контрагент и заём пишутся в базу сразу, при выборе: форма операции берёт счёт
  * из кэша {@code Singleton}. Пустой заём, если операцию так и не сохранили, остаётся
- * закрытым займом с нулевым остатком — его видно в «Закрытых».
+ * нулевым займом без архива — он виден на экране «Долги» с пометкой «закрыт» (авто-архив
+ * ставится только при переходе остатка «≠ 0 → 0», так что пустой заём не архивируется).
  */
 final class DebtPickFlow {
 
@@ -75,17 +76,15 @@ final class DebtPickFlow {
             Toast.makeText(activity, R.string.debt_return_nothing, Toast.LENGTH_LONG).show();
             return;
         }
-        int offset = canCreate ? 1 : 0;
-        String[] items = new String[list.size() + offset];
-        if (canCreate) items[0] = activity.getString(R.string.debt_new_counterparty);
-        for (int i = 0; i < list.size(); i++) items[i + offset] = list.get(i).name;
-        new AlertDialog.Builder(activity)
-                .setTitle(titleRes())
-                .setItems(items, (d, which) -> {
-                    if (canCreate && which == 0) askNewCounterparty();
-                    else pickLoan(list.get(which - offset));
-                })
-                .show();
+        List<String> pinned = new ArrayList<>();
+        if (canCreate) pinned.add(activity.getString(R.string.debt_new_counterparty));
+        List<String> names = new ArrayList<>();
+        for (CounterpartyItem c : list) names.add(c.name);
+        // Поиск по имени (спека debts «Поиск по имени контрагента»); «Новый контрагент» поиск не скрывает.
+        SearchableListDialog.show(activity, activity.getString(titleRes()), pinned, names, index -> {
+            if (index < 0) askNewCounterparty();
+            else pickLoan(list.get(index));
+        });
     }
 
     private void askNewCounterparty() {

@@ -22,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
+import com.example.wallettransactions.Data.DebtAutoArchive;
 import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.R;
@@ -891,12 +892,15 @@ public class StatementImportActivity extends AppCompatActivity {
             List<String> written = new ArrayList<>();
             db.beginTransaction();
             try {
+                // Пачка выписки целиком — один сценарий для авто-архива займов (D2).
+                DebtAutoArchive.Snapshot debtsBefore = DebtAutoArchive.begin(db);
                 for (RowModel m : ready) {
                     StatementImport.Row r = m.row;
                     long id = WalletDbCRUD.InsertOperationWithUuid(db, r.rowId, r.date + " 12:00", wallet,
                             (int) m.readiness.categoryId, r.amountValue(), r.description);
                     if (id > 0 || id == WalletDbCRUD.UUID_TAKEN) written.add(r.rowId);
                 }
+                debtsBefore.finish(db);
                 db.setTransactionSuccessful();
             } finally {
                 db.endTransaction();

@@ -32,6 +32,25 @@ public final class AccountNames {
         return keySql(column) + " = " + keySql("?");
     }
 
+    /**
+     * Ключ для поиска по подстроке (openspec wallets-filter-and-debt-autoarchive, D6): те же
+     * правила, что у ключа выше — без регистра, «ё» = «е», пробелы по краям обрезаны. Считается
+     * в Java: для фильтра списка в памяти БД не нужна.
+     */
+    public static String searchKey(String text) {
+        if (text == null) return "";
+        return text.trim().toLowerCase(java.util.Locale.ROOT).replace('ё', 'е');
+    }
+
+    /**
+     * Имя подходит под строку поиска: подстрока как текст (без шаблона, «(» не падает), пустая
+     * строка подходит всему.
+     */
+    public static boolean matchesSearch(String name, String query) {
+        String q = searchKey(query);
+        return q.isEmpty() || searchKey(name).contains(q);
+    }
+
     /** Ключ имени, посчитанный тем же SQLite, что держит индекс. */
     public static String key(SQLiteDatabase db, String name) {
         Cursor c = db.rawQuery("SELECT " + keySql("?"), new String[]{name});

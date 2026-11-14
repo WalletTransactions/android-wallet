@@ -8,7 +8,9 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.EditText;
@@ -21,6 +23,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.example.wallettransactions.Data.AccountNames;
 import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.Data.WalletDbLoader;
 import com.example.wallettransactions.DataItems.Accounts.CounterpartyItem;
@@ -50,8 +53,20 @@ public class CounterpartiesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_counterparties);
         list = findViewById(R.id.counterpartiesList);
+        EditText search = findViewById(R.id.counterpartiesSearch);
+        search.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void afterTextChanged(Editable s) {
+                query = s.toString();
+                render();
+            }
+        });
         render();
     }
+
+    /** Строка поиска (спека debts «Поиск по имени контрагента»); живёт на экране. */
+    private String query = "";
 
     public void btnUp(View view) {
         finish();
@@ -63,7 +78,11 @@ public class CounterpartiesActivity extends AppCompatActivity {
 
     private void render() {
         list.removeAllViews();
-        List<CounterpartyItem> all = WalletDbLoader.LoadCounterparties(db());
+        List<CounterpartyItem> everyone = WalletDbLoader.LoadCounterparties(db());
+        List<CounterpartyItem> all = new ArrayList<>();
+        for (CounterpartyItem c : everyone) {
+            if (AccountNames.matchesSearch(c.name, query)) all.add(c);
+        }
         List<CounterpartyItem> archived = new ArrayList<>();
         for (CounterpartyItem c : all) {
             if (c.isArchived) archived.add(c);
@@ -76,7 +95,10 @@ public class CounterpartiesActivity extends AppCompatActivity {
             list.addView(header);
             for (CounterpartyItem c : archived) list.addView(row(c));
         }
-        findViewById(R.id.counterpartiesEmpty).setVisibility(all.isEmpty() ? View.VISIBLE : View.GONE);
+        TextView empty = findViewById(R.id.counterpartiesEmpty);
+        // Пусто из-за поиска — «Ничего не найдено», пусто вообще — «Контрагентов пока нет».
+        empty.setText(everyone.isEmpty() ? R.string.counterparties_empty : R.string.search_nothing_found);
+        empty.setVisibility(all.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
     private View row(CounterpartyItem c) {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Экран «Долги» (openspec debts, спека «Экран „Долги“»): итоги «Мне должны» / «Я должен»
-  в эквиваленте, переключатель «Закрытые», контрагенты с займами. Строки строит
+  в эквиваленте, поиск по имени, чипы направления, переключатель «Показывать архивные», контрагенты с займами. Строки строит
   DebtsActivity в debtsList. Открывается из «Ещё».
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -119,11 +119,46 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <CheckBox
-                android:id="@+id/debtsShowClosed"
+            <EditText
+                android:id="@+id/debtsSearch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/debts_show_closed"
+                android:hint="@string/search_by_name_hint"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="@color/colorTextPrimary"
+                android:textColorHint="@color/colorTextHint"
+                android:textSize="14sp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp">
+
+                <TextView
+                    android:id="@+id/debtsChipAll"
+                    style="@style/FilterChip"
+                    android:text="@string/debts_filter_all"/>
+
+                <TextView
+                    android:id="@+id/debtsChipOwedToMe"
+                    style="@style/FilterChip"
+                    android:text="@string/debts_filter_owed_to_me"/>
+
+                <TextView
+                    android:id="@+id/debtsChipIOwe"
+                    style="@style/FilterChip"
+                    android:layout_marginEnd="0dp"
+                    android:text="@string/debts_filter_i_owe"/>
+            </LinearLayout>
+
+            <CheckBox
+                android:id="@+id/debtsShowArchived"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/debts_show_archived"
                 android:textColor="@color/colorTextPrimary"
                 android:textSize="14sp"
                 android:buttonTint="@color/colorPrimary"

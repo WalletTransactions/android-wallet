@@ -37,11 +37,57 @@
         android:layout_below="@id/headerRow"
         layout="@layout/view_period_summary"/>
 
+    <!-- Чипы секций и «Показывать архивные» (openspec wallets-filter-and-debt-autoarchive):
+         только таб «Кошельки», в общий фильтр шапки не входят; чипы красит AccountActivity. -->
+    <LinearLayout
+        android:id="@+id/walletsFilterBlock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/periodSummary"
+        android:orientation="vertical"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp">
+
+        <LinearLayout
+            android:id="@+id/walletsChipsRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/walletsChipLiquid"
+                style="@style/FilterChip"
+                android:text="@string/wallets_section_liquid"/>
+
+            <TextView
+                android:id="@+id/walletsChipCapital"
+                style="@style/FilterChip"
+                android:text="@string/wallets_section_capital"/>
+
+            <TextView
+                android:id="@+id/walletsChipDebts"
+                style="@style/FilterChip"
+                android:layout_marginEnd="0dp"
+                android:text="@string/debts_title"/>
+        </LinearLayout>
+
+        <CheckBox
+            android:id="@+id/walletsShowArchived"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/debts_show_archived"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13sp"
+            android:buttonTint="@color/colorPrimary"/>
+    </LinearLayout>
+
     <ListView
         android:id="@+id/listWallets"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/periodSummary"
+        android:layout_below="@id/walletsFilterBlock"
         android:layout_above="@id/bottomNav"
         android:layout_marginTop="6dp"
         android:clipToPadding="false"

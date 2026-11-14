@@ -138,6 +138,21 @@
         android:singleLine="true"
         android:textSize="13.5sp"/>
 
+    <!-- Справочник «Кошельки и категории» (openspec wallets-filter-and-debt-autoarchive): архивные
+         скрыты, пока переключатель выключен; при вводе операции переключателя нет. -->
+    <CheckBox
+        android:id="@+id/pickerShowArchived"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="14dp"
+        android:layout_marginRight="18dp"
+        android:layout_marginBottom="4dp"
+        android:text="@string/debts_show_archived"
+        android:textColor="@color/colorTextPrimary"
+        android:textSize="13sp"
+        android:buttonTint="@color/colorPrimary"
+        android:visibility="gone"/>
+
     <TextView
         android:id="@+id/emptyState"
         android:layout_width="match_parent"

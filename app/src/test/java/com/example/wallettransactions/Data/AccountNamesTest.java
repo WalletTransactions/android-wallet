@@ -42,6 +42,22 @@ public class AccountNamesTest {
     }
 
     @Test
+    public void search_matches_substring_ignoring_case_yo_and_edge_spaces() {
+        assertTrue(AccountNames.matchesSearch("Алёна", "алена"));
+        assertTrue(AccountNames.matchesSearch("Вася", "  АС "));
+        assertTrue(AccountNames.matchesSearch("Вася", ""));
+        assertTrue(AccountNames.matchesSearch("Вася", null));
+        assertFalse(AccountNames.matchesSearch("Вася", "петя"));
+    }
+
+    @Test
+    public void search_treats_special_characters_as_plain_text() {
+        assertFalse(AccountNames.matchesSearch("Вася", "("));
+        assertFalse(AccountNames.matchesSearch("Вася", ".*["));
+        assertTrue(AccountNames.matchesSearch("Вася (брат)", "(бр"));
+    }
+
+    @Test
     public void key_ignores_case_and_treats_yo_as_ye() {
         assertEquals("кафе", AccountNames.key(db, "КАФЁ"));
         assertEquals("кафе", AccountNames.key(db, "Кафе"));

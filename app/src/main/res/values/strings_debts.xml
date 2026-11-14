@@ -29,7 +29,13 @@
     <string name="debts_title">Debts</string>
     <string name="debts_owed_to_me">They owe me</string>
     <string name="debts_i_owe">I owe</string>
-    <string name="debts_show_closed">Show closed loans</string>
+    <string name="debts_show_archived">Show archived</string>
+    <string name="debts_filter_all">All</string>
+    <string name="debts_filter_owed_to_me">They owe me</string>
+    <string name="debts_filter_i_owe">I owe</string>
+    <string name="debts_nothing_found">Nothing found</string>
+    <string name="search_by_name_hint">Search by name</string>
+    <string name="search_nothing_found">Nothing found</string>
     <string name="debts_empty">No loans yet. Mark a wallet as a loan on its card, or pick «Lend» / «Borrow» when adding an operation.</string>
     <string name="debts_overdue">overdue since %1$s</string>
     <string name="debts_due">due %1$s</string>
