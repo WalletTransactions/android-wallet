@@ -476,7 +476,13 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
         holder.tvComment.setText(commentLine);
         holder.tvComment.setVisibility(commentLine != null && !commentLine.trim().isEmpty() ? View.VISIBLE : View.GONE);
 
-        AdapterUtils.setAmountExpanseText(holder.tvOut, tran.Amount, tran.getCurrency());
+        // Операция с займом (дал, взял, вернул, мне вернули) — сумма положительная и
+        // зелёная, а не списание с минусом.
+        if (debt != null) {
+            AdapterUtils.setAmountDepositText(holder.tvOut, tran.Amount, tran.getCurrency());
+        } else {
+            AdapterUtils.setAmountExpanseText(holder.tvOut, tran.Amount, tran.getCurrency());
+        }
 
         // Зачисление показываем только когда оно отличается от списания, то есть у
         // перевода между разными валютами: у одновалютного это то же число второй раз.
