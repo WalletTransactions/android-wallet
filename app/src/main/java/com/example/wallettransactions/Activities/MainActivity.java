@@ -190,6 +190,12 @@ public class MainActivity extends BaseTabActivity implements ListChanged {
 
         TranAdapter.setCurrencyEq(getCurrencyEq());
         TranAdapter.notifyDataSetChanged();
+        // Сводка лежит в AppBarLayout и уезжает вверх вместе с прокруткой ленты. Пустую ленту
+        // прокрутить нельзя — свёрнутую шапку (с датами периода) было бы не вернуть.
+        if (transactions.isEmpty()) {
+            ((com.google.android.material.appbar.AppBarLayout) findViewById(R.id.summaryBar))
+                    .setExpanded(true, false);
+        }
         // Данные поменял проход синка — он мог закончиться «ждёт решения».
         showConnectionQuestion();
     }
