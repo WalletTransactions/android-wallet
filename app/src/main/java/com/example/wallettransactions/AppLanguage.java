@@ -7,6 +7,8 @@ import android.os.Build;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.os.LocaleListCompat;
 
+import java.util.Locale;
+
 /**
  * Язык приложения, выбранный в «Настройках» (openspec android-i18n, design D7).
  * <p>
@@ -28,6 +30,27 @@ public final class AppLanguage {
     public static String current() {
         LocaleListCompat locales = AppCompatDelegate.getApplicationLocales();
         return locales.isEmpty() ? "" : locales.get(0).getLanguage();
+    }
+
+    /**
+     * Локаль для текстов, которые Android переводит сам по данным (название валюты по коду
+     * ISO), а не из ресурсов приложения: язык из «Настроек» приложения, иначе язык телефона.
+     * <p>
+     * На 13+ система сама применяет язык приложения к процессу, и {@link Locale#getDefault}
+     * уже он; на старых AppCompat меняет только ресурсы экранов, а {@code Locale.getDefault()}
+     * остаётся языком телефона — без этого при English в приложении общая валюта показывалась
+     * бы русским «Евро» (spec currency-directory). {@link AppCompatDelegate#getApplicationLocales}
+     * на 13+ — вызов в system_server (см. {@link #localized}), поэтому там его не зовём.
+     */
+    public static Locale effectiveLocale() {
+        if (Build.VERSION.SDK_INT >= 33) return Locale.getDefault();
+        return effectiveLocale(AppCompatDelegate.getApplicationLocales(), Build.VERSION.SDK_INT);
+    }
+
+    static Locale effectiveLocale(LocaleListCompat locales, int sdkInt) {
+        if (sdkInt >= 33 || locales.isEmpty()) return Locale.getDefault();
+        Locale chosen = locales.get(0);
+        return chosen != null ? chosen : Locale.getDefault();
     }
 
     /** Ставит язык; открытые экраны AppCompat пересоздаются сами. */
