@@ -175,6 +175,19 @@ public final class LedgerConnection {
         int deleted = 0;
         db.beginTransaction();
         try {
+            // Кошельки набора («Наличные», «Кредитная карта», design D2) — сначала строка
+            // account_operating, иначе ниже счёт удерживало бы условие «не кошелёк».
+            // Нетронутый — без операций, не актив и не заём; такой в живой кошелёк с сервера
+            // не уходит, иначе человек получал бы две лишние пустые карточки.
+            deleted += db.delete("account_operating", "dirty <> 0"
+                    + " AND _id IN (SELECT _id FROM account WHERE from_seed = 1 AND dirty <> 0"
+                    + " AND system_kind = " + AccountItem.SystemKind.NONE.getValue() + ")"
+                    + " AND _id NOT IN (SELECT acc_fr_id FROM operation)"
+                    + " AND _id NOT IN (SELECT acc_to_id FROM operation)"
+                    + " AND _id NOT IN (SELECT acc_fr_id FROM recurring_operation)"
+                    + " AND _id NOT IN (SELECT acc_to_id FROM recurring_operation)"
+                    + " AND _id NOT IN (SELECT _id FROM account_asset)"
+                    + " AND _id NOT IN (SELECT _id FROM account_debt)", null);
             deleted += db.delete("account", "from_seed = 1 AND dirty <> 0 AND system_kind = "
                     + AccountItem.SystemKind.NONE.getValue()
                     + " AND _id NOT IN (SELECT acc_fr_id FROM operation)"

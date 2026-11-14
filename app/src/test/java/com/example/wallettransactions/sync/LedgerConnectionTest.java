@@ -132,8 +132,9 @@ public class LedgerConnectionTest {
 
     @Test
     public void walletAdopted_accountOperatingTakesServerUuid() throws Exception {
-        long eur = longValue("SELECT _id FROM currency WHERE iso_code = 'EUR'");
-        long cash = WalletDbCRUD.InsertOperatingAccount(db, "Наличные", "", (int) iconId(), (int) eur);
+        // «Наличные» — кошелёк самого набора: тот, кто уже вёл «Наличные» на вебе, при входе
+        // получает его серверный uuid, а не второй кошелёк с тем же именем.
+        long cash = longValue("SELECT _id FROM account WHERE name = 'Наличные'");
         assertTrue(cash > 0);
         SyncEngine.applyAccount(db, accountRow(SRV_CASH, "наличные", 1), new SyncLog(), new SyncEngine.PullIconGuard(db));
         assertEquals(cash, longValue("SELECT _id FROM account WHERE uuid = '" + SRV_CASH + "'"));
@@ -157,6 +158,68 @@ public class LedgerConnectionTest {
         int before = count("SELECT count(*) FROM account");
         assertEquals(LedgerConnection.Step.PUSH, LedgerConnection.afterPull(db, false));
         assertEquals(before, count("SELECT count(*) FROM account"));
+        // Пустой кошелёк на сервере получает набор целиком, в том числе два кошелька.
+        assertEquals(2, count("SELECT count(*) FROM account WHERE kind = 1"));
+        assertEquals(2, count("SELECT count(*) FROM account_operating"));
+    }
+
+    @Test
+    public void nonEmptyLedger_untouchedSeedWalletsDropped_withTheirCurrency() throws Exception {
+        assertEquals(2, count("SELECT count(*) FROM account_operating"));
+        assertEquals(1, count("SELECT count(*) FROM currency WHERE iso_code = 'RUB'"));
+        SyncEngine.applyAccount(db, accountRow(SRV_CAFE, "Кафе", 0), new SyncLog(), new SyncEngine.PullIconGuard(db));
+
+        LedgerConnection.dropUntouchedSeed(db);
+
+        assertEquals("«Наличные» и «Кредитная карта» без операций не уходят в живой кошелёк", 0,
+                count("SELECT count(*) FROM account WHERE name IN ('Наличные', 'Кредитная карта')"));
+        assertEquals(0, count("SELECT count(*) FROM account_operating"));
+        assertEquals(0, count("SELECT count(*) FROM account WHERE kind = 1"));
+        // Рубль нужен был только этим кошелькам и парам набора — вместе с ними ушёл.
+        assertEquals(0, count("SELECT count(*) FROM currency WHERE iso_code = 'RUB'"));
+    }
+
+    @Test
+    public void nonEmptyLedger_seedWalletWithOperationStays() throws Exception {
+        long salary = longValue("SELECT _id FROM account WHERE name = 'Зарплата'");
+        long cash = longValue("SELECT _id FROM account WHERE name = 'Наличные'");
+        WalletDbCRUD.InsertOperation(db, "2026-11-01 10:00", (int) salary, (int) cash, 100, "");
+        SyncEngine.applyAccount(db, accountRow(SRV_CAFE, "Кафе", 0), new SyncLog(), new SyncEngine.PullIconGuard(db));
+
+        LedgerConnection.dropUntouchedSeed(db);
+
+        assertEquals("кошелёк с операцией остаётся", 1, count("SELECT count(*) FROM account WHERE name = 'Наличные'"));
+        assertEquals(1, count("SELECT count(*) FROM account_operating WHERE _id = " + cash));
+        assertEquals("а пустой «Кредитная карта» — уходит", 0,
+                count("SELECT count(*) FROM account WHERE name = 'Кредитная карта'"));
+        assertEquals("валюта оставленного кошелька остаётся", 1,
+                count("SELECT count(*) FROM currency WHERE iso_code = 'RUB'"));
+    }
+
+    @Test
+    public void nonEmptyLedger_renamedSeedWalletStays() throws Exception {
+        int cash = (int) longValue("SELECT _id FROM account WHERE name = 'Наличные'");
+        int icon = (int) longValue("SELECT icon_id FROM account WHERE _id = " + cash);
+        WalletDbCRUD.UpdateAccount(db, cash, "Копилка", "Копилка", icon, false);
+        SyncEngine.applyAccount(db, accountRow(SRV_CAFE, "Кафе", 0), new SyncLog(), new SyncEngine.PullIconGuard(db));
+
+        LedgerConnection.dropUntouchedSeed(db);
+
+        assertEquals("правка снимает метку набора — кошелёк человека остаётся", 1,
+                count("SELECT count(*) FROM account WHERE name = 'Копилка'"));
+        assertEquals(1, count("SELECT count(*) FROM account_operating WHERE _id = " + cash));
+    }
+
+    @Test
+    public void nonEmptyLedger_seedWalletMarkedAsAssetStays() throws Exception {
+        long cash = longValue("SELECT _id FROM account WHERE name = 'Наличные'");
+        WalletDbCRUD.SetAccountAsset(db, (int) cash, 1, true);
+        SyncEngine.applyAccount(db, accountRow(SRV_CAFE, "Кафе", 0), new SyncLog(), new SyncEngine.PullIconGuard(db));
+
+        LedgerConnection.dropUntouchedSeed(db);
+
+        assertEquals("кошелёк, отмеченный активом, не нетронутый", 1,
+                count("SELECT count(*) FROM account WHERE name = 'Наличные'"));
     }
 
     @Test

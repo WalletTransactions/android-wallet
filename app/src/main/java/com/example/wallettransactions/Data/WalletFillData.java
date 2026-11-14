@@ -84,9 +84,11 @@ public class WalletFillData {
      *                {"name": "Transfer", "icon": "Transfer"}]
      * }
      * </pre>
-     * Штатный набор (openspec new-user-default-set, spec starter-set) — без кошельков,
-     * курсов и личных названий; "rates" и "accounts[].currency_iso" поддерживаются, но в
-     * файле не используются. Категория — пара имён "names", язык — {@link
+     * Штатный набор (openspec new-user-default-set, spec starter-set) — два общих
+     * кошелька («Наличные / Cash», «Кредитная карта / Credit card», у них
+     * "accounts[].currency_iso" — строка или объект по языкам {@code {"ru": "RUB", "en":
+     * "USD"}}), без курсов и личных названий; "rates" поддерживается, но в файле не
+     * используется. Категория — пара имён "names", язык — {@link
      * CurrencyNames#seedLanguage}; название валюты — {@link CurrencyNames#displayName} по
      * коду, "name" — запасное. Каждая строка набора — с меткой {@code from_seed = 1}.
      * "resource"/"icon_resource" — имя файла в {@code res/drawable} без расширения,
@@ -553,7 +555,7 @@ public class WalletFillData {
 
                 long accId = InsertAccountEntry(db, accName, a.optString("comment", accName), iconId);
 
-                String currencyIso = a.optString("currency_iso", "");
+                String currencyIso = seedCurrencyIso(a, language);
                 if (!currencyIso.isEmpty() && accId > 0) {
                     long curId = GetCurrencyIdByIso(db, currencyIso);
                     if (curId > 0) {
@@ -594,6 +596,20 @@ public class WalletFillData {
             return localized.isEmpty() ? names.getString("en") : localized;
         }
         return account.getString("name");
+    }
+
+    /**
+     * Код валюты кошелька набора: строка {@code "currency_iso": "EUR"} — одна на всех
+     * языках, объект {@code {"ru": "RUB", "en": "USD"}} — по языку посева, иначе по
+     * {@code en}. Нет поля — пустая строка (счёт заводится категорией без баланса).
+     * Openspec new-user-default-set, design D2: «Наличные / Cash» и «Кредитная карта /
+     * Credit card» — рубль для русского телефона, доллар для остальных.
+     */
+    static String seedCurrencyIso(JSONObject account, String language) {
+        JSONObject byLanguage = account.optJSONObject("currency_iso");
+        if (byLanguage == null) return account.optString("currency_iso", "");
+        String iso = byLanguage.optString(language, "");
+        return iso.isEmpty() ? byLanguage.optString("en", "") : iso;
     }
 
     /** uuid только что вставленного/существующего account по его _id — см. InsertSeedAccounts. */
