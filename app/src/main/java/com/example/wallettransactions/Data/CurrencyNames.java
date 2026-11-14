@@ -38,8 +38,12 @@ public final class CurrencyNames {
         return name.substring(0, 1).toUpperCase(locale) + name.substring(1);
     }
 
-    /** Показываемое имя общей валюты — на текущем языке телефона (spec currency-directory). */
+    /**
+     * Показываемое имя общей валюты — на текущем языке приложения (выбранном в «Настройках»,
+     * иначе языке телефона; spec currency-directory), а не на языке системы: при English в
+     * приложении на русском телефоне иначе осталось бы «Евро».
+     */
     public static String sharedDisplayName(String iso, String storedName) {
-        return displayName(iso, storedName, Locale.getDefault());
+        return displayName(iso, storedName, com.example.wallettransactions.AppLanguage.effectiveLocale());
     }
 }
