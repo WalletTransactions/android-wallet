@@ -82,7 +82,9 @@
     {"name": "Serbian Dinar", "iso": "RSD", "symbol": "din.", "icon": "Serbian flag", "icon_resource": "flag_serbian", "precision": 2},
     {"name": "Polish Zloty", "iso": "PLN", "symbol": "zł", "icon": "Flag PLN", "icon_resource": "flag_polish", "precision": 2},
     {"name": "Thai Baht", "iso": "THB", "symbol": "฿", "icon": "Flag THB", "icon_resource": "flag_thb", "precision": 2},
-    {"name": "UAE Dirham", "iso": "AED", "symbol": "AED", "icon": "Flag AED", "icon_resource": "flag_aed", "precision": 2}
+    {"name": "UAE Dirham", "iso": "AED", "symbol": "AED", "icon": "Flag AED", "icon_resource": "flag_aed", "precision": 2},
+    {"name": "Bitcoin", "iso": "BTC", "symbol": "₿", "icon": "Flag BTC", "icon_resource": "flag_btc", "precision": 8},
+    {"name": "Litecoin", "iso": "LTC", "symbol": "Ł", "icon": "Flag LTC", "icon_resource": "flag_ltc", "precision": 8}
   ],
   "flag_icons": [
     {"name": "Flag ALL", "resource": "flag_albania"},
@@ -120,7 +122,11 @@
     {"symbol": "USDTHB", "base": "USD", "quote": "THB"},
     {"symbol": "EURTHB", "base": "EUR", "quote": "THB"},
     {"symbol": "USDAED", "base": "USD", "quote": "AED"},
-    {"symbol": "EURAED", "base": "EUR", "quote": "AED"}
+    {"symbol": "EURAED", "base": "EUR", "quote": "AED"},
+    {"symbol": "BTCUSD", "base": "BTC", "quote": "USD"},
+    {"symbol": "BTCEUR", "base": "BTC", "quote": "EUR"},
+    {"symbol": "LTCUSD", "base": "LTC", "quote": "USD"},
+    {"symbol": "LTCEUR", "base": "LTC", "quote": "EUR"}
   ],
   "accounts": [
     {"names": {"ru": "Продукты", "en": "Groceries"}, "icon": "Groceries"},
@@ -128,7 +134,7 @@
     {"names": {"ru": "Транспорт", "en": "Public transport"}, "icon": "Public transport"},
     {"names": {"ru": "Такси", "en": "Taxi"}, "icon": "Taxi"},
     {"names": {"ru": "Топливо", "en": "Fuel"}, "icon": "Petrol"},
-    {"names": {"ru": "Автомобиль", "en": "Car"}, "icon": "Car"},
+    {"names": {"ru": "Автосервис", "en": "Vehicle Maintenance"}, "icon": "Car"},
     {"names": {"ru": "Жильё", "en": "Housing"}, "icon": "Rentals"},
     {"names": {"ru": "Коммунальные услуги", "en": "Utilities"}, "icon": "Electricity"},
     {"names": {"ru": "Связь и интернет", "en": "Phone & internet"}, "icon": "Internet Bill"},

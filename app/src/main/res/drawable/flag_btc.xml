@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Биткойн: круглый значок 64x64 в стиле flag_aed.xml (seed.json, new-user-default-set). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+  <group>
+    <clip-path android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z"/>
+    <path android:fillColor="#F7931A" android:pathData="M0,0 H64 V64 H0Z"/>
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="5"
+        android:pathData="M25,19 V45 M25,19 H35 C42,19 42,31.5 35,31.5 H25 M25,31.5 H37 C45,31.5 45,45 37,45 H25"/>
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="3.5"
+        android:pathData="M30,13 V19 M36,13 V19 M30,45 V51 M36,45 V51"/>
+  </group>
+  <path android:fillColor="#CCCCCC" android:fillAlpha="0.4"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z M4,32 A28,28 0 1 1 60,32 A28,28 0 1 1 4,32Z"/>
+</vector>
