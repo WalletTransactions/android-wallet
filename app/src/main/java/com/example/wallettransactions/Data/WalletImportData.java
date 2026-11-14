@@ -342,8 +342,9 @@ public class WalletImportData {
      * {@code {"name": "...", "comment": "...", "icon": "...", "currency": {"name": "...", "iso": "...", "icon": "..."},
      * "debt": {"counterparty": "...", "comment": "...", "due_date": "yyyy-MM-dd"},
      * "asset": {"type": "real_estate|vehicle|other", "include_in_net_worth": true, "comment": "..."},
-     * "system": "revaluation"}}
-     * "comment"/"icon" опциональны (по умолчанию — имя счёта и "unknown"); "currency" опциональна —
+     * "system": "revaluation", "icon_image": "<base64 PNG/JPEG/WEBP>"}}
+     * "icon_image" — своя картинка счёта (имя иконки — "icon", без него имя счёта); любой размер
+     * приводится к 256×256, см. {@link #decodeIconImage}. "comment"/"icon" опциональны (по умолчанию — имя счёта и "unknown"); "currency" опциональна —
      * без неё это счёт-категория без своего баланса, как строка без валюты в CSV. "debt"/"asset" —
      * только у кошелька и взаимоисключающие; нарушение — JSONException до любой записи, так что
      * элемент пропускается целиком (см. openspec json-debts-assets-format).
@@ -352,6 +353,12 @@ public class WalletImportData {
         String accName = obj.getString("name");
         String accComment = obj.optString("comment", accName);
         String iconName = obj.optString("icon", "unknown");
+
+        // Своя картинка счёта. Битая картинка счёт НЕ пропускает: iconImage остаётся null, и иконка
+        // выбирается как раньше — по имени "icon", а не нашлась — "unknown". Имя новой иконки — "icon",
+        // а без него (или при заглушке "unknown", которую нельзя перезаписывать) — имя самого счёта.
+        byte[] iconImage = decodeIconImage(obj.optString("icon_image", ""));
+        if (iconImage != null && (iconName.isEmpty() || "unknown".equals(iconName))) iconName = accName;
 
         JSONObject currency = obj.optJSONObject("currency");
         String curName = null, curIso = null, curIcon = "";
@@ -388,6 +395,8 @@ public class WalletImportData {
             }
         }
 
+        if (iconImage != null) putOwnIcon(db, iconName, iconImage);
+
         int result;
         if ("revaluation".equals(system) && currency == null && revaluationCategoryExists(db)) {
             // Системная «Переоценка» уже есть (завели сами или пришла синком) — второй не заводим.
@@ -416,6 +425,71 @@ public class WalletImportData {
                     WalletContract.AccountAssetEntry._ID + "=?", new String[]{String.valueOf(accId)});
         }
         return result;
+    }
+
+    /** Сторона хранимой иконки в пикселях — как в IconEditDialog (самое крупное место показа + запас). */
+    static final int ICON_SIZE_PX = 256;
+    /** Потолок base64-строки картинки: файл на сотни КБ — это фото, а не иконка. */
+    private static final int MAX_ICON_BASE64_CHARS = 1_500_000;
+
+    /**
+     * Поле {@code icon_image}: base64 картинки (PNG/JPEG/WEBP, допустим префикс {@code data:...;base64,}).
+     * Пусто — {@code null} (картинки нет). Любой размер приводится к {@value #ICON_SIZE_PX}×{@value #ICON_SIZE_PX}:
+     * не квадрат — обрезается по центру, затем масштабируется; результат кодируется WEBP, как иконки
+     * из редактора. Битое (не base64, не картинка, слишком большое) — тоже {@code null}, без ошибки:
+     * счёт импортируется со своей иконкой по имени или с {@code unknown}, как до появления поля.
+     */
+    static byte[] decodeIconImage(String value) {
+        if (value == null) return null;
+        String b64 = value.trim();
+        if (b64.isEmpty()) return null;
+        int comma = b64.indexOf(',');
+        if (b64.startsWith("data:") && comma > 0) b64 = b64.substring(comma + 1);
+        if (b64.length() > MAX_ICON_BASE64_CHARS) return null;
+        try {
+            byte[] raw = android.util.Base64.decode(b64, android.util.Base64.DEFAULT);
+            android.graphics.Bitmap src = android.graphics.BitmapFactory.decodeByteArray(raw, 0, raw.length);
+            if (src == null || src.getWidth() <= 0 || src.getHeight() <= 0) return null;
+            int side = Math.min(src.getWidth(), src.getHeight());
+            android.graphics.Bitmap square = android.graphics.Bitmap.createBitmap(src,
+                    (src.getWidth() - side) / 2, (src.getHeight() - side) / 2, side, side);
+            android.graphics.Bitmap fitted = side == ICON_SIZE_PX ? square
+                    : android.graphics.Bitmap.createScaledBitmap(square, ICON_SIZE_PX, ICON_SIZE_PX, true);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            if (!fitted.compress(android.graphics.Bitmap.CompressFormat.WEBP, 85, out)) return null;
+            return out.toByteArray();
+        } catch (IllegalArgumentException | OutOfMemoryError e) {
+            // не base64 / картинка не помещается в память — как нечитаемая
+            return null;
+        }
+    }
+
+    /**
+     * Заводит свою иконку {@code name} (origin=local, тип «категория»). Иконка с таким именем уже есть:
+     * своя — получает новую картинку, серверная (только просмотр, правит администратор) остаётся
+     * как есть, и счёт просто на неё ссылается.
+     */
+    private static void putOwnIcon(SQLiteDatabase db, String name, byte[] image) {
+        Cursor c = db.rawQuery("SELECT " + WalletContract.IconEntry._ID + ", " + WalletContract.IconEntry.COLUMN_ORIGIN
+                + " FROM " + WalletContract.IconEntry.TABLE_NAME + " WHERE " + WalletContract.IconEntry.COLUMN_NAME
+                + " = ? AND " + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL", new String[]{name});
+        try {
+            ContentValues cv = new ContentValues();
+            cv.put(WalletContract.IconEntry.COLUMN_IMAGE, image);
+            if (c.moveToFirst()) {
+                if (c.getInt(1) == WalletContract.IconEntry.ORIGIN_LOCAL)
+                    db.update(WalletContract.IconEntry.TABLE_NAME, cv,
+                            WalletContract.IconEntry._ID + "=?", new String[]{String.valueOf(c.getLong(0))});
+                return;
+            }
+            cv.put(WalletContract.IconEntry.COLUMN_NAME, name);
+            cv.put(WalletContract.IconEntry.COLUMN_ICON_TYPE, 0);
+            cv.put(WalletContract.IconEntry.COLUMN_UUID, UUID.randomUUID().toString());
+            cv.put(WalletContract.IconEntry.COLUMN_ORIGIN, WalletContract.IconEntry.ORIGIN_LOCAL);
+            db.insert(WalletContract.IconEntry.TABLE_NAME, null, cv);
+        } finally {
+            c.close();
+        }
     }
 
     /** {@code real_estate|vehicle|other} → тип {@code account_asset}; иное — JSONException. */
@@ -851,6 +925,8 @@ public class WalletImportData {
             return res;
         } finally {
             db.endTransaction();
+            // Кэш иконок мог не знать о заведённых импортом своих иконках.
+            Singleton.instance.reloadIconList(context);
         }
     }
 }

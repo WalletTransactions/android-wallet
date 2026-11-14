@@ -41,7 +41,9 @@ public class WalletExportData {
                 "\"currency\"?: {\"name\"?: str (=iso), \"iso\": str, \"icon\"?: str}, " +
                 "\"debt\"?: {\"counterparty\": str (имя), \"comment\"?: str, \"due_date\"?: \"YYYY-MM-DD\"}, " + // not UI
                 "\"asset\"?: {\"type\": \"real_estate\"|\"vehicle\"|\"other\", \"include_in_net_worth\"?: bool (=true), " +
-                "\"comment\"?: str}, \"system\"?: \"revaluation\"} " +
+                "\"comment\"?: str}, \"system\"?: \"revaluation\", " +
+                "\"icon_image\"?: str (base64 PNG/JPEG/WEBP — своя картинка, любой размер → 256×256; " + // not UI
+                "имя иконки — \"icon\", без него имя счёта)} " + // not UI
                 "— без \"currency\" это счёт-категория (без своего баланса); \"debt\" и \"asset\" — " + // not UI
                 "только у кошелька и взаимоисключающие; \"system\" — у системной категории переоценки."); // not UI
         c.put("currency_pairs", "{\"symbol\": str, \"base\": str (ISO валюты), \"quote\": str (ISO валюты)}"); // not UI
@@ -80,7 +82,9 @@ public class WalletExportData {
                         " ad." + WalletContract.AccountDebtEntry.COLUMN_DUE_DATE + " debt_due," +
                         " aa." + WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE + " asset_type," +
                         " aa." + WalletContract.AccountAssetEntry.COLUMN_INCLUDE_IN_NET_WORTH + " asset_nw," +
-                        " aa." + WalletContract.AccountAssetEntry.COLUMN_COMMENT + " asset_comment" +
+                        " aa." + WalletContract.AccountAssetEntry.COLUMN_COMMENT + " asset_comment," +
+                        " ic." + WalletContract.IconEntry.COLUMN_IMAGE + " icon_image," +
+                        " ic." + WalletContract.IconEntry.COLUMN_ORIGIN + " icon_origin" +
                         " FROM " + WalletContract.AccountEntry.TABLE_NAME + " a" +
                         " LEFT JOIN " + WalletContract.IconEntry.TABLE_NAME + " ic" +
                         "   ON ic." + WalletContract.IconEntry._ID + " = a." + WalletContract.AccountEntry.COLUMN_ICON_ID +
@@ -108,6 +112,10 @@ public class WalletExportData {
                 acc.put("name", c.getString(0));
                 acc.put("comment", c.getString(1));
                 acc.put("icon", c.isNull(2) ? "unknown" : c.getString(2));
+                // Картинку пишем только у своей иконки: серверная восстанавливается по имени, а
+                // встроенная заглушка и вовсе не картинка из базы.
+                if (!c.isNull(13) && !c.isNull(14) && c.getInt(14) == WalletContract.IconEntry.ORIGIN_LOCAL)
+                    acc.put("icon_image", android.util.Base64.encodeToString(c.getBlob(13), android.util.Base64.NO_WRAP));
 
                 String curIso = c.getString(4);
                 if (curIso != null) {
