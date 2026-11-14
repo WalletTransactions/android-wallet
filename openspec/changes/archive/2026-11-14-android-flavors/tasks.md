@@ -15,8 +15,8 @@
 
 ## 3. Ручная проверка
 
-- [ ] 3.1 (2026-11-03: `app-qa-debug.apk` 1.0.99-qa поставлен рядом с prod 1.0.98, оба пакета на устройстве; осталось — prod поверх, иконки, `:8091`, экспорт) На Pixel: `prod` поверх нынешнего приложения — данные на месте; `qa` рядом — вторая иконка «QA Посчитай и сбереги», сервер по умолчанию `:8091`; экспорт → «Поделиться» в обоих — Тест: [android-wallet#32](https://github.com/WalletTransactions/android-wallet/issues/32)
-- [ ] 3.2 Вход Google в QA после регистрации Android OAuth client (`com.example.wallettransactions.qa`, SHA-1 из design.md) — привязка к test-контуру, синк — Тест: [android-wallet#32](https://github.com/WalletTransactions/android-wallet/issues/32)
+- [x] 3.1 (2026-11-14, Pixel 8 Pro, prod 1.0.151 + qa 1.0.151-qa: prod обновлялся на месте с 2026-07-27, база на месте; две иконки в лаунчере — зелёная и оранжевая с «QA»; в QA сервер `:8091`, в prod `:8090` — на устройстве введены вручную, значения по умолчанию подтверждены по `BuildConfig`, на чистой установке не проверялись; экспорт → «Поделиться» работает в обоих) На Pixel: `prod` поверх нынешнего приложения — данные на месте; `qa` рядом — вторая иконка «QA Посчитай и сбереги», сервер по умолчанию `:8091`; экспорт → «Поделиться» в обоих — Тест: [android-wallet#32](https://github.com/WalletTransactions/android-wallet/issues/32)
+- [x] 3.2 (2026-11-14, Pixel 8 Pro: QA привязан к Google-аккаунту, «Синхронизировать сейчас» на `:8091` прошёл — отправлено счёт ×1, признак актива ×1, операции ×2) Вход Google в QA после регистрации Android OAuth client (`com.example.wallettransactions.qa`, SHA-1 из design.md) — привязка к test-контуру, синк — Тест: [android-wallet#32](https://github.com/WalletTransactions/android-wallet/issues/32)
 
 ## Workflow follow-up
 
