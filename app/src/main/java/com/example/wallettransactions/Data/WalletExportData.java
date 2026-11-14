@@ -43,7 +43,7 @@ public class WalletExportData {
                 "\"asset\"?: {\"type\": \"real_estate\"|\"vehicle\"|\"other\", \"include_in_net_worth\"?: bool (=true), " +
                 "\"comment\"?: str}, \"system\"?: \"revaluation\", " +
                 "\"icon_image\"?: str (base64 PNG/JPEG/WEBP — своя картинка, любой размер → 256×256; " + // not UI
-                "имя иконки — \"icon\", без него имя счёта)} " +
+                "имя иконки — \"icon\", без него имя счёта)} " + // not UI
                 "— без \"currency\" это счёт-категория (без своего баланса); \"debt\" и \"asset\" — " + // not UI
                 "только у кошелька и взаимоисключающие; \"system\" — у системной категории переоценки."); // not UI
         c.put("currency_pairs", "{\"symbol\": str, \"base\": str (ISO валюты), \"quote\": str (ISO валюты)}"); // not UI
