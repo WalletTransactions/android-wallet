@@ -69,6 +69,8 @@ public class HardWipeAllTablesTest {
     @Test
     public void wipeWithAssetRow_commits() {
         db.execSQL("DELETE FROM account_asset");
+        // Кошельки набора («Наличные», «Кредитная карта») держат account_operating.
+        db.execSQL("DELETE FROM account_operating");
         db.execSQL("DELETE FROM account");
         // Чистая база уже засеяна набором — берём любую его иконку для FK счёта.
         long iconId = android.database.DatabaseUtils.longForQuery(db, "SELECT min(_id) FROM icon", null);

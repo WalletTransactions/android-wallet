@@ -156,6 +156,8 @@
     {"names": {"ru": "Подработка", "en": "Side income"}, "icon": "Briefcase"},
     {"names": {"ru": "Проценты", "en": "Interest"}, "icon": "Percentage"},
     {"names": {"ru": "Прочие доходы", "en": "Other income"}, "icon": "Trending up"},
+    {"names": {"ru": "Наличные", "en": "Cash"}, "icon": "USD banknote", "currency_iso": {"ru": "RUB", "en": "USD"}},
+    {"names": {"ru": "Кредитная карта", "en": "Credit card"}, "icon": "Visa card", "currency_iso": {"ru": "RUB", "en": "USD"}},
     {"name": "Transfer", "icon": "Transfer"},
     {"name": "Transfer commission", "icon": "Fees"}
   ]

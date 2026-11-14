@@ -54,17 +54,79 @@ public class StarterSetTest {
 
     @Test
     @Config(qualifiers = "ru")
-    public void cleanInstall_ru_generalCategoriesNoWalletsNoRates() {
+    public void cleanInstall_ru_generalCategoriesTwoSeedWalletsNoRates() {
         List<String> names = accountNames();
         assertTrue(names.contains("Продукты"));
         assertTrue(names.contains("Такси"));
         assertTrue(names.contains("Transfer"));
         assertTrue(names.contains("Transfer commission"));
-        assertEquals(0, count("SELECT count(*) FROM account_operating"));
-        assertEquals(0, count("SELECT count(*) FROM account WHERE kind = 1"));
+        // Кошельков ровно два — «Наличные» и «Кредитная карта» (design D2), других нет.
+        assertEquals(2, count("SELECT count(*) FROM account_operating"));
+        assertEquals(2, count("SELECT count(*) FROM account WHERE kind = 1"));
         assertEquals(0, count("SELECT count(*) FROM currency_pair_rate"));
         assertTrue(count("SELECT count(*) FROM currency_pair WHERE symbol = 'USDRUB'") == 1);
         assertEquals("Евро", currencyName("EUR"));
+    }
+
+    // ── Кошельки набора («Наличные / Cash», «Кредитная карта / Credit card») ─────
+
+    @Test
+    @Config(qualifiers = "ru")
+    public void cleanInstall_ru_seedWalletsInRublesWithChosenIcons() {
+        assertEquals("RUB", walletCurrency("Наличные"));
+        assertEquals("RUB", walletCurrency("Кредитная карта"));
+        assertEquals("USD banknote", accountIconName("Наличные"));
+        assertEquals("Visa card", accountIconName("Кредитная карта"));
+        assertEquals("иконки набора на месте, а не unknown", 0,
+                count("SELECT count(*) FROM account a JOIN icon i ON i._id = a.icon_id"
+                        + " WHERE a.kind = 1 AND i.name = 'unknown'"));
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    public void cleanInstall_otherLanguage_seedWalletsInDollars() {
+        List<String> names = accountNames();
+        assertTrue(names.contains("Cash"));
+        assertTrue(names.contains("Credit card"));
+        assertFalse(names.contains("Наличные"));
+        assertEquals("USD", walletCurrency("Cash"));
+        assertEquals("USD", walletCurrency("Credit card"));
+        assertEquals("USD banknote", accountIconName("Cash"));
+        assertEquals("Visa card", accountIconName("Credit card"));
+    }
+
+    @Test
+    @Config(qualifiers = "ru")
+    public void cleanInstall_seedWalletsAreEmptyPlainAndMarkedFromSeed() {
+        assertEquals("баланс 0 — операций нет", 0, count("SELECT count(*) FROM operation"));
+        assertEquals("не активы", 0, count("SELECT count(*) FROM account_asset"));
+        assertEquals("не займы", 0, count("SELECT count(*) FROM account_debt"));
+        assertEquals(2, count("SELECT count(*) FROM account WHERE kind = 1 AND from_seed = 1"));
+        assertEquals("кошельки набора — не системные", 0,
+                count("SELECT count(*) FROM account WHERE kind = 1 AND system_kind <> 0"));
+    }
+
+    @Test
+    @Config(qualifiers = "ru")
+    public void renameSeedWallet_clearsMark() {
+        int id = accountId("Наличные");
+        int icon = intValue("SELECT icon_id FROM account WHERE _id = " + id);
+        WalletDbCRUD.UpdateAccount(db, id, "Копилка", "Копилка", icon, false);
+        assertEquals(0, intValue("SELECT from_seed FROM account WHERE _id = " + id));
+    }
+
+    @Test
+    @Config(qualifiers = "ru")
+    public void seedCurrencyIso_stringOrByLanguage() throws Exception {
+        JSONObject plain = new JSONObject("{\"currency_iso\": \"EUR\"}");
+        JSONObject byLanguage = new JSONObject("{\"currency_iso\": {\"ru\": \"RUB\", \"en\": \"USD\"}}");
+        JSONObject none = new JSONObject("{}");
+        assertEquals("EUR", WalletFillData.seedCurrencyIso(plain, "ru"));
+        assertEquals("EUR", WalletFillData.seedCurrencyIso(plain, "en"));
+        assertEquals("RUB", WalletFillData.seedCurrencyIso(byLanguage, "ru"));
+        assertEquals("USD", WalletFillData.seedCurrencyIso(byLanguage, "en"));
+        assertEquals("нет перевода — по en", "USD", WalletFillData.seedCurrencyIso(byLanguage, "fr"));
+        assertEquals("", WalletFillData.seedCurrencyIso(none, "ru"));
     }
 
     @Test
@@ -104,6 +166,8 @@ public class StarterSetTest {
         db = helper.getWritableDatabase();
         assertTrue(accountNames().contains("Продукты"));
         assertFalse(accountNames().contains("Groceries"));
+        assertTrue("кошельки набора тоже не переименовываются", accountNames().contains("Наличные"));
+        assertFalse(accountNames().contains("Cash"));
     }
 
     @Test
@@ -140,6 +204,8 @@ public class StarterSetTest {
         }
         assertTrue(accountNames().contains("Продукты"));
         assertEquals(0, count("SELECT count(*) FROM account WHERE from_seed <> 1"));
+        assertEquals("кошельки набора заведены заново", "RUB", walletCurrency("Наличные"));
+        assertEquals("RUB", walletCurrency("Кредитная карта"));
     }
 
     /** Каждая иконка и флаг набора есть в res/drawable — ни одна не подменилась на unknown. */
@@ -282,6 +348,31 @@ public class StarterSetTest {
         Cursor c = db.rawQuery("SELECT name FROM currency WHERE iso_code = ?", new String[]{iso});
         try {
             assertTrue(iso, c.moveToFirst());
+            return c.getString(0);
+        } finally {
+            c.close();
+        }
+    }
+
+    /** ISO-код валюты кошелька набора по имени кошелька. */
+    private String walletCurrency(String walletName) {
+        Cursor c = db.rawQuery("SELECT c.iso_code FROM account a"
+                + " JOIN account_operating o ON o._id = a._id"
+                + " JOIN currency c ON c._id = o.currency_id WHERE a.name = ?", new String[]{walletName});
+        try {
+            assertTrue(walletName, c.moveToFirst());
+            return c.getString(0);
+        } finally {
+            c.close();
+        }
+    }
+
+    /** Имя иконки счёта в таблице icon (запасная — «unknown»). */
+    private String accountIconName(String accountName) {
+        Cursor c = db.rawQuery("SELECT i.name FROM account a JOIN icon i ON i._id = a.icon_id"
+                + " WHERE a.name = ?", new String[]{accountName});
+        try {
+            assertTrue(accountName, c.moveToFirst());
             return c.getString(0);
         } finally {
             c.close();
