@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Лайткоин: круглый значок 64x64 в стиле flag_aed.xml (seed.json, new-user-default-set). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+  <group>
+    <clip-path android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z"/>
+    <path android:fillColor="#345D9D" android:pathData="M0,0 H64 V64 H0Z"/>
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="5"
+        android:pathData="M29,14 L23,43 H42 M21,34 L38,27"/>
+  </group>
+  <path android:fillColor="#CCCCCC" android:fillAlpha="0.4"
+      android:pathData="M2,32 A30,30 0 1 0 62,32 A30,30 0 1 0 2,32Z M4,32 A28,28 0 1 1 60,32 A28,28 0 1 1 4,32Z"/>
+</vector>
