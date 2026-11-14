@@ -37,7 +37,7 @@
             tools:layout="@layout/fragment_choose_date_period"/>
     </FrameLayout>
 
-    <!-- Состояние денег: На начало / На конец / Доход · Расход · Итог -->
+    <!-- Состояние денег: На начало / На конец / Прочее / Доход · Расход · Итог -->
     <LinearLayout
         android:id="@+id/balanceState"
         android:layout_width="match_parent"
@@ -106,19 +106,21 @@
                 tools:text="592 794 ₽"/>
         </LinearLayout>
 
-        <!-- Капитал и «Всего с капиталом» на конец периода (openspec capital-assets):
-             видны, только если есть хоть один актив. «На начало», «На конец» и «Итог»
-             выше — только ликвидные кошельки; эти строки объясняют, куда «ушли» деньги,
-             вложенные в актив. Две строки, а не одна (android-wallet#43): в одной
-             строке две подписи и две суммы на узком экране слипались, а сумма
-             «Всего с капиталом» не стояла под «На конец». Разметка — как у «На начало»:
-             подпись слева, сумма у правого края. -->
+        <!-- «Прочее» (openspec summary-other-section): одна строка вместо восьми. Сумма —
+             «Итог − (Доход − Расход)»: то, что сводит «Итог» с доходом и расходом (переводы
+             в капитал и долги, курсовая разница). Нажатие на строку раскрывает детали ниже
+             на этом экране; настройка «Раскрывать «Прочее» при открытии» задаёт начальный
+             вид. Строки нет, если нет ни активов, ни долгов и сумма нулевая.
+             BaseTabActivity.refreshOtherSection. -->
         <LinearLayout
-            android:id="@+id/capitalRow"
+            android:id="@+id/otherRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:baselineAligned="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:contentDescription="@string/summary_other_toggle"
+            android:gravity="center_vertical"
+            android:minHeight="32dp"
             android:orientation="horizontal"
             android:visibility="gone"
             tools:visibility="visible">
@@ -128,149 +130,260 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:letterSpacing="0.07"
-                android:text="@string/summary_capital"
+                android:text="@string/summary_other"
                 android:textAllCaps="true"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="10.5sp"
                 android:textStyle="bold"/>
 
             <TextView
-                android:id="@+id/capitalSum"
+                android:id="@+id/otherSum"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/colorTextSecondary"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                tools:text="12 000 000 ₽"/>
+                tools:text="−400 000 ₽"/>
+
+            <!-- ic_chevron_right повёрнут: вниз — свёрнуто, вверх — раскрыто (▾ / ▴). -->
+            <ImageView
+                android:id="@+id/otherChevron"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginLeft="6dp"
+                android:importantForAccessibility="no"
+                android:rotation="90"
+                android:src="@drawable/ic_chevron_right"/>
         </LinearLayout>
 
+        <!-- Детали «Прочего»: порядок и условия — спека period-summary. Разметка строки —
+             как у «На начало»: подпись слева, сумма у правого края. Подписи «… : изменение»
+             — поток за период, остальные — остаток на конец периода. -->
         <LinearLayout
-            android:id="@+id/netWorthRow"
+            android:id="@+id/otherDetails"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:baselineAligned="true"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:visibility="gone"
             tools:visibility="visible">
 
-            <TextView
-                android:layout_width="0dp"
+            <LinearLayout
+                android:id="@+id/otherCapitalFlowRow"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:letterSpacing="0.07"
-                android:text="@string/summary_net_worth"
-                android:textAllCaps="true"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="10.5sp"
-                android:textStyle="bold"/>
+                android:layout_marginTop="2dp"
+                android:baselineAligned="true"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
 
-            <TextView
-                android:id="@+id/netWorthSum"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.07"
+                    android:text="@string/summary_capital_flow"
+                    android:textAllCaps="true"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/otherCapitalFlowSum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    tools:text="−400 000 ₽"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/otherCapitalRow"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/colorTextPrimary"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="12 592 794 ₽"/>
+                android:layout_marginTop="2dp"
+                android:baselineAligned="true"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.07"
+                    android:text="@string/summary_capital"
+                    android:textAllCaps="true"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/otherCapitalSum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    tools:text="12 000 000 ₽"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/otherDebtFlowRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:baselineAligned="true"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.07"
+                    android:text="@string/summary_debt_flow"
+                    android:textAllCaps="true"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/otherDebtFlowSum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    tools:text="−100 ₽"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/otherOwedRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:baselineAligned="true"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.07"
+                    android:text="@string/debts_owed_to_me"
+                    android:textAllCaps="true"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/otherOwedSum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    tools:text="0 ₽"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/otherOweRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:baselineAligned="true"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.07"
+                    android:text="@string/debts_i_owe"
+                    android:textAllCaps="true"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/otherOweSum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    tools:text="0 ₽"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/otherFxRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:baselineAligned="true"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.07"
+                    android:text="@string/summary_fx_diff"
+                    android:textAllCaps="true"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/otherFxSum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    tools:text="−1 000 ₽"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/otherTotalRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:baselineAligned="true"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.07"
+                    android:text="@string/summary_total_all"
+                    android:textAllCaps="true"
+                    android:textColor="@color/colorTextSecondary"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/otherTotalSum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    tools:text="12 592 794 ₽"/>
+            </LinearLayout>
         </LinearLayout>
-
-        <!-- Долги на конец периода (openspec debts, D9): видны, только если есть хоть
-             один заём. «На начало» / «На конец» выше — без займов; «Всего с долгами» =
-             ликвидные + «Мне должны» − «Я должен». BaseTabActivity.refreshDebtRows. -->
-        <LinearLayout
-            android:id="@+id/debtOwedRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:baselineAligned="true"
-            android:orientation="horizontal"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:letterSpacing="0.07"
-                android:text="@string/debts_owed_to_me"
-                android:textAllCaps="true"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="10.5sp"
-                android:textStyle="bold"/>
-
-            <TextView
-                android:id="@+id/debtOwedSum"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="0 ₽"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/debtOweRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:baselineAligned="true"
-            android:orientation="horizontal"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:letterSpacing="0.07"
-                android:text="@string/debts_i_owe"
-                android:textAllCaps="true"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="10.5sp"
-                android:textStyle="bold"/>
-
-            <TextView
-                android:id="@+id/debtOweSum"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="0 ₽"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/debtTotalRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:baselineAligned="true"
-            android:orientation="horizontal"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:letterSpacing="0.07"
-                android:text="@string/summary_total_with_debts"
-                android:textAllCaps="true"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="10.5sp"
-                android:textStyle="bold"/>
-
-            <TextView
-                android:id="@+id/debtTotalSum"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/colorTextPrimary"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="0 ₽"/>
-        </LinearLayout>
-
 
         <View
             android:layout_width="match_parent"
@@ -389,104 +502,6 @@
                     android:textStyle="bold"
                     tools:text="156 940 ₽"/>
             </LinearLayout>
-        </LinearLayout>
-        <!-- Сверка «Итога» с «Доход − Расход» (.github-private#1): Итог — разница балансов
-             ликвидных кошельков, а доход и расход не знают про переводы в капитал и обратно
-             и про курс. Две строки закрывают разницу: Итог = Доход − Расход + «В капитал /
-             из капитала» + «Курсовая разница». Нулевая строка скрыта.
-             BaseTabActivity.refreshReconciliationRows. -->
-        <LinearLayout
-            android:id="@+id/capitalFlowRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:baselineAligned="true"
-            android:orientation="horizontal"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:letterSpacing="0.07"
-                android:text="@string/summary_capital_flow"
-                android:textAllCaps="true"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="10.5sp"
-                android:textStyle="bold"/>
-
-            <TextView
-                android:id="@+id/capitalFlowSum"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="−1 000 ₽"/>
-        </LinearLayout>
-
-        <!-- «В долг / из долга» (debts, D9): выдача и возврат займов за период; вместе с
-             «Доход − Расход» и капиталом сводит «Итог». -->        <LinearLayout
-            android:id="@+id/debtFlowRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:baselineAligned="true"
-            android:orientation="horizontal"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:letterSpacing="0.07"
-                android:text="@string/summary_debt_flow"
-                android:textAllCaps="true"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="10.5sp"
-                android:textStyle="bold"/>
-
-            <TextView
-                android:id="@+id/debtFlowSum"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="0 ₽"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/fxDiffRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:baselineAligned="true"
-            android:orientation="horizontal"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:letterSpacing="0.07"
-                android:text="@string/summary_fx_diff"
-                android:textAllCaps="true"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="10.5sp"
-                android:textStyle="bold"/>
-
-            <TextView
-                android:id="@+id/fxDiffSum"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/colorTextSecondary"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="−1 000 ₽"/>
         </LinearLayout>
     </LinearLayout>
 

@@ -75,7 +75,7 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView hideRecentsHint;
     private FrameLayout switchRemind;
     private FrameLayout switchPickerKeyboard;
-    private FrameLayout switchCapitalInSummary;
+    private FrameLayout switchSummaryOtherExpanded;
     private TextView walletSortValue;
     private TextView categorySortValue;
     private TextView rowRemindTime;
@@ -107,7 +107,7 @@ public class SettingsActivity extends AppCompatActivity {
         hideRecentsHint = findViewById(R.id.hideRecentsHint);
         switchRemind = findViewById(R.id.switchRemind);
         switchPickerKeyboard = findViewById(R.id.switchPickerKeyboard);
-        switchCapitalInSummary = findViewById(R.id.switchCapitalInSummary);
+        switchSummaryOtherExpanded = findViewById(R.id.switchSummaryOtherExpanded);
         walletSortValue = findViewById(R.id.walletSortValue);
         categorySortValue = findViewById(R.id.categorySortValue);
         rowRemindTime = findViewById(R.id.rowRemindTime);
@@ -135,7 +135,7 @@ public class SettingsActivity extends AppCompatActivity {
         paintSecurity();
         applySwitchState(switchRemind, AppSettings.isRemindOn(this));
         applySwitchState(switchPickerKeyboard, AppSettings.isPickerKeyboardOn(this));
-        applySwitchState(switchCapitalInSummary, AppSettings.isCapitalInSummaryOn(this));
+        applySwitchState(switchSummaryOtherExpanded, AppSettings.isSummaryOtherExpanded(this));
         paintSortValues();
 
         paintRemindTime();
@@ -467,11 +467,10 @@ public class SettingsActivity extends AppCompatActivity {
         AppSettings.setPickerKeyboardOn(this, toggleSwitch(switchPickerKeyboard));
     }
 
-    /** Табы перечитывают итоги по ревизии состояния — поднимаем её, иначе при
-     *  возврате строки «Капитал» остались бы как были. */
-    public void onToggleCapitalInSummary(View view) {
-        AppSettings.setCapitalInSummaryOn(this, toggleSwitch(switchCapitalInSummary));
-        com.example.wallettransactions.PeriodFilterState.get(this).markDataChanged();
+    /** Ревизию не поднимаем: настройку читает экран при открытии, уже раскрытую вручную
+     *  карточку на открытых табах она не переворачивает (design D3). */
+    public void onToggleSummaryOtherExpanded(View view) {
+        AppSettings.setSummaryOtherExpanded(this, toggleSwitch(switchSummaryOtherExpanded));
     }
 
     public void onPickWalletSort(View view) {

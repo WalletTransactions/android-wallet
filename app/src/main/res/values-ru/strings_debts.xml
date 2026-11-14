@@ -34,8 +34,7 @@
     <string name="debts_overdue">просрочен с %1$s</string>
     <string name="debts_due">до %1$s</string>
     <string name="debts_closed">закрыт</string>
-    <string name="summary_total_with_debts">Всего с долгами</string>
-    <string name="summary_debt_flow">В долг / из долга</string>
+    <string name="summary_debt_flow">Долги: изменение</string>
     <string name="debt_label_gave">Дал в долг</string>
     <string name="debt_label_took">Взял в долг</string>
     <string name="debt_label_repaid">Вернул долг</string>

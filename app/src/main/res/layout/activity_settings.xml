@@ -161,9 +161,9 @@
 
             <View style="@style/MoreRowDivider"/>
 
-            <!-- Строки «Капитал» / «Всего с капиталом» в карточке итогов табов
-                 (AppSettings.isCapitalInSummaryOn). Какие активы входят во «Всего с
-                 капиталом» — галочка на самом активе. -->
+            <!-- Начальный вид строки «Прочее» в карточке итогов табов
+                 (AppSettings.isSummaryOtherExpanded). Кнопка ▾ на самом экране
+                 настройку не меняет. -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -180,7 +180,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/settings_capital_in_summary"
+                        android:text="@string/settings_summary_other_expanded"
                         android:textSize="14.5sp"
                         android:textStyle="bold"
                         android:textColor="@color/colorTextPrimary"/>
@@ -189,17 +189,17 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="3dp"
-                        android:text="@string/settings_capital_in_summary_hint"
+                        android:text="@string/settings_summary_other_expanded_hint"
                         android:textSize="12.5sp"
                         android:textColor="@color/colorTextSecondary"/>
                 </LinearLayout>
 
                 <FrameLayout
-                    android:id="@+id/switchCapitalInSummary"
+                    android:id="@+id/switchSummaryOtherExpanded"
                     android:layout_width="46dp"
                     android:layout_height="26dp"
                     android:background="@drawable/bg_switch_off"
-                    android:onClick="onToggleCapitalInSummary">
+                    android:onClick="onToggleSummaryOtherExpanded">
                     <View
                         android:layout_width="22dp"
                         android:layout_height="22dp"

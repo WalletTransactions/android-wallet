@@ -12,6 +12,7 @@ import com.example.wallettransactions.Activities.Fragments.ChooseDatePeriodFragm
 import com.example.wallettransactions.AdapterUtils;
 import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.Data.RecurringOperationsDb;
+import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.Data.WalletDbLoader;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
@@ -24,6 +25,7 @@ import com.example.wallettransactions.DateUtils;
 import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
+import com.example.wallettransactions.SummaryOther;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -115,6 +117,7 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         if (screenTitle != null && title != null) screenTitle.setText(title);
 
         updateCurrencyButton();
+        initOtherSection();
 
         fragmentDataPeriod = (ChooseDatePeriodFragment)
                 getSupportFragmentManager().findFragmentById(R.id.fragmentDataPeriod);
@@ -250,109 +253,116 @@ public abstract class BaseTabActivity extends AppCompatActivity {
         AdapterUtils.setAmountText(findViewById(R.id.expenseSum), reportExpanse.getTotal(),
                 currencyEq, AdapterUtils.Operation.expanse);
 
-        refreshCapitalRow(db, currencyEq);
-        refreshDebtRows(db, currencyEq);
-        refreshReconciliationRows(db, currencyEq,
-                clBalance.getTotalAmountEq() - opBalance.getTotalAmountEq(),
-                orZero(reportIncome.getTotal()) - orZero(reportExpanse.getTotal()),
-                clBalance.getApproxEq() || opBalance.getApproxEq(),
-                clBalance.isIncomplete() || opBalance.isIncomplete());
+        refreshOtherSection(db, currencyEq, opBalance, clBalance,
+                reportIncome.getTotal(), reportExpanse.getTotal());
     }
 
-    /** У отчёта без строк сумма null — для сверки это ноль. */
-    private static double orZero(EquivalentResult r) {
-        return r.getTotalAmountEq() == null ? 0 : r.getTotalAmountEq();
-    }
-
-    /** Меньше этого (в валюте эквивалента) разница — округление, строку не показываем. */
-    private static final double RECONCILIATION_EPSILON = 0.5;
+    // ── «Прочее» ──────────────────────────────────────────────────────────────
 
     /**
-     * Строки «В капитал / из капитала» и «Курсовая разница» под «Итогом»: вместе с
-     * «Доход − Расход» они дают «Итог» всегда — вторая строка это остаток, поэтому равенство
-     * сходится даже при неполных курсах. Нулевая строка скрыта.
+     * Раскрыты ли детали «Прочего» на этом экране (openspec summary-other-section, D2).
+     * Начальное значение — из настройки при открытии экрана, дальше его меняет только
+     * нажатие на строку: настройку оно не трогает, а экраны («Операции», «Кошельки»,
+     * «Отчёты») — разные Activity, поэтому у каждого свой флаг.
      */
-    private void refreshReconciliationRows(SQLiteDatabase db, Currency currencyEq,
-                                           double total, double incomeMinusExpense,
-                                           boolean approx, boolean incomplete) {
-        View flowRow = findViewById(R.id.capitalFlowRow);
-        View fxRow = findViewById(R.id.fxDiffRow);
-        if (flowRow == null || fxRow == null) return;
-        EquivalentResult flow = WalletDbLoader.GenerateCapitalFlowForPeriod(db, getDateFrom(), getDateTo(), currencyEq);
-        double flowEq = flow.getTotalAmountEq();
-        // Займы (debts, D9): выдача и возврат — своя строка, иначе ушли бы в «Курсовую разницу».
-        View debtRow = findViewById(R.id.debtFlowRow);
-        EquivalentResult debtFlow = WalletDbLoader.GenerateDebtFlowForPeriod(db, getDateFrom(), getDateTo(), currencyEq);
-        double debtEq = debtFlow.getTotalAmountEq();
-        boolean showDebt = debtRow != null && Math.abs(debtEq) >= RECONCILIATION_EPSILON;
-        if (debtRow != null) debtRow.setVisibility(showDebt ? View.VISIBLE : View.GONE);
-        if (showDebt) {
-            AdapterUtils.setAmountText(findViewById(R.id.debtFlowSum), debtEq, currencyEq,
-                    debtFlow.getApproxEq(), debtFlow.isIncomplete());
-        }
-        double fx = total - incomeMinusExpense - flowEq - debtEq;
+    private boolean otherExpanded;
 
-        boolean showFlow = Math.abs(flowEq) >= RECONCILIATION_EPSILON;
-        boolean showFx = Math.abs(fx) >= RECONCILIATION_EPSILON;
-        flowRow.setVisibility(showFlow ? View.VISIBLE : View.GONE);
-        fxRow.setVisibility(showFx ? View.VISIBLE : View.GONE);
-        if (showFlow) {
-            AdapterUtils.setAmountText(findViewById(R.id.capitalFlowSum), flowEq, currencyEq,
-                    flow.getApproxEq(), flow.isIncomplete());
-        }
-        if (showFx) {
-            AdapterUtils.setAmountText(findViewById(R.id.fxDiffSum), fx, currencyEq,
-                    approx || flow.getApproxEq() || debtFlow.getApproxEq(),
-                    incomplete || flow.isIncomplete() || debtFlow.isIncomplete());
+    private static final String STATE_OTHER_EXPANDED = "summaryOtherExpanded";
+
+    private void initOtherSection() {
+        otherExpanded = AppSettings.isSummaryOtherExpanded(this);
+        View row = findViewById(R.id.otherRow);
+        if (row == null) return; // экран без карточки («Ещё»)
+        row.setOnClickListener(v -> {
+            otherExpanded = !otherExpanded;
+            applyOtherExpanded();
+        });
+    }
+
+    /** Поворот экрана не должен сворачивать то, что пользователь раскрыл вручную. */
+    @Override
+    protected void onSaveInstanceState(android.os.Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(STATE_OTHER_EXPANDED, otherExpanded);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(android.os.Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (savedInstanceState.containsKey(STATE_OTHER_EXPANDED)) {
+            otherExpanded = savedInstanceState.getBoolean(STATE_OTHER_EXPANDED);
+            applyOtherExpanded();
         }
     }
 
-    /**
-     * «Мне должны», «Я должен», «Всего с долгами» на конец периода (openspec debts, D9) —
-     * только если в леджере есть хоть один заём (спека «Нет долгов»).
-     */
-    private void refreshDebtRows(SQLiteDatabase db, Currency currencyEq) {
-        View owedRow = findViewById(R.id.debtOwedRow);
-        View oweRow = findViewById(R.id.debtOweRow);
-        View totalRow = findViewById(R.id.debtTotalRow);
-        if (owedRow == null || oweRow == null || totalRow == null) return;
-        WalletDbLoader.DebtsResult debts = WalletDbLoader.GenerateDebtsToDate(db, getDateTo(), currencyEq);
-        int visibility = debts.hasDebts ? View.VISIBLE : View.GONE;
-        owedRow.setVisibility(visibility);
-        oweRow.setVisibility(visibility);
-        totalRow.setVisibility(visibility);
-        if (!debts.hasDebts) return;
-        AdapterUtils.setAmountText(findViewById(R.id.debtOwedSum), debts.owedToMe, currencyEq,
-                AdapterUtils.Operation.transfer);
-        AdapterUtils.setAmountText(findViewById(R.id.debtOweSum), debts.iOwe, currencyEq,
-                AdapterUtils.Operation.transfer);
-        AdapterUtils.setAmountText(findViewById(R.id.debtTotalSum), debts.totalWithDebts, currencyEq,
-                AdapterUtils.Operation.transfer);
+    /** Блок деталей и стрелка по {@link #otherExpanded}; цифры тут не пересчитываются. */
+    private void applyOtherExpanded() {
+        View details = findViewById(R.id.otherDetails);
+        View row = findViewById(R.id.otherRow);
+        if (details == null || row == null) return;
+        details.setVisibility(otherExpanded && row.getVisibility() == View.VISIBLE
+                ? View.VISIBLE : View.GONE);
+        View chevron = findViewById(R.id.otherChevron);
+        if (chevron != null) chevron.setRotation(otherExpanded ? -90 : 90);
     }
 
     /**
-     * Строки «Капитал» и «Всего с капиталом» на конец периода (openspec capital-assets): итоги
-     * выше считают только ликвидные кошельки, капитал — отдельно, тем же запросом балансов.
-     * Без активов строк нет, при выключенной настройке «Капитал в итогах»
-     * ({@link com.example.wallettransactions.AppSettings#isCapitalInSummaryOn}) — тоже;
-     * видимость у двух строк всегда общая.
+     * Строка «Прочее» и её детали вместо прежних восьми строк карточки: расчёт и условия
+     * видимости — в {@link SummaryOther}, здесь только отрисовка. Сумма — остаток
+     * {@code Итог − (Доход − Расход)}, поэтому сходится всегда, даже при неполных курсах.
      */
-    private void refreshCapitalRow(SQLiteDatabase db, Currency currencyEq) {
-        View capitalRow = findViewById(R.id.capitalRow);
-        View netWorthRow = findViewById(R.id.netWorthRow);
-        if (capitalRow == null || netWorthRow == null) return;
-        // Помеченный актив без операций тоже показывает строки (с нулём).
-        boolean hasAssets = com.example.wallettransactions.AppSettings.isCapitalInSummaryOn(this)
-                && com.example.wallettransactions.Data.WalletDbCRUD.HasAssets(db);
-        int visibility = hasAssets ? View.VISIBLE : View.GONE;
-        capitalRow.setVisibility(visibility);
-        netWorthRow.setVisibility(visibility);
-        if (!hasAssets) return;
-        WalletDbLoader.CapitalResult capital = WalletDbLoader.GenerateCapitalToDate(db, getDateTo(), currencyEq);
-        AdapterUtils.setAmountText(findViewById(R.id.capitalSum), capital.capital, currencyEq,
-                AdapterUtils.Operation.transfer);
-        AdapterUtils.setAmountText(findViewById(R.id.netWorthSum), capital.netWorth, currencyEq,
-                AdapterUtils.Operation.transfer);
+    private void refreshOtherSection(SQLiteDatabase db, Currency currencyEq,
+                                     EquivalentResult opBalance, EquivalentResult clBalance,
+                                     EquivalentResult income, EquivalentResult expense) {
+        View row = findViewById(R.id.otherRow);
+        if (row == null) return;
+
+        // Помеченный актив без операций тоже даёт строки (с нулём).
+        SummaryOther s = SummaryOther.compute(opBalance, clBalance, income, expense,
+                WalletDbCRUD.HasAssets(db),
+                WalletDbLoader.GenerateCapitalToDate(db, getDateTo(), currencyEq),
+                WalletDbLoader.GenerateCapitalFlowForPeriod(db, getDateFrom(), getDateTo(), currencyEq),
+                WalletDbLoader.GenerateDebtsToDate(db, getDateTo(), currencyEq),
+                WalletDbLoader.GenerateDebtFlowForPeriod(db, getDateFrom(), getDateTo(), currencyEq));
+
+        row.setVisibility(s.showOther ? View.VISIBLE : View.GONE);
+        applyOtherExpanded();
+
+        // Дочерние строки обновляем и при скрытой «Прочем»: иначе у них остаётся видимость
+        // прошлого периода и после повторного показа строки нужно было бы верить рефрешу.
+        if (s.showOther) setOtherAmount(R.id.otherSum, s.other, currencyEq, true);
+        showOtherRow(R.id.otherCapitalFlowRow, R.id.otherCapitalFlowSum, s.showCapitalFlow,
+                s.capitalFlow, currencyEq, true);
+        showOtherRow(R.id.otherCapitalRow, R.id.otherCapitalSum, s.showCapital,
+                s.capital, currencyEq, false);
+        showOtherRow(R.id.otherDebtFlowRow, R.id.otherDebtFlowSum, s.showDebtFlow,
+                s.debtFlow, currencyEq, true);
+        showOtherRow(R.id.otherOwedRow, R.id.otherOwedSum, s.showDebts, s.owedToMe, currencyEq, false);
+        showOtherRow(R.id.otherOweRow, R.id.otherOweSum, s.showDebts, s.iOwe, currencyEq, false);
+        showOtherRow(R.id.otherFxRow, R.id.otherFxSum, s.showFxDiff, s.fxDiff, currencyEq, true);
+        showOtherRow(R.id.otherTotalRow, R.id.otherTotalSum, s.showTotal, s.total, currencyEq, false);
+    }
+
+    private void showOtherRow(int rowId, int sumId, boolean visible, SummaryOther.Amount amount,
+                              Currency currencyEq, boolean coloredBySign) {
+        View row = findViewById(rowId);
+        row.setVisibility(visible ? View.VISIBLE : View.GONE);
+        if (visible) setOtherAmount(sumId, amount, currencyEq, coloredBySign);
+    }
+
+    /**
+     * Потоки и разница — со знаком и цветом по знаку, остатки (капитал, долги, «Всего…») —
+     * нейтральным цветом, как «На начало» и «На конец».
+     */
+    private void setOtherAmount(int sumId, SummaryOther.Amount amount, Currency currencyEq,
+                                boolean coloredBySign) {
+        TextView sum = findViewById(sumId);
+        if (coloredBySign) {
+            AdapterUtils.setAmountText(sum, amount.value, currencyEq, amount.approx, amount.incomplete);
+        } else {
+            AdapterUtils.setAmountText(sum, amount.value, currencyEq, AdapterUtils.Operation.transfer,
+                    amount.approx, amount.incomplete);
+        }
     }
 
     protected void refreshFilterBanner() {

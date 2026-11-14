@@ -28,7 +28,7 @@ public final class AppSettings {
     private static final String PREF_FILTER_EQ_MAX = "filterEqMax";
     private static final String PREF_LAST_WALLET_ID = "lastWalletId";
     private static final String PREF_PICKER_KEYBOARD = "pickerKeyboard";
-    private static final String PREF_CAPITAL_IN_SUMMARY = "capitalInSummary";
+    private static final String PREF_SUMMARY_OTHER_EXPANDED = "summaryOtherExpanded";
     private static final String PREF_PICKER_WALLET_SORT = "pickerWalletSort";
     private static final String PREF_PICKER_CATEGORY_SORT = "pickerCategorySort";
     private static final String PREF_THEME_MODE = "themeMode";
@@ -145,16 +145,16 @@ public final class AppSettings {
     }
 
     /**
-     * Показывать ли в карточке итогов табов строки «Капитал» и «Всего с капиталом»
-     * (openspec capital-assets). По умолчанию да — так было до появления настройки.
-     * Какие активы входят во «Всего с капиталом», решает галочка на самом активе.
+     * Открывать ли строку «Прочее» в карточке итогов сразу в раскрытом виде
+     * (openspec summary-other-section). По умолчанию нет — видна только сумма.
+     * Читается при открытии экрана; кнопка ▾ на экране настройку не меняет.
      */
-    public static boolean isCapitalInSummaryOn(Context ctx) {
-        return prefs(ctx).getBoolean(PREF_CAPITAL_IN_SUMMARY, true);
+    public static boolean isSummaryOtherExpanded(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_SUMMARY_OTHER_EXPANDED, false);
     }
 
-    public static void setCapitalInSummaryOn(Context ctx, boolean on) {
-        prefs(ctx).edit().putBoolean(PREF_CAPITAL_IN_SUMMARY, on).apply();
+    public static void setSummaryOtherExpanded(Context ctx, boolean on) {
+        prefs(ctx).edit().putBoolean(PREF_SUMMARY_OTHER_EXPANDED, on).apply();
     }
 
     /**
