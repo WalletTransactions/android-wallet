@@ -203,6 +203,11 @@ public class AccountItem implements IFilterIsLike {
      */
     public Boolean getIsArchived(){return isArchived;}
 
+    /** Флаг архива в кэше — после записи флага в БД в обход {@code AccountList} (авто-архив займа). */
+    public void setIsArchived(boolean archived) {
+        this.isArchived = archived;
+    }
+
     /** Источник истины — {@link #kind}, не тип объекта (см. javadoc {@link Kind}). */
     public boolean isOperatingAccount()
     {

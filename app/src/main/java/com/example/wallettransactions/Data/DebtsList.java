@@ -8,9 +8,11 @@ import java.util.Map;
 
 /**
  * Группировка экрана «Долги» (openspec debts, спека «Экран „Долги“», design D10): займы по
- * контрагентам, контрагенты — по модулю остатка в эквиваленте, закрытые (нулевой остаток)
- * скрыты без переключателя, просрочка — срок раньше сегодня при ненулевом остатке. Без БД
- * и Android — для юнит-тестов.
+ * контрагентам, контрагенты — по модулю остатка в эквиваленте, архивные займы скрыты за
+ * переключателем «Показывать архивные» (openspec wallets-filter-and-debt-autoarchive, D1: «Закрытые»
+ * заменены архивом; нулевой заём без архива виден), направление «Мне должны» / «Я должен» — по
+ * знаку остатка (D7), поиск по имени контрагента (D6), просрочка — срок раньше сегодня при
+ * ненулевом остатке. Без БД и Android — для юнит-тестов.
  */
 public final class DebtsList {
     private DebtsList() {}
@@ -31,6 +33,8 @@ public final class DebtsList {
         public final String comment;
         /** Остаток пересчитан по курсу — валюта займа не валюта эквивалента. */
         public final boolean converted;
+        /** Флаг архива кошелька займа — влияет только на показ в списке. */
+        public final boolean archived;
 
         public Loan(int accountId, String name, String counterpartyUuid, double balance, Double balanceEq,
                     String currencySymbol, int precision, String dueDate, String comment) {
@@ -40,6 +44,14 @@ public final class DebtsList {
 
         public Loan(int accountId, String name, String counterpartyUuid, double balance, Double balanceEq,
                     String currencySymbol, int precision, String dueDate, String comment, boolean converted) {
+            this(accountId, name, counterpartyUuid, balance, balanceEq, currencySymbol, precision, dueDate,
+                    comment, converted, false);
+        }
+
+        public Loan(int accountId, String name, String counterpartyUuid, double balance, Double balanceEq,
+                    String currencySymbol, int precision, String dueDate, String comment, boolean converted,
+                    boolean archived) {
+            this.archived = archived;
             this.accountId = accountId;
             this.converted = converted;
             this.name = name;
@@ -81,18 +93,34 @@ public final class DebtsList {
         }
     }
 
+    /** Фильтр направления: по знаку остатка займа; нулевой остаток не проходит ни в одно из двух. */
+    public enum Direction { ALL, OWED_TO_ME, I_OWE }
+
+    /** Без поиска и направления — только переключатель архива. */
+    public static List<Group> group(List<Loan> loans, Map<String, String> names, boolean showArchived) {
+        return group(loans, names, showArchived, Direction.ALL, "");
+    }
+
     /**
+     * Условия складываются через «И»; контрагент без подходящих займов в результат не попадает.
+     *
      * @param names uuid контрагента → имя; займ неизвестного контрагента идёт под его uuid
-     * @param showClosed переключатель «Закрытые»
+     * @param showArchived переключатель «Показывать архивные»
+     * @param query строка поиска по имени контрагента ({@link AccountNames#matchesSearch})
      */
-    public static List<Group> group(List<Loan> loans, Map<String, String> names, boolean showClosed) {
+    public static List<Group> group(List<Loan> loans, Map<String, String> names, boolean showArchived,
+                                    Direction direction, String query) {
         Map<String, Group> byCp = new LinkedHashMap<>();
         for (Loan loan : loans) {
-            if (!showClosed && loan.isClosed()) continue;
+            if (!showArchived && loan.archived) continue;
+            if (direction == Direction.OWED_TO_ME && (loan.isClosed() || loan.balance < 0)) continue;
+            if (direction == Direction.I_OWE && (loan.isClosed() || loan.balance > 0)) continue;
             Group g = byCp.get(loan.counterpartyUuid);
             if (g == null) {
                 String name = names.get(loan.counterpartyUuid);
-                g = new Group(loan.counterpartyUuid, name != null ? name : loan.counterpartyUuid);
+                String shown = name != null ? name : loan.counterpartyUuid;
+                if (!AccountNames.matchesSearch(shown, query)) continue;
+                g = new Group(loan.counterpartyUuid, shown);
                 byCp.put(loan.counterpartyUuid, g);
             }
             g.loans.add(loan);

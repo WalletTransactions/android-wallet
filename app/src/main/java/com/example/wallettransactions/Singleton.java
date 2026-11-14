@@ -104,6 +104,19 @@ public class Singleton {
         // и так перечитывают данные в onResume.
     }
 
+    /**
+     * Ставит флаг архива в кэше счетов (если он уже загружен) — без Context и без перечитывания:
+     * вызывается из {@code DebtAutoArchive}, которому после записи флага в БД нужно, чтобы экраны
+     * «Долги» и «Кошельки», читающие кэш, сразу увидели архивный заём.
+     */
+    public void markAccountsArchived(java.util.Collection<Integer> ids) {
+        if (accounts == null) return;
+        for (int id : ids) {
+            com.example.wallettransactions.DataItems.Accounts.AccountItem item = accounts.getAccountById(id);
+            if (item != null) item.setIsArchived(true);
+        }
+    }
+
     public CurrencyList getCurrencyList(Context context){
         if (currencyList == null){
             currencyList = new CurrencyList();

@@ -942,10 +942,20 @@ public class WalletDbCRUD {
         if (balance == 0) return WriteOffResult.zero;
         if (categoryId <= 0 || amount <= 0) return WriteOffResult.failed;
         String when = ForgiveDateTime(day, new java.util.Date());
-        long id = balance > 0
-                ? InsertOperation(db, when, loanId, categoryId, amount, comment)
-                : InsertOperation(db, when, categoryId, loanId, amount, comment);
-        return id > 0 ? WriteOffResult.written : WriteOffResult.failed;
+        // Прощение всего остатка гасит заём — авто-архив (openspec wallets-filter-and-debt-autoarchive).
+        db.beginTransaction();
+        try {
+            DebtAutoArchive.Snapshot debtsBefore = DebtAutoArchive.begin(db);
+            long id = balance > 0
+                    ? InsertOperation(db, when, loanId, categoryId, amount, comment)
+                    : InsertOperation(db, when, categoryId, loanId, amount, comment);
+            if (id <= 0) return WriteOffResult.failed;
+            debtsBefore.finish(db);
+            db.setTransactionSuccessful();
+            return WriteOffResult.written;
+        } finally {
+            db.endTransaction();
+        }
     }
 
     /**

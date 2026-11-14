@@ -7,12 +7,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import com.example.wallettransactions.AdapterUtils;
+import com.example.wallettransactions.Chips;
 import com.example.wallettransactions.Data.WalletDbLoader;
+import com.example.wallettransactions.Data.WalletSections;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
@@ -24,6 +27,7 @@ import com.example.wallettransactions.Singleton;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,13 +46,49 @@ import java.util.Set;
  */
 public class AccountActivity extends BaseTabActivity {
 
+    // Чипы секций и «Показывать архивные» живут на экране и сбрасываются при каждом его
+    // создании; общий фильтр шапки они не затрагивают (openspec wallets-filter-and-debt-autoarchive, D4).
+    private final Set<WalletSections.Section> selectedSections = EnumSet.noneOf(WalletSections.Section.class);
+    private boolean showArchived = false;
+    private TextView chipLiquid, chipCapital, chipDebts;
+    private View chipsRow;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_account);
+        // Вьюхи чипов — до initTabScreen: первая перезагрузка списка их уже красит.
+        chipsRow = findViewById(R.id.walletsChipsRow);
+        chipLiquid = findViewById(R.id.walletsChipLiquid);
+        chipCapital = findViewById(R.id.walletsChipCapital);
+        chipDebts = findViewById(R.id.walletsChipDebts);
+        chipLiquid.setOnClickListener(v -> toggleSection(WalletSections.Section.LIQUID));
+        chipCapital.setOnClickListener(v -> toggleSection(WalletSections.Section.CAPITAL));
+        chipDebts.setOnClickListener(v -> toggleSection(WalletSections.Section.DEBTS));
+        CheckBox archived = findViewById(R.id.walletsShowArchived);
+        archived.setOnCheckedChangeListener((b, checked) -> {
+            showArchived = checked;
+            reloadTabData();
+        });
         initTabScreen(R.id.navWallets, getString(R.string.tab_wallets));
         reloadSharedAndTabData();
+    }
+
+    private void toggleSection(WalletSections.Section s) {
+        if (!selectedSections.remove(s)) selectedSections.add(s);
+        reloadTabData();
+    }
+
+    private void paintChips(Set<WalletSections.Section> available) {
+        chipLiquid.setVisibility(available.contains(WalletSections.Section.LIQUID) ? View.VISIBLE : View.GONE);
+        chipCapital.setVisibility(available.contains(WalletSections.Section.CAPITAL) ? View.VISIBLE : View.GONE);
+        chipDebts.setVisibility(available.contains(WalletSections.Section.DEBTS) ? View.VISIBLE : View.GONE);
+        // Чипы выбирают среди секций; с одной-единственной выбирать нечего.
+        chipsRow.setVisibility(available.size() > 1 ? View.VISIBLE : View.GONE);
+        Chips.paint(this, chipLiquid, selectedSections.contains(WalletSections.Section.LIQUID));
+        Chips.paint(this, chipCapital, selectedSections.contains(WalletSections.Section.CAPITAL));
+        Chips.paint(this, chipDebts, selectedSections.contains(WalletSections.Section.DEBTS));
     }
 
     @Override
@@ -80,8 +120,9 @@ public class AccountActivity extends BaseTabActivity {
      * A wallet untouched during the period is listed too: the report is about where the
      * money stands, and a full wallet nobody touched this month still holds its money —
      * hiding it would leave the balances not adding up to the card above. Archived wallets
-     * are listed for the same reason: the archive flag only keeps them out of pickers, it
-     * never takes them out of the arithmetic ({@code AccountItem.getIsArchived()}).
+     * are hidden from the list by default (toggle «Показывать архивные»), but the archive flag
+     * is display-only: they stay in section sums and the card above
+     * ({@code AccountItem.getIsArchived()}).
      */
     private List<WalletRow> buildWalletRows() {
         SQLiteDatabase db = getDb();
@@ -115,16 +156,12 @@ public class AccountActivity extends BaseTabActivity {
                     netEq, netEqComputable, netNative);
             row.isAsset = close.isAsset();
             row.isDebt = close.isDebt();
-            // Закрытый заём (нулевой остаток) в секцию «Долги» не входит — его видно на
-            // экране «Долги» за «Показывать закрытые» (спека, «Таб „Кошельки“»).
+            AccountItem item = Singleton.instance.getAccounts(this).getAccountById(close.accountId);
+            row.archived = item != null && Boolean.TRUE.equals(item.getIsArchived());
+            // Нулевой заём (погашен) в секцию «Долги» не входит — он виден на экране «Долги»
+            // (спека, «Таб „Кошельки“»).
             if (row.isDebt && Math.abs(close.balance) < 0.005) continue;
             result.add(row);
-        }
-        boolean hasAssets = false;
-        boolean hasDebts = false;
-        for (WalletRow r : result) {
-            hasAssets |= r.isAsset;
-            hasDebts |= r.isDebt;
         }
 
         // Fattest wallet at the end of the period first. Wallets whose currency has no rate to
@@ -138,27 +175,25 @@ public class AccountActivity extends BaseTabActivity {
                         b.closeHasEq ? b.closeEq : b.closeBal,
                         a.closeHasEq ? a.closeEq : a.closeBal)));
 
-        if (!hasAssets && !hasDebts) return result;
-        // capital-assets: «Ликвидные», затем «Капитал» — каждая секция со своей суммой на
-        // конец периода; сортировка «самый толстый первым» — внутри секции. Секцию, которую
-        // фильтр опустошил, не показываем вовсе.
-        List<WalletRow> liquid = new ArrayList<>();
-        List<WalletRow> assets = new ArrayList<>();
-        List<WalletRow> debts = new ArrayList<>();
-        for (WalletRow r : result) (r.isDebt ? debts : r.isAsset ? assets : liquid).add(r);
+        // Чипы секций и скрытие архивных (openspec wallets-filter-and-debt-autoarchive): архив —
+        // только для показа, суммы секций считаются по всем строкам, включая скрытые.
+        WalletSections.Layout<WalletRow> layout = WalletSections.layout(result,
+                r -> r.isDebt ? WalletSections.Section.DEBTS
+                        : r.isAsset ? WalletSections.Section.CAPITAL : WalletSections.Section.LIQUID,
+                r -> r.archived, selectedSections, showArchived);
+        paintChips(layout.available);
+
+        boolean onlyLiquid = layout.available.isEmpty()
+                || (layout.available.size() == 1 && layout.available.contains(WalletSections.Section.LIQUID));
+        if (onlyLiquid) return new ArrayList<>(layout.shown.get(WalletSections.Section.LIQUID));
+        // capital-assets: «Ликвидные», затем «Капитал», затем «Долги» — каждая секция со своей
+        // суммой на конец периода; сортировка «самый толстый первым» — внутри секции.
         List<WalletRow> sectioned = new ArrayList<>();
-        if (!liquid.isEmpty()) {
-            sectioned.add(WalletRow.header(getString(R.string.wallets_section_liquid), liquid));
-            sectioned.addAll(liquid);
-        }
-        if (!assets.isEmpty()) {
-            sectioned.add(WalletRow.header(getString(R.string.wallets_section_capital), assets));
-            sectioned.addAll(assets);
-        }
-        // debts: займы — отдельной секцией после ликвидных и капитала.
-        if (!debts.isEmpty()) {
-            sectioned.add(WalletRow.header(getString(R.string.debts_title), debts));
-            sectioned.addAll(debts);
+        for (WalletSections.Section s : layout.visible) {
+            int title = s == WalletSections.Section.LIQUID ? R.string.wallets_section_liquid
+                    : s == WalletSections.Section.CAPITAL ? R.string.wallets_section_capital : R.string.debts_title;
+            sectioned.add(WalletRow.header(getString(title), layout.all.get(s)));
+            sectioned.addAll(layout.shown.get(s));
         }
         return sectioned;
     }
@@ -217,6 +252,8 @@ public class AccountActivity extends BaseTabActivity {
         boolean isAsset;
         /** Заём (debts) — строка секции «Долги». */
         boolean isDebt;
+        /** Флаг архива кошелька: скрывает строку из списка, но не из сумм. */
+        boolean archived;
         /** Не null — это заголовок секции, а не кошелёк: closeEq/closeHasEq — сумма секции. */
         String headerTitle;
 

@@ -13,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -20,6 +21,7 @@ import android.widget.TextView;
 
 import com.example.wallettransactions.AdapterUtils;
 import com.example.wallettransactions.AppSettings;
+import com.example.wallettransactions.Data.AccountNames;
 import com.example.wallettransactions.Data.WalletDbLoader;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
@@ -152,6 +154,8 @@ public class AccountPickerActivity extends AppCompatActivity {
 
     private boolean mShowWallets;
     private boolean mCatalogMode;
+    /** Справочник: переключатель «Показывать архивные»; по умолчанию выключен. */
+    private boolean mShowArchived;
     private int mCurrentAccountId;
     /** Только кошелёк: с категорией в паре частота ничего не говорит о выборе кошелька. */
     private int mPairWalletId;
@@ -190,6 +194,15 @@ public class AccountPickerActivity extends AppCompatActivity {
         mCategorySort = AppSettings.getPickerSort(this, false);
 
         findViewById(R.id.btnAddAccountRow).setVisibility(mCatalogMode ? View.VISIBLE : View.GONE);
+        // «Показывать архивные» — только в справочнике, выключен при каждом открытии; выбор счёта
+        // при вводе операции архивные по-прежнему скрывает (спека account-screens).
+        CheckBox showArchived = findViewById(R.id.pickerShowArchived);
+        showArchived.setVisibility(mCatalogMode ? View.VISIBLE : View.GONE);
+        showArchived.setOnCheckedChangeListener((b, checked) -> {
+            mShowArchived = checked;
+            buildRows();
+            applyFilters();
+        });
         boolean debtActions = !mCatalogMode && selectedType == cSelectedTypeChargeAccounts
                 && getIntent().getBooleanExtra(cDebtActions, false);
         findViewById(R.id.rowDebtActions).setVisibility(debtActions ? View.VISIBLE : View.GONE);
@@ -355,13 +368,14 @@ public class AccountPickerActivity extends AppCompatActivity {
     }
 
     private void applyFilters() {
-        // Именно contains, а не AccountItem.isLike: тот принимает строку как регулярное
-        // выражение, и одна скобка, набранная в поиске, уронила бы экран.
-        String query = mSearchInput.getText().toString().trim().toLowerCase();
+        // Именно подстрока, а не AccountItem.isLike: тот принимает строку как регулярное
+        // выражение, и одна скобка, набранная в поиске, уронила бы экран. Правило общее для
+        // всех поисков по имени: без регистра, «ё» = «е» (AccountNames.matchesSearch).
+        String query = mSearchInput.getText().toString();
 
         mVisibleRows.clear();
         for (Row row : (mShowWallets ? mWalletRows : mCategoryRows)) {
-            if (query.isEmpty() || row.account.getDisplayName().toLowerCase().contains(query))
+            if (AccountNames.matchesSearch(row.account.getDisplayName(), query))
                 mVisibleRows.add(row);
         }
 
@@ -399,10 +413,11 @@ public class AccountPickerActivity extends AppCompatActivity {
         }
 
         for (AccountItem account : accounts.getAllAccounts()) {
-            // Архивный счёт на то и архивный, чтобы не попадаться при вводе операции.
-            // В справочнике он, наоборот, нужен: снять архив больше негде. Прячется он
-            // только здесь, в выборе, — в расчётах и отчётах остаётся (AccountItem.getIsArchived).
-            if (!mCatalogMode && Boolean.TRUE.equals(account.getIsArchived())) continue;
+            // Архивный счёт на то и архивный, чтобы не попадаться при вводе операции. В справочнике
+            // он нужен, чтобы снять архив, — но за переключателем «Показывать архивные», по
+            // умолчанию выключенным. Флаг — только для показа: в расчётах и отчётах счёт остаётся
+            // (AccountItem.getIsArchived).
+            if ((!mCatalogMode || !mShowArchived) && Boolean.TRUE.equals(account.getIsArchived())) continue;
             // «Переоценку» при вводе операции не предлагаем (capital-assets): её проводки
             // пишет диалог переоценки актива. В справочнике она видна.
             if (!mCatalogMode && account.isSystemRevaluation()) continue;

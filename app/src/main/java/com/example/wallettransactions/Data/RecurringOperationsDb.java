@@ -146,6 +146,8 @@ public final class RecurringOperationsDb {
         List<Long> ids = new ArrayList<>();
         db.beginTransaction();
         try {
+            // Повтор мог погасить заём — авто-архив (openspec wallets-filter-and-debt-autoarchive).
+            DebtAutoArchive.Snapshot debtsBefore = DebtAutoArchive.begin(db);
             for (RecurringOperation r : loadAll(db)) {
                 if (!r.isRunning(now)) continue;
                 if (!isLiveAccount(db, r.accFromId) || !isLiveAccount(db, r.accToId)) continue;
@@ -165,6 +167,7 @@ public final class RecurringOperationsDb {
                 r.lastDate = due.get(due.size() - 1);
                 update(db, r);
             }
+            debtsBefore.finish(db);
             db.setTransactionSuccessful();
             // Только после успеха: при откате этих _id в базе нет.
             if (createdIds != null) createdIds.addAll(ids);

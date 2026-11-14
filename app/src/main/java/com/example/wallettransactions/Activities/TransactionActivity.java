@@ -51,6 +51,7 @@ import com.example.wallettransactions.DataItems.Operations.OperationItem;
 import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
+import com.example.wallettransactions.Data.DebtAutoArchive;
 import com.example.wallettransactions.Data.WalletContract;
 import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.Data.WalletDbHelper;
@@ -600,7 +601,9 @@ public class TransactionActivity extends AppCompatActivity {
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
         db.beginTransaction();
         try {
+            DebtAutoArchive.Snapshot debtsBefore = DebtAutoArchive.begin(db);
             for (int id : ids) WalletDbCRUD.DeleteOperation(db, id);
+            debtsBefore.finish(db); // удаление могло обнулить заём (спека debts «Авто-архив»)
             db.setTransactionSuccessful();
         } finally {
             db.endTransaction();
@@ -1096,21 +1099,35 @@ public class TransactionActivity extends AppCompatActivity {
 
         long newRowId = -1;
 
-        if (mIsEdit) {
-            newRowId = saveEdit(db, dateStr, comment, amount);
+        // Авто-архив погашенного займа (openspec wallets-filter-and-debt-autoarchive, D2): остатки
+        // займов до записи и после неё, в одной транзакции с операцией.
+        db.beginTransaction();
+        try {
+            DebtAutoArchive.Snapshot debtsBefore = DebtAutoArchive.begin(db);
 
-        } else if (mKind == Kind.transfer) {
-            newRowId = saveTransfer(db, dateStr, comment, amount);
+            if (mIsEdit) {
+                newRowId = saveEdit(db, dateStr, comment, amount);
 
-        } else if (mOpUuid != null) {
-            newRowId = insertMain(db, dateStr, mAccFrom.getId(), mAccTo.getId(), amount, comment);
+            } else if (mKind == Kind.transfer) {
+                newRowId = saveTransfer(db, dateStr, comment, amount);
 
-        } else {
-            // uuid — v72 (org/docs/TODO_mobile_sync.md, Фаза 3): единственный прямой
-            // db.insert на operation в этом файле, остальные пути (saveTransfer/
-            // saveEdit) уже идут через WalletDbCRUD.InsertOperation.
-            values.put(WalletContract.OperationEntry.COLUMN_UUID, java.util.UUID.randomUUID().toString());
-            newRowId = db.insert(WalletContract.OperationEntry.TABLE_NAME, null, values);
+            } else if (mOpUuid != null) {
+                newRowId = insertMain(db, dateStr, mAccFrom.getId(), mAccTo.getId(), amount, comment);
+
+            } else {
+                // uuid — v72 (org/docs/TODO_mobile_sync.md, Фаза 3): единственный прямой
+                // db.insert на operation в этом файле, остальные пути (saveTransfer/
+                // saveEdit) уже идут через WalletDbCRUD.InsertOperation.
+                values.put(WalletContract.OperationEntry.COLUMN_UUID, java.util.UUID.randomUUID().toString());
+                newRowId = db.insert(WalletContract.OperationEntry.TABLE_NAME, null, values);
+            }
+
+            if (newRowId != -1) {
+                debtsBefore.finish(db);
+                db.setTransactionSuccessful();
+            }
+        } finally {
+            db.endTransaction();
         }
 
         if (newRowId == -1) {
