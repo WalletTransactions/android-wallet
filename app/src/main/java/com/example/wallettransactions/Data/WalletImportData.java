@@ -253,6 +253,17 @@ public class WalletImportData {
      */
     private static int InsertOrUpdateAccount(SQLiteDatabase db, IconList icons, String accName,
             String accComment, String iconName, String curName, String curIso, String curIcon) {
+        return InsertOrUpdateAccount(db, icons, accName, accComment, iconName, curName, curIso, curIcon, null);
+    }
+
+    /**
+     * То же с видом категории (openspec category-kind-income-expense). {@code categoryKind == null} —
+     * вид не трогаем: у новой категории остаётся умолчание «Оба», у существующей — прежний вид.
+     * Передаётся только для обычной категории: у кошелька и системной категории вид всегда «Оба».
+     */
+    private static int InsertOrUpdateAccount(SQLiteDatabase db, IconList icons, String accName,
+            String accComment, String iconName, String curName, String curIso, String curIcon,
+            AccountItem.CategoryKind categoryKind) {
         boolean added;
 
         // Ищем счёт в самой БД, а не в кэше AccountList: кэш может держать удалённые
@@ -262,9 +273,10 @@ public class WalletImportData {
         int iconId = (int) LiveIconIdOrUnknown(db, icons, iconName);
 
         if (accId != null)
-            added = WalletDbCRUD.UpdateAccount(db, accId, accName, accComment, iconId, false)>0;
+            added = WalletDbCRUD.UpdateAccount(db, accId, accName, accComment, iconId, false, categoryKind)>0;
         else
-            added = WalletDbCRUD.InsertAccount(db, accName, accComment, iconId, false)>0;
+            added = WalletDbCRUD.InsertAccount(db, accName, accComment, iconId, false,
+                    categoryKind == null ? AccountItem.CategoryKind.BOTH : categoryKind)>0;
 
         // Формат этого импорта не несёт system_kind — если строка "Transfer"/
         // "Transfer commission" только что заведена заново (например, восстановление
@@ -342,7 +354,7 @@ public class WalletImportData {
      * {@code {"name": "...", "comment": "...", "icon": "...", "currency": {"name": "...", "iso": "...", "icon": "..."},
      * "debt": {"counterparty": "...", "comment": "...", "due_date": "yyyy-MM-dd"},
      * "asset": {"type": "real_estate|vehicle|other", "include_in_net_worth": true, "comment": "..."},
-     * "system": "revaluation", "icon_image": "<base64 PNG/JPEG/WEBP>"}}
+     * "system": "revaluation", "category_kind": 0|1|2, "icon_image": "<base64 PNG/JPEG/WEBP>"}}
      * "icon_image" — своя картинка счёта (имя иконки — "icon", без него имя счёта); любой размер
      * приводится к 256×256, см. {@link #decodeIconImage}. "comment"/"icon" опциональны (по умолчанию — имя счёта и "unknown"); "currency" опциональна —
      * без неё это счёт-категория без своего баланса, как строка без валюты в CSV. "debt"/"asset" —
@@ -373,6 +385,14 @@ public class WalletImportData {
         JSONObject debt = obj.optJSONObject("debt");
         JSONObject asset = obj.optJSONObject("asset");
         String system = obj.optString("system", "");
+        // Вид категории (category-kind): необязательный, вне 0..2 — «Оба». Только у обычной
+        // категории: кошелёк (есть currency) и системные (revaluation, Transfer, комиссия) вида не
+        // имеют. Нет поля — null: вид не трогаем (новая категория — «Оба», существующая — прежний).
+        AccountItem.CategoryKind categoryKind = null;
+        if (obj.has("category_kind") && currency == null && system.isEmpty()
+                && !AccountItem.isSystemName(accName)) {
+            categoryKind = AccountItem.CategoryKind.fromValue(obj.optInt("category_kind", 2));
+        }
         String dueDate = null;
         int assetType = 0;
         if (debt != null || asset != null) {
@@ -402,7 +422,8 @@ public class WalletImportData {
             // Системная «Переоценка» уже есть (завели сами или пришла синком) — второй не заводим.
             result = 0;
         } else {
-            result = InsertOrUpdateAccount(db, icons, accName, accComment, iconName, curName, curIso, curIcon);
+            result = InsertOrUpdateAccount(db, icons, accName, accComment, iconName, curName, curIso, curIcon,
+                    categoryKind);
             if ("revaluation".equals(system) && currency == null) stampRevaluation(db, accName);
         }
 

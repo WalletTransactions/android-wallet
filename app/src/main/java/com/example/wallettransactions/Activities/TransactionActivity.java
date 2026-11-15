@@ -1358,6 +1358,14 @@ public class TransactionActivity extends AppCompatActivity {
         intent.putExtra(AccountPickerActivity.cDebtActions,
                 requestCode == AccountSelectTop && selectedType == AccountPickerActivity.cSelectedTypeChargeAccounts);
         intent.putExtra(AccountPickerActivity.cHideDebts, !mIsEdit);
+        // Вид категории (category-kind): «Статья расхода» — расход и «Оба», «Статья дохода» —
+        // доход и «Оба». Только верхний слот расхода/дохода; у перевода верх — кошелёк, а
+        // категория комиссии выбирается отдельным путём (AccountSelectCommission) и не фильтруется.
+        if (requestCode == AccountSelectTop
+                && selectedType == AccountPickerActivity.cSelectedTypeChargeAccounts
+                && mKind != Kind.transfer) {
+            intent.putExtra(AccountPickerActivity.cCategoryKind, mKind == Kind.income ? 1 : 0);
+        }
         startActivityForResult(intent, requestCode);
     }
 

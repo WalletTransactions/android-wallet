@@ -98,6 +98,8 @@
                 android:textColorHint="@color/colorTextHint"
                 android:textSize="14sp"/>
 
+            <!-- Вид категории (category-kind): по умолчанию «Расход», выбор в CategoryKindChips. -->
+            <include layout="@layout/view_category_kind"/>
         </LinearLayout>
     </ScrollView>
 

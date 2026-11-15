@@ -59,4 +59,10 @@
     <string name="archive_writeoff_picker_title">Write off to category</string>
     <string name="archive_writeoff_done">Balance written off, wallet archived</string>
     <string name="archive_writeoff_failed">Couldn\'t write off the balance</string>
+
+    <!-- Вид категории (openspec category-kind-income-expense): выбор в «Новой категории» и карточке. -->
+    <string name="category_kind_label">Type</string>
+    <string name="category_kind_expense">Expense</string>
+    <string name="category_kind_income">Income</string>
+    <string name="category_kind_both">Both</string>
 </resources>

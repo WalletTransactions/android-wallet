@@ -1297,20 +1297,42 @@ public class WalletDbCRUD {
     }
 
     public static int InsertAccount(SQLiteDatabase db, String accName, String accComment, int iconId, boolean isArchive){
-        db.execSQL("insert into account (name, comment, icon_id,is_archived,uuid)\n" +
-                        "Values(?,?,?,?,?); \n",
+        return InsertAccount(db, accName, accComment, iconId, isArchive, AccountItem.CategoryKind.BOTH);
+    }
+
+    /**
+     * Категория с явным видом (openspec category-kind-income-expense). Пять-аргументная
+     * перегрузка заводит вид «Оба» — умолчание колонки; кошельки и системные категории
+     * этим путём не создаются, у них вид всегда «Оба».
+     */
+    public static int InsertAccount(SQLiteDatabase db, String accName, String accComment, int iconId, boolean isArchive,
+                                    AccountItem.CategoryKind categoryKind){
+        AccountItem.CategoryKind kind = categoryKind == null ? AccountItem.CategoryKind.BOTH : categoryKind;
+        db.execSQL("insert into account (name, comment, icon_id,is_archived,uuid,category_kind)\n" +
+                        "Values(?,?,?,?,?,?); \n",
                 new String[]{accName, accComment, String.valueOf(iconId), isArchive?"1":"0",
-                        UUID.randomUUID().toString()});
+                        UUID.randomUUID().toString(), String.valueOf(kind.getValue())});
         return WalletFillData.GetAffectedRowsCount(db) ;
     }
 
 
     public static int UpdateAccount(SQLiteDatabase db, int id, String accName, String accComment, int iconId, boolean isArchive){
+        return UpdateAccount(db, id, accName, accComment, iconId, isArchive, null);
+    }
+
+    /**
+     * Правка счёта вместе с видом категории. {@code categoryKind == null} — вид не трогаем
+     * (кошельки, системные категории, прежние вызовы); иначе пишем его и тем самым помечаем
+     * строку изменённой для синка, как и любую другую правку.
+     */
+    public static int UpdateAccount(SQLiteDatabase db, int id, String accName, String accComment, int iconId, boolean isArchive,
+                                    AccountItem.CategoryKind categoryKind){
         ContentValues cv = new ContentValues();
         cv.put(WalletContract.AccountEntry.COLUMN_NAME, accName);
         cv.put(WalletContract.AccountEntry.COLUMN_COMMENT, accComment);
         cv.put(WalletContract.AccountEntry.COLUMN_ICON_ID, iconId);
         cv.put(WalletContract.AccountEntry.COLUMN_IS_ARCHIVED, isArchive);
+        if (categoryKind != null) cv.put(WalletContract.AccountEntry.COLUMN_CATEGORY_KIND, categoryKind.getValue());
         // Новое имя или иконка — строка больше не «из набора» (new-user-default-set, design D3).
         if (rowDiffers(db, WalletContract.AccountEntry.TABLE_NAME, id,
                 new String[]{WalletContract.AccountEntry.COLUMN_NAME, WalletContract.AccountEntry.COLUMN_ICON_ID},

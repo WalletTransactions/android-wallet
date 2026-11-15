@@ -114,6 +114,37 @@ public class AccountItem implements IFilterIsLike {
         }
     }
 
+    /**
+     * Вид категории (v92, колонка {@code account.category_kind}, openspec
+     * category-kind-income-expense): «Статья расхода» при вводе операции предлагает
+     * {@link #EXPENSE} и {@link #BOTH}, «Статья дохода» — {@link #INCOME} и {@link #BOTH}.
+     * Числовые коды совпадают с серверными (wallet-api, спека category-kind), менять код
+     * существующего значения нельзя. У кошелька и системной категории вид всегда
+     * {@link #BOTH} и в интерфейсе не показывается.
+     */
+    public enum CategoryKind {
+        EXPENSE(0),
+        INCOME(1),
+        BOTH(2);
+
+        private final int value;
+
+        CategoryKind(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        /** Безопасный дефолт {@link #BOTH} на любое значение вне 0..2 — тот же приём, что {@link SystemKind#fromValue}. */
+        public static CategoryKind fromValue(int value) {
+            if (value == EXPENSE.value) return EXPENSE;
+            if (value == INCOME.value) return INCOME;
+            return BOTH;
+        }
+    }
+
     private Integer id;
     private String name;
     private String comment;
@@ -121,6 +152,7 @@ public class AccountItem implements IFilterIsLike {
     private Boolean isArchived;
     private SystemKind systemKind;
     private Kind kind;
+    private CategoryKind categoryKind = CategoryKind.BOTH;
 
     /** Системный счёт: его нельзя ни удалить, ни переименовать. */
     public boolean isSystem() {
@@ -143,6 +175,16 @@ public class AccountItem implements IFilterIsLike {
 
     public Kind getKind() {
         return kind;
+    }
+
+    /** Вид категории; у кошелька и системной категории — {@link CategoryKind#BOTH}. */
+    public CategoryKind getCategoryKind() {
+        return categoryKind;
+    }
+
+    /** Ставит загрузчик ({@code WalletDbLoader.LoadAccounts}) и экран правки после записи в БД. */
+    public void setCategoryKind(CategoryKind categoryKind) {
+        this.categoryKind = categoryKind == null ? CategoryKind.BOTH : categoryKind;
     }
 
 

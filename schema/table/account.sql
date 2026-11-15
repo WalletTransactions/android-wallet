@@ -17,6 +17,7 @@ CREATE TABLE account
 	is_archived INT DEFAULT 0, -- признак только для интерфейса; в расчётах архивный счёт участвует наравне с остальными
 	system_kind INT NOT NULL DEFAULT 0, -- 0=обычная категория, 1=Transfer, 2=Transfer commission (AccountItem.SystemKind, v75); заменяет прежнее распознавание по name
 	kind INT NOT NULL DEFAULT 0, -- 0=категория, 1=кошелёк (AccountItem.Kind, v76); дублирует наличие строки в account_operating явным полем, проставляется один раз при создании строки и дальше не меняется
+	category_kind INT NOT NULL DEFAULT 2, -- вид категории: 0=расход, 1=доход, 2=оба (AccountItem.CategoryKind, v92); у кошелька и системной категории всегда 2; разметку существующих присылает сервер (wallet-api, миграция 000041); меняется в карточке категории
 	uuid TEXT NOT NULL DEFAULT (lower(hex(randomblob(16)))), -- идентификатор строки для синка с сервером (org/docs/TODO_mobile_sync.md, Фаза 3)
 	dirty INTEGER NOT NULL DEFAULT 1, -- 1 — строка ещё не отправлена на сервер; сбрасывает в 0 только синк-движок
 	deleted_at INTEGER, -- момент мягкого удаления (epoch millis); NULL — строка активна

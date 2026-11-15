@@ -1100,6 +1100,7 @@ public abstract class WalletDbLoader {
                 +", a."+ WalletContract.AccountEntry.COLUMN_IS_ARCHIVED
                 +", a."+ WalletContract.AccountEntry.COLUMN_SYSTEM_KIND
                 +", a."+ WalletContract.AccountEntry.COLUMN_KIND
+                +", a."+ WalletContract.AccountEntry.COLUMN_CATEGORY_KIND
 
                 +", ao."+ WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID
                 // Признак актива (capital-assets) — только живая строка и только у кошелька.
@@ -1137,6 +1138,7 @@ public abstract class WalletDbLoader {
             int isArchivedColumnIndex = cursor.getColumnIndex(WalletContract.AccountEntry.COLUMN_IS_ARCHIVED);
             int systemKindColumnIndex = cursor.getColumnIndex(WalletContract.AccountEntry.COLUMN_SYSTEM_KIND);
             int kindColumnIndex = cursor.getColumnIndex(WalletContract.AccountEntry.COLUMN_KIND);
+            int categoryKindColumnIndex = cursor.getColumnIndex(WalletContract.AccountEntry.COLUMN_CATEGORY_KIND);
 
             int curIdColumnIndex = cursor.getColumnIndex(WalletContract.AccountOperatingEntry.COLUMN_CURRENCY_ID);
             int assetTypeColumnIndex = cursor.getColumnIndex(WalletContract.AccountAssetEntry.COLUMN_ASSET_TYPE);
@@ -1186,6 +1188,13 @@ public abstract class WalletDbLoader {
                         ((AccountOperatingItem) account).setAsset(asset);
                         ((AccountOperatingItem) account).setDebt(debt);
                     }
+                }
+                // Вид категории (v92): ставим после создания/обновления, чтобы не менять
+                // конструкторы AccountItem. Любое значение вне 0..2 читается как «Оба».
+                AccountItem loaded = accounts.getAccountById(currentID);
+                if (loaded != null) {
+                    loaded.setCategoryKind(AccountItem.CategoryKind.fromValue(
+                            cursor.getInt(categoryKindColumnIndex)));
                 }
             }
             accounts.notifyObservers();

@@ -99,6 +99,13 @@ public class WalletContract {
          */
         public final static String COLUMN_KIND = "kind";
         /**
+         * v92 (openspec category-kind-income-expense) — вид категории: 0=расход, 1=доход, 2=оба
+         * (см. {@code AccountItem.CategoryKind}). У кошелька и системной категории всегда 2.
+         * Разметку существующих категорий присылает сервер (wallet-api, миграция 000041),
+         * локально по операциям она не вычисляется.
+         */
+        public final static String COLUMN_CATEGORY_KIND = "category_kind";
+        /**
          * v88 (openspec new-user-default-set, design D3): 1 — строка заведена из встроенного
          * набора и пользователь её не менял (имя, иконка). Только локальная, в push не уходит.
          */

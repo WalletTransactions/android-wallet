@@ -662,7 +662,9 @@ final class SyncEngine {
                 // каждую колонку spec.columns через json::at() без дефолта (wallet-api/src/
                 // sync_repo.cpp), поэтому отсутствие ключа здесь — не "0 по умолчанию", а падение
                 // "key 'system_kind' not found" на push.
-                "SELECT uuid, name, comment, icon_id, is_archived, system_kind, kind, deleted_at FROM account WHERE dirty=1",
+                // category_kind — v92 (openspec category-kind-income-expense): wallet-api с миграцией
+                // 000041 требует колонку в каждой строке account, без неё весь батч — 400 invalid_row.
+                "SELECT uuid, name, comment, icon_id, is_archived, system_kind, kind, deleted_at, category_kind FROM account WHERE dirty=1",
                 c -> {
                     JSONObject row = new JSONObject();
                     row.put("uuid", c.getString(0));
@@ -672,6 +674,7 @@ final class SyncEngine {
                     row.put("is_archived", c.getInt(4) != 0);
                     row.put("system_kind", c.getInt(5));
                     row.put("kind", c.getInt(6));
+                    row.put("category_kind", c.getInt(8));
                     row.put("deleted", !c.isNull(7));
                     return row;
                 }));
@@ -1618,6 +1621,11 @@ final class SyncEngine {
         // бы свою системность локально, а обычный счёт/категория — признак кошелёк/категория.
         cv.put("system_kind", row.getInt("system_kind"));
         cv.put("kind", row.getInt("kind"));
+        // category_kind (v92, спека category-kind): вид категории. Поле необязательное — сервер
+        // без колонки его не шлёт, и такая строка применяется как «Оба», а не откладывается.
+        // Значение вне 0..2 тоже читается как «Оба» (тот же безопасный дефолт, что у fromValue).
+        cv.put("category_kind", com.example.wallettransactions.DataItems.Accounts.AccountItem
+                .CategoryKind.fromValue(row.optInt("category_kind", 2)).getValue());
         applySyncColumns(cv, row);
         Boolean wasInsert = upsertByUuid(db, "account", uuid, cv);
         if (wasInsert == null) return true;

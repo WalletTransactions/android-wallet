@@ -10,9 +10,11 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.example.wallettransactions.CategoryKindChips;
 import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.Data.WalletDbHelper;
 import com.example.wallettransactions.Data.WalletDbLoader;
+import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Icon;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.Singleton;
@@ -28,6 +30,8 @@ public class AddCategoryActivity extends AppCompatActivity {
 
     /** -1 — не выбрана: при сохранении подставим «неизвестную». */
     private int selectedIconId = -1;
+    /** Вид новой категории (category-kind); по умолчанию «Расход». */
+    private CategoryKindChips kindChips;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +44,7 @@ public class AddCategoryActivity extends AppCompatActivity {
         iconPickerHint = findViewById(R.id.iconPickerHint);
         editName       = findViewById(R.id.editCategoryName);
         editComment    = findViewById(R.id.editCategoryComment);
+        kindChips      = new CategoryKindChips(this, AccountItem.CategoryKind.EXPENSE, null);
     }
 
     /**
@@ -93,7 +98,8 @@ public class AddCategoryActivity extends AppCompatActivity {
         int iconId = selectedIconId > 0 ? selectedIconId
                 : Singleton.instance.getIconList(this).getUnknownIcon().getId();
 
-        WalletDbCRUD.InsertAccount(db, name, editComment.getText().toString().trim(), iconId, false);
+        WalletDbCRUD.InsertAccount(db, name, editComment.getText().toString().trim(), iconId, false,
+                kindChips.getSelected());
 
         // Reload Singleton so the new icon and account are visible immediately
         SQLiteDatabase rdb = new WalletDbHelper(this).getReadableDatabase();

@@ -80,7 +80,7 @@ public class WalletFillData {
      *   "flag_icons": [{"name": "Flag ALL", "resource": "flag_albania"}],
      *   "currency_pairs": [{"symbol": "EURUSD", "base": "EUR", "quote": "USD"}],
      *   "rates": [{"symbol": "EURUSD", "date": "2020-08-20", "rate": 1.18023}],
-     *   "accounts": [{"names": {"ru": "Такси", "en": "Taxi"}, "icon": "Taxi"},
+     *   "accounts": [{"names": {"ru": "Такси", "en": "Taxi"}, "icon": "Taxi", "category_kind": 0},
      *                {"name": "Transfer", "icon": "Transfer"}]
      * }
      * </pre>
@@ -202,11 +202,18 @@ public class WalletFillData {
 
     /** Счёт набора — с меткой «из набора» (new-user-default-set, design D3). */
     private static long InsertAccountEntry(SQLiteDatabase db, String accName, String accComment, long accIconId) {
+        return InsertAccountEntry(db, accName, accComment, accIconId, AccountItem.CategoryKind.BOTH);
+    }
+
+    /** С видом категории (category-kind): у кошельков и системных категорий набора — всегда «Оба». */
+    private static long InsertAccountEntry(SQLiteDatabase db, String accName, String accComment, long accIconId,
+                                           AccountItem.CategoryKind categoryKind) {
         ContentValues values = new ContentValues();
         values.put(WalletContract.AccountEntry.COLUMN_NAME, accName);
         values.put(WalletContract.AccountEntry.COLUMN_COMMENT, accComment);
         values.put(WalletContract.AccountEntry.COLUMN_ICON_ID, accIconId);
         values.put(WalletContract.AccountEntry.COLUMN_FROM_SEED, 1);
+        values.put(WalletContract.AccountEntry.COLUMN_CATEGORY_KIND, categoryKind.getValue());
         return db.insert(WalletContract.AccountEntry.TABLE_NAME, null, values);
     }
 
@@ -553,9 +560,15 @@ public class WalletFillData {
                 long iconId = GetIconIdByName(db, iconName);
                 if (iconId < 0) iconId = GetIconIdByName(db, "unknown");
 
-                long accId = InsertAccountEntry(db, accName, a.optString("comment", accName), iconId);
-
                 String currencyIso = seedCurrencyIso(a, language);
+                // Вид категории набора (category-kind, спека starter-set): необязательный
+                // "category_kind" — 0 расход, 1 доход; нет поля или значение вне 0..2 — «Оба».
+                // Кошелёк набора (есть currency_iso) вида не имеет — всегда «Оба».
+                AccountItem.CategoryKind seedKind = currencyIso.isEmpty()
+                        ? seedCategoryKind(a) : AccountItem.CategoryKind.BOTH;
+
+                long accId = InsertAccountEntry(db, accName, a.optString("comment", accName), iconId, seedKind);
+
                 if (!currencyIso.isEmpty() && accId > 0) {
                     long curId = GetCurrencyIdByIso(db, currencyIso);
                     if (curId > 0) {
@@ -596,6 +609,11 @@ public class WalletFillData {
             return localized.isEmpty() ? names.getString("en") : localized;
         }
         return account.getString("name");
+    }
+
+    /** Вид категории записи набора: {@code "category_kind"}, нет поля или вне 0..2 — «Оба». */
+    static AccountItem.CategoryKind seedCategoryKind(JSONObject account) {
+        return AccountItem.CategoryKind.fromValue(account.optInt("category_kind", AccountItem.CategoryKind.BOTH.getValue()));
     }
 
     /**

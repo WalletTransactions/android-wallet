@@ -26,6 +26,7 @@ import com.example.wallettransactions.Data.WalletDbLoader;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountList;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
+import com.example.wallettransactions.DataItems.Accounts.CategoryKindFilter;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
 import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.PickerSort;
@@ -104,6 +105,13 @@ public class AccountPickerActivity extends AppCompatActivity {
     public final static String cHideDebts = "AccountPicker.HideDebts";
     /** На выходе: {@code DebtDirection.WALLET_TO_LOAN}/{@code LOAN_TO_WALLET}; нет — обычный выбор. */
     public final static String cDebtDirection = "AccountPicker.DebtDirection";
+    /**
+     * Вид операции для «Статьи расхода» ({@code 0}) и «Статьи дохода» ({@code 1}): в списке только
+     * категории этого вида и вида «Оба» (openspec category-kind-income-expense). Нет extra —
+     * фильтра нет и видны все категории (справочник, перенос между категориями, прощение долга).
+     * Выбранная категория и приоритетные кандидаты остаются в списке при любом виде.
+     */
+    public final static String cCategoryKind = "AccountPicker.CategoryKind";
 
     private static final int REQUEST_EDIT_ACCOUNT = 300;
     private static final int REQUEST_ADD_WALLET   = 301;
@@ -397,6 +405,10 @@ public class AccountPickerActivity extends AppCompatActivity {
         Currency currencyEq = currencyEq();
         boolean hideSystem = getIntent().getBooleanExtra(cHideSystem, false);
         boolean hideDebts = !mCatalogMode && getIntent().getBooleanExtra(cHideDebts, false);
+        // Вид операции — только при выборе статьи; в справочнике (mCatalogMode) фильтра нет.
+        AccountItem.CategoryKind operationKind = mCatalogMode ? null
+                : CategoryKindFilter.operationKindFromExtra(
+                        getIntent().getIntExtra(cCategoryKind, CategoryKindFilter.NO_FILTER));
 
         mWalletRows.clear();
         mCategoryRows.clear();
@@ -431,6 +443,11 @@ public class AccountPickerActivity extends AppCompatActivity {
             if (account.isOperatingAccount()) {
                 mWalletRows.add(new Row(account, balances.get(account.getId())));
             } else {
+                // Вид категории (category-kind): уже выбранная и приоритетные (ИИ, импорт выписки)
+                // остаются в списке, даже если их вид не подходит слоту.
+                boolean keep = account.getId() == mCurrentAccountId
+                        || mPriorityRank.containsKey(account.getId());
+                if (!CategoryKindFilter.isVisible(account.getCategoryKind(), operationKind, keep)) continue;
                 mCategoryRows.add(new Row(account, null));
             }
         }
