@@ -24,7 +24,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     // Видны DbInit: он сверяет версию файла, не открывая базу через helper.
     static final String DATABASE_NAME = "wallet.db";
 
-    static final int DATABASE_VERSION = 91;
+    static final int DATABASE_VERSION = 92;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -112,6 +112,9 @@ public class WalletDbHelper extends SQLiteOpenHelper {
              // v76 — явный признак «кошелёк или категория», см. javadoc
              // AccountItem.Kind и шаг v76 в onUpgrade ниже.
              + WalletContract.AccountEntry.COLUMN_KIND + " INT NOT NULL DEFAULT 0,\n"
+             // v92 — вид категории (0 расход, 1 доход, 2 оба), см. javadoc
+             // AccountItem.CategoryKind и шаг v92 в onUpgrade ниже.
+             + WalletContract.AccountEntry.COLUMN_CATEGORY_KIND + " INT NOT NULL DEFAULT 2,\n"
              // v88 — см. addFromSeedV88.
              + WalletContract.AccountEntry.COLUMN_FROM_SEED + " INTEGER NOT NULL DEFAULT 0,\n"
              + SYNC_COLUMNS_DDL + ",\n"
@@ -682,7 +685,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         }
     }
 
-    private static boolean columnExists(SQLiteDatabase db, String table, String column) {
+    static boolean columnExists(SQLiteDatabase db, String table, String column) {
         Cursor c = db.rawQuery("PRAGMA table_info(" + table + ")", null);
         try {
             int nameIdx = c.getColumnIndex("name");
@@ -1491,6 +1494,22 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             if (oldVersion < 91) {
                 // v91: долги (debts) — counterparty, account_debt, counterparty_contact, перечит ledger.
                 upgradeToDebtsV91(db);
+            }
+            if (oldVersion < 92) {
+                // v92 (openspec category-kind-income-expense): вид категории. Колонку не
+                // заводим повторно — на апгрейде из очень старой базы (<72) её уже создал
+                // rebuildTableWithoutInlineUnique(accountTableBody()) выше (тот же приём, что
+                // у kind в шаге v76). Строки НЕ помечаются dirty и ни с кем не синхронизируются:
+                // это изменение схемы, а не правка пользователя. Разметку существующих
+                // категорий по операциям не вычисляем локально — её присылает сервер
+                // (wallet-api, миграция 000041) через /sync/pull, иначе два устройства могли бы
+                // разметить одну категорию по-разному (design D2).
+                if (!columnExists(db, WalletContract.AccountEntry.TABLE_NAME,
+                        WalletContract.AccountEntry.COLUMN_CATEGORY_KIND)) {
+                    db.execSQL("ALTER TABLE " + WalletContract.AccountEntry.TABLE_NAME
+                            + " ADD COLUMN " + WalletContract.AccountEntry.COLUMN_CATEGORY_KIND
+                            + " INTEGER NOT NULL DEFAULT 2");
+                }
             }
             return;
         }

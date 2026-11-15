@@ -214,6 +214,9 @@
             android:textSize="15sp"
             android:layout_marginBottom="24dp"/>
 
+        <!-- Вид категории (category-kind): только у обычной категории, см. AccountItemActivity. -->
+        <include layout="@layout/view_category_kind"/>
+
     </LinearLayout>
 </ScrollView>
 

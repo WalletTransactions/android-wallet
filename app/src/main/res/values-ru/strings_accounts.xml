@@ -59,4 +59,10 @@
     <string name="archive_writeoff_picker_title">Списать на категорию</string>
     <string name="archive_writeoff_done">Остаток списан, кошелёк в архиве</string>
     <string name="archive_writeoff_failed">Не удалось списать остаток</string>
+
+    <!-- Вид категории (openspec category-kind-income-expense): выбор в «Новой категории» и карточке. -->
+    <string name="category_kind_label">Вид</string>
+    <string name="category_kind_expense">Расход</string>
+    <string name="category_kind_income">Доход</string>
+    <string name="category_kind_both">Оба</string>
 </resources>

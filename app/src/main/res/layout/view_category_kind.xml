@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Вид категории: «Расход» / «Доход» / «Оба» (openspec category-kind-income-expense).
+  Общий блок «Новой категории» и карточки категории; чипы красит CategoryKindChips.
+  Для кошелька и системной категории блок скрывается целиком (categoryKindGroup).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/categoryKindGroup"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        style="@style/SettingsGroupLabel"
+        android:text="@string/category_kind_label"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/categoryKindExpense"
+            style="@style/FilterChip"
+            android:text="@string/category_kind_expense"/>
+
+        <TextView
+            android:id="@+id/categoryKindIncome"
+            style="@style/FilterChip"
+            android:text="@string/category_kind_income"/>
+
+        <TextView
+            android:id="@+id/categoryKindBoth"
+            style="@style/FilterChip"
+            android:layout_marginEnd="0dp"
+            android:text="@string/category_kind_both"/>
+    </LinearLayout>
+</LinearLayout>

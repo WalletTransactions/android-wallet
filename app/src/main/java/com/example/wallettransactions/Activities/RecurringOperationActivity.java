@@ -342,8 +342,13 @@ public class RecurringOperationActivity extends AppCompatActivity {
                 ? AccountPickerActivity.cSelectedTypeOperationAccounts
                 : AccountPickerActivity.cSelectedTypeChargeAccounts;
         AccountItem current = getTop();
-        startActivityForResult(AccountPickerActivity.buildIntent(this, mLabelSlotTop.getText().toString(),
-                type, current == null ? 0 : current.getId(), getBottom()), AccountSelectTop);
+        Intent pick = AccountPickerActivity.buildIntent(this, mLabelSlotTop.getText().toString(),
+                type, current == null ? 0 : current.getId(), getBottom());
+        // Вид категории (category-kind): расход — «Расход» и «Оба», доход — «Доход» и «Оба».
+        if (mKind != Kind.transfer) {
+            pick.putExtra(AccountPickerActivity.cCategoryKind, mKind == Kind.income ? 1 : 0);
+        }
+        startActivityForResult(pick, AccountSelectTop);
     }
 
     public void onPickBottom(View view) {

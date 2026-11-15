@@ -22,6 +22,7 @@ import com.example.wallettransactions.AdapterUtils;
 import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.Data.WalletDbHelper;
 import com.example.wallettransactions.Data.WalletDbLoader;
+import com.example.wallettransactions.CategoryKindChips;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
@@ -54,6 +55,9 @@ public class AccountItemActivity extends AppCompatActivity {
     private String originalName;
     private String originalComment;
     private boolean originalArchived;
+    /** Вид категории (category-kind): чипы есть только у обычной категории, у кошелька и системной — null. */
+    private CategoryKindChips categoryKindChips;
+    private AccountItem.CategoryKind originalCategoryKind;
     private int originalCurrencyId = -1;
     private int originalIconId = -1;
     /** Признак актива на входе (capital-assets); null — обычный кошелёк или категория. */
@@ -139,6 +143,15 @@ public class AccountItemActivity extends AppCompatActivity {
                     : R.string.account_system_transfer_hint);
         }
 
+        // Вид категории (openspec category-kind-income-expense): только у обычной категории.
+        // У кошелька и системной категории (Transfer, комиссия, переоценка) вид всегда «Оба» и
+        // выбора на экране нет — блок скрыт, а вид при сохранении не трогается.
+        originalCategoryKind = account.getCategoryKind();
+        categoryKindChips = new CategoryKindChips(this, originalCategoryKind, this::updateSaveButton);
+        boolean regularCategory = !account.isOperatingAccount() && !account.isSystem();
+        categoryKindChips.setVisible(regularCategory);
+        if (!regularCategory) categoryKindChips = null;
+
         // Save is disabled until something changes
         btnSave.setEnabled(false);
         btnSave.setAlpha(0.4f);
@@ -183,7 +196,8 @@ public class AccountItemActivity extends AppCompatActivity {
                 || selectedIconId != originalIconId
                 || (selectedCurrency != null && selectedCurrency.getId() != originalCurrencyId)
                 || (assetFields != null && assetFields.differsFrom(originalAsset))
-                || (debtFields != null && debtFields.differs());
+                || (debtFields != null && debtFields.differs())
+                || (categoryKindChips != null && categoryKindChips.getSelected() != originalCategoryKind);
         btnSave.setEnabled(changed);
         btnSave.setAlpha(changed ? 1f : 0.4f);
     }
@@ -305,7 +319,8 @@ public class AccountItemActivity extends AppCompatActivity {
         db.beginTransaction();
         try {
             WalletDbCRUD.UpdateAccount(db, account.getId(), name,
-                    editComment.getText().toString().trim(), iconId, checkIsArchive.isChecked());
+                    editComment.getText().toString().trim(), iconId, checkIsArchive.isChecked(),
+                    categoryKindChips == null ? null : categoryKindChips.getSelected());
 
             if (account instanceof AccountOperatingItem && selectedCurrency != null) {
                 WalletDbCRUD.UpdateAccountCurrency(db, account.getId(), selectedCurrency.getId());
