@@ -132,12 +132,14 @@
                 android:name=".Activities.CounterpartiesActivity"
                 android:label="@string/counterparties_title"
                 android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
                 android:exported="false">
         </activity>
         <activity
                 android:name=".Activities.DebtsActivity"
                 android:label="@string/debts_title"
                 android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
                 android:exported="false">
         </activity>
         <activity
@@ -156,6 +158,7 @@
         </activity>
         <activity android:name=".Activities.IconManagerActivity"
                 android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
                 android:exported="false">
         </activity>
         <activity android:name=".Activities.IconCropActivity"

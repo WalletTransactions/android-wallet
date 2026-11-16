@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Экран «Долги» (openspec debts, спека «Экран „Долги“»): итоги «Мне должны» / «Я должен»
-  в эквиваленте, поиск по имени, чипы направления, переключатель «Показывать архивные», контрагенты с займами. Строки строит
+  Экран «Долги» (openspec debts, спека «Экран „Долги“»; раскладка — list-screen-layout):
+  фиксированный блок фильтра (поиск, чипы направления, чип «Показывать архивные»), под ним
+  в ScrollView итоги «Мне должны» / «Я должен» и контрагенты с займами. Строки строит
   DebtsActivity в debtsList. Открывается из «Ещё».
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -54,6 +55,55 @@
             android:textStyle="bold"
             android:onClick="onOpenCounterparties"/>
     </LinearLayout>
+
+    <!-- Блок фильтра (list-screen-layout): поле поиска, чипы направления и чип «Показывать
+         архивные». Стоит вне ScrollView и потому не уезжает вместе со списком займов. -->
+    <EditText
+        android:id="@+id/debtsSearch"
+        style="@style/ListSearchField"
+        android:hint="@string/search_by_name_hint"
+        android:inputType="text"
+        android:textColor="@color/colorTextPrimary"
+        android:textColorHint="@color/colorTextHint"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingBottom="6dp">
+
+        <TextView
+            android:id="@+id/debtsChipAll"
+            style="@style/FilterChip"
+            android:text="@string/debts_filter_all"/>
+
+        <TextView
+            android:id="@+id/debtsChipOwedToMe"
+            style="@style/FilterChip"
+            android:text="@string/debts_filter_owed_to_me"/>
+
+        <TextView
+            android:id="@+id/debtsChipIOwe"
+            style="@style/FilterChip"
+            android:layout_marginEnd="0dp"
+            android:text="@string/debts_filter_i_owe"/>
+    </LinearLayout>
+
+    <!-- Переключатель: активный красится Chips.paint, как чипы направления. Своя строка, а не
+         четвёртый чип в ряд — на узком экране четыре подписи не помещаются. -->
+    <TextView
+        android:id="@+id/debtsShowArchived"
+        style="@style/FilterChip"
+        android:layout_width="wrap_content"
+        android:layout_weight="0"
+        android:layout_marginStart="18dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginBottom="8dp"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:text="@string/debts_show_archived"/>
 
     <ScrollView
         android:layout_width="match_parent"
@@ -118,51 +168,6 @@
                         android:textStyle="bold"/>
                 </LinearLayout>
             </LinearLayout>
-
-            <EditText
-                android:id="@+id/debtsSearch"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/search_by_name_hint"
-                android:inputType="text"
-                android:maxLines="1"
-                android:textColor="@color/colorTextPrimary"
-                android:textColorHint="@color/colorTextHint"
-                android:textSize="14sp"/>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="4dp">
-
-                <TextView
-                    android:id="@+id/debtsChipAll"
-                    style="@style/FilterChip"
-                    android:text="@string/debts_filter_all"/>
-
-                <TextView
-                    android:id="@+id/debtsChipOwedToMe"
-                    style="@style/FilterChip"
-                    android:text="@string/debts_filter_owed_to_me"/>
-
-                <TextView
-                    android:id="@+id/debtsChipIOwe"
-                    style="@style/FilterChip"
-                    android:layout_marginEnd="0dp"
-                    android:text="@string/debts_filter_i_owe"/>
-            </LinearLayout>
-
-            <CheckBox
-                android:id="@+id/debtsShowArchived"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/debts_show_archived"
-                android:textColor="@color/colorTextPrimary"
-                android:textSize="14sp"
-                android:buttonTint="@color/colorPrimary"
-                android:layout_marginBottom="6dp"/>
 
             <TextView
                 android:id="@+id/debtsEmpty"

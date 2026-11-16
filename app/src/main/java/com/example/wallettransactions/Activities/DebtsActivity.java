@@ -9,7 +9,6 @@ import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -52,21 +51,26 @@ import java.util.Map;
 public class DebtsActivity extends AppCompatActivity {
 
     private LinearLayout list;
-    private CheckBox showArchived;
+    private TextView chipShowArchived;
     private TextView chipAll, chipOwedToMe, chipIOwe;
 
     // Состояние фильтров живёт на экране и сбрасывается при каждом его создании
     // (openspec wallets-filter-and-debt-autoarchive, D4).
     private DebtsList.Direction direction = DebtsList.Direction.ALL;
     private String query = "";
+    private boolean showArchived = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_debts);
         list = findViewById(R.id.debtsList);
-        showArchived = findViewById(R.id.debtsShowArchived);
-        showArchived.setOnCheckedChangeListener((b, c) -> render());
+        chipShowArchived = findViewById(R.id.debtsShowArchived);
+        chipShowArchived.setOnClickListener(v -> {
+            showArchived = !showArchived;
+            paintChips();
+            render();
+        });
         EditText search = findViewById(R.id.debtsSearch);
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
@@ -95,6 +99,7 @@ public class DebtsActivity extends AppCompatActivity {
         Chips.paint(this, chipAll, direction == DebtsList.Direction.ALL);
         Chips.paint(this, chipOwedToMe, direction == DebtsList.Direction.OWED_TO_ME);
         Chips.paint(this, chipIOwe, direction == DebtsList.Direction.I_OWE);
+        Chips.paint(this, chipShowArchived, showArchived);
     }
 
     @Override
@@ -157,7 +162,7 @@ public class DebtsActivity extends AppCompatActivity {
         Map<String, String> names = new HashMap<>();
         for (CounterpartyItem c : WalletDbLoader.LoadCounterparties(db)) names.put(c.uuid, c.name);
 
-        List<DebtsList.Group> groups = DebtsList.group(loans, names, showArchived.isChecked(), direction, query);
+        List<DebtsList.Group> groups = DebtsList.group(loans, names, showArchived, direction, query);
         list.removeAllViews();
         TextView empty = findViewById(R.id.debtsEmpty);
         // Займы есть, но фильтры всё скрыли — «Ничего не найдено»; займов нет вообще — подсказка.

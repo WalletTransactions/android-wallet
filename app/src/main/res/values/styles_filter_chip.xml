@@ -55,6 +55,35 @@
         <item name="android:visibility">gone</item>
     </style>
 
+    <!-- Поле поиска экрана-справочника (openspec list-screen-layout): «пилюля» 40dp под шапкой.
+         Экран задаёт id, hint и расположение (layout_below). -->
+    <style name="ListSearchField">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:layout_marginStart">18dp</item>
+        <item name="android:layout_marginEnd">18dp</item>
+        <item name="android:layout_marginBottom">10dp</item>
+        <item name="android:background">@drawable/bg_input_pill</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingRight">16dp</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- Нижняя кнопка добавления экрана-справочника: пунктирная «пилюля» 50dp. Вес и поля
+         экран задаёт сам (одна кнопка на всю ширину или несколько в ряд). -->
+    <style name="ListAddButton">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">50dp</item>
+        <item name="android:background">@drawable/bg_pill_dashed</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/colorexpanse</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
     <!-- Подпись такого чипа: текстовые свойства FilterChip плюс зазор до иконки
          (бывший drawablePadding). -->
     <style name="FilterChipIconLabel">
