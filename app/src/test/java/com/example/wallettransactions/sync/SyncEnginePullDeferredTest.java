@@ -194,6 +194,7 @@ public class SyncEnginePullDeferredTest {
     public void pullAll_currencyOnLastPage_walletGetsCurrency() throws Exception {
         AppSettings.setUuidFormatResyncDone(context);
         AppSettings.setDeferredRowsResyncDone(context);
+        AppSettings.setPairSymbolResyncDone(context);
         AppSettings.setLedgerSyncSeq(context, 0L);
         AppSettings.setReferenceSyncSeq(context, 0L);
 
@@ -216,6 +217,7 @@ public class SyncEnginePullDeferredTest {
     public void pullAll_parentNeverArrives_rowKeptAndReported() throws Exception {
         AppSettings.setUuidFormatResyncDone(context);
         AppSettings.setDeferredRowsResyncDone(context);
+        AppSettings.setPairSymbolResyncDone(context);
         AppSettings.setLedgerSyncSeq(context, 0L);
         AppSettings.setReferenceSyncSeq(context, 0L);
 

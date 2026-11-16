@@ -67,6 +67,7 @@ public class SyncEnginePullCurrencyCacheTest {
         db.insertOrThrow("icon", null, icon);
         AppSettings.setUuidFormatResyncDone(context);
         AppSettings.setDeferredRowsResyncDone(context);
+        AppSettings.setPairSymbolResyncDone(context);
     }
 
     @After

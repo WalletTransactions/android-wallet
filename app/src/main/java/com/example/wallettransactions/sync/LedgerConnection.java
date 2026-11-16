@@ -98,8 +98,8 @@ public final class LedgerConnection {
      * чтобы триггер {@code trg_<table>_dirty} не вернул строку в push; второй шаг ищет
      * строку уже по новому uuid.
      */
-    private static void replaceUuid(SQLiteDatabase db, String table, String oldUuid, String newUuid,
-                                    ContentValues values) {
+    static void replaceUuid(SQLiteDatabase db, String table, String oldUuid, String newUuid,
+                            ContentValues values) {
         values.put("dirty", 2);
         db.update(table, values, "uuid = ?", new String[]{oldUuid});
         ContentValues clean = new ContentValues();

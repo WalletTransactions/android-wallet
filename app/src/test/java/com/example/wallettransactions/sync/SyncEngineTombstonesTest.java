@@ -73,6 +73,7 @@ public class SyncEngineTombstonesTest {
         iconId = db.insertOrThrow("icon", null, icon); // dirty = 1: не «синкнутая»
         AppSettings.setUuidFormatResyncDone(context);
         AppSettings.setDeferredRowsResyncDone(context);
+        AppSettings.setPairSymbolResyncDone(context);
     }
 
     @After

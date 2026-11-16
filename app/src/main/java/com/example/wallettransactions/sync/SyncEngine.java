@@ -98,12 +98,17 @@ import java.util.UUID;
  *   <li>Конфликт дублирующегося имени/кода диагностируется сервером
  *   осмысленно (409 + {@code existing_uuid}) только для {@code account}
  *   (см. {@link #resolveAccountConflicts}) — для остальных уникальных
- *   индексов (currency.name/iso_code, currency_pair.symbol, icon.name,
+ *   индексов (currency.name/iso_code, icon.name,
  *   currency_pair_rate/currency_conversion PK) столкновение на pull-вставке
  *   просто пропускает строку с предупреждением в лог (см.
  *   {@link #upsertByUuid}), не пытаясь слить дубли — тот же класс проблемы,
  *   что и с account, но без протокола разрешения (см.
  *   org/docs/TODO_mobile_sync.md, "Открытые вопросы").</li>
+ *   <li>Исключение — {@code currency_pair.symbol}: общая пара и пара кошелька с одним
+ *   символом законно сосуществуют на сервере (два уникальных индекса), а на телефоне индекс
+ *   один; пара кошелька заменяет общую (uuid меняется, {@code _id} и курсы остаются),
+ *   общая уступает паре кошелька — см. {@link #resolvePairSymbolConflict}
+ *   (openspec sync-pair-symbol-adopt).</li>
  * </ul>
  */
 final class SyncEngine {
@@ -1011,10 +1016,14 @@ final class SyncEngine {
         // То же для строк, чей родитель пришёл на более поздней странице (см.
         // PullDeferredRows): до неё они терялись — например, account_operating
         // кошелька, чью валюту недавно правили, и кошелёк оставался без валюты.
-        if (!AppSettings.isUuidFormatResyncDone(ctx) || !AppSettings.isDeferredRowsResyncDone(ctx)) {
+        // И для пар кошелька, потерянных на конфликте символа с общей парой
+        // (openspec sync-pair-symbol-adopt).
+        if (!AppSettings.isUuidFormatResyncDone(ctx) || !AppSettings.isDeferredRowsResyncDone(ctx)
+                || !AppSettings.isPairSymbolResyncDone(ctx)) {
             startFullReload(db, ctx);
             AppSettings.setUuidFormatResyncDone(ctx);
             AppSettings.setDeferredRowsResyncDone(ctx);
+            AppSettings.setPairSymbolResyncDone(ctx);
             log.healed(Texts.get(R.string.sync_healed_resync));
         }
         // Однократный перечит ledger после шага БД v88 (capital-assets, design п. 2):
@@ -1555,10 +1564,73 @@ final class SyncEngine {
         cv.put("precision", row.getInt("precision"));
         cv.put("is_shared", isSharedRow(row) ? 1 : 0);
         applySyncColumns(cv, row);
+        // Символ занят другой живой парой (общая пара и пара кошелька с одним символом — на
+        // сервере два индекса, на телефоне один): openspec sync-pair-symbol-adopt.
+        PairSymbolOutcome conflict = resolvePairSymbolConflict(db, uuid, cv, row);
+        if (conflict == PairSymbolOutcome.REPLACED) {
+            log.pull(Texts.get(R.string.sync_type_pair), pullAction(false, false));
+            return true;
+        }
+        if (conflict == PairSymbolOutcome.KEPT_LOCAL) return true;
+        if (conflict == PairSymbolOutcome.FAILED) return false; // не терять — отложить
         Boolean wasInsert = upsertByUuid(db, "currency_pair", uuid, cv);
-        if (wasInsert == null) return true;
+        if (wasInsert == null) return false; // другой индекс — строку не объявляем обработанной
         log.pull(Texts.get(R.string.sync_type_pair), pullAction(rowIsDeleted(row), wasInsert));
         return true;
+    }
+
+    /** Исход {@link #resolvePairSymbolConflict}. */
+    enum PairSymbolOutcome {
+        /** Конфликта нет — обычная вставка/обновление по uuid. */
+        NONE,
+        /** Локальная пара взяла uuid и поля пришедшей. */
+        REPLACED,
+        /** Пришедшая общая пара уступила паре кошелька — вставлять нечего. */
+        KEPT_LOCAL,
+        /** Заменить не удалось — строка остаётся отложенной. */
+        FAILED
+    }
+
+    /**
+     * Пара кошелька приоритетнее общей: пришедшая живая пара, чей символ занят другой живой парой
+     * с другим uuid, заменяет её (локальный {@code _id} сохраняется, курсы и перерасчёты
+     * привязаны по нему и остаются на месте); пришедшая общая уступает синкнутой паре
+     * кошелька. Работает при любой загрузке, не только при подключении.
+     */
+    static PairSymbolOutcome resolvePairSymbolConflict(SQLiteDatabase db, String uuid,
+                                                       ContentValues cv, JSONObject row)
+            throws JSONException {
+        if (rowIsDeleted(row) || localUuid(db, "currency_pair", uuid) != null) {
+            return PairSymbolOutcome.NONE;
+        }
+        String occupantUuid;
+        boolean occupantShared;
+        boolean occupantUnsent;
+        Cursor c = db.rawQuery("SELECT uuid, is_shared, dirty FROM currency_pair"
+                + " WHERE symbol = ? COLLATE NOCASE AND deleted_at IS NULL LIMIT 1",
+                new String[]{cv.getAsString("symbol")});
+        try {
+            if (!c.moveToFirst()) return PairSymbolOutcome.NONE;
+            occupantUuid = c.getString(0);
+            occupantShared = c.getInt(1) != 0;
+            occupantUnsent = c.getInt(2) != 0;
+        } finally {
+            c.close();
+        }
+        boolean incomingShared = isSharedRow(row);
+        if (incomingShared && !occupantShared && !occupantUnsent) {
+            return PairSymbolOutcome.KEPT_LOCAL; // пара кошелька важнее общей
+        }
+        ContentValues adopted = new ContentValues(cv);
+        adopted.put("uuid", uuid);
+        adopted.put("from_seed", 0);
+        try {
+            LedgerConnection.replaceUuid(db, "currency_pair", occupantUuid, uuid, adopted);
+        } catch (SQLiteException e) {
+            Log.w(TAG, "currency_pair " + uuid + ": замена по символу не удалась: " + e.getMessage());
+            return PairSymbolOutcome.FAILED;
+        }
+        return PairSymbolOutcome.REPLACED;
     }
 
     private static boolean applyCurrencyPairRate(SQLiteDatabase db, JSONObject row, SyncLog log) throws JSONException {
