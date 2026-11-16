@@ -86,6 +86,7 @@ public class SyncEngineDebtsTest {
         currencyId = db.insertOrThrow("currency", null, cur);
         AppSettings.setUuidFormatResyncDone(context);
         AppSettings.setDeferredRowsResyncDone(context);
+        AppSettings.setPairSymbolResyncDone(context);
         AppSettings.setLedgerRereadPending(context, false);
         AppSettings.setDebtsRedirtyPending(context, false);
     }

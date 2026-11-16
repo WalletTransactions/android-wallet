@@ -47,6 +47,7 @@ public final class AppSettings {
     private static final String PREF_SYNC_LEDGER_ID = "syncLedgerId";
     private static final String PREF_UUID_FORMAT_RESYNC_DONE = "uuidFormatResyncDone";
     private static final String PREF_DEFERRED_ROWS_RESYNC_DONE = "deferredRowsResyncDone";
+    private static final String PREF_PAIR_SYMBOL_RESYNC_DONE = "pairSymbolResyncDone";
     private static final String PREF_FULL_RELOAD_PENDING = "syncFullReloadPending";
     private static final String PREF_LEDGER_REREAD_PENDING = "syncLedgerRereadPending";
     private static final String PREF_DEBTS_REDIRTY_PENDING = "debts_redirty_pending";
@@ -465,6 +466,19 @@ public final class AppSettings {
 
     public static void setDeferredRowsResyncDone(Context ctx) {
         prefs(ctx).edit().putBoolean(PREF_DEFERRED_ROWS_RESYNC_DONE, true).apply();
+    }
+
+    /**
+     * Однократная перезагрузка потоков после исправления конфликта символа пары (openspec
+     * sync-pair-symbol-adopt): прежняя версия молча отбрасывала пару кошелька, символ которой
+     * занят общей парой, а позиция потока уходила дальше — без перезагрузки пара не вернулась бы.
+     */
+    public static boolean isPairSymbolResyncDone(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_PAIR_SYMBOL_RESYNC_DONE, false);
+    }
+
+    public static void setPairSymbolResyncDone(Context ctx) {
+        prefs(ctx).edit().putBoolean(PREF_PAIR_SYMBOL_RESYNC_DONE, true).apply();
     }
 
     /**
