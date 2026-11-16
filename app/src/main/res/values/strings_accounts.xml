@@ -21,6 +21,8 @@
     <string name="icon_type_category">Category</string>
     <string name="icon_type_flag">Flag</string>
     <string name="icon_manager_title">Icons and categories</string>
+    <string name="icon_manager_search_hint">Search by name</string>
+    <string name="icon_manager_add">+ Icon</string>
     <string name="icon_crop_title">Crop icon</string>
     <string name="icon_crop_no_image">No image was passed</string>
     <string name="icon_crop_open_failed">Couldn\'t open the image: %1$s</string>

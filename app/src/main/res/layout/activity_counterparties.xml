@@ -2,15 +2,16 @@
 <!--
   Экран «Контрагенты» (openspec debts, design D7/D10): живые контрагенты, ниже — архивные;
   «+ Новый», «Из контактов» (системный выбор контакта, без разрешения READ_CONTACTS).
+  Раскладка — стандарт list-screen-layout: шапка, поиск-«пилюля», список, нижняя панель.
   Строки строит CounterpartiesActivity. Открывается с экрана «Долги».
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/colorBackground">
 
     <LinearLayout
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -40,42 +41,21 @@
             android:textColor="@color/colorTextPrimary"/>
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingLeft="18dp"
-        android:paddingRight="18dp"
-        android:paddingBottom="10dp">
-
-        <TextView
-            style="@style/FilterChip"
-            android:text="@string/counterparties_add"
-            android:onClick="onAddCounterparty"/>
-
-        <TextView
-            style="@style/FilterChip"
-            android:layout_marginEnd="0dp"
-            android:text="@string/counterparties_from_contacts"
-            android:onClick="onPickContact"/>
-    </LinearLayout>
-
     <EditText
         android:id="@+id/counterpartiesSearch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="18dp"
-        android:layout_marginRight="18dp"
+        style="@style/ListSearchField"
+        android:layout_below="@id/toolbar"
         android:hint="@string/search_by_name_hint"
         android:inputType="text"
-        android:maxLines="1"
         android:textColor="@color/colorTextPrimary"
-        android:textColorHint="@color/colorTextHint"
-        android:textSize="14sp"/>
+        android:textColorHint="@color/colorTextHint"/>
 
+    <!-- Прокручивается только список: поиск сверху и нижняя панель остаются на месте. -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_below="@id/counterpartiesSearch"
+        android:layout_above="@id/bottomBar">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -83,7 +63,7 @@
             android:orientation="vertical"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
-            android:paddingBottom="24dp">
+            android:paddingBottom="12dp">
 
             <TextView
                 android:id="@+id/counterpartiesEmpty"
@@ -103,4 +83,40 @@
                 android:orientation="vertical"/>
         </LinearLayout>
     </ScrollView>
-</LinearLayout>
+
+    <!-- Две кнопки в одной строке: «+ Новый» — основная (ListAddButton), «Из контактов» —
+         вторичная. Вес 1:1 и ellipsize, чтобы подписи помещались на узком экране. -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:layout_margin="18dp">
+
+        <TextView
+            style="@style/ListAddButton"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:text="@string/counterparties_add"
+            android:onClick="onAddCounterparty"/>
+
+        <TextView
+            style="@style/ListAddButton"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_secondary"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:text="@string/counterparties_from_contacts"
+            android:textColor="@color/colorTextPrimary"
+            android:onClick="onPickContact"/>
+    </LinearLayout>
+</RelativeLayout>

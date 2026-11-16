@@ -106,4 +106,26 @@ public class IconList {
         return grouped;
     }
 
+    /**
+     * Оставляет в группах только иконки, в названии которых есть строка поиска (openspec
+     * unified-reference-list-layout, спека icon-library): подстрока без учёта регистра и
+     * пробелов по краям, «ё» = «е» — то же правило, что у остальных справочников
+     * ({@link com.example.wallettransactions.Data.AccountNames#matchesSearch}). Пустая строка
+     * оставляет всё. Группы остаются в карте, но пустые — скрывает вызывающий экран.
+     */
+    public static java.util.Map<Icon.IconType, java.util.List<Icon>> filterGroupedByName(
+            java.util.Map<Icon.IconType, java.util.List<Icon>> grouped, String query) {
+        java.util.Map<Icon.IconType, java.util.List<Icon>> result = new java.util.HashMap<>();
+        for (java.util.Map.Entry<Icon.IconType, java.util.List<Icon>> e : grouped.entrySet()) {
+            java.util.List<Icon> kept = new java.util.ArrayList<>();
+            for (Icon icon : e.getValue()) {
+                if (com.example.wallettransactions.Data.AccountNames.matchesSearch(icon.getName(), query)) {
+                    kept.add(icon);
+                }
+            }
+            result.put(e.getKey(), kept);
+        }
+        return result;
+    }
+
 }

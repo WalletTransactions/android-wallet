@@ -21,6 +21,8 @@
     <string name="icon_type_category">Категория</string>
     <string name="icon_type_flag">Флаг</string>
     <string name="icon_manager_title">Иконки и категории</string>
+    <string name="icon_manager_search_hint">Поиск по названию</string>
+    <string name="icon_manager_add">+ Иконка</string>
     <string name="icon_crop_title">Обрезка иконки</string>
     <string name="icon_crop_no_image">Изображение не передано</string>
     <string name="icon_crop_open_failed">Не удалось открыть изображение: %1$s</string>

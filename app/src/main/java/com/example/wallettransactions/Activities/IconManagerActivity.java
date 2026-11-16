@@ -6,6 +6,9 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.EditText;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import android.view.LayoutInflater;
@@ -50,13 +53,37 @@ public class IconManagerActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.screenTitle)).setText(R.string.icon_manager_title);
 
         expandableListView = findViewById(R.id.expandableListView);
-        findViewById(R.id.fabAddIcon).setOnClickListener(v -> openAddIconDialog());
+        findViewById(R.id.btnAddIcon).setOnClickListener(v -> openAddIconDialog());
 
         iconList = Singleton.instance.getIconList(this);
-        loadTypedIcons();
+        // Строка поиска живёт на экране; список перестраивается на каждый символ
+        // (иконок на телефоне десятки, фильтр в памяти).
+        ((EditText) findViewById(R.id.iconSearch)).addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void afterTextChanged(Editable s) {
+                searchQuery = s.toString();
+                showIcons();
+            }
+        });
+        showIcons();
+    }
 
+    /** Строка поиска по названию иконки (спека icon-library «Поиск по названию»). */
+    private String searchQuery = "";
+
+    /** Перечитывает группы с учётом поиска, пересобирает адаптер и пустое состояние. */
+    private void showIcons() {
+        loadTypedIcons();
         adapter = new IconCategoryAdapter(this, types, typedIcons);
         expandableListView.setAdapter(adapter);
+        // Найденное должно быть видно сразу, а не за тапом по группе.
+        if (!searchQuery.trim().isEmpty()) {
+            for (int i = 0; i < adapter.getGroupCount(); i++) expandableListView.expandGroup(i);
+        }
+        boolean nothing = types.isEmpty();
+        findViewById(R.id.iconsEmpty).setVisibility(nothing ? View.VISIBLE : View.GONE);
+        expandableListView.setVisibility(nothing ? View.GONE : View.VISIBLE);
     }
 
     private void openAddIconDialog() {
@@ -77,13 +104,11 @@ public class IconManagerActivity extends AppCompatActivity {
     /** Re-reads icons from the DB cache and rebuilds the grouped view. */
     private void refreshIconList() {
         iconList = Singleton.instance.getIconList(this);
-        loadTypedIcons();
-        adapter = new IconCategoryAdapter(this, types, typedIcons);
-        expandableListView.setAdapter(adapter);
+        showIcons();
     }
 
     private void loadTypedIcons() {
-        typedIcons = iconList.getGroupedByType();
+        typedIcons = IconList.filterGroupedByName(iconList.getGroupedByType(), searchQuery);
         types = new ArrayList<>();
         for (Icon.IconType type : Icon.IconType.values()) {
             if (!typedIcons.get(type).isEmpty()) {
