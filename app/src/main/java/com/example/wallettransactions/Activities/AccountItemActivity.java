@@ -26,7 +26,6 @@ import com.example.wallettransactions.CategoryKindChips;
 import com.example.wallettransactions.DataItems.Accounts.AccountItem;
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
-import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
 import com.example.wallettransactions.DataItems.Icon;
 import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.R;
@@ -36,6 +35,7 @@ public class AccountItemActivity extends AppCompatActivity {
 
     private static final int REQUEST_PICK_ICON = 2;
     private static final int REQUEST_PICK_WRITEOFF_CATEGORY = 3;
+    private static final int REQUEST_PICK_CURRENCY = 4;
 
     private ImageView imageAccView;
     private ImageView imageCurencyView;
@@ -211,21 +211,12 @@ public class AccountItemActivity extends AppCompatActivity {
                 REQUEST_PICK_ICON);
     }
 
+    /** Тот же экран «Список валют», что в «Валютных парах» (openspec wallet-currency-picker). */
     public void pickCurrencyClick(View view) {
-        CurrencyList currencies = Singleton.instance.getCurrencyList(this);
-        String[] items = new String[currencies.size()];
-        for (int i = 0; i < currencies.size(); i++) {
-            Currency c = currencies.get(i);
-            items[i] = c.getIso() + "  —  " + c.getName();
-        }
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.account_choose_currency)
-                .setItems(items, (dialog, which) -> {
-                    selectedCurrency = currencies.get(which);
-                    refreshCurrencyUI();
-                    updateSaveButton();
-                })
-                .show();
+        startActivityForResult(
+                CurrencyPickerActivity.buildIntent(this, getString(R.string.account_choose_currency),
+                        selectedCurrency != null ? selectedCurrency.getIso() : null),
+                REQUEST_PICK_CURRENCY);
     }
 
     @Override
@@ -235,6 +226,16 @@ public class AccountItemActivity extends AppCompatActivity {
             if (resultCode != RESULT_OK || data == null || writeOffDialog == null) return;
             int id = data.getIntExtra(AccountPickerActivity.cAccountId, 0);
             writeOffDialog.setCategory(Singleton.instance.getAccounts(this).getAccountById(id));
+            return;
+        }
+        if (requestCode == REQUEST_PICK_CURRENCY) {
+            if (resultCode != RESULT_OK || data == null) return;
+            Currency picked = Singleton.instance.getCurrencyList(this)
+                    .getCurrencyByISO(data.getStringExtra(CurrencyPickerActivity.RESULT_ISO));
+            if (picked == null) return;
+            selectedCurrency = picked;
+            refreshCurrencyUI();
+            updateSaveButton();
             return;
         }
         if (requestCode != REQUEST_PICK_ICON || resultCode != RESULT_OK || data == null) return;
