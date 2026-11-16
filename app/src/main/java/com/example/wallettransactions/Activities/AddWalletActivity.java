@@ -3,7 +3,6 @@ package com.example.wallettransactions.Activities;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,7 +15,6 @@ import com.example.wallettransactions.Data.WalletDbCRUD;
 import com.example.wallettransactions.Data.WalletDbHelper;
 import com.example.wallettransactions.Data.WalletDbLoader;
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency;
-import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
 import com.example.wallettransactions.DataItems.Icon;
 import com.example.wallettransactions.PeriodFilterState;
 import com.example.wallettransactions.R;
@@ -25,6 +23,7 @@ import com.example.wallettransactions.Singleton;
 public class AddWalletActivity extends AppCompatActivity {
 
     private static final int REQUEST_PICK_ICON = 1;
+    private static final int REQUEST_PICK_CURRENCY = 2;
 
     private ImageView imgIconPreview;
     private View iconPickerHint;
@@ -63,23 +62,22 @@ public class AddWalletActivity extends AppCompatActivity {
                 REQUEST_PICK_ICON);
     }
 
+    /**
+     * Валюта выбирается тем же экраном «Список валют», что и в «Валютных парах»
+     * (openspec wallet-currency-picker): поиск, флаги, текущая отмечена.
+     */
     public void pickCurrencyClick(View view) {
-        CurrencyList currencies = Singleton.instance.getCurrencyList(this);
-        String[] items = new String[currencies.size()];
-        for (int i = 0; i < currencies.size(); i++) {
-            Currency c = currencies.get(i);
-            items[i] = c.getIso() + "  —  " + c.getName();
-        }
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.account_choose_currency)
-                .setItems(items, (dialog, which) -> {
-                    selectedCurrency = currencies.get(which);
-                    imgCurrencyFlag.setImageBitmap(selectedCurrency.getIcon().getBitmap());
-                    imgCurrencyFlag.setVisibility(View.VISIBLE);
-                    tvCurrencyLabel.setText(selectedCurrency.getIso() + "  —  " + selectedCurrency.getName());
-                    tvCurrencyLabel.setTextColor(getResources().getColor(R.color.colorTextPrimary));
-                })
-                .show();
+        startActivityForResult(
+                CurrencyPickerActivity.buildIntent(this, getString(R.string.account_choose_currency),
+                        selectedCurrency != null ? selectedCurrency.getIso() : null),
+                REQUEST_PICK_CURRENCY);
+    }
+
+    private void renderCurrency() {
+        imgCurrencyFlag.setImageBitmap(selectedCurrency.getIcon().getBitmap());
+        imgCurrencyFlag.setVisibility(View.VISIBLE);
+        tvCurrencyLabel.setText(selectedCurrency.getIso() + "  —  " + selectedCurrency.getName());
+        tvCurrencyLabel.setTextColor(getResources().getColor(R.color.colorTextPrimary));
     }
 
     public void btnUp(View view) {
@@ -89,10 +87,18 @@ public class AddWalletActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != REQUEST_PICK_ICON || resultCode != RESULT_OK || data == null) return;
+        if (resultCode != RESULT_OK || data == null) return;
 
-        selectedIconId = data.getIntExtra(IconPickerActivity.RESULT_ICON_ID, selectedIconId);
-        renderIcon();
+        if (requestCode == REQUEST_PICK_ICON) {
+            selectedIconId = data.getIntExtra(IconPickerActivity.RESULT_ICON_ID, selectedIconId);
+            renderIcon();
+        } else if (requestCode == REQUEST_PICK_CURRENCY) {
+            Currency picked = Singleton.instance.getCurrencyList(this)
+                    .getCurrencyByISO(data.getStringExtra(CurrencyPickerActivity.RESULT_ISO));
+            if (picked == null) return;
+            selectedCurrency = picked;
+            renderCurrency();
+        }
     }
 
     private void renderIcon() {
