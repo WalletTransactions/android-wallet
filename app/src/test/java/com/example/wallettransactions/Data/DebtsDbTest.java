@@ -658,4 +658,50 @@ public class DebtsDbTest {
         }
         return db.insertOrThrow(table, null, cv);
     }
+
+    // ── карточка контрагента (openspec counterparty-card) ─────────────────────
+
+    @Test
+    public void counterpartyIcon_savedAsUuid_andClearedToNull() {
+        int cp = WalletDbCRUD.CreateCounterparty(db, "Вася", "");
+        assertNull(loadCounterparty(cp).iconUuid);
+
+        assertTrue(WalletDbCRUD.SetCounterpartyIcon(db, cp, (int) iconId));
+        String uuid = loadCounterparty(cp).iconUuid;
+        assertNotNull("форма отдаёт _id, в базе — uuid иконки", uuid);
+        assertEquals((int) iconId, WalletDbCRUD.IconIdByUuid(db, uuid));
+
+        assertTrue(WalletDbCRUD.SetCounterpartyIcon(db, cp, 0));
+        assertNull("«без иконки» — NULL", loadCounterparty(cp).iconUuid);
+        assertEquals(-1, WalletDbCRUD.IconIdByUuid(db, null));
+    }
+
+    @Test
+    public void counterpartyIcon_unknownIconOrCounterparty() {
+        int cp = WalletDbCRUD.CreateCounterparty(db, "Вася", "");
+        assertTrue(WalletDbCRUD.SetCounterpartyIcon(db, cp, 99999));
+        assertNull("неизвестная иконка — как «без иконки»", loadCounterparty(cp).iconUuid);
+        assertFalse(WalletDbCRUD.SetCounterpartyIcon(db, 99999, (int) iconId));
+    }
+
+    @Test
+    public void counterpartyContact_rebindAndUnbind_keepName() {
+        int cp = WalletDbCRUD.CreateCounterparty(db, "Вася", "");
+        String uuid = WalletDbCRUD.CounterpartyUuid(db, cp);
+        assertNull(WalletDbCRUD.GetCounterpartyContact(db, uuid));
+
+        WalletDbCRUD.SetCounterpartyContact(db, uuid, "key-1");
+        assertEquals("key-1", WalletDbCRUD.GetCounterpartyContact(db, uuid));
+        WalletDbCRUD.SetCounterpartyContact(db, uuid, "key-2");
+        assertEquals("перепривязка заменяет прежний контакт", "key-2", WalletDbCRUD.GetCounterpartyContact(db, uuid));
+
+        WalletDbCRUD.ClearCounterpartyContact(db, uuid);
+        assertNull(WalletDbCRUD.GetCounterpartyContact(db, uuid));
+        assertEquals("имя контрагента не меняется", "Вася", loadCounterparty(cp).name);
+    }
+
+    private CounterpartyItem loadCounterparty(int id) {
+        for (CounterpartyItem c : WalletDbLoader.LoadCounterparties(db)) if (c.id == id) return c;
+        throw new AssertionError("нет контрагента " + id);
+    }
 }

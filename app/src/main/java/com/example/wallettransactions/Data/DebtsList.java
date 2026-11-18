@@ -93,6 +93,19 @@ public final class DebtsList {
         }
     }
 
+    /**
+     * Займы одного контрагента для его карточки (openspec counterparty-card): те же группировка и
+     * итог, что у экрана «Долги», но архивные займы остаются в списке (с пометкой) и входят в итог.
+     *
+     * @return группа контрагента или null, если у него нет займов
+     */
+    public static Group groupFor(List<Loan> loans, Map<String, String> names, String counterpartyUuid) {
+        for (Group g : group(loans, names, true)) {
+            if (g.counterpartyUuid.equals(counterpartyUuid)) return g;
+        }
+        return null;
+    }
+
     /** Фильтр направления: по знаку остатка займа; нулевой остаток не проходит ни в одно из двух. */
     public enum Direction { ALL, OWED_TO_ME, I_OWE }
 
@@ -125,8 +138,11 @@ public final class DebtsList {
             }
             g.loans.add(loan);
             if (loan.balanceEq != null) g.totalEq += loan.balanceEq;
-            if (loan.converted && !loan.isClosed()) g.approx = true;
-            else if (!loan.isClosed()) g.incomplete = true;
+            // Нет курса — итог неполный («~»); пересчёт по курсу — приблизительный («≈»); заём в
+            // валюте эквивалента не требует ни того, ни другого.
+            if (loan.isClosed()) continue;
+            if (loan.balanceEq == null) g.incomplete = true;
+            else if (loan.converted) g.approx = true;
         }
         List<Group> out = new ArrayList<>(byCp.values());
         for (Group g : out) {

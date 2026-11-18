@@ -154,4 +154,44 @@ assertTrue("копейка ниже точности — закрыт", loan(3, 
         // Архив включён, но направление «Я должен» Васю отсекает.
         assertEquals(0, DebtsList.group(loans, names, true, DebtsList.Direction.I_OWE, "вас").size());
     }
+
+    // ── карточка контрагента (openspec counterparty-card) ─────────────────────
+
+    @Test
+    public void groupFor_includesArchivedLoansAndTotal() {
+        DebtsList.Loan archived = new DebtsList.Loan(2, "loan2", VASYA, 50, 50.0, "", 2, null, "", false, true);
+        DebtsList.Group g = DebtsList.groupFor(Arrays.asList(
+                loan(1, VASYA, 100, 90.0, null), archived, loan(3, PETYA, 10, 10.0, null)), names, VASYA);
+        assertEquals("Вася", g.name);
+        assertEquals("архивный заём остаётся в списке карточки", 2, g.loans.size());
+        assertEquals("и входит в итог", 140, g.totalEq, 1e-9);
+    }
+
+    @Test
+    public void groupFor_counterpartyWithoutLoans_isNull() {
+        assertEquals(null, DebtsList.groupFor(Arrays.asList(loan(1, VASYA, 100, 90.0, null)), names, PETYA));
+    }
+
+    @Test
+    public void groupFor_totalMatchesDebtsScreen() {
+        List<DebtsList.Loan> loans = Arrays.asList(loan(1, VASYA, 100, 90.0, null), loan(2, VASYA, -30, -27.0, null));
+        assertEquals(DebtsList.group(loans, names, false).get(0).totalEq,
+                DebtsList.groupFor(loans, names, VASYA).totalEq, 1e-9);
+    }
+
+    @Test
+    public void sameCurrencyAsEquivalent_isNeitherApproxNorIncomplete() {
+        DebtsList.Loan eur = new DebtsList.Loan(1, "e", VASYA, 5000, 5000.0, "€", 2, null, "", false);
+        DebtsList.Group g = DebtsList.group(Arrays.asList(eur), names, true).get(0);
+        assertFalse(g.approx);
+        assertFalse("заём в валюте эквивалента — курс не нужен", g.incomplete);
+    }
+
+    @Test
+    public void convertedWithoutRate_isIncompleteNotApprox() {
+        DebtsList.Loan rub = new DebtsList.Loan(1, "r", VASYA, 1000, null, "₽", 2, null, "", true);
+        DebtsList.Group g = DebtsList.group(Arrays.asList(rub), names, true).get(0);
+        assertTrue("нет курса — итог неполный", g.incomplete);
+        assertFalse(g.approx);
+    }
 }

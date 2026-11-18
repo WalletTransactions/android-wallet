@@ -136,6 +136,13 @@
                 android:exported="false">
         </activity>
         <activity
+                android:name=".Activities.CounterpartyCardActivity"
+                android:label="@string/counterparty_card_title"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
+                android:exported="false">
+        </activity>
+        <activity
                 android:name=".Activities.DebtsActivity"
                 android:label="@string/debts_title"
                 android:theme="@style/AppTheme.NoActionBar"

@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Typeface;
-import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.text.Editable;
@@ -36,8 +35,7 @@ import java.util.List;
 
 /**
  * Экран «Контрагенты» (openspec debts, спека «Контрагент», «Связь контрагента с контактом
- * телефона»; design D7, D10): создание, переименование (дубль имени — отказ), архив и
- * разархив, удаление только без займов, выбор из контактов системным
+ * телефона»; design D7, D10): создание и выбор из контактов системным
  * {@code ACTION_PICK} — без разрешения {@code READ_CONTACTS}: система даёт доступ к одному
  * выбранному контакту. Привязка к контакту (lookup-key) — локальная, на другом устройстве
  * её нет.
@@ -62,6 +60,12 @@ public class CounterpartiesActivity extends AppCompatActivity {
                 render();
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Вернулись из карточки контрагента (правка, архив, удаление) — список перечитываем.
         render();
     }
 
@@ -113,42 +117,9 @@ public class CounterpartiesActivity extends AppCompatActivity {
         String sub = loans > 0 ? getString(R.string.counterparty_loans, loans) : null;
         if (!c.comment.isEmpty()) sub = sub == null ? c.comment : sub + " · " + c.comment;
         if (sub != null) row.addView(text(sub, 12, R.color.colorTextSecondary, false));
-        row.setOnClickListener(v -> showActions(c));
+        row.setOnClickListener(v -> startActivity(new Intent(this, CounterpartyCardActivity.class)
+                .putExtra(CounterpartyCardActivity.ARG_COUNTERPARTY_ID, c.id)));
         return row;
-    }
-
-    private void showActions(CounterpartyItem c) {
-        List<String> items = new ArrayList<>();
-        List<Runnable> actions = new ArrayList<>();
-        items.add(getString(R.string.counterparty_rename));
-        actions.add(() -> askName(c.name, name -> {
-            if (!WalletDbCRUD.RenameCounterparty(db(), c.id, name)) {
-                Toast.makeText(this, getString(R.string.counterparty_name_taken, name), Toast.LENGTH_LONG).show();
-            }
-            changed();
-        }));
-        items.add(getString(c.isArchived ? R.string.counterparty_unarchive : R.string.counterparty_archive));
-        actions.add(() -> {
-            WalletDbCRUD.ArchiveCounterparty(db(), c.id, !c.isArchived);
-            changed();
-        });
-        String lookup = WalletDbCRUD.GetCounterpartyContact(db(), c.uuid);
-        if (lookup != null) {
-            items.add(getString(R.string.counterparty_open_contact));
-            actions.add(() -> openContact(lookup));
-        }
-        items.add(getString(R.string.counterparty_delete));
-        actions.add(() -> {
-            // Спека «Удаление контрагента с долгом»: не удаляем, объясняем почему.
-            if (WalletDbCRUD.DeleteCounterparty(db(), c.id) == WalletDbCRUD.DeleteCounterpartyResult.hasDebts) {
-                Toast.makeText(this, getString(R.string.counterparty_delete_has_debts, c.name), Toast.LENGTH_LONG).show();
-            }
-            changed();
-        });
-        new AlertDialog.Builder(this)
-                .setTitle(c.name)
-                .setItems(items.toArray(new String[0]), (d, which) -> actions.get(which).run())
-                .show();
     }
 
     public void onAddCounterparty(View view) {
@@ -200,15 +171,6 @@ public class CounterpartiesActivity extends AppCompatActivity {
             WalletDbCRUD.SetCounterpartyContact(db, WalletDbCRUD.CounterpartyUuid(db, id), lookupKey);
         }
         changed();
-    }
-
-    private void openContact(String lookupKey) {
-        Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_LOOKUP_URI, lookupKey);
-        try {
-            startActivity(new Intent(Intent.ACTION_VIEW, uri));
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, R.string.counterparty_no_contacts_app, Toast.LENGTH_LONG).show();
-        }
     }
 
     private interface NameCallback {

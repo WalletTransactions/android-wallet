@@ -119,6 +119,50 @@ public class DebtsActivity extends AppCompatActivity {
         startActivity(new Intent(this, CounterpartiesActivity.class));
     }
 
+    /**
+     * Все займы (долговые кошельки) с остатками на дату {@code asOf} — для экрана «Долги» и карточки
+     * контрагента (openspec counterparty-card): одни и те же цифры там и там.
+     *
+     * @param wallets если не null — сюда кладутся кошельки займов по {@code _id}
+     */
+    static List<DebtsList.Loan> loadLoans(android.content.Context ctx, SQLiteDatabase db, Currency eq,
+                                          Date asOf, Map<Integer, AccountOperatingItem> wallets) {
+        Map<Integer, WalletDbLoader.WalletBalanceRow> balances = new HashMap<>();
+        if (eq != null) {
+            for (WalletDbLoader.WalletBalanceRow r : WalletDbLoader.LoadBalancesPerWallet(db, asOf, asOf, eq)) {
+                balances.put(r.accountId, r);
+            }
+        }
+        List<DebtsList.Loan> loans = new ArrayList<>();
+        for (AccountItem a : Singleton.instance.getAccounts(ctx).getAllAccounts()) {
+            if (!(a instanceof AccountOperatingItem) || !((AccountOperatingItem) a).isDebt()) continue;
+            AccountOperatingItem w = (AccountOperatingItem) a;
+            if (wallets != null) wallets.put(w.getId(), w);
+            WalletDbLoader.WalletBalanceRow row = balances.get(w.getId());
+            Currency c = w.getCurrency();
+            loans.add(new DebtsList.Loan(w.getId(), w.getDisplayName(), w.getDebt().counterpartyUuid,
+                    row != null ? row.balance : 0,
+                    row == null ? Double.valueOf(0) : row.hasEq ? Double.valueOf(row.balanceEq) : null,
+                    c != null ? c.getSymbol() : "", c != null ? c.getPrecision() : 2,
+                    w.getDebt().dueDate, w.getDebt().comment,
+                    c != null && eq != null && c.getId() != eq.getId(),
+                    Boolean.TRUE.equals(w.getIsArchived())));
+        }
+        return loans;
+    }
+
+    /** uuid контрагента → имя. */
+    static Map<String, String> counterpartyNames(SQLiteDatabase db) {
+        Map<String, String> names = new HashMap<>();
+        for (CounterpartyItem c : WalletDbLoader.LoadCounterparties(db)) names.put(c.uuid, c.name);
+        return names;
+    }
+
+    /** Завтра 00:00 — «остатки на сегодня включительно», как на экране «Долги». */
+    static Date asOfTomorrow() {
+        return tomorrow();
+    }
+
     private void render() {
         SQLiteDatabase db = Singleton.instance.getReadableDatabase(this);
         Currency eq = PeriodFilterState.get(this).getCurrencyEq(this);
@@ -137,30 +181,9 @@ public class DebtsActivity extends AppCompatActivity {
             if (totals.iOwe.getTotalAmountEq() > 0) owe.setTextColor(ContextCompat.getColor(this, R.color.colorexpanse));
         }
 
-        Map<Integer, WalletDbLoader.WalletBalanceRow> balances = new HashMap<>();
-        if (eq != null) {
-            for (WalletDbLoader.WalletBalanceRow r : WalletDbLoader.LoadBalancesPerWallet(db, asOf, asOf, eq)) {
-                balances.put(r.accountId, r);
-            }
-        }
         Map<Integer, AccountOperatingItem> wallets = new HashMap<>();
-        List<DebtsList.Loan> loans = new ArrayList<>();
-        for (AccountItem a : Singleton.instance.getAccounts(this).getAllAccounts()) {
-            if (!(a instanceof AccountOperatingItem) || !((AccountOperatingItem) a).isDebt()) continue;
-            AccountOperatingItem w = (AccountOperatingItem) a;
-            wallets.put(w.getId(), w);
-            WalletDbLoader.WalletBalanceRow row = balances.get(w.getId());
-            Currency c = w.getCurrency();
-            loans.add(new DebtsList.Loan(w.getId(), w.getDisplayName(), w.getDebt().counterpartyUuid,
-                    row != null ? row.balance : 0,
-                    row == null ? Double.valueOf(0) : row.hasEq ? Double.valueOf(row.balanceEq) : null,
-                    c != null ? c.getSymbol() : "", c != null ? c.getPrecision() : 2,
-                    w.getDebt().dueDate, w.getDebt().comment,
-                    c != null && eq != null && c.getId() != eq.getId(),
-                    Boolean.TRUE.equals(w.getIsArchived())));
-        }
-        Map<String, String> names = new HashMap<>();
-        for (CounterpartyItem c : WalletDbLoader.LoadCounterparties(db)) names.put(c.uuid, c.name);
+        List<DebtsList.Loan> loans = loadLoans(this, db, eq, asOf, wallets);
+        Map<String, String> names = counterpartyNames(db);
 
         List<DebtsList.Group> groups = DebtsList.group(loans, names, showArchived, direction, query);
         list.removeAllViews();
