@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Экран «Маршруты пересчёта» (openspec currency-conversion-routes). Открывается с «Курсов валют».
+  Построен по спеке list-screen-layout: шапка, список, нижняя пунктирная кнопка добавления.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="10dp">
+
+        <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:src="@drawable/ic_nav_back"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="@string/route_list_title"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/caprasimo"
+            android:textColor="@color/colorTextPrimary"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/routeHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/toolbar"
+        android:layout_marginStart="18dp"
+        android:layout_marginEnd="18dp"
+        android:layout_marginBottom="10dp"
+        android:text="@string/route_list_hint"
+        android:textSize="12.5sp"
+        android:textColor="@color/colorTextSecondary"/>
+
+    <ListView
+        android:id="@+id/listRoutes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/routeHint"
+        android:layout_above="@id/btnAddRoute"
+        android:divider="@null"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:clipToPadding="false"/>
+
+    <TextView
+        android:id="@+id/routeEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/routeHint"
+        android:layout_marginStart="18dp"
+        android:layout_marginEnd="18dp"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:text="@string/route_list_empty"
+        android:textSize="14sp"
+        android:textColor="@color/colorTextSecondary"
+        android:visibility="gone"/>
+
+    <LinearLayout
+        android:id="@+id/btnAddRoute"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="18dp"
+        android:background="@drawable/bg_pill_dashed"
+        android:gravity="center"
+        android:onClick="onAddRoute">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/route_list_add"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorexpanse"/>
+    </LinearLayout>
+</RelativeLayout>

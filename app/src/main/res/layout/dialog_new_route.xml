@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Лист «Новый маршрут»: путь из 3–4 валют «Из / Через / (Через) / В». Строки открывают
+     CurrencyPickerActivity, результат возвращается в CurrencyRouteListActivity.onActivityResult. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_sheet_top"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/route_dialog_title"
+        android:textSize="21sp"
+        android:textStyle="bold"
+        android:fontFamily="@font/caprasimo"
+        android:textColor="@color/colorTextPrimary"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/route_dialog_from"/>
+    <LinearLayout
+        android:id="@+id/rowRouteFrom"
+        android:layout_width="match_parent" android:layout_height="52dp"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:background="@drawable/bg_input_pill"
+        android:paddingLeft="16dp" android:paddingRight="16dp" android:layout_marginBottom="12dp"
+        android:onClick="onPickRouteFrom">
+        <TextView android:id="@+id/routeFromValue" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="@string/pair_choose" android:textSize="14.5sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
+        <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
+    </LinearLayout>
+
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/route_dialog_via"/>
+    <LinearLayout
+        android:id="@+id/rowRouteVia1"
+        android:layout_width="match_parent" android:layout_height="52dp"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:background="@drawable/bg_input_pill"
+        android:paddingLeft="16dp" android:paddingRight="16dp" android:layout_marginBottom="12dp"
+        android:onClick="onPickRouteVia1">
+        <TextView android:id="@+id/routeVia1Value" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="@string/pair_choose" android:textSize="14.5sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
+        <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/blockRouteVia2"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:visibility="gone">
+        <TextView style="@style/SettingsGroupLabel" android:text="@string/route_dialog_via"/>
+        <LinearLayout
+            android:id="@+id/rowRouteVia2"
+            android:layout_width="match_parent" android:layout_height="52dp"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:background="@drawable/bg_input_pill"
+            android:paddingLeft="16dp" android:paddingRight="16dp" android:layout_marginBottom="12dp"
+            android:onClick="onPickRouteVia2">
+            <TextView android:id="@+id/routeVia2Value" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="@string/pair_choose" android:textSize="14.5sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
+            <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView style="@style/SettingsGroupLabel" android:text="@string/route_dialog_to"/>
+    <LinearLayout
+        android:id="@+id/rowRouteTo"
+        android:layout_width="match_parent" android:layout_height="52dp"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:background="@drawable/bg_input_pill"
+        android:paddingLeft="16dp" android:paddingRight="16dp" android:layout_marginBottom="12dp"
+        android:onClick="onPickRouteTo">
+        <TextView android:id="@+id/routeToValue" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="@string/pair_choose" android:textSize="14.5sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
+        <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_chevron_right"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/btnRouteToggleVia"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:gravity="center"
+        android:paddingLeft="4dp"
+        android:paddingRight="4dp"
+        android:text="@string/route_dialog_add_via"
+        android:textSize="13.5sp"
+        android:textStyle="bold"
+        android:textColor="@color/colorexpanse"
+        android:onClick="onToggleRouteVia"/>
+
+    <TextView
+        android:id="@+id/routeDialogError"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:textSize="13sp"
+        android:textColor="@color/colorexpanse"
+        android:visibility="gone"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:layout_marginEnd="9dp" android:background="@drawable/bg_pill_outline"
+            android:gravity="center" android:text="@string/action_cancel"
+            android:textSize="14sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"
+            android:onClick="onCancelRoute"/>
+
+        <TextView
+            android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+            android:background="@drawable/bg_pill_primary" android:gravity="center"
+            android:text="@string/route_dialog_create"
+            android:textSize="14sp" android:textStyle="bold" android:textColor="@color/colorSurface"
+            android:onClick="onCreateRoute"/>
+    </LinearLayout>
+</LinearLayout>

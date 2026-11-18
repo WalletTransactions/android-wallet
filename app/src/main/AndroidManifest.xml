@@ -119,6 +119,12 @@
                 android:exported="false">
         </activity>
         <activity
+                android:name=".Activities.CurrencyRouteListActivity"
+                android:label="@string/route_list_title"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:exported="false">
+        </activity>
+        <activity
                 android:name=".Activities.CurrencyPairDetailActivity"
                 android:label="@string/title_currencypair_detail"
                 android:parentActivityName=".Activities.CurrencyPairListActivity"
