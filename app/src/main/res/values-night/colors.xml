@@ -23,6 +23,7 @@
     <color name="colorSurface">#211C17</color>
     <color name="colorSurfaceAlt">#2E2720</color>
     <color name="colorIconCircle">#2A231C</color>
+    <color name="colorIconCircleTranslucent">#802A231C</color>
 
     <color name="colorTextPrimary">#F2EADC</color>
     <color name="colorTextSecondary">#B0A392</color>

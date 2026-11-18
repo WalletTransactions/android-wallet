@@ -36,7 +36,13 @@ public class AdapterUtils {
                 pattern.append(".");
                 for (int i = 0; i < p; i++) pattern.append("0");
             }
-            return new DecimalFormat(pattern.toString());
+            DecimalFormat format = new DecimalFormat(pattern.toString());
+            // Разделитель тысяч — пробел в любой локали (в английской по умолчанию запятая).
+            // Неразрывный, чтобы «1 290,00» не переносилось посреди суммы.
+            android.icu.text.DecimalFormatSymbols symbols = format.getDecimalFormatSymbols();
+            symbols.setGroupingSeparator(' ');
+            format.setDecimalFormatSymbols(symbols);
+            return format;
         });
     }
 

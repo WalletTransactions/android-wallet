@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Подложка иконки в переводе: иконки кошельков перекрываются, и непрозрачный круг верхнего
+     закрывал бы нижний. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/colorIconCircleTranslucent"/>
+</shape>

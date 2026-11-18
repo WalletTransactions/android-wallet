@@ -57,7 +57,6 @@
     <string name="debt_forgive_done">Written</string>
     <string name="debt_forgive_failed">Nothing written: check the amount</string>
     <string name="debt_action_card">Loan card: due date, comment</string>
-    <string name="debt_action_operations">Loan operations</string>
     <string name="counterparties_title">Counterparties</string>
     <string name="counterparties_add">+ New</string>
     <string name="counterparties_from_contacts">From contacts</string>

@@ -248,12 +248,6 @@ public class DebtsActivity extends AppCompatActivity {
             edit.putExtra(AccountItemActivity.ARG_ACCOUNT_ID, loan.accountId);
             startActivity(edit);
         });
-        items.add(getString(R.string.debt_action_operations));
-        actions.add(() -> {
-            PeriodFilterState.get(this).presetFilter(this,
-                    java.util.Collections.singletonList(loan.accountId), null, null);
-            startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
-        });
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle(loan.name)
                 .setItems(items.toArray(new String[0]), (d, which) -> actions.get(which).run())

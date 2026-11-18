@@ -9,6 +9,7 @@
   справочнике «Ещё» → «Кошельки и категории» (AccountPickerActivity).
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -31,69 +32,85 @@
         <include layout="@layout/view_tab_actions"/>
     </LinearLayout>
 
-    <include
+    <!--
+      Как на «Операциях»: список прокручивается сам, а сводка периода и блок чипов уезжают
+      вверх через AppBarLayout. Они остаются в дереве окна, поэтому findViewById из
+      BaseTabActivity их находит. Строка с заголовком и кнопками (headerRow) стоит на месте.
+    -->
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/scrollable"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_below="@id/headerRow"
-        layout="@layout/view_period_summary"/>
+        android:layout_above="@id/bottomNav">
 
-    <!-- Чипы секций и «Показывать архивные» (openspec wallets-filter-and-debt-autoarchive):
-         только таб «Кошельки», в общий фильтр шапки не входят; чипы красит AccountActivity. -->
-    <LinearLayout
-        android:id="@+id/walletsFilterBlock"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/periodSummary"
-        android:orientation="vertical"
-        android:paddingLeft="18dp"
-        android:paddingRight="18dp">
-
-        <LinearLayout
-            android:id="@+id/walletsChipsRow"
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/summaryBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="horizontal"
-            android:visibility="gone">
+            android:background="@android:color/transparent"
+            android:stateListAnimator="@null"
+            app:elevation="0dp">
 
-            <TextView
-                android:id="@+id/walletsChipLiquid"
-                style="@style/FilterChip"
-                android:text="@string/wallets_section_liquid"/>
+            <!-- layout_width/height обязательны: без них <include> не применит scrollFlags. -->
+            <include
+                layout="@layout/view_period_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_scrollFlags="scroll"/>
 
-            <TextView
-                android:id="@+id/walletsChipCapital"
-                style="@style/FilterChip"
-                android:text="@string/wallets_section_capital"/>
+            <!-- Чипы секций и «Показывать архивные» (openspec wallets-filter-and-debt-autoarchive):
+                 только таб «Кошельки», в общий фильтр шапки не входят; чипы красит AccountActivity. -->
+            <LinearLayout
+                android:id="@+id/walletsFilterBlock"
+                app:layout_scrollFlags="scroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp">
 
-            <TextView
-                android:id="@+id/walletsChipDebts"
-                style="@style/FilterChip"
-                android:layout_marginEnd="0dp"
-                android:text="@string/debts_title"/>
-        </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/walletsChipsRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
 
-        <CheckBox
-            android:id="@+id/walletsShowArchived"
+                    <TextView
+                        android:id="@+id/walletsChipLiquid"
+                        style="@style/FilterChip"
+                        android:text="@string/wallets_section_liquid"/>
+
+                    <TextView
+                        android:id="@+id/walletsChipCapital"
+                        style="@style/FilterChip"
+                        android:text="@string/wallets_section_capital"/>
+
+                    <TextView
+                        android:id="@+id/walletsChipDebts"
+                        style="@style/FilterChip"
+                        android:layout_marginEnd="0dp"
+                        android:text="@string/debts_title"/>
+                </LinearLayout>
+            </LinearLayout>
+
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <ListView
+            android:id="@+id/listWallets"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/debts_show_archived"
-            android:textColor="@color/colorTextPrimary"
-            android:textSize="13sp"
-            android:buttonTint="@color/colorPrimary"/>
-    </LinearLayout>
-
-    <ListView
-        android:id="@+id/listWallets"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/walletsFilterBlock"
-        android:layout_above="@id/bottomNav"
-        android:layout_marginTop="6dp"
-        android:clipToPadding="false"
-        android:divider="@null"
-        android:paddingLeft="18dp"
-        android:paddingRight="18dp"/>
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:divider="@null"
+            android:nestedScrollingEnabled="true"
+            android:paddingLeft="18dp"
+            android:paddingTop="6dp"
+            android:paddingRight="18dp"
+            android:scrollbars="none"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <include android:id="@+id/bottomNav" layout="@layout/view_bottom_nav"/>
 </RelativeLayout>
