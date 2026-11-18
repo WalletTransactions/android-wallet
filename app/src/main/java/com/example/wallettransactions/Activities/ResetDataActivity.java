@@ -58,6 +58,10 @@ public class ResetDataActivity extends AppCompatActivity {
             WalletContract.CurrencyEntry.TABLE_NAME,
             WalletContract.IconEntry.TABLE_NAME,
             WalletContract.RecurringOperationEntry.TABLE_NAME,
+            // v93 (currency-conversion-routes): кэш составных курсов и его флаг. Без строки флага
+            // DerivedRates.ensureFresh считает кэш устаревшим и перестроит его после пересева.
+            "currency_rate_derived",
+            "derived_rates_state",
     };
 
     private CheckBox chkOperations;

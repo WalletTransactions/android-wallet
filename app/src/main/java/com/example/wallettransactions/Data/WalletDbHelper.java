@@ -24,7 +24,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     // Видны DbInit: он сверяет версию файла, не открывая базу через helper.
     static final String DATABASE_NAME = "wallet.db";
 
-    static final int DATABASE_VERSION = 92;
+    static final int DATABASE_VERSION = 93;
 
     // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
     // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на
@@ -76,6 +76,7 @@ public class WalletDbHelper extends SQLiteOpenHelper {
         createOperationAccountIndexes(db);
         CreateViews(db);
         createSyncTriggers(db);
+        createDerivedRatesTriggers(db);
 
         WalletFillData.InsertFirstDictionary(db, mContext);
     }
@@ -893,6 +894,15 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                 + WalletContract.CurrencyPairEntry._ID+")"
                 + ");");
 
+        createCurrencyConversionTable(db);
+    }
+
+    /**
+     * Шаги маршрутов пересчёта (v93, openspec currency-conversion-routes): маршрут from → to — цепочка
+     * строк с num 1…3, каждая называет пару и направление шага. Таблица пересоздаётся на апгрейде (SQLite
+     * не умеет менять ограничения; данных в ней до v93 не было ни у кого).
+     */
+    private void createCurrencyConversionTable(SQLiteDatabase db) {
         db.execSQL("DROP table IF EXISTS "+ WalletContract.CurrencyConversionEntry.TABLE_NAME);
 
         db.execSQL("CREATE TABLE " + WalletContract.CurrencyConversionEntry.TABLE_NAME + " (\n"
@@ -918,11 +928,52 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                 + " CONSTRAINT fk_currency_conversion_currency_pair_id FOREIGN KEY (\n"
                 + WalletContract.CurrencyConversionEntry.COLUMN_CURRENCY_PAIR_ID
                 + ") REFERENCES "+WalletContract.CurrencyPairEntry.TABLE_NAME+" (\n"
-                + WalletContract.CurrencyPairEntry._ID+")\n"
+                + WalletContract.CurrencyPairEntry._ID+"),\n"
+                // v93 (currency-conversion-routes): шаг маршрута — номер 1…3, концы различны.
+                + " CONSTRAINT ck_currency_conversion_num CHECK (num BETWEEN 1 AND 3),\n"
+                + " CONSTRAINT ck_currency_conversion_sides CHECK (from_currency_id <> to_currency_id)\n"
                 + ");");
     }
 
+    /**
+     * Кэш составных курсов (v93, openspec currency-conversion-routes, см. {@link DerivedRates}):
+     * {@code currency_rate_derived} — строки (from, to, date, rate), {@code derived_rates_state} —
+     * флаг «устарел». Не синкается; идемпотентно (CreateViews зовёт на любом пути апгрейда).
+     */
+    private void createDerivedRatesTables(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS currency_rate_derived (\n"
+                + "from_currency_id INTEGER NOT NULL, to_currency_id INTEGER NOT NULL,\n"
+                + "date TEXT NOT NULL, rate REAL NOT NULL,\n"
+                + "PRIMARY KEY (from_currency_id, to_currency_id, date)) WITHOUT ROWID");
+        db.execSQL("CREATE TABLE IF NOT EXISTS derived_rates_state (_id INTEGER PRIMARY KEY, stale INTEGER NOT NULL)");
+        db.execSQL("INSERT OR IGNORE INTO derived_rates_state (_id, stale) VALUES (1, 1)");
+    }
+
+    /**
+     * Любое изменение исходных данных курса — курса пары, пары, валюты, шага маршрута — помечает
+     * кэш устаревшим; {@link DerivedRates#ensureFresh} перестроит его перед чтением.
+     */
+    private void createDerivedRatesTriggers(SQLiteDatabase db) {
+        String[] tables = {
+                WalletContract.CurrencyPairRateEntry.TABLE_NAME,
+                WalletContract.CurrencyPairEntry.TABLE_NAME,
+                WalletContract.CurrencyEntry.TABLE_NAME,
+                WalletContract.CurrencyConversionEntry.TABLE_NAME};
+        String[] events = {"INSERT", "UPDATE", "DELETE"};
+        for (String table : tables) {
+            if (!tableExists(db, table)) continue;
+            for (String event : events) {
+                db.execSQL("CREATE TRIGGER IF NOT EXISTS trg_" + table + "_derived_" + event.toLowerCase(java.util.Locale.ROOT) + "\n"
+                        + "AFTER " + event + " ON " + table + "\n"
+                        + "BEGIN\n"
+                        + "  UPDATE derived_rates_state SET stale = 1 WHERE stale = 0;\n"
+                        + "END;");
+            }
+        }
+    }
+
     private void CreateViews(SQLiteDatabase db) {
+        createDerivedRatesTables(db); // вьюха курса читает currency_rate_derived
         // v91: v_operation джойнит account_debt. Шаги апгрейда до v91 (v84, v89) тоже
         // пересоздают вьюхи — таблица к этому моменту должна существовать; триггеры и
         // индексы ей добавит сам шаг v91.
@@ -959,13 +1010,15 @@ public class WalletDbHelper extends SQLiteOpenHelper {
 
         db.execSQL("DROP VIEW IF EXISTS v_currency_conversion");
 
+        // v93 (currency-conversion-routes): currency_conversion теперь хранит ШАГИ маршрутов, а не
+        // подмену пары у направления — вьюха её больше не подмешивает (как на сервере).
         db.execSQL("CREATE VIEW v_currency_conversion\n" +
                 "as \n" +
                 "select fc._id from_currency_id, fc.name from_currency_name, fc.iso_code from_currency_iso,\n" +
                 "tc._id to_currency_id, tc.name to_currency_name, tc.iso_code to_currency_iso,\n" +
-                "COALESCE(cc.currency_pair_id, fk.currency_pair_id) currency_pair_id, \n" +
-                "COALESCE(cc.num, fk.num) num, \n" +
-                "COALESCE(cc.is_reverse, fk.is_reverse) is_reverse\n" +
+                "fk.currency_pair_id currency_pair_id, \n" +
+                "fk.num num, \n" +
+                "fk.is_reverse is_reverse\n" +
                 "from (\n" +
                 "select \"_id\" currency_pair_id, base_currency_id from_currency_id, quote_currency_id to_currency_id, 1 num, 0 is_reverse\n" +
                 "from currency_pair cp \n" +
@@ -974,12 +1027,10 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                 "select \"_id\" currency_pair_id, quote_currency_id from_currency_id, base_currency_id to_currency_id, 1 num, 1 is_reverse\n" +
                 "from currency_pair cp\n" +
                 "where cp.deleted_at is null ) fk\n" +
-                "left join currency_conversion cc\n" +
-                "on cc.from_currency_id = fk.from_currency_id and cc.to_currency_id == fk.to_currency_id and cc.deleted_at is null\n" +
                 "join currency fc\n" +
-                "on fc.\"_id\" =COALESCE(cc.from_currency_id, fk.from_currency_id) and fc.deleted_at is null\n" +
+                "on fc.\"_id\" = fk.from_currency_id and fc.deleted_at is null\n" +
                 "join currency tc\n" +
-                "on tc.\"_id\" =COALESCE(cc.to_currency_id,fk.to_currency_id) and tc.deleted_at is null;");
+                "on tc.\"_id\" = fk.to_currency_id and tc.deleted_at is null;");
 
         db.execSQL("drop VIEW IF EXISTS v_currency_conversion_rate;\n");
 
@@ -1007,7 +1058,12 @@ public class WalletDbHelper extends SQLiteOpenHelper {
                 "  on dr.currency_pair_id = d.currency_pair_id and dr.deleted_at is null\n" +
                 "  where d.is_reverse = 0 and d.from_currency_id = cc.from_currency_id\n" +
                 "  and d.to_currency_id = cc.to_currency_id and dr.date = r.date))\n" +
-                "union select _id, name, iso_code , _id, name, iso_code , '2000-01-01', 1 from currency c where c.deleted_at is null;");
+                "union select _id, name, iso_code , _id, name, iso_code , '2000-01-01', 1 from currency c where c.deleted_at is null\n" +
+                // v93: составные курсы (маршрут, кросс через USD) — кэш DerivedRates, см. его javadoc.
+                "union select d.from_currency_id, fc.name, fc.iso_code, d.to_currency_id, tc.name, tc.iso_code, d.date, d.rate\n" +
+                "from currency_rate_derived d\n" +
+                "join currency fc on fc._id = d.from_currency_id and fc.deleted_at is null\n" +
+                "join currency tc on tc._id = d.to_currency_id and tc.deleted_at is null;");
 
         db.execSQL("drop VIEW IF EXISTS v_operation;\n");
 
@@ -1070,6 +1126,8 @@ public class WalletDbHelper extends SQLiteOpenHelper {
     public SQLiteDatabase getWritableDatabase() {
         SQLiteDatabase db = super.getWritableDatabase();
         db.execSQL("PRAGMA foreign_keys = ON;");
+        // Кэш составных курсов (v93): перестраивается, если триггеры пометили его устаревшим.
+        DerivedRates.ensureFresh(db);
         return db;
     }
 
@@ -1510,6 +1568,21 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
                             + " ADD COLUMN " + WalletContract.AccountEntry.COLUMN_CATEGORY_KIND
                             + " INTEGER NOT NULL DEFAULT 2");
                 }
+            }
+            if (oldVersion < 93) {
+                // v93 (openspec currency-conversion-routes): currency_conversion — шаги маршрутов.
+                // Таблица пуста у всех (ни один код-путь в неё не писал), поэтому пересоздаётся с
+                // ограничениями num 1…3 и from <> to; кэш составных курсов, триггеры устаревания и
+                // вьюхи (v_currency_conversion больше не подмешивает таблицу) — заново.
+                createCurrencyConversionTable(db);
+                createUuidIndex(db, WalletContract.CurrencyConversionEntry.TABLE_NAME);
+                createDirtyTrigger(db, WalletContract.CurrencyConversionEntry.TABLE_NAME,
+                        WalletContract.CurrencyConversionEntry.COLUMN_FROM_CURRENCY_ID,
+                        WalletContract.CurrencyConversionEntry.COLUMN_TO_CURRENCY_ID,
+                        WalletContract.CurrencyConversionEntry.COLUMN_NUM);
+                createDerivedRatesTables(db);
+                CreateViews(db);
+                createDerivedRatesTriggers(db);
             }
             return;
         }

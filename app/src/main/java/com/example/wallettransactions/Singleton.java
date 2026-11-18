@@ -7,6 +7,7 @@ import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyList;
 import com.example.wallettransactions.DataItems.CurrencyConversion.CurrencyPairList;
 import com.example.wallettransactions.DataItems.IconList;
 import com.example.wallettransactions.Data.WalletDbHelper;
+import com.example.wallettransactions.Data.DerivedRates;
 import com.example.wallettransactions.Data.WalletDbLoader;
 import com.example.wallettransactions.Data.WalletFillData;
 
@@ -29,6 +30,9 @@ public class Singleton {
         if (readableDatabase == null){
             readableDatabase = getDbHelper(context).getReadableDatabase();
         }
+        // Кэш составных курсов (v93): хэндл живёт долго, а курсы/пары/маршруты могли измениться
+        // после последнего открытия — перестраиваем кэш, если триггеры пометили его устаревшим.
+        DerivedRates.ensureFresh(readableDatabase);
         return readableDatabase;
     }
 
@@ -36,6 +40,7 @@ public class Singleton {
         if (writeableDatabase == null){
             writeableDatabase = getDbHelper(context).getWritableDatabase();
         }
+        DerivedRates.ensureFresh(writeableDatabase);
         return writeableDatabase;
     }
 
