@@ -476,10 +476,20 @@ public class TransactionArrayAdapter extends ArrayAdapter<OperationItem>  {
         holder.tvComment.setText(commentLine);
         holder.tvComment.setVisibility(commentLine != null && !commentLine.trim().isEmpty() ? View.VISIBLE : View.GONE);
 
-        // Операция с займом (дал, взял, вернул, мне вернули) — сумма положительная и
-        // зелёная, а не списание с минусом.
-        if (debt != null) {
-            AdapterUtils.setAmountDepositText(holder.tvOut, tran.Amount, tran.getCurrency());
+        // Заём: «дал в долг» и «вернул долг» — деньги ушли (красный, минус); «взял в долг» и
+        // «мне вернули» — пришли (зелёный). Перевод между кошельками в одной валюте деньги
+        // не тратит и не приносит — нейтральный цвет без знака; с конвертацией (LinkedLeg)
+        // списание остаётся красным, а зачисление ниже — зелёным.
+        if (tran.DebtLabel != null) {
+            boolean moneyOut = tran.DebtLabel == com.example.wallettransactions.Data.DebtLabels.Label.GAVE
+                    || tran.DebtLabel == com.example.wallettransactions.Data.DebtLabels.Label.REPAID;
+            if (moneyOut) {
+                AdapterUtils.setAmountExpanseText(holder.tvOut, tran.Amount, tran.getCurrency());
+            } else {
+                AdapterUtils.setAmountDepositText(holder.tvOut, tran.Amount, tran.getCurrency());
+            }
+        } else if (tran.LinkedLeg == null) {
+            AdapterUtils.setAmountTransferText(holder.tvOut, tran.Amount, tran.getCurrency());
         } else {
             AdapterUtils.setAmountExpanseText(holder.tvOut, tran.Amount, tran.getCurrency());
         }

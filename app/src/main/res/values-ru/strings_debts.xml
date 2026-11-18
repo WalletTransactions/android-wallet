@@ -57,7 +57,6 @@
     <string name="debt_forgive_done">Записано</string>
     <string name="debt_forgive_failed">Не записано: проверьте сумму</string>
     <string name="debt_action_card">Карточка займа: срок, комментарий</string>
-    <string name="debt_action_operations">Операции займа</string>
     <string name="counterparties_title">Контрагенты</string>
     <string name="counterparties_add">+ Новый</string>
     <string name="counterparties_from_contacts">Из контактов</string>

@@ -7,7 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -66,11 +65,6 @@ public class AccountActivity extends BaseTabActivity {
         chipLiquid.setOnClickListener(v -> toggleSection(WalletSections.Section.LIQUID));
         chipCapital.setOnClickListener(v -> toggleSection(WalletSections.Section.CAPITAL));
         chipDebts.setOnClickListener(v -> toggleSection(WalletSections.Section.DEBTS));
-        CheckBox archived = findViewById(R.id.walletsShowArchived);
-        archived.setOnCheckedChangeListener((b, checked) -> {
-            showArchived = checked;
-            reloadTabData();
-        });
         initTabScreen(R.id.navWallets, getString(R.string.tab_wallets));
         reloadSharedAndTabData();
     }
@@ -98,6 +92,12 @@ public class AccountActivity extends BaseTabActivity {
 
         ListView listWallets = findViewById(R.id.listWallets);
         listWallets.setAdapter(new WalletBalanceAdapter(this, walletRows, getCurrencyEq(), accounts));
+        // Сводка и чипы лежат в AppBarLayout и уезжают вверх вместе со списком. Пустой список
+        // прокрутить нельзя — свёрнутую шапку (с датами периода) было бы не вернуть.
+        if (walletRows.isEmpty()) {
+            ((com.google.android.material.appbar.AppBarLayout) findViewById(R.id.summaryBar))
+                    .setExpanded(true, false);
+        }
 
         // Строка кошелька — свёрнутый итог, за которым стоят операции: тап разворачивает
         // его в ленту «Операций» по этому кошельку. Так же ведёт себя строка категории в

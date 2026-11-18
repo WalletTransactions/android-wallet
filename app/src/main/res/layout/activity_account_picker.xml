@@ -91,6 +91,43 @@
             android:onClick="onKindFilterClick"/>
     </LinearLayout>
 
+    <!-- Тип кошелька: только в справочнике и только на вкладке «Кошельки» -->
+    <LinearLayout
+        android:id="@+id/rowWalletTypeFilter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:paddingBottom="10dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/walletTypeAll"
+            style="@style/FilterChip"
+            android:text="@string/picker_wallet_type_all"
+            android:onClick="onWalletTypeClick"/>
+
+        <TextView
+            android:id="@+id/walletTypeRegular"
+            style="@style/FilterChip"
+            android:text="@string/picker_wallet_type_regular"
+            android:onClick="onWalletTypeClick"/>
+
+        <TextView
+            android:id="@+id/walletTypeAssets"
+            style="@style/FilterChip"
+            android:text="@string/picker_wallet_type_assets"
+            android:onClick="onWalletTypeClick"/>
+
+        <TextView
+            android:id="@+id/walletTypeDebts"
+            style="@style/FilterChip"
+            android:layout_marginEnd="0dp"
+            android:text="@string/picker_wallet_type_debts"
+            android:onClick="onWalletTypeClick"/>
+    </LinearLayout>
+
     <!-- Долги (debts): при выборе статьи расхода/дохода — «Дать в долг», «Взять в долг»,
          «Вернуть»; результат — перевод между кошельком и займом -->
     <LinearLayout

@@ -32,6 +32,10 @@
     <string name="activity_account_picker_picker_title_text">Choose an account</string>
     <string name="activity_account_picker_kind_categories_text">Categories</string>
     <string name="activity_account_picker_kind_wallets_text">Wallets</string>
+    <string name="picker_wallet_type_all">All</string>
+    <string name="picker_wallet_type_regular">Regular</string>
+    <string name="picker_wallet_type_assets">Assets</string>
+    <string name="picker_wallet_type_debts">Loans</string>
     <string name="activity_account_picker_search_input_hint">Search by name</string>
     <string name="activity_account_picker_empty_state_text">Nothing found</string>
     <string name="activity_account_picker_text_1">+ Add a wallet or category</string>

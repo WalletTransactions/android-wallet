@@ -35,6 +35,10 @@
     <string name="activity_account_picker_picker_title_text">Выберите счёт</string>
     <string name="activity_account_picker_kind_categories_text">Категории</string>
     <string name="activity_account_picker_kind_wallets_text">Кошельки</string>
+    <string name="picker_wallet_type_all">Все</string>
+    <string name="picker_wallet_type_regular">Обычные</string>
+    <string name="picker_wallet_type_assets">Активы</string>
+    <string name="picker_wallet_type_debts">Займы</string>
     <string name="activity_account_picker_search_input_hint">Поиск по названию</string>
     <string name="activity_account_picker_empty_state_text">Ничего не найдено</string>
     <string name="activity_account_picker_text_1">+ Добавить кошелёк или категорию</string>

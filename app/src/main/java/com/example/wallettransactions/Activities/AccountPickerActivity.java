@@ -161,6 +161,9 @@ public class AccountPickerActivity extends AppCompatActivity {
     private View mEmptyState;
 
     private boolean mShowWallets;
+    /** Справочник, вкладка «Кошельки»: какие кошельки показывать. */
+    private enum WalletType { ALL, REGULAR, ASSET, DEBT }
+    private WalletType mWalletType = WalletType.ALL;
     private boolean mCatalogMode;
     /** Справочник: переключатель «Показывать архивные»; по умолчанию выключен. */
     private boolean mShowArchived;
@@ -361,9 +364,37 @@ public class AccountPickerActivity extends AppCompatActivity {
         applyFilters();
     }
 
+    public void onWalletTypeClick(View view) {
+        int id = view.getId();
+        WalletType picked = id == R.id.walletTypeRegular ? WalletType.REGULAR
+                : id == R.id.walletTypeAssets ? WalletType.ASSET
+                : id == R.id.walletTypeDebts ? WalletType.DEBT : WalletType.ALL;
+        if (picked == mWalletType) return;
+        mWalletType = picked;
+        paintKindChips();
+        applyFilters();
+    }
+
+    private boolean matchesWalletType(AccountItem account) {
+        if (!mCatalogMode || mWalletType == WalletType.ALL) return true;
+        boolean asset = isAsset(account);
+        boolean debt = account instanceof AccountOperatingItem && ((AccountOperatingItem) account).isDebt();
+        switch (mWalletType) {
+            case ASSET: return asset;
+            case DEBT: return debt;
+            default: return !asset && !debt;
+        }
+    }
+
     private void paintKindChips() {
         paintChip(mKindCategories, !mShowWallets);
         paintChip(mKindWallets, mShowWallets);
+        findViewById(R.id.rowWalletTypeFilter).setVisibility(
+                mCatalogMode && mShowWallets ? View.VISIBLE : View.GONE);
+        paintChip((TextView) findViewById(R.id.walletTypeAll), mWalletType == WalletType.ALL);
+        paintChip((TextView) findViewById(R.id.walletTypeRegular), mWalletType == WalletType.REGULAR);
+        paintChip((TextView) findViewById(R.id.walletTypeAssets), mWalletType == WalletType.ASSET);
+        paintChip((TextView) findViewById(R.id.walletTypeDebts), mWalletType == WalletType.DEBT);
         // У каждого списка свой порядок — кнопка показывает режим видимого.
         paintSortButton();
     }
@@ -383,7 +414,8 @@ public class AccountPickerActivity extends AppCompatActivity {
 
         mVisibleRows.clear();
         for (Row row : (mShowWallets ? mWalletRows : mCategoryRows)) {
-            if (AccountNames.matchesSearch(row.account.getDisplayName(), query))
+            if (AccountNames.matchesSearch(row.account.getDisplayName(), query)
+                    && (!mShowWallets || matchesWalletType(row.account)))
                 mVisibleRows.add(row);
         }
 
