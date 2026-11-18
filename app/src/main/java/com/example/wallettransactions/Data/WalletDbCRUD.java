@@ -602,6 +602,59 @@ public class WalletDbCRUD {
                 SQLiteDatabase.CONFLICT_REPLACE);
     }
 
+    /** Отвязать контакт от контрагента (карточка контрагента); имя контрагента не меняется. */
+    public static void ClearCounterpartyContact(SQLiteDatabase db, String counterpartyUuid) {
+        db.delete(WalletContract.CounterpartyContactEntry.TABLE_NAME,
+                WalletContract.CounterpartyContactEntry.COLUMN_COUNTERPARTY_UUID + " = ?",
+                new String[]{counterpartyUuid});
+    }
+
+    /**
+     * Иконка контрагента (карточка контрагента, design D5): форма отдаёт {@code _id} иконки, в
+     * {@code counterparty.icon_uuid} хранится её uuid — он переживает синк между телефонами.
+     * {@code iconId <= 0} или неизвестная/удалённая иконка — «без иконки» ({@code NULL}).
+     *
+     * @return false, если контрагента нет
+     */
+    public static boolean SetCounterpartyIcon(SQLiteDatabase db, int counterpartyId, int iconId) {
+        String uuid = iconId > 0 ? iconUuidById(db, iconId) : null;
+        ContentValues cv = new ContentValues();
+        if (uuid == null) cv.putNull(WalletContract.CounterpartyEntry.COLUMN_ICON_UUID);
+        else cv.put(WalletContract.CounterpartyEntry.COLUMN_ICON_UUID, uuid);
+        return db.update(WalletContract.CounterpartyEntry.TABLE_NAME, cv,
+                WalletContract.CounterpartyEntry._ID + "=? AND "
+                        + WalletContract.CounterpartyEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{String.valueOf(counterpartyId)}) > 0;
+    }
+
+    /** {@code _id} живой иконки по uuid или -1 (иконки нет на этом телефоне или не задана). */
+    public static int IconIdByUuid(SQLiteDatabase db, String iconUuid) {
+        if (iconUuid == null) return -1;
+        Cursor c = db.rawQuery("SELECT " + WalletContract.IconEntry._ID
+                + " FROM " + WalletContract.IconEntry.TABLE_NAME
+                + " WHERE " + WalletContract.IconEntry.COLUMN_UUID + " = ?"
+                + " AND " + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL LIMIT 1",
+                new String[]{iconUuid});
+        try {
+            return c.moveToFirst() ? c.getInt(0) : -1;
+        } finally {
+            c.close();
+        }
+    }
+
+    private static String iconUuidById(SQLiteDatabase db, int iconId) {
+        Cursor c = db.rawQuery("SELECT " + WalletContract.IconEntry.COLUMN_UUID
+                + " FROM " + WalletContract.IconEntry.TABLE_NAME
+                + " WHERE " + WalletContract.IconEntry._ID + " = ?"
+                + " AND " + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL",
+                new String[]{String.valueOf(iconId)});
+        try {
+            return c.moveToFirst() && !c.isNull(0) ? c.getString(0) : null;
+        } finally {
+            c.close();
+        }
+    }
+
     /** {@code LOOKUP_KEY} контакта контрагента или null. */
     public static String GetCounterpartyContact(SQLiteDatabase db, String counterpartyUuid) {
         Cursor c = db.rawQuery("SELECT " + WalletContract.CounterpartyContactEntry.COLUMN_LOOKUP_KEY
