@@ -248,6 +248,12 @@ public class DebtsActivity extends AppCompatActivity {
             edit.putExtra(AccountItemActivity.ARG_ACCOUNT_ID, loan.accountId);
             startActivity(edit);
         });
+        // Единственный пункт (закрытый заём — «Вернуть» и «Простить» недоступны): меню из одной
+        // строки ни к чему, сразу открываем карточку.
+        if (actions.size() == 1) {
+            actions.get(0).run();
+            return;
+        }
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle(loan.name)
                 .setItems(items.toArray(new String[0]), (d, which) -> actions.get(which).run())
