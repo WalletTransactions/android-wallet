@@ -307,6 +307,8 @@
     <string name="activity_transaction_text_1">Расход</string>
     <string name="activity_transaction_text_2">Доход</string>
     <string name="activity_transaction_text_3">Перевод</string>
+    <string name="activity_transaction_date_prev">Предыдущий день</string>
+    <string name="activity_transaction_date_next">Следующий день</string>
     <string name="activity_transaction_amount_hint_text">Сколько потратили</string>
     <string name="activity_transaction_label_amount_to_text">Сумма в валюте получателя</string>
     <string name="activity_transaction_edit_slot_top_hint">Статья расхода</string>

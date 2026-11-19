@@ -304,6 +304,8 @@
     <string name="activity_transaction_text_1">Expense</string>
     <string name="activity_transaction_text_2">Income</string>
     <string name="activity_transaction_text_3">Transfer</string>
+    <string name="activity_transaction_date_prev">Previous day</string>
+    <string name="activity_transaction_date_next">Next day</string>
     <string name="activity_transaction_amount_hint_text">How much did you spend</string>
     <string name="activity_transaction_label_amount_to_text">Amount in the recipient\'s currency</string>
     <string name="activity_transaction_edit_slot_top_hint">Expense category</string>

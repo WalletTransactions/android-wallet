@@ -149,11 +149,23 @@
             android:contentDescription="@null"
             android:src="@drawable/calendar"/>
 
+        <!-- Шаг даты на день назад / вперёд; время операции не трогают. -->
+        <ImageView
+            android:id="@+id/btnDatePrev"
+            android:layout_width="28dp"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/activity_transaction_date_prev"
+            android:scaleType="center"
+            android:src="@drawable/ic_date_prev"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:onClick="btnDatePrevClick"/>
+
         <EditText
             android:id="@+id/editDate"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_weight="1.4"
+            android:maxLines="1"
             android:background="@null"
             android:clickable="true"
             android:gravity="center"
@@ -161,6 +173,16 @@
             android:textSize="13.5sp"
             android:textStyle="bold"
             android:onClick="btnDateClick"/>
+
+        <ImageView
+            android:id="@+id/btnDateNext"
+            android:layout_width="28dp"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/activity_transaction_date_next"
+            android:scaleType="center"
+            android:src="@drawable/ic_date_next"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:onClick="btnDateNextClick"/>
 
         <View
             android:layout_width="1dp"
@@ -178,7 +200,8 @@
             android:id="@+id/editTime"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_weight="0.6"
+            android:maxLines="1"
             android:background="@null"
             android:clickable="true"
             android:gravity="center"
