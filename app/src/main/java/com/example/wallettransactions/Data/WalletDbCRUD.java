@@ -1500,8 +1500,9 @@ public class WalletDbCRUD {
      * тот же каскад, что {@code DELETE /api/currency-pairs/{uuid}} на сервере. dirty
      * ставит триггер, push отправит и пару, и курсы tombstone'ами. Общую пару
      * (is_shared = 1) не трогает и возвращает 0 — проверка здесь, а не только в UI.
-     * {@code currency_conversion}, ссылающаяся на пару, не меняется (сервер её тоже
-     * не трогает): эквивалент через пару становится неизвестным.
+     * Маршруты пересчёта (currency-conversion-routes), шаги которых используют пару, гасятся
+     * целиком (все шаги маршрута) в той же транзакции — как на сервере: без этого после
+     * пересоздания пары (новый uuid) старый маршрут остался бы оборванным навсегда.
      *
      * @return 1 — пара удалена, 0 — не найдена, уже удалена или общая.
      */
@@ -1524,6 +1525,13 @@ public class WalletDbCRUD {
                     WalletContract.CurrencyPairRateEntry.COLUMN_CURRENCY_PAIR_RATE + "=? AND "
                             + WalletContract.CurrencyPairRateEntry.COLUMN_DELETED_AT + " IS NULL",
                     new String[]{Integer.toString(pairId)});
+
+            // Маршруты с шагом по этой паре — целиком (все шаги), тем же моментом.
+            db.execSQL("UPDATE " + WalletContract.CurrencyConversionEntry.TABLE_NAME
+                    + " SET deleted_at = ? WHERE deleted_at IS NULL AND (from_currency_id, to_currency_id) IN ("
+                    + "SELECT from_currency_id, to_currency_id FROM " + WalletContract.CurrencyConversionEntry.TABLE_NAME
+                    + " WHERE currency_pair_id = ? AND deleted_at IS NULL)",
+                    new Object[]{now, pairId});
             db.setTransactionSuccessful();
             return pairs;
         } finally {

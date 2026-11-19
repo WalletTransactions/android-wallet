@@ -1,4 +1,4 @@
--- Актуализировано по WalletDbHelper.CreateViews (DATABASE_VERSION = 84).
+-- Актуализировано по WalletDbHelper.CreateViews (DATABASE_VERSION = 93).
 -- Отличие от предыдущей редакции этого файла: текущая вьюха НЕ отдаёт is_reverse
 -- и num в результате — они использованы только внутри case/группировки самой
 -- v_currency_conversion и наружу не выведены. Расширенная редакция с is_reverse/num
@@ -31,4 +31,9 @@ where not (cc.is_reverse = 1 and exists (
   on dr.currency_pair_id = d.currency_pair_id and dr.deleted_at is null
   where d.is_reverse = 0 and d.from_currency_id = cc.from_currency_id
   and d.to_currency_id = cc.to_currency_id and dr.date = r.date))
-union select _id, name, iso_code , _id, name, iso_code , '2000-01-01', 1 from currency c where c.deleted_at is null;
+union select _id, name, iso_code , _id, name, iso_code , '2000-01-01', 1 from currency c where c.deleted_at is null
+-- v93: составные курсы (маршрут, кросс через USD) — кэш DerivedRates.
+union select d.from_currency_id, fc.name, fc.iso_code, d.to_currency_id, tc.name, tc.iso_code, d.date, d.rate
+from currency_rate_derived d
+join currency fc on fc._id = d.from_currency_id and fc.deleted_at is null
+join currency tc on tc._id = d.to_currency_id and tc.deleted_at is null;

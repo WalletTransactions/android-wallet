@@ -52,4 +52,25 @@
     <string name="rate_delete_question">Delete this rate?</string>
     <string name="rate_deleted">Rate deleted</string>
     <string name="rate_error_delete">Couldn\'t delete: %1$s</string>
+
+    <!-- Маршруты пересчёта валют (openspec currency-conversion-routes) -->
+    <string name="route_list_title">Conversion routes</string>
+    <string name="route_list_hint">A route converts a currency through intermediate ones when there is no direct pair, for example BTC → EUR → RUB. Without a route the rate goes through USD, if the USD pairs exist.</string>
+    <string name="route_list_empty">No routes yet</string>
+    <string name="route_list_add">+ Route</string>
+    <string name="route_dialog_title">New route</string>
+    <string name="route_dialog_from">From</string>
+    <string name="route_dialog_via">Via</string>
+    <string name="route_dialog_to">To</string>
+    <string name="route_dialog_add_via">One more intermediate currency</string>
+    <string name="route_dialog_remove_via">Remove the second intermediate</string>
+    <string name="route_dialog_create">Create</string>
+    <string name="route_error_choose_all">Choose all the currencies of the route</string>
+    <string name="route_error_duplicate_currency">Currencies in a route must not repeat</string>
+    <string name="route_error_exists">Such a route already exists</string>
+    <string name="route_error_no_pair">There is no currency pair for the step %1$s</string>
+    <string name="route_error_generic">Could not create the route</string>
+    <string name="route_delete_question">Delete the route %1$s? Rates and pairs stay unchanged.</string>
+    <string name="route_step_reversed">%1$s (inverse)</string>
+    <string name="activity_currencypair_list_btn_routes_text">Routes</string>
 </resources>

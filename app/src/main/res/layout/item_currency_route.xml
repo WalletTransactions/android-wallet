@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Строка маршрута пересчёта: «BTC → EUR → RUB», пары шагов, кнопка «Удалить». -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/bg_card_row"
+    android:padding="12dp"
+    android:layout_marginBottom="10dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView android:id="@+id/routeTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="BTC → EUR → RUB" android:textSize="14sp" android:textStyle="bold" android:textColor="@color/colorTextPrimary"/>
+        <TextView android:id="@+id/routeSteps" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="BTCEUR · EURRUB" android:textSize="11.5sp" android:textColor="@color/colorTextSecondary"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/routeDelete"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:gravity="center"
+        android:paddingLeft="12dp"
+        android:paddingRight="4dp"
+        android:text="@string/action_delete"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/colorexpanse"/>
+</LinearLayout>

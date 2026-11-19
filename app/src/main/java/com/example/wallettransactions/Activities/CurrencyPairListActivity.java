@@ -120,6 +120,11 @@ public class CurrencyPairListActivity extends AppCompatActivity {
         showAddPairDialog();
     }
 
+    /** Кнопка «Маршруты» в тулбаре — маршруты пересчёта валют (currency-conversion-routes). */
+    public void onOpenRoutes(View view) {
+        startActivity(new Intent(this, CurrencyRouteListActivity.class));
+    }
+
     /** Кнопка «Валюты» в тулбаре — список валют в режиме просмотра. */
     public void onOpenCurrencies(View view) {
         startActivity(CurrencyPickerActivity.buildBrowseIntent(this));

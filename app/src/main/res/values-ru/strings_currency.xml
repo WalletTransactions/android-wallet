@@ -54,4 +54,25 @@
     <string name="rate_delete_question">Удалить курс?</string>
     <string name="rate_deleted">Курс удален</string>
     <string name="rate_error_delete">Ошибка при удалении: %1$s</string>
+
+    <!-- Маршруты пересчёта валют (openspec currency-conversion-routes) -->
+    <string name="route_list_title">Маршруты пересчёта</string>
+    <string name="route_list_hint">Маршрут пересчитывает валюту через промежуточные, когда прямой пары нет, например BTC → EUR → RUB. Без маршрута курс считается через USD, если есть пары к USD.</string>
+    <string name="route_list_empty">Маршрутов пока нет</string>
+    <string name="route_list_add">+ Маршрут</string>
+    <string name="route_dialog_title">Новый маршрут</string>
+    <string name="route_dialog_from">Из</string>
+    <string name="route_dialog_via">Через</string>
+    <string name="route_dialog_to">В</string>
+    <string name="route_dialog_add_via">Ещё промежуточная валюта</string>
+    <string name="route_dialog_remove_via">Убрать вторую промежуточную</string>
+    <string name="route_dialog_create">Создать</string>
+    <string name="route_error_choose_all">Выберите все валюты маршрута</string>
+    <string name="route_error_duplicate_currency">Валюты в маршруте не должны повторяться</string>
+    <string name="route_error_exists">Такой маршрут уже есть</string>
+    <string name="route_error_no_pair">Для шага %1$s нет валютной пары</string>
+    <string name="route_error_generic">Не удалось создать маршрут</string>
+    <string name="route_delete_question">Удалить маршрут %1$s? Курсы и пары не изменятся.</string>
+    <string name="route_step_reversed">%1$s (обр.)</string>
+    <string name="activity_currencypair_list_btn_routes_text">Маршруты</string>
 </resources>
