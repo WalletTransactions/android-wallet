@@ -27,3 +27,6 @@ NUL
 *.log
 /.claude/scheduled_tasks.lock
 /.claude/worktrees/
+# Рабочие копии git worktree (отдельные ветки рядом с репозиторием): внутри лежит свой .git,
+# и `git add -A` иначе добавляет их как встроенный репозиторий.
+/.worktrees/
