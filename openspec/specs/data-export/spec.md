@@ -70,7 +70,8 @@ JSON SHALL содержать только живые (не помеченные
 контрагента, `comment`, `due_date` в `yyyy-MM-dd` — ключ только если срок
 задан); у кошелька-актива — блок `asset` (`type`: `real_estate`, `vehicle`
 или `other`; `include_in_net_worth` — булево; `comment`). У системной
-категории переоценки SHALL быть `"system": "revaluation"`. `currency_pairs`
+категории переоценки SHALL быть `"system": "revaluation"`. У архивного счёта
+SHALL быть `"archived": true`; у неархивного ключа нет. `currency_pairs`
 — `symbol`, `base`, `quote` (коды валют). `rates` — `symbol`, `date`
 (`YYYY-MM-DD`), `rate`, по символу и дате. `operations` — в порядке ввода:
 `date` (только день, без времени), `from`, `to` (имена счетов), `amount`,
@@ -92,6 +93,10 @@ JSON SHALL содержать только живые (не помеченные
 #### Scenario: Актив
 - **WHEN** кошелёк «Квартира» помечен недвижимостью и входит в капитал
 - **THEN** у него блок `"asset": {"type": "real_estate", "include_in_net_worth": true, "comment": …}`
+
+#### Scenario: Архивный счёт
+- **WHEN** кошелёк «Старый» в архиве, а «Живой» нет
+- **THEN** в `accounts` у «Старый» `"archived": true`, у «Живой» ключа `archived` нет
 
 #### Scenario: Переоценка
 - **WHEN** на телефоне есть категория «Переоценка» и операции через неё

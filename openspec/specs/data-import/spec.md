@@ -112,8 +112,10 @@ UTF-8 BOM и пробелов по краям: `AccountName,AccountComment,Accou
 контрагента) обновляется, а не дублируется. Элемент `accounts` — `name`,
 необязательные `comment` (по умолчанию имя), `icon` (по умолчанию
 `unknown`), `currency` (`iso`, необязательные `name` — по умолчанию код,
-`icon`), `debt`, `asset`, `system`, с той же обработкой, что строка CSV
-счетов. Элемент `currency_pairs` — `symbol`, `base`, `quote` (коды валют);
+`icon`), `debt`, `asset`, `system`, `archived` (булево), с той же
+обработкой, что строка CSV счетов. Ключ `archived` SHALL выставлять или
+снимать архив счёта; без ключа архивность SHALL не меняться (новый счёт — не
+в архиве, существующий остаётся как был). Элемент `currency_pairs` — `symbol`, `base`, `quote` (коды валют);
 пара с занятым `symbol` не заводится повторно. Элемент `rates` — `symbol`,
 `date`, `rate`; курс для несуществующей пары SHALL пропускаться с причиной
 «<symbol> <дата> — нет валютной пары с symbol=<symbol>». Элемент с
@@ -128,6 +130,14 @@ UTF-8 BOM и пробелов по краям: `AccountName,AccountComment,Accou
 #### Scenario: Старый формат
 - **WHEN** импортирован JSON — голый массив операций
 - **THEN** он читается как раздел `operations`
+
+#### Scenario: Архивный кошелёк
+- **WHEN** импортирован JSON с кошельком `{"name": "Старый", "currency": {"iso": "USD"}, "archived": true}`
+- **THEN** кошелёк заведён в архиве
+
+#### Scenario: Повторный импорт без ключа archived
+- **WHEN** кошелёк уже в архиве и импортирован JSON с тем же кошельком без ключа `archived`
+- **THEN** кошелёк остаётся в архиве
 
 #### Scenario: Файл без новых полей
 - **WHEN** импортирован JSON, в котором нет `counterparties` и блоков `debt`/`asset`/`system`
