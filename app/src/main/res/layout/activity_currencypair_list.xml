@@ -39,24 +39,6 @@
             android:fontFamily="@font/caprasimo"
             android:textColor="@color/colorTextPrimary"/>
 
-        <!-- Маршруты пересчёта валют (CurrencyRouteListActivity). -->
-        <TextView
-            android:id="@+id/btnRoutes"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/bg_pill_secondary"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:paddingLeft="14dp"
-            android:paddingRight="14dp"
-            android:text="@string/activity_currencypair_list_btn_routes_text"
-            android:textColor="@color/colorTextPrimary"
-            android:textSize="13.5sp"
-            android:textStyle="bold"
-            android:onClick="onOpenRoutes"/>
-
         <!-- Список валют в режиме просмотра (CurrencyPickerActivity.buildBrowseIntent). -->
         <TextView
             android:id="@+id/btnCurrencies"
@@ -78,26 +60,54 @@
     <!-- Поиск валюты — единственный фильтр экрана и виден всегда: раскрывающаяся панель
          с чипами валют прятала фильтр за лишним тапом, а набрать «EUR» всё равно быстрее,
          чем искать нужную валюту глазами в списке. Фильтрует сами пары. -->
-    <EditText
-        android:id="@+id/currencyFilterSearch"
+    <LinearLayout
+        android:id="@+id/searchRow"
         android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="wrap_content"
         android:layout_below="@id/toolbar"
         android:layout_marginStart="18dp"
         android:layout_marginEnd="18dp"
         android:layout_marginBottom="10dp"
-        android:background="@drawable/bg_input_pill"
-        android:hint="@string/activity_currencypair_list_currency_filter_search_hint"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp"
-        android:textSize="13sp"
-        android:singleLine="true"/>
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <EditText
+            android:id="@+id/currencyFilterSearch"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_input_pill"
+            android:hint="@string/activity_currencypair_list_currency_filter_search_hint"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:textSize="13sp"
+            android:singleLine="true"/>
+
+        <!-- Маршруты пересчёта валют (CurrencyRouteListActivity). В шапке не помещается на узком
+             экране: заголовок «Курсы валют» уходил на две строки. -->
+        <TextView
+            android:id="@+id/btnRoutes"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp"
+            android:text="@string/activity_currencypair_list_btn_routes_text"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13.5sp"
+            android:textStyle="bold"
+            android:onClick="onOpenRoutes"/>
+    </LinearLayout>
 
     <ListView
         android:id="@+id/listPairs"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/currencyFilterSearch"
+        android:layout_below="@id/searchRow"
         android:layout_above="@id/btnAddPair"
         android:divider="@null"
         android:paddingLeft="18dp"
