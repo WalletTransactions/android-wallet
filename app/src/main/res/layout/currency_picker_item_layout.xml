@@ -16,24 +16,12 @@
     android:paddingTop="9dp"
     android:paddingBottom="9dp">
 
-    <FrameLayout
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:background="@drawable/bg_radio_dot">
-        <View
-            android:id="@+id/selectMark"
-            android:layout_width="11dp"
-            android:layout_height="11dp"
-            android:layout_gravity="center"
-            android:background="@drawable/bg_radio_dot_filled"
-            android:visibility="gone"/>
-    </FrameLayout>
-
+    <!-- Выбор — тапом по строке, без радио-кружка; текущая валюта отмечена цветом кода
+         (CurrencyPickerAdapter.getView). -->
     <ImageView
         android:id="@+id/currencyIcon"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:layout_marginStart="12dp"
         android:contentDescription="@null"/>
 
     <TextView
