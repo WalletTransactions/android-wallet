@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Locale;
 
 /** Rows for CurrencyPickerActivity's list (currency_picker_item_layout.xml) — filters by
- * ISO code or name, marks the currently-selected currency (if any) with its radio dot. */
+ * ISO code or name, marks the currently-selected currency (if any) with the colour of its code. */
 public class CurrencyPickerAdapter extends BaseAdapter implements Filterable {
 
     /** Тап по ✎ в строке — правка валюты, отдельно от выбора строки. */
@@ -76,11 +76,13 @@ public class CurrencyPickerAdapter extends BaseAdapter implements Filterable {
             view = LayoutInflater.from(context).inflate(R.layout.currency_picker_item_layout, parent, false);
 
         Currency c = getItem(position);
-        ((TextView) view.findViewById(R.id.currencyCode)).setText(c.getIso());
+        TextView code = (TextView) view.findViewById(R.id.currencyCode);
+        code.setText(c.getIso());
+        // Текущий выбор — цветом кода: отдельного маркера (радио-кружка) в строке нет, как и в выборе счёта.
+        code.setTextColor(androidx.core.content.ContextCompat.getColor(context,
+                c.getIso().equals(selectedIso) ? R.color.colorPrimaryDark : R.color.colorTextPrimary));
         ((TextView) view.findViewById(R.id.currencyName)).setText(c.getName());
         ((TextView) view.findViewById(R.id.currencySymbol)).setText(c.getSymbol());
-        view.findViewById(R.id.selectMark)
-                .setVisibility(c.getIso().equals(selectedIso) ? View.VISIBLE : View.GONE);
 
         TextView tags = view.findViewById(R.id.currencyTags);
         String tagText = tagsOf(context, c);
