@@ -43,6 +43,7 @@ public class WalletExportData {
                 "\"asset\"?: {\"type\": \"real_estate\"|\"vehicle\"|\"other\", \"include_in_net_worth\"?: bool (=true), " +
                 "\"comment\"?: str}, \"system\"?: \"revaluation\", " +
                 "\"category_kind\"?: 0|1|2 (0 расход, 1 доход, 2 оба; =2), только у обычной категории, " + // not UI
+                "\"archived\"?: bool (нет ключа — архивность не трогаем), " + // not UI
                 "\"icon_image\"?: str (base64 PNG/JPEG/WEBP — своя картинка, любой размер → 256×256; " + // not UI
                 "имя иконки — \"icon\", без него имя счёта)} " + // not UI
                 "— без \"currency\" это счёт-категория (без своего баланса); \"debt\" и \"asset\" — " + // not UI
@@ -87,7 +88,8 @@ public class WalletExportData {
                         " ic." + WalletContract.IconEntry.COLUMN_IMAGE + " icon_image," +
                         " ic." + WalletContract.IconEntry.COLUMN_ORIGIN + " icon_origin," +
                         " a." + WalletContract.AccountEntry.COLUMN_KIND + " account_kind," +
-                        " a." + WalletContract.AccountEntry.COLUMN_CATEGORY_KIND + " category_kind" +
+                        " a." + WalletContract.AccountEntry.COLUMN_CATEGORY_KIND + " category_kind," +
+                        " a." + WalletContract.AccountEntry.COLUMN_IS_ARCHIVED + " is_archived" +
                         " FROM " + WalletContract.AccountEntry.TABLE_NAME + " a" +
                         " LEFT JOIN " + WalletContract.IconEntry.TABLE_NAME + " ic" +
                         "   ON ic." + WalletContract.IconEntry._ID + " = a." + WalletContract.AccountEntry.COLUMN_ICON_ID +
@@ -136,6 +138,8 @@ public class WalletExportData {
                         && c.getInt(6) == AccountItem.SystemKind.NONE.getValue()) {
                     acc.put("category_kind", AccountItem.CategoryKind.fromValue(c.getInt(16)).getValue());
                 }
+                // Архив: пишем только true — нет ключа значит «не в архиве» (и при импорте не трогаем).
+                if (c.getInt(17) != 0) acc.put("archived", true);
                 if (!c.isNull(7)) {
                     JSONObject debt = new JSONObject();
                     debt.put("counterparty", c.getString(7));
