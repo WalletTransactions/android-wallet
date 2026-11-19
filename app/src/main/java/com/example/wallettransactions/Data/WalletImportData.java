@@ -243,6 +243,18 @@ public class WalletImportData {
         return id;
     }
 
+    /** Текущий флаг архива счёта: UpdateAccount пишет его всегда, поэтому «не трогать» = перечитать. */
+    private static boolean isAccountArchived(SQLiteDatabase db, int accId) {
+        Cursor c = db.rawQuery("select " + WalletContract.AccountEntry.COLUMN_IS_ARCHIVED + " from "
+                + WalletContract.AccountEntry.TABLE_NAME + " where " + WalletContract.AccountEntry._ID + "=?",
+                new String[]{String.valueOf(accId)});
+        try {
+            return c.moveToFirst() && c.getInt(0) != 0;
+        } finally {
+            c.close();
+        }
+    }
+
     /**
      * Общее ядро для CSV- и JSON-путей импорта счёта (см. {@link #ParseAndInsertAccount}
      * и {@link #ParseAndInsertJsonAccount}) — раньше было продублировано, теперь один
@@ -264,6 +276,17 @@ public class WalletImportData {
     private static int InsertOrUpdateAccount(SQLiteDatabase db, IconList icons, String accName,
             String accComment, String iconName, String curName, String curIso, String curIcon,
             AccountItem.CategoryKind categoryKind) {
+        return InsertOrUpdateAccount(db, icons, accName, accComment, iconName, curName, curIso, curIcon,
+                categoryKind, null);
+    }
+
+    /**
+     * То же с флагом архива. {@code archived == null} — архивность не трогаем: у нового счёта она
+     * «нет», у существующего остаётся прежней (раньше импорт молча разархивировал счёт).
+     */
+    private static int InsertOrUpdateAccount(SQLiteDatabase db, IconList icons, String accName,
+            String accComment, String iconName, String curName, String curIso, String curIcon,
+            AccountItem.CategoryKind categoryKind, Boolean archived) {
         boolean added;
 
         // Ищем счёт в самой БД, а не в кэше AccountList: кэш может держать удалённые
@@ -272,10 +295,11 @@ public class WalletImportData {
         Integer accId = FindAccountIdByName(db, accName);
         int iconId = (int) LiveIconIdOrUnknown(db, icons, iconName);
 
-        if (accId != null)
-            added = WalletDbCRUD.UpdateAccount(db, accId, accName, accComment, iconId, false, categoryKind)>0;
-        else
-            added = WalletDbCRUD.InsertAccount(db, accName, accComment, iconId, false,
+        if (accId != null) {
+            boolean isArchived = archived != null ? archived : isAccountArchived(db, accId);
+            added = WalletDbCRUD.UpdateAccount(db, accId, accName, accComment, iconId, isArchived, categoryKind)>0;
+        } else
+            added = WalletDbCRUD.InsertAccount(db, accName, accComment, iconId, archived != null && archived,
                     categoryKind == null ? AccountItem.CategoryKind.BOTH : categoryKind)>0;
 
         // Формат этого импорта не несёт system_kind — если строка "Transfer"/
@@ -354,7 +378,7 @@ public class WalletImportData {
      * {@code {"name": "...", "comment": "...", "icon": "...", "currency": {"name": "...", "iso": "...", "icon": "..."},
      * "debt": {"counterparty": "...", "comment": "...", "due_date": "yyyy-MM-dd"},
      * "asset": {"type": "real_estate|vehicle|other", "include_in_net_worth": true, "comment": "..."},
-     * "system": "revaluation", "category_kind": 0|1|2, "icon_image": "<base64 PNG/JPEG/WEBP>"}}
+     * "system": "revaluation", "category_kind": 0|1|2, "archived": bool, "icon_image": "<base64 PNG/JPEG/WEBP>"}}
      * "icon_image" — своя картинка счёта (имя иконки — "icon", без него имя счёта); любой размер
      * приводится к 256×256, см. {@link #decodeIconImage}. "comment"/"icon" опциональны (по умолчанию — имя счёта и "unknown"); "currency" опциональна —
      * без неё это счёт-категория без своего баланса, как строка без валюты в CSV. "debt"/"asset" —
@@ -393,6 +417,8 @@ public class WalletImportData {
                 && !AccountItem.isSystemName(accName)) {
             categoryKind = AccountItem.CategoryKind.fromValue(obj.optInt("category_kind", 2));
         }
+        // Архив: нет поля — не трогаем (null), иначе true/false. Как category_kind, только для самого счёта.
+        Boolean archived = obj.has("archived") ? obj.optBoolean("archived", false) : null;
         String dueDate = null;
         int assetType = 0;
         if (debt != null || asset != null) {
@@ -423,7 +449,7 @@ public class WalletImportData {
             result = 0;
         } else {
             result = InsertOrUpdateAccount(db, icons, accName, accComment, iconName, curName, curIso, curIcon,
-                    categoryKind);
+                    categoryKind, archived);
             if ("revaluation".equals(system) && currency == null) stampRevaluation(db, accName);
         }
 
