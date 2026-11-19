@@ -1,14 +1,13 @@
 package com.example.wallettransactions.Activities;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.text.Editable;
-import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,7 +21,6 @@ import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem;
 import com.example.wallettransactions.DataItems.Accounts.CounterpartyItem;
 import com.example.wallettransactions.R;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -156,64 +154,33 @@ final class DebtFields {
         counterpartyName = suggested;
     }
 
+    /** Код запроса экрана «Контрагенты»; хост отдаёт сюда onActivityResult (см. {@link #onActivityResult}). */
+    static final int REQUEST_PICK_COUNTERPARTY = 61;
+
     private void pickCounterparty() {
-        SQLiteDatabase db = new WalletDbHelper(activity).getReadableDatabase();
-        List<CounterpartyItem> live = new ArrayList<>();
-        for (CounterpartyItem c : WalletDbLoader.LoadCounterparties(db)) {
-            // Архивный — не в выборе (спека, «Архивный контрагент»), кроме уже выбранного.
-            if (!c.isArchived || c.uuid.equals(counterpartyUuid)) live.add(c);
-        }
-        String[] items = new String[live.size() + 1];
-        items[0] = activity.getString(R.string.debt_new_counterparty);
-        for (int i = 0; i < live.size(); i++) items[i + 1] = live.get(i).name;
-        new AlertDialog.Builder(activity)
-                .setTitle(R.string.debt_pick_counterparty)
-                .setItems(items, (d, which) -> {
-                    if (which == 0) askNewCounterparty();
-                    else {
-                        selectExisting(live.get(which - 1));
-                        refresh();
-                        changed();
-                    }
-                })
-                .show();
+        activity.startActivityForResult(
+                CounterpartiesActivity.buildPickIntent(activity, counterpartyUuid), REQUEST_PICK_COUNTERPARTY);
     }
 
-    private void askNewCounterparty() {
-        EditText input = new EditText(activity);
-        input.setHint(R.string.debt_counterparty_name_hint);
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-        input.setText(newCounterpartyName != null ? newCounterpartyName : WalletDbCRUD.SuggestCounterpartyName(walletName));
-        input.setSelection(input.getText().length());
-        FrameLayout box = new FrameLayout(activity);
-        int pad = (int) (20 * activity.getResources().getDisplayMetrics().density);
-        box.setPadding(pad, pad / 2, pad, 0);
-        box.addView(input);
-        new AlertDialog.Builder(activity)
-                .setTitle(R.string.debt_new_counterparty_title)
-                .setView(box)
-                .setPositiveButton(android.R.string.ok, (d, w) -> {
-                    String name = WalletDbCRUD.NormalizeCounterpartyName(input.getText().toString());
-                    if (name.isEmpty()) return;
-                    SQLiteDatabase db = new WalletDbHelper(activity).getReadableDatabase();
-                    int existing = WalletDbCRUD.GetCounterpartyIdByName(db, name);
-                    if (existing > 0) {
-                        // Спека «Дубль имени»: второго не заводим — выбираем существующего.
-                        for (CounterpartyItem c : WalletDbLoader.LoadCounterparties(db)) {
-                            if (c.id == existing) selectExisting(c);
-                        }
-                        Toast.makeText(activity, activity.getString(R.string.debt_counterparty_exists,
-                                counterpartyName), Toast.LENGTH_LONG).show();
-                    } else {
-                        counterpartyUuid = null;
-                        newCounterpartyName = name;
-                        counterpartyName = name;
-                    }
-                    refresh();
-                    changed();
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
+    /**
+     * Результат выбора на экране «Контрагенты».
+     *
+     * @return true — результат этого поля (хосту дальше разбирать нечего)
+     */
+    boolean onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode != REQUEST_PICK_COUNTERPARTY) return false;
+        if (resultCode != Activity.RESULT_OK || data == null) return true; // отмена — выбор прежний
+        String uuid = data.getStringExtra(CounterpartiesActivity.RESULT_UUID);
+        SQLiteDatabase db = new WalletDbHelper(activity).getReadableDatabase();
+        for (CounterpartyItem c : WalletDbLoader.LoadCounterparties(db)) {
+            if (c.uuid.equals(uuid)) {
+                selectExisting(c);
+                refresh();
+                changed();
+                break;
+            }
+        }
+        return true;
     }
 
     private void pickDueDate() {

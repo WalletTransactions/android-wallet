@@ -222,6 +222,7 @@ public class AccountItemActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (debtFields != null && debtFields.onActivityResult(requestCode, resultCode, data)) return;
         if (requestCode == REQUEST_PICK_WRITEOFF_CATEGORY) {
             if (resultCode != RESULT_OK || data == null || writeOffDialog == null) return;
             int id = data.getIntExtra(AccountPickerActivity.cAccountId, 0);
