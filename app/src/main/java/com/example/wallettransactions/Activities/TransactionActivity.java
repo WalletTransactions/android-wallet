@@ -1010,6 +1010,16 @@ public class TransactionActivity extends AppCompatActivity {
         recomputeAmountTo(); // курс ищется на дату операции — дата сменилась, курс обновляем
     }
 
+    /** Кнопки «−»/«+» у даты: сдвиг на день; время не меняется (Calendar.add учитывает смену месяца и года). */
+    public void btnDatePrevClick(View view) { stepDate(-1); }
+
+    public void btnDateNextClick(View view) { stepDate(1); }
+
+    private void stepDate(int days) {
+        mCalDateTime.add(Calendar.DAY_OF_MONTH, days);
+        ShowCalendarDateTime();
+    }
+
     public void btnDateClick(View view) {
         // Время операции задаётся отдельным полем — календарь его не трогает.
         CalendarPicker.show(this, mCalDateTime, (year, month, day) -> {
