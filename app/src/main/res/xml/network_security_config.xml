@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Доверие к сертификатам и HTTP (change add-password-login, design D4).
+
+  - Якоря system и user: приложение принимает сертификаты системных CA и тех CA,
+    которые пользователь сам установил на телефон в настройках (свой корневой
+    сертификат для HTTPS к собственному серверу). По умолчанию при targetSdk 24+
+    пользовательские CA приложение не доверяет. Вшивать чужой CA в APK нельзя:
+    приложение публичное, у каждого свой сервер.
+  - cleartext разрешён: адрес сервера в домашней сети по http:// остаётся допустимым
+    (сервер принимает пароль по HTTP только с ALLOW_INSECURE_AUTH). Запрет пароля по http
+    делает сервер, в приложении — предупреждение на экране входа.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system"/>
+            <certificates src="user"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>
