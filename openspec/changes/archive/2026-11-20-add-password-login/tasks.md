@@ -3,7 +3,6 @@
 ## 1. Доверие к сертификатам
 
 - [x] 1.1 Добавить `res/xml/network_security_config.xml` (якоря `system` и `user`, cleartext разрешён), подключить в манифесте и убрать `usesCleartextTraffic`; проверить `bash gradlew testProdDebugUnitTest` и установкой на Huawei P20 Pro: вход по `http://` по-прежнему работает
-- [ ] 1.2 Проверить `https://` на устройстве: установить корень CA контура (выгрузка из wallet-infra `add-tls-ingress`) как пользовательский сертификат, указать `https://`-адрес и выполнить синхронизацию; без установленного корня запрос завершается ошибкой сертификата
 
 ## 2. Вход по паролю
 
@@ -23,5 +22,5 @@
 
 ## Workflow follow-up
 
-- Выкатывается после `add-password-auth` (google-auth) и TLS (wallet-infra).
+- Выкатывается после `add-password-auth` (google-auth). TLS — отдельный change wallet-infra `add-tls-ingress`; проверка `https://` с Android перенесена туда (задача 3.3), здесь осталась только настройка доверия к CA в приложении.
 - Архивировать change после проверки на устройстве и выката.
