@@ -120,4 +120,29 @@
     <string name="link_sign_in_rejected">The server rejected the sign-in: HTTP %1$d %2$s</string>
     <string name="link_bad_sign_in_response">Invalid /auth/google/mobile response: %1$s</string>
     <string name="link_done">Done — linked to %1$s.</string>
+
+    <!-- Вход и регистрация по паролю (change add-password-login) -->
+    <string name="link_password_hint_email">Email</string>
+    <string name="link_password_hint_password">Password</string>
+    <string name="link_password_login">Sign in</string>
+    <string name="link_password_create_account">Create account</string>
+    <string name="link_password_insecure_warning">The server address is not https: the password will be sent in plain text.</string>
+    <string name="link_password_logging_in">Signing in…</string>
+    <string name="link_password_rejected">The server rejected the sign-in: %1$s</string>
+    <string name="link_password_bad_credentials">wrong email or password</string>
+    <string name="link_password_rate_limited">Too many attempts. Try again in %1$d min.</string>
+    <string name="link_password_insecure_transport">The server accepts passwords over https only. Use an address with https:// in “Server address”.</string>
+    <string name="link_password_method_disabled">Password sign-in is turned off on the server.</string>
+    <string name="link_password_empty_fields">Enter your email and password.</string>
+    <string name="link_register_hint_password2">Repeat password</string>
+    <string name="link_register_hint_name">Name (optional)</string>
+    <string name="link_register_note">The email address is not verified yet.</string>
+    <string name="link_register_button">Create</string>
+    <string name="link_register_back">Back to sign in</string>
+    <string name="link_register_creating">Creating the account…</string>
+    <string name="link_register_email_empty">Enter your email.</string>
+    <string name="link_register_password_short">The password must be at least %1$d characters</string>
+    <string name="link_register_password_mismatch">Passwords don\'t match</string>
+    <string name="link_register_closed">Registration is closed by the administrator.</string>
+    <string name="link_register_taken">Couldn\'t create the account or sign in. If this address is already registered, sign in with its password.</string>
 </resources>

@@ -130,4 +130,29 @@
     <string name="link_sign_in_rejected">Сервер отклонил вход: HTTP %1$d %2$s</string>
     <string name="link_bad_sign_in_response">Некорректный ответ /auth/google/mobile: %1$s</string>
     <string name="link_done">Готово — связано с %1$s.</string>
+
+    <!-- Вход и регистрация по паролю (change add-password-login) -->
+    <string name="link_password_hint_email">Email</string>
+    <string name="link_password_hint_password">Пароль</string>
+    <string name="link_password_login">Войти</string>
+    <string name="link_password_create_account">Создать аккаунт</string>
+    <string name="link_password_insecure_warning">Адрес сервера без https: пароль будет передан открытым текстом.</string>
+    <string name="link_password_logging_in">Выполняю вход…</string>
+    <string name="link_password_rejected">Сервер отклонил вход: %1$s</string>
+    <string name="link_password_bad_credentials">неверный email или пароль</string>
+    <string name="link_password_rate_limited">Слишком много попыток. Повторите через %1$d мин.</string>
+    <string name="link_password_insecure_transport">Сервер принимает пароль только по https. Укажите адрес с https:// в «Адрес сервера».</string>
+    <string name="link_password_method_disabled">Вход по паролю отключён на сервере.</string>
+    <string name="link_password_empty_fields">Введите email и пароль.</string>
+    <string name="link_register_hint_password2">Повторите пароль</string>
+    <string name="link_register_hint_name">Имя (необязательно)</string>
+    <string name="link_register_note">Адрес почты пока не подтверждается.</string>
+    <string name="link_register_button">Создать</string>
+    <string name="link_register_back">Назад ко входу</string>
+    <string name="link_register_creating">Создаю аккаунт…</string>
+    <string name="link_register_email_empty">Введите email.</string>
+    <string name="link_register_password_short">Пароль должен быть не короче %1$d символов</string>
+    <string name="link_register_password_mismatch">Пароли не совпадают</string>
+    <string name="link_register_closed">Регистрация закрыта администратором.</string>
+    <string name="link_register_taken">Не удалось создать аккаунт или войти. Если этот адрес уже зарегистрирован, войдите с его паролем.</string>
 </resources>

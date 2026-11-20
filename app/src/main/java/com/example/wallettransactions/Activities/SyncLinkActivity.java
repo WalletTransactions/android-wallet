@@ -6,7 +6,9 @@ import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,6 +25,8 @@ import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.TokenStore;
 import com.example.wallettransactions.sync.HttpClients;
+import com.example.wallettransactions.sync.PasswordAuth;
+import com.example.wallettransactions.sync.PasswordAuthMessages;
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 
@@ -49,6 +53,11 @@ import okhttp3.Response;
  *
  * Открывается с экрана «Ещё» → «Интеграции» → «Связь с Google
  * аккаунтом» ({@link IntegrationsActivity#onLinkServer}).
+ * <p>
+ * Кроме Google экран умеет вход и регистрацию по email и паролю (change
+ * add-password-login): набор способов задаёт сервер ({@code GET /auth/methods}),
+ * пара токенов из {@code POST /auth/login} сохраняется тем же {@link #onLinked}, что и
+ * после Google. Пароль нигде не хранится и не логируется.
  *
  * Адрес сервера — {@link AppSettings#getServerBaseUrl}, настраивается там
  * же (по умолчанию {@code http://localhost:8090/} — LAN-only на этом
@@ -68,6 +77,22 @@ public class SyncLinkActivity extends AppCompatActivity {
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
     private TextView textResult;
+    private TextView textInsecureWarning;
+    private View blockPassword;
+    private View blockRegister;
+    private View blockGoogle;
+    private EditText editEmail;
+    private EditText editPassword;
+    private Button buttonLogin;
+    private Button buttonCreateAccount;
+    private EditText editRegEmail;
+    private EditText editRegPassword;
+    private EditText editRegPassword2;
+    private EditText editRegName;
+    private Button buttonRegister;
+
+    /** Что сервер включил (ответ {@code GET /auth/methods}); {@code null} — ещё не получен. */
+    private PasswordAuth.Methods methods;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,8 +100,225 @@ public class SyncLinkActivity extends AppCompatActivity {
         setContentView(R.layout.activity_sync_link);
 
         textResult = findViewById(R.id.textResult);
+        textInsecureWarning = findViewById(R.id.textInsecureWarning);
+        blockPassword = findViewById(R.id.blockPassword);
+        blockRegister = findViewById(R.id.blockRegister);
+        blockGoogle = findViewById(R.id.blockGoogle);
+        editEmail = findViewById(R.id.editEmail);
+        editPassword = findViewById(R.id.editPassword);
+        buttonLogin = findViewById(R.id.buttonLogin);
+        buttonCreateAccount = findViewById(R.id.buttonCreateAccount);
+        editRegEmail = findViewById(R.id.editRegEmail);
+        editRegPassword = findViewById(R.id.editRegPassword);
+        editRegPassword2 = findViewById(R.id.editRegPassword2);
+        editRegName = findViewById(R.id.editRegName);
+        buttonRegister = findViewById(R.id.buttonRegister);
+
         Button buttonSignIn = findViewById(R.id.buttonSignIn);
         buttonSignIn.setOnClickListener(v -> fetchNonceThenSignIn());
+        buttonLogin.setOnClickListener(v -> onPasswordLoginClicked());
+        buttonCreateAccount.setOnClickListener(v -> showRegisterForm(true));
+        findViewById(R.id.buttonRegisterBack).setOnClickListener(v -> showRegisterForm(false));
+        buttonRegister.setOnClickListener(v -> onRegisterClicked());
+
+        loadMethods();
+    }
+
+    // ---- Способы входа (GET /auth/methods) ----
+
+    /** Запрашивает у сервера включённые способы входа и строит экран по ответу. */
+    private void loadMethods() {
+        Request request = new Request.Builder()
+                .url(AppSettings.getServerBaseUrl(this) + "auth/methods")
+                .get()
+                .build();
+        HttpClients.get(this).newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e(TAG, "GET /auth/methods failed", e);
+                runOnUiThread(() -> showResult(getString(R.string.link_server_unreachable,
+                        AppSettings.getServerBaseUrl(SyncLinkActivity.this), e.getMessage())));
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try (Response r = response) {
+                    String body = r.body() != null ? r.body().string() : "";
+                    if (!r.isSuccessful()) {
+                        runOnUiThread(() -> showResult(getString(R.string.link_server_unreachable,
+                                AppSettings.getServerBaseUrl(SyncLinkActivity.this), "HTTP " + r.code())));
+                        return;
+                    }
+                    PasswordAuth.Methods parsed = PasswordAuth.parseMethods(body);
+                    runOnUiThread(() -> applyMethods(parsed));
+                } catch (JSONException e) {
+                    runOnUiThread(() -> showResult(getString(R.string.link_server_unreachable,
+                            AppSettings.getServerBaseUrl(SyncLinkActivity.this), e.getMessage())));
+                }
+            }
+        });
+    }
+
+    /** Показывает блоки по ответу сервера: пароль, «Создать аккаунт», Google. */
+    private void applyMethods(PasswordAuth.Methods m) {
+        methods = m;
+        blockPassword.setVisibility(m.password ? View.VISIBLE : View.GONE);
+        buttonCreateAccount.setVisibility(m.password && m.registration ? View.VISIBLE : View.GONE);
+        blockGoogle.setVisibility(m.google ? View.VISIBLE : View.GONE);
+        blockRegister.setVisibility(View.GONE);
+        updateInsecureWarning();
+    }
+
+    /** Переключает между формой входа и формой регистрации. */
+    private void showRegisterForm(boolean register) {
+        if (methods == null || !methods.password) return;
+        blockRegister.setVisibility(register ? View.VISIBLE : View.GONE);
+        blockPassword.setVisibility(register ? View.GONE : View.VISIBLE);
+        blockGoogle.setVisibility(register || !methods.google ? View.GONE : View.VISIBLE);
+        textResult.setText("");
+        updateInsecureWarning();
+    }
+
+    /** Предупреждение над полями пароля, если адрес сервера — {@code http://} (не блокирует вход). */
+    private void updateInsecureWarning() {
+        boolean passwordFormVisible = blockPassword.getVisibility() == View.VISIBLE
+                || blockRegister.getVisibility() == View.VISIBLE;
+        boolean insecure = PasswordAuth.isInsecureUrl(AppSettings.getServerBaseUrl(this));
+        textInsecureWarning.setVisibility(passwordFormVisible && insecure ? View.VISIBLE : View.GONE);
+    }
+
+    // ---- Вход по паролю (POST /auth/login) ----
+
+    private void onPasswordLoginClicked() {
+        String email = PasswordAuth.normalizeEmail(editEmail.getText().toString());
+        String password = editPassword.getText().toString();
+        if (email.isEmpty() || password.isEmpty()) {
+            showResult(getString(R.string.link_password_empty_fields));
+            return;
+        }
+        passwordLogin(email, password, false);
+    }
+
+    /**
+     * Вход по паролю. {@code afterRegister} — вызвано сразу после {@code POST /auth/register}:
+     * тогда {@code 401} значит «адрес занят чужим паролем», а не «опечатка» (сервер на
+     * регистрации всегда отвечает {@code 202} и не раскрывает занятость).
+     */
+    private void passwordLogin(String email, String password, boolean afterRegister) {
+        showResult(getString(R.string.link_password_logging_in));
+        setBusy(true);
+
+        JSONObject payload = PasswordAuth.loginBody(email, password,
+                AppSettings.getOrCreateDeviceId(this), Build.MANUFACTURER + " " + Build.MODEL);
+        Request request = new Request.Builder()
+                .url(AppSettings.getServerBaseUrl(this) + "auth/login")
+                .post(RequestBody.create(payload.toString(), JSON))
+                .build();
+
+        HttpClients.get(this).newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e(TAG, "POST /auth/login failed", e); // без тела запроса: там пароль
+                runOnUiThread(() -> {
+                    setBusy(false);
+                    showResult(getString(R.string.link_server_unreachable,
+                            AppSettings.getServerBaseUrl(SyncLinkActivity.this), e.getMessage()));
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try (Response r = response) {
+                    String body = r.body() != null ? r.body().string() : "";
+                    PasswordAuth.Result result = PasswordAuth.classify(r.code(), body, r.header("Retry-After"), 200);
+                    if (result.outcome != PasswordAuth.Outcome.OK) {
+                        runOnUiThread(() -> {
+                            setBusy(false);
+                            if (afterRegister && result.outcome == PasswordAuth.Outcome.BAD_CREDENTIALS) {
+                                showResult(getString(R.string.link_register_taken));
+                            } else {
+                                showResult(PasswordAuthMessages.loginError(SyncLinkActivity.this, result));
+                            }
+                        });
+                        return;
+                    }
+                    PasswordAuth.Tokens tokens = PasswordAuth.parseTokens(body);
+                    runOnUiThread(() -> {
+                        setBusy(false);
+                        editPassword.setText("");
+                        editRegPassword.setText("");
+                        editRegPassword2.setText("");
+                        onLinked(tokens.accessToken, tokens.refreshToken, email);
+                    });
+                } catch (JSONException e) {
+                    runOnUiThread(() -> {
+                        setBusy(false);
+                        showResult(getString(R.string.link_bad_sign_in_response, e.getMessage()));
+                    });
+                }
+            }
+        });
+    }
+
+    // ---- Регистрация (POST /auth/register, затем вход) ----
+
+    private void onRegisterClicked() {
+        String email = PasswordAuth.normalizeEmail(editRegEmail.getText().toString());
+        String password = editRegPassword.getText().toString();
+        String password2 = editRegPassword2.getText().toString();
+        PasswordAuth.RegistrationCheck check = PasswordAuth.checkRegistration(email, password, password2);
+        if (check != PasswordAuth.RegistrationCheck.OK) {
+            showResult(PasswordAuthMessages.registrationCheck(this, check)); // запрос не уходит
+            return;
+        }
+
+        showResult(getString(R.string.link_register_creating));
+        setBusy(true);
+
+        JSONObject payload = PasswordAuth.registerBody(email, password, editRegName.getText().toString());
+        Request request = new Request.Builder()
+                .url(AppSettings.getServerBaseUrl(this) + "auth/register")
+                .post(RequestBody.create(payload.toString(), JSON))
+                .build();
+
+        HttpClients.get(this).newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e(TAG, "POST /auth/register failed", e);
+                runOnUiThread(() -> {
+                    setBusy(false);
+                    showResult(getString(R.string.link_server_unreachable,
+                            AppSettings.getServerBaseUrl(SyncLinkActivity.this), e.getMessage()));
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try (Response r = response) {
+                    String body = r.body() != null ? r.body().string() : "";
+                    PasswordAuth.Result result = PasswordAuth.classify(r.code(), body, r.header("Retry-After"), 202);
+                    if (result.outcome != PasswordAuth.Outcome.OK) {
+                        runOnUiThread(() -> {
+                            setBusy(false);
+                            showResult(PasswordAuthMessages.registerError(SyncLinkActivity.this, result));
+                        });
+                        return;
+                    }
+                    // 202 не открывает сессию (занятый адрес неотличим от свободного) — входим теми же данными.
+                    runOnUiThread(() -> {
+                        setBusy(false);
+                        passwordLogin(email, password, true);
+                    });
+                }
+            }
+        });
+    }
+
+    /** Блокирует кнопки на время запроса. */
+    private void setBusy(boolean busy) {
+        buttonLogin.setEnabled(!busy);
+        buttonCreateAccount.setEnabled(!busy);
+        buttonRegister.setEnabled(!busy);
     }
 
     /** Шаг 1: POST /auth/nonce — сервер выдаёт одноразовый nonce (см. README google-auth, "Мобильный вход"). */
