@@ -265,6 +265,9 @@ final class SyncEngine {
             if (result.status == 200) {
                 if (!SyncApiClient.iconsRejected(result.body).isEmpty()) return IconUploadResult.REFUSED;
                 markIconFromServer(db, uuid);
+                // Теперь это иконка с сервера: своя с той же картинкой дальше в этом же шаге
+                // не грузится (иначе на сервере два одинаковых изображения).
+                server.addServerIcon(uuid, name, contentSha256);
                 log.push(Texts.get(R.string.sync_type_icon), Texts.get(R.string.sync_action_sent));
                 continue;
             }
@@ -327,12 +330,15 @@ final class SyncEngine {
      * Своя иконка принята сервером — теперь она «с сервера»: {@code origin = 0}, {@code dirty = 0}.
      * Два UPDATE из-за {@code trg_icon_dirty} ({@code WHEN NEW.dirty = OLD.dirty}, см.
      * {@code WalletDbHelper.markIconOriginV86}): первый триггер помечает dirty, второй меняет
-     * значение 1→0 — триггер молчит.
+     * значение 1→0 — триггер молчит. Счета и валюты с этой иконкой снова dirty
+     * ({@link #redirtyIconDependents}): раньше они ушли с заместителем.
      */
     static void markIconFromServer(SQLiteDatabase db, String uuid) {
         String table = WalletContract.IconEntry.TABLE_NAME;
         db.beginTransaction();
         try {
+            Long id = findIdByUuid(db, table, uuid);
+            if (id != null) redirtyIconDependents(db, id);
             db.execSQL("UPDATE " + table + " SET " + WalletContract.IconEntry.COLUMN_ORIGIN + " = "
                     + WalletContract.IconEntry.ORIGIN_SERVER + " WHERE uuid = ?", new Object[]{uuid});
             db.execSQL("UPDATE " + table + " SET " + WalletContract.IconEntry.COLUMN_DIRTY + " = 0 WHERE uuid = ? AND "
@@ -341,6 +347,22 @@ final class SyncEngine {
         } finally {
             db.endTransaction();
         }
+    }
+
+    /**
+     * Своя иконка стала иконкой с сервера (принята или перенята на pull) — живые счета и валюты
+     * с ней снова dirty: пока она была своей, они ушли на сервер с {@code icon_uuid}
+     * заместителя, и на сайте и других устройствах показывали бы его, а не её. Следующий
+     * {@link #pushDirty} (в том же проходе — сразу после шага иконок) отправит её uuid.
+     */
+    static int redirtyIconDependents(SQLiteDatabase db, long iconId) {
+        int n = 0;
+        for (String t : new String[]{"account", "currency"}) {
+            ContentValues cv = new ContentValues();
+            cv.put("dirty", 1);
+            n += db.update(t, cv, "icon_id=? AND dirty=0 AND deleted_at IS NULL", new String[]{String.valueOf(iconId)});
+        }
+        return n;
     }
 
     /**
@@ -1249,6 +1271,10 @@ final class SyncEngine {
             referenceSeq = 0;
         }
         boolean reloadPending = AppSettings.isFullReloadPending(ctx);
+        // Своя иконка, перенятая на pull, помечает dirty свои счета и валюты (applyIcon) — но не
+        // во время подключения к кошельку: LedgerConnection удаляет локальное dirty <> 0, а
+        // помеченная строка уже есть на сервере (optional-icon-upload).
+        boolean redirtyAdopted = !AppSettings.isLedgerConnectionPending(ctx);
         boolean caughtUp = false;
         if (ledgerSeq == 0) log.fullReload();
         PullDeferredRows deferred = PullDeferredRows.load(ctx);
@@ -1328,7 +1354,7 @@ final class SyncEngine {
             }
 
             touched.addAll(applyPage(db, result.ledger.changes, result.reference.changes, api, log, deferred,
-                    reloadPending));
+                    reloadPending, redirtyAdopted));
 
             // Сначала отложенное, потом курсоры: умрём между ними — страница
             // придёт снова, и её строки просто заменят свои отложенные копии.
@@ -1348,7 +1374,8 @@ final class SyncEngine {
         // Новых страниц нет, а отложенное осталось (родитель пришёл в самой
         // последней странице или был применён в прошлом синке) — ещё один проход.
         if (!deferred.isEmpty()) {
-            touched.addAll(applyPage(db, new JSONObject(), new JSONObject(), api, log, deferred));
+            touched.addAll(applyPage(db, new JSONObject(), new JSONObject(), api, log, deferred, false,
+                    redirtyAdopted));
             deferred.save();
         }
         if (!deferred.isEmpty()) {
@@ -1448,6 +1475,14 @@ final class SyncEngine {
     static Set<String> applyPage(SQLiteDatabase db, JSONObject ledgerChanges, JSONObject referenceChanges,
                                   SyncApiClient api, SyncLog log, PullDeferredRows deferred, boolean markSeen)
             throws JSONException, IOException {
+        return applyPage(db, ledgerChanges, referenceChanges, api, log, deferred, markSeen, false);
+    }
+
+    /** @param redirtyAdopted см. {@link PullIconGuard#redirtyAdopted} */
+    static Set<String> applyPage(SQLiteDatabase db, JSONObject ledgerChanges, JSONObject referenceChanges,
+                                  SyncApiClient api, SyncLog log, PullDeferredRows deferred, boolean markSeen,
+                                  boolean redirtyAdopted)
+            throws JSONException, IOException {
         Map<String, JSONArray> merged = mergeChanges(ledgerChanges, referenceChanges);
         PullDeferredRows stillDeferred = PullDeferredRows.inMemory();
         Set<String> appliedTables = new HashSet<>();
@@ -1464,7 +1499,7 @@ final class SyncEngine {
             db.execSQL("PRAGMA defer_foreign_keys = ON");
             // Индекс заместителей строится лениво, при первом счёте/валюте —
             // то есть уже после иконок этой страницы (icon первая в TABLE_ORDER).
-            PullIconGuard iconGuard = new PullIconGuard(db);
+            PullIconGuard iconGuard = new PullIconGuard(db, redirtyAdopted);
             for (String table : TABLE_ORDER) {
                 JSONArray rows = merged.get(table);
                 List<JSONObject> queue = new ArrayList<>(
@@ -1556,7 +1591,7 @@ final class SyncEngine {
             case "account_debt": return applyAccountDebt(db, row, log);
             case "operation": return applyOperation(db, row, log);
             case "operation_link": return applyOperationLink(db, row);
-            case "icon": applyIcon(db, row, newIconBlobs, log); return true;
+            case "icon": applyIcon(db, row, newIconBlobs, log, iconGuard.redirtyAdopted); return true;
             default:
                 // Неизвестная клиенту таблица — сервер может быть новее
                 // этого релиза (тот же принцип, что у push_batch на
@@ -1586,6 +1621,12 @@ final class SyncEngine {
      */
     static void applyIcon(SQLiteDatabase db, JSONObject row, Map<String, byte[]> newIconBlobs,
                           SyncLog log) throws JSONException {
+        applyIcon(db, row, newIconBlobs, log, false);
+    }
+
+    /** @param redirtyAdopted см. {@link PullIconGuard#redirtyAdopted} */
+    static void applyIcon(SQLiteDatabase db, JSONObject row, Map<String, byte[]> newIconBlobs,
+                          SyncLog log, boolean redirtyAdopted) throws JSONException {
         String uuid = row.getString("uuid");
         String local = localUuid(db, "icon", uuid);
         boolean exists = local != null;
@@ -1603,6 +1644,17 @@ final class SyncEngine {
             // Tombstone имя не занимает (uq_icon_name — частичный, deleted_at IS NULL).
             OwnIcon own = deleted ? null : OwnIcon.findByName(db, name, local);
             if (!exists && own != null && own.sha256.equals(sha256)) {
+                // Та же иконка (seed.json чистой установки или своя, которую одновременно
+                // отправило другое устройство леджера — optional-icon-upload): uuid своей
+                // меняется на серверный. Контрагенты хранят icon_uuid строкой — переписать;
+                // счета и валюты ссылаются по _id, но ушли с заместителем — снова dirty.
+                String ownUuid = uuidById(db, "icon", own.id);
+                if (ownUuid != null) {
+                    ContentValues cp = new ContentValues();
+                    cp.put("icon_uuid", uuid);
+                    db.update("counterparty", cp, "icon_uuid=?", new String[]{ownUuid});
+                }
+                if (redirtyAdopted) redirtyIconDependents(db, own.id);
                 cv.put("uuid", uuid);
                 cv.put("dirty", 2); // два шага через 2 — см. updateFromServer
                 db.update("icon", cv, "_id=?", new String[]{String.valueOf(own.id)});
@@ -1684,10 +1736,21 @@ final class SyncEngine {
      */
     static final class PullIconGuard {
         private final SQLiteDatabase db;
+        /**
+         * Перенятая своя иконка (applyIcon) помечает dirty свои счета и валюты. {@code false} —
+         * во время подключения к кошельку ({@code LedgerConnection} удаляет локальное
+         * {@code dirty <> 0}) и в прямых вызовах без контекста.
+         */
+        final boolean redirtyAdopted;
         private IconSubstitutes substitutes;
 
         PullIconGuard(SQLiteDatabase db) {
+            this(db, false);
+        }
+
+        PullIconGuard(SQLiteDatabase db, boolean redirtyAdopted) {
             this.db = db;
+            this.redirtyAdopted = redirtyAdopted;
         }
 
         /** {@code table} — {@code account} или {@code currency}. */
