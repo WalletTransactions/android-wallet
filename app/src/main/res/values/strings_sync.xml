@@ -145,4 +145,7 @@
     <string name="link_register_password_mismatch">Passwords don\'t match</string>
     <string name="link_register_closed">Registration is closed by the administrator.</string>
     <string name="link_register_taken">Couldn\'t create the account or sign in. If this address is already registered, sign in with its password.</string>
+    <!-- openspec optional-icon-upload -->
+    <string name="sync_icons_server_refused">The server does not accept own icons — uploading is turned off.</string>
+    <string name="sync_icon_upload_failed">icon “%1$s” not uploaded: %2$s — will retry on the next sync</string>
 </resources>

@@ -84,4 +84,8 @@
     <string name="settings_language_system">Как на телефоне</string>
     <string name="settings_language_en">English</string>
     <string name="settings_language_ru">Русский</string>
+    <!-- openspec optional-icon-upload -->
+    <string name="settings_icon_upload">Отправлять свои иконки на сервер</string>
+    <string name="settings_icon_upload_hint">Свои иконки из галереи попадут в ваш набор на сервере и будут видны на других устройствах и на сайте.</string>
+    <string name="settings_icon_upload_server_off">Сервер сейчас не принимает свои иконки.</string>
 </resources>

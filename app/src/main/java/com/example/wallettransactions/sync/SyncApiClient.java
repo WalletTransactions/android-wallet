@@ -4,12 +4,15 @@ import android.content.Context;
 
 import com.example.wallettransactions.AppSettings;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.List;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -22,8 +25,8 @@ import okhttp3.Response;
  * {@code GET /sync/blobs} (org/docs/TODO_mobile_sync.md, Фаза 3,
  * п. 4, "Иконки"; протокол — README wallet-api, "Синхронизация"/"Иконки —
  * content-addressable blob") — только транспорт (HTTP + заголовок Bearer).
- * Иконки телефон только скачивает (openspec server-managed-icons): заливки
- * {@code POST /sync/blobs} и проверки {@code HEAD /sync/blobs} здесь нет.
+ * Свои иконки уходят на сервер только по настройке (openspec optional-icon-upload):
+ * {@link #blobExists}/{@link #uploadBlob} зовёт лишь {@code SyncEngine.pushOwnIcons}.
  * Не {@code final} — юнит-тесты подменяют транспорт наследником.
  * Вся бизнес-логика (что отправлять, как применять входящее) — в
  * {@link SyncEngine}, не здесь.
@@ -96,6 +99,84 @@ class SyncApiClient {
         }
     }
 
+    /**
+     * Сервер ответил, но не тем кодом — в отличие от «голого» {@link IOException} это не
+     * обрыв сети. Нужен шагу отправки иконок: HTTP-отказ пропускает одну иконку, обрыв
+     * сети завершает проход «нет сети».
+     */
+    static final class HttpStatusException extends IOException {
+        final int status;
+
+        HttpStatusException(String message, int status) {
+            super(message);
+            this.status = status;
+        }
+    }
+
+    /** Код отказа сервера, когда приём своих иконок выключен (wallet-api, {@code LEDGER_ICON_UPLOAD}). */
+    static final String ICON_UPLOAD_DISABLED = "icon_upload_disabled";
+
+    /**
+     * {@code HEAD /sync/blobs/:sha256} — есть ли уже такое содержимое на сервере (200 — есть,
+     * 404 — нет; cpp-httplib отвечает на HEAD GET-обработчиком без тела). Не перезаливать
+     * байты, которые сервер уже видел (инцидент 2026-10-11: 144 иконки на каждом синке через
+     * медленный Tailscale-relay).
+     */
+    boolean blobExists(String sha256Hex) throws IOException {
+        Request request = new Request.Builder()
+                .url(baseUrl + "sync/blobs/" + sha256Hex)
+                .header("Authorization", "Bearer " + accessToken)
+                .head()
+                .build();
+
+        try (Response response = http.newCall(request).execute()) {
+            if (response.code() == 200) return true;
+            if (response.code() == 404) return false;
+            throw new HttpStatusException("HEAD /sync/blobs/" + sha256Hex + " -> HTTP " + response.code(),
+                    response.code());
+        }
+    }
+
+    /**
+     * {@code POST /sync/blobs} — сырые байты изображения; сервер сам считает SHA-256 и отвечает
+     * {@code {"sha256": "<64 hex>"}}, идемпотентно. При выключенном приёме своих иконок —
+     * {@code 403 {"error":"icon_upload_disabled"}} (см. {@link #isIconUploadDisabled}).
+     */
+    HttpResult uploadBlob(byte[] bytes) throws IOException, JSONException {
+        Request request = new Request.Builder()
+                .url(baseUrl + "sync/blobs")
+                .header("Authorization", "Bearer " + accessToken)
+                .post(RequestBody.create(bytes, MediaType.get("application/octet-stream")))
+                .build();
+
+        try (Response response = http.newCall(request).execute()) {
+            String body = response.body() != null ? response.body().string() : "";
+            return new HttpResult(response.code(), new JSONObject(body.isEmpty() ? "{}" : body));
+        }
+    }
+
+    /** Отказ из-за флага приёма своих иконок: {@code 403} с {@code error = icon_upload_disabled}. */
+    static boolean isIconUploadDisabled(int status, JSONObject body) {
+        return status == 403 && body != null && ICON_UPLOAD_DISABLED.equals(body.optString("error", null));
+    }
+
+    /**
+     * uuid строк {@code icon}, которые сервер отбросил в ответе {@code 200} push
+     * ({@code icons_rejected.uuids}); поля нет — пустой список.
+     */
+    static List<String> iconsRejected(JSONObject pushBody) {
+        List<String> out = new ArrayList<>();
+        JSONObject rejected = pushBody == null ? null : pushBody.optJSONObject("icons_rejected");
+        if (rejected == null) return out;
+        JSONArray uuids = rejected.optJSONArray("uuids");
+        if (uuids == null) return out;
+        for (int i = 0; i < uuids.length(); i++) {
+            String uuid = uuids.optString(i, null);
+            if (uuid != null && !uuid.isEmpty()) out.add(uuid);
+        }
+        return out;
+    }
+
     /** Один из двух независимых потоков ответа pull — см. README wallet-api, "Потоков два". */
     static final class PullStream {
         final long nextSeq;
@@ -135,15 +216,27 @@ class SyncApiClient {
     static final class PullResult {
         final PullStream ledger;
         final PullStream reference;
+        /**
+         * {@code capabilities.icon_upload} — принимает ли сервер свои иконки (openspec
+         * optional-icon-upload). Нет блока (старый сервер) — {@code false}.
+         */
+        final boolean iconUploadAllowed;
 
         PullResult(PullStream ledger, PullStream reference) {
+            this(ledger, reference, false);
+        }
+
+        PullResult(PullStream ledger, PullStream reference, boolean iconUploadAllowed) {
             this.ledger = ledger;
             this.reference = reference;
+            this.iconUploadAllowed = iconUploadAllowed;
         }
 
         static PullResult fromJson(JSONObject json) throws JSONException {
+            JSONObject capabilities = json.optJSONObject("capabilities");
+            boolean iconUpload = capabilities != null && capabilities.optBoolean("icon_upload", false);
             return new PullResult(PullStream.fromJson(json.getJSONObject("ledger")),
-                    PullStream.fromJson(json.getJSONObject("reference")));
+                    PullStream.fromJson(json.getJSONObject("reference")), iconUpload);
         }
     }
 

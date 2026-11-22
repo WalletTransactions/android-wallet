@@ -155,4 +155,7 @@
     <string name="link_register_password_mismatch">Пароли не совпадают</string>
     <string name="link_register_closed">Регистрация закрыта администратором.</string>
     <string name="link_register_taken">Не удалось создать аккаунт или войти. Если этот адрес уже зарегистрирован, войдите с его паролем.</string>
+    <!-- openspec optional-icon-upload -->
+    <string name="sync_icons_server_refused">Сервер не принимает свои иконки — отправка выключена.</string>
+    <string name="sync_icon_upload_failed">иконка «%1$s» не отправлена: %2$s — повторю при следующем синке</string>
 </resources>

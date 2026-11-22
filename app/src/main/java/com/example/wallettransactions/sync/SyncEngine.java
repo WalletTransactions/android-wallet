@@ -166,6 +166,206 @@ final class SyncEngine {
 
     private SyncEngine() {}
 
+    // ── ОТПРАВКА СВОИХ ИКОНОК (openspec optional-icon-upload) ────────────────
+
+    /** Итог шага {@link #pushOwnIcons}. */
+    enum IconUploadResult {
+        /** Шаг прошёл: отправлено всё, что получилось; сбои отдельных иконок — в журнале. */
+        DONE,
+        /** Сервер не принимает свои иконки ({@code icon_upload_disabled}) — см. {@link #disableIconUpload}. */
+        REFUSED,
+    }
+
+    /** Попыток загрузки содержимого одной иконки (обрыв на медленном relay, инцидент 2026-10-11). */
+    static final int BLOB_UPLOAD_ATTEMPTS = 3;
+
+    /** Пауза между попытками; тесты подменяют, чтобы не ждать секунды. */
+    interface Sleeper {
+        void sleep(long ms) throws InterruptedException;
+    }
+
+    static Sleeper sleeper = Thread::sleep;
+
+    /** Отказ сервера по флагу приёма своих иконок — прерывает шаг целиком. */
+    private static final class IconUploadRefused extends Exception {
+    }
+
+    /**
+     * Отправка своих иконок ({@code origin = 1}) до push остальных строк — только при
+     * включённой настройке и разрешающем флаге сервера (проверяет вызывающий,
+     * {@link AppSettings#shouldUploadOwnIcons}). Выбор — по происхождению, не по {@code dirty}
+     * (design п. 5): v86 обнулил {@code dirty} у иконок, а включение настройки должно
+     * отправить и накопленные.
+     * <p>
+     * Каждая иконка — отдельно: {@code HEAD}/{@code POST /sync/blobs} (до
+     * {@link #BLOB_UPLOAD_ATTEMPTS} попыток), затем свой push-батч с одной строкой {@code icon}.
+     * Отдельные батчи — чтобы ни отброшенная по флагу иконка, ни {@code 409} по имени одной
+     * иконки не откатили ни счета (они уходят позже, в {@link #pushDirty}), ни другие иконки.
+     * Принятая становится иконкой с сервера ({@code origin = 0}) — дальше {@link PushIconRefs}
+     * отдаёт её uuid, а не заместителя.
+     * <ul>
+     *   <li>Та же картинка уже есть среди иконок с сервера — не отправляется (design п. 6).</li>
+     *   <li>{@code 403 icon_upload_disabled} или {@code icons_rejected} — {@link IconUploadResult#REFUSED},
+     *   шаг прерывается.</li>
+     *   <li>HTTP-отказ одной иконки ({@code 409}, {@code 5xx}, исчерпаны попытки) — запись ⚠ в журнал,
+     *   иконка остаётся своей, следующая. Не «проблема»: проход не становится «частично».</li>
+     *   <li>Обрыв сети после всех попыток — {@link IOException} наружу, проход «нет сети».</li>
+     * </ul>
+     */
+    static IconUploadResult pushOwnIcons(SQLiteDatabase db, SyncApiClient api, SyncLog log)
+            throws IOException, JSONException {
+        List<Object[]> own = new ArrayList<>(); // {uuid, name, image, iconType}
+        Cursor c = db.rawQuery("SELECT " + WalletContract.IconEntry.COLUMN_UUID
+                        + ", " + WalletContract.IconEntry.COLUMN_NAME
+                        + ", " + WalletContract.IconEntry.COLUMN_IMAGE
+                        + ", " + WalletContract.IconEntry.COLUMN_ICON_TYPE
+                        + " FROM " + WalletContract.IconEntry.TABLE_NAME
+                        + " WHERE " + WalletContract.IconEntry.COLUMN_ORIGIN + " = " + WalletContract.IconEntry.ORIGIN_LOCAL
+                        + " AND " + WalletContract.IconEntry.COLUMN_DELETED_AT + " IS NULL"
+                        + " ORDER BY " + WalletContract.IconEntry._ID, null);
+        try {
+            while (c.moveToNext()) {
+                own.add(new Object[]{c.getString(0), c.getString(1), c.getBlob(2), c.getInt(3)});
+            }
+        } finally {
+            c.close(); // сеть — уже после, не поверх открытого курсора
+        }
+        if (own.isEmpty()) return IconUploadResult.DONE;
+
+        IconSubstitutes server = IconSubstitutes.load(db);
+        for (Object[] r : own) {
+            String uuid = (String) r[0];
+            String name = (String) r[1];
+            byte[] image = (byte[]) r[2];
+            if (uuid == null || image == null || image.length == 0) continue; // нечего отправлять
+            String sha256 = IconSubstitutes.sha256Hex(image);
+            if (server.hasServerImage(sha256)) continue;
+
+            String contentSha256;
+            try {
+                contentSha256 = ensureBlobUploaded(api, image, sha256);
+            } catch (IconUploadRefused e) {
+                return IconUploadResult.REFUSED;
+            } catch (SyncApiClient.HttpStatusException e) {
+                Log.w(TAG, "push icons: " + uuid + " не загружена: " + e.getMessage());
+                log.healed(Texts.get(R.string.sync_icon_upload_failed, name, e.getMessage()));
+                continue;
+            }
+
+            JSONObject row = new JSONObject();
+            row.put("uuid", uuid);
+            row.put("name", name);
+            row.put("content_sha256", contentSha256);
+            row.put("icon_type", (int) r[3]);
+            row.put("deleted", false);
+            JSONObject changes = new JSONObject();
+            changes.put("icon", new JSONArray().put(row));
+
+            SyncApiClient.HttpResult result = api.push(UUID.randomUUID().toString(), changes);
+            if (result.status == 200) {
+                if (!SyncApiClient.iconsRejected(result.body).isEmpty()) return IconUploadResult.REFUSED;
+                markIconFromServer(db, uuid);
+                log.push(Texts.get(R.string.sync_type_icon), Texts.get(R.string.sync_action_sent));
+                continue;
+            }
+            if (SyncApiClient.isIconUploadDisabled(result.status, result.body)) return IconUploadResult.REFUSED;
+            String reason = "HTTP " + result.status + (result.body.has("error") ? " " + result.body.optString("error") : "");
+            Log.w(TAG, "push icons: " + uuid + " отклонена: " + result.body);
+            log.healed(Texts.get(R.string.sync_icon_upload_failed, name, reason));
+        }
+        return IconUploadResult.DONE;
+    }
+
+    /**
+     * Содержимое иконки на сервере: {@code HEAD}, при отсутствии — {@code POST}. Возвращает
+     * {@code content_sha256} (при расхождении с локальным — серверный: строка {@code icon}
+     * сошлётся на то, что реально лежит в blob). Последняя неудача — наружу: HTTP-отказ
+     * ({@link SyncApiClient.HttpStatusException}) или обрыв сети ({@link IOException}).
+     */
+    private static String ensureBlobUploaded(SyncApiClient api, byte[] image, String sha256)
+            throws IOException, IconUploadRefused {
+        IOException last = null;
+        for (int attempt = 1; attempt <= BLOB_UPLOAD_ATTEMPTS; attempt++) {
+            try {
+                if (api.blobExists(sha256)) return sha256;
+                SyncApiClient.HttpResult uploaded = api.uploadBlob(image);
+                if (SyncApiClient.isIconUploadDisabled(uploaded.status, uploaded.body)) throw new IconUploadRefused();
+                if (uploaded.status == 200) {
+                    String serverSha = uploaded.body.optString("sha256", "");
+                    if (!serverSha.isEmpty() && !serverSha.equals(sha256)) {
+                        Log.w(TAG, "push icons: sha256 расходится: локально " + sha256 + ", сервер " + serverSha);
+                        return serverSha;
+                    }
+                    return sha256;
+                }
+                last = new SyncApiClient.HttpStatusException("POST /sync/blobs -> HTTP " + uploaded.status
+                        + (uploaded.body.length() > 0 ? " " + uploaded.body : ""), uploaded.status);
+                if (uploaded.status == 401 || (uploaded.status >= 400 && uploaded.status < 500)) {
+                    throw last; // ответ не изменится от повтора
+                }
+            } catch (JSONException e) {
+                last = new SyncApiClient.HttpStatusException(
+                        "POST /sync/blobs: malformed server response (" + e.getMessage() + ")", 200);
+            } catch (IOException e) {
+                if (e == last) throw e;
+                last = e;
+            }
+            if (attempt < BLOB_UPLOAD_ATTEMPTS) {
+                Log.i(TAG, "push icons: попытка " + attempt + " не удалась (" + last.getMessage() + "), повторяю");
+                try {
+                    sleeper.sleep(1000L * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw last;
+                }
+            }
+        }
+        throw last;
+    }
+
+    /**
+     * Своя иконка принята сервером — теперь она «с сервера»: {@code origin = 0}, {@code dirty = 0}.
+     * Два UPDATE из-за {@code trg_icon_dirty} ({@code WHEN NEW.dirty = OLD.dirty}, см.
+     * {@code WalletDbHelper.markIconOriginV86}): первый триггер помечает dirty, второй меняет
+     * значение 1→0 — триггер молчит.
+     */
+    static void markIconFromServer(SQLiteDatabase db, String uuid) {
+        String table = WalletContract.IconEntry.TABLE_NAME;
+        db.beginTransaction();
+        try {
+            db.execSQL("UPDATE " + table + " SET " + WalletContract.IconEntry.COLUMN_ORIGIN + " = "
+                    + WalletContract.IconEntry.ORIGIN_SERVER + " WHERE uuid = ?", new Object[]{uuid});
+            db.execSQL("UPDATE " + table + " SET " + WalletContract.IconEntry.COLUMN_DIRTY + " = 0 WHERE uuid = ? AND "
+                    + WalletContract.IconEntry.COLUMN_DIRTY + " <> 0", new Object[]{uuid});
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    /**
+     * Сервер не принимает свои иконки: выключить настройку, запомнить запрет и сказать об этом
+     * в журнале (⚠, не «проблема» — проход остаётся успешным). Повторно включить можно, только
+     * когда pull снова принесёт {@code capabilities.icon_upload = true}.
+     */
+    static void disableIconUpload(Context ctx, SyncLog log) {
+        AppSettings.setIconUploadEnabled(ctx, false);
+        AppSettings.setServerIconUploadAllowed(ctx, false);
+        log.healed(Texts.get(R.string.sync_icons_server_refused));
+    }
+
+    /**
+     * Флаг сервера из pull ({@code capabilities.icon_upload}). Стал запрещающим при включённой
+     * настройке — флаг выключили, пока телефон ничего не отправлял: настройка выключается.
+     */
+    static void applyServerIconFlag(Context ctx, boolean allowed, SyncLog log) {
+        if (!allowed && AppSettings.isIconUploadEnabled(ctx)) {
+            disableIconUpload(ctx, log);
+            return;
+        }
+        AppSettings.setServerIconUploadAllowed(ctx, allowed);
+    }
+
     // ── PUSH ─────────────────────────────────────────────────────────────────
 
     /**
@@ -1066,6 +1266,7 @@ final class SyncEngine {
         for (int page = 0; page < 10_000; page++) {
             SyncApiClient.PullResult result = api.pull(ledgerSeq, referenceSeq, 500,
                     AppSettings.getSyncLedgerId(ctx));
+            applyServerIconFlag(ctx, result.iconUploadAllowed, log);
 
             // Леджер сменился (другой user_id при том же email, инвайт) —
             // курсор от старого леджера может оказаться и МЕНЬШЕ головы

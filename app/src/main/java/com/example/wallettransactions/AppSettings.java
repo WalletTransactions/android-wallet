@@ -39,6 +39,8 @@ public final class AppSettings {
     private static final String PREF_AUTO_CONNECT_ENABLED = "autoConnectEnabled";
     private static final String PREF_AUTO_CONNECT_INTERVAL_MINUTES = "autoConnectIntervalMinutes";
     private static final String PREF_NOTIFY_NEW_OPERATIONS = "notifyNewOperations";
+    private static final String PREF_ICON_UPLOAD_ENABLED = "iconUploadEnabled";
+    private static final String PREF_SERVER_ICON_UPLOAD_ALLOWED = "serverIconUploadAllowed";
     private static final String PREF_REMIND_ON = "remindOn";
     private static final String PREF_REMIND_HOUR = "remindHour";
     private static final String PREF_REMIND_MINUTE = "remindMinute";
@@ -348,6 +350,37 @@ public final class AppSettings {
 
     public static void setNotifyNewOperationsEnabled(Context ctx, boolean enabled) {
         prefs(ctx).edit().putBoolean(PREF_NOTIFY_NEW_OPERATIONS, enabled).apply();
+    }
+
+    /**
+     * «Настройки» → «Данные» → «Отправлять свои иконки на сервер» (openspec optional-icon-upload).
+     * Выбор пользователя, по умолчанию выключено; только на этом телефоне, не синкается.
+     * Выключается и сам — отказом сервера ({@code icon_upload_disabled}).
+     */
+    public static boolean isIconUploadEnabled(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_ICON_UPLOAD_ENABLED, false);
+    }
+
+    public static void setIconUploadEnabled(Context ctx, boolean enabled) {
+        prefs(ctx).edit().putBoolean(PREF_ICON_UPLOAD_ENABLED, enabled).apply();
+    }
+
+    /**
+     * Последнее известное значение флага сервера {@code capabilities.icon_upload} из
+     * {@code GET /sync/pull}. До первого pull и у старого сервера без блока — {@code false}:
+     * приём считается запрещённым.
+     */
+    public static boolean isServerIconUploadAllowed(Context ctx) {
+        return prefs(ctx).getBoolean(PREF_SERVER_ICON_UPLOAD_ALLOWED, false);
+    }
+
+    public static void setServerIconUploadAllowed(Context ctx, boolean allowed) {
+        prefs(ctx).edit().putBoolean(PREF_SERVER_ICON_UPLOAD_ALLOWED, allowed).apply();
+    }
+
+    /** Проход синка отправляет свои иконки: пользователь включил и сервер разрешает. */
+    public static boolean shouldUploadOwnIcons(Context ctx) {
+        return isIconUploadEnabled(ctx) && isServerIconUploadAllowed(ctx);
     }
 
     /**
