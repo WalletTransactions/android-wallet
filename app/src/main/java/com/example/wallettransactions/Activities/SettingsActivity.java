@@ -76,6 +76,9 @@ public class SettingsActivity extends AppCompatActivity {
     private FrameLayout switchRemind;
     private FrameLayout switchPickerKeyboard;
     private FrameLayout switchSummaryOtherExpanded;
+    private FrameLayout switchIconUpload;
+    private View rowIconUpload;
+    private TextView textIconUploadHint;
     private TextView walletSortValue;
     private TextView categorySortValue;
     private TextView rowRemindTime;
@@ -108,6 +111,9 @@ public class SettingsActivity extends AppCompatActivity {
         switchRemind = findViewById(R.id.switchRemind);
         switchPickerKeyboard = findViewById(R.id.switchPickerKeyboard);
         switchSummaryOtherExpanded = findViewById(R.id.switchSummaryOtherExpanded);
+        switchIconUpload = findViewById(R.id.switchIconUpload);
+        rowIconUpload = findViewById(R.id.rowIconUpload);
+        textIconUploadHint = findViewById(R.id.textIconUploadHint);
         walletSortValue = findViewById(R.id.walletSortValue);
         categorySortValue = findViewById(R.id.categorySortValue);
         rowRemindTime = findViewById(R.id.rowRemindTime);
@@ -328,6 +334,27 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         paintSecurity();
+        // Здесь, а не в onCreate: фоновый синк мог выключить отправку отказом сервера.
+        paintIconUpload();
+    }
+
+    /**
+     * «Отправлять свои иконки на сервер» (openspec optional-icon-upload). Пока сервер не
+     * разрешил приём (последний pull без {@code capabilities.icon_upload = true}),
+     * переключатель неактивен и показывает выключенное состояние с пояснением.
+     */
+    private void paintIconUpload() {
+        boolean allowed = AppSettings.isServerIconUploadAllowed(this);
+        applySwitchState(switchIconUpload, allowed && AppSettings.isIconUploadEnabled(this));
+        switchIconUpload.setEnabled(allowed);
+        rowIconUpload.setAlpha(allowed ? 1f : 0.5f);
+        textIconUploadHint.setText(allowed ? R.string.settings_icon_upload_hint : R.string.settings_icon_upload_server_off);
+    }
+
+    /** Включение отправит и уже накопленные свои иконки — при ближайшем проходе синка. */
+    public void onToggleIconUpload(View view) {
+        if (!AppSettings.isServerIconUploadAllowed(this)) return;
+        AppSettings.setIconUploadEnabled(this, toggleSwitch(switchIconUpload));
     }
 
     private void paintSecurity() {

@@ -82,4 +82,8 @@
     <string name="settings_language_system">Phone language</string>
     <string name="settings_language_en">English</string>
     <string name="settings_language_ru">Русский</string>
+    <!-- openspec optional-icon-upload -->
+    <string name="settings_icon_upload">Upload own icons to the server</string>
+    <string name="settings_icon_upload_hint">Icons you add from the gallery go to your set on the server and show up on other devices and on the website.</string>
+    <string name="settings_icon_upload_server_off">The server does not accept own icons right now.</string>
 </resources>

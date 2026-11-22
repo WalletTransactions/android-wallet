@@ -63,6 +63,15 @@ final class IconSubstitutes {
         return byName.get(UNKNOWN_NAME);
     }
 
+    /**
+     * Есть ли среди иконок с сервера та же картинка — только по SHA-256, без запасных
+     * вариантов по имени и {@code unknown}. Такую свою иконку не отправляют (openspec
+     * optional-icon-upload, design п. 6): её роль уже играет заместитель.
+     */
+    boolean hasServerImage(String sha256) {
+        return sha256 != null && bySha256.containsKey(sha256);
+    }
+
     String substituteFor(String name, byte[] image) {
         return substituteFor(name, image == null ? null : sha256Hex(image));
     }

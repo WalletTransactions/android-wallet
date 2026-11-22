@@ -184,6 +184,12 @@ public final class SyncRunner {
         return runSteps(new Steps() {
             @Override public void push(SyncLog l) throws IOException, JSONException {
                 SyncEngine.redirtyDebtsIfPending(db, ctx, l);
+                // Свои иконки — до строк (openspec optional-icon-upload): принятая иконка
+                // уходит в счета своим uuid, отказ — счета уходят с заместителем.
+                if (AppSettings.shouldUploadOwnIcons(ctx)
+                        && SyncEngine.pushOwnIcons(db, api, l) == SyncEngine.IconUploadResult.REFUSED) {
+                    SyncEngine.disableIconUpload(ctx, l);
+                }
                 SyncEngine.pushDirty(db, api, l);
             }
             @Override public void pull(SyncLog l) throws IOException, JSONException { SyncEngine.pullAll(db, api, ctx, l); }
