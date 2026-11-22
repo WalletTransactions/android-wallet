@@ -305,7 +305,7 @@ final class SyncEngine {
                 }
             } catch (JSONException e) {
                 last = new SyncApiClient.HttpStatusException(
-                        "POST /sync/blobs: некорректный ответ сервера (" + e.getMessage() + ")", 200);
+                        "POST /sync/blobs: malformed server response (" + e.getMessage() + ")", 200);
             } catch (IOException e) {
                 if (e == last) throw e;
                 last = e;
