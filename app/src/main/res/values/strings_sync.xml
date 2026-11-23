@@ -41,6 +41,16 @@
     <string name="sync_partial">Some changes weren\'t sent — sync again</string>
     <string name="sync_server_unavailable">The server is unavailable: %1$s</string>
     <string name="sync_bad_response">Invalid server response: %1$s</string>
+
+    <!-- Network error cause (sync/NetworkErrors). -->
+    <string name="net_error_untrusted_cert">The phone doesn\'t trust the server certificate. If the server uses its own certificate authority, install its root certificate: Settings → Security → Encryption &amp; credentials → Install a certificate → CA certificate.</string>
+    <string name="net_error_cert_expired">The server certificate has expired or is not valid yet. Check the date and time on the phone.</string>
+    <string name="net_error_host_mismatch">The server certificate is issued for a different name. The \"Server address\" must match a name in the certificate.</string>
+    <string name="net_error_tls">Couldn\'t establish a secure connection (%1$s). Check that the server accepts https on this port.</string>
+    <string name="net_error_unknown_host">Server address not found. Check the \"Server address\" and the network connection.</string>
+    <string name="net_error_connect">The server refuses connections. Check the address and port and that the phone is on the same network as the server.</string>
+    <string name="net_error_timeout">The server didn\'t respond in time. Check the network and try again.</string>
+    <string name="net_error_short_cert">Certificate error</string>
     <string name="sync_rejected">The server rejected some changes — %1$s</string>
 
     <string name="connection_title">Operations added before sign-in</string>

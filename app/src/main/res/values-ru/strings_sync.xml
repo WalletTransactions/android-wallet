@@ -42,6 +42,16 @@
     <string name="sync_partial">Часть изменений не отправлена — повторите синхронизацию</string>
     <string name="sync_server_unavailable">Сервер недоступен: %1$s</string>
     <string name="sync_bad_response">Некорректный ответ сервера: %1$s</string>
+
+    <!-- Причина сетевой ошибки (sync/NetworkErrors). -->
+    <string name="net_error_untrusted_cert">Телефон не доверяет сертификату сервера. Если у сервера свой центр сертификации, установите его корневой сертификат: Настройки → Безопасность → Шифрование и учётные данные → Установить сертификат → Сертификат ЦС.</string>
+    <string name="net_error_cert_expired">Сертификат сервера просрочен или ещё не действует. Проверьте дату и время на телефоне.</string>
+    <string name="net_error_host_mismatch">Сертификат сервера выписан на другое имя. Адрес в «Адрес сервера» должен совпадать с именем в сертификате.</string>
+    <string name="net_error_tls">Не удалось установить защищённое соединение (%1$s). Проверьте, что на этом порту сервер принимает https.</string>
+    <string name="net_error_unknown_host">Адрес сервера не найден. Проверьте «Адрес сервера» и подключение к сети.</string>
+    <string name="net_error_connect">Сервер не принимает соединения. Проверьте адрес и порт и что телефон в той же сети, что и сервер.</string>
+    <string name="net_error_timeout">Сервер не ответил вовремя. Проверьте сеть и повторите.</string>
+    <string name="net_error_short_cert">Ошибка сертификата</string>
     <string name="sync_rejected">Сервер отклонил часть изменений — %1$s</string>
 
     <!-- Первое подключение к кошельку (spec ledger-connection). -->

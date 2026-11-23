@@ -173,7 +173,8 @@ public final class SyncRunner {
                 // через Google отсюда нельзя (см. её javadoc).
                 return new Outcome(Status.NEEDS_RELINK, log, null);
             case NETWORK_ERROR:
-                return new Outcome(Status.NETWORK_ERROR, log, Texts.get(R.string.sync_server_unreachable));
+                return new Outcome(Status.NETWORK_ERROR, log,
+                        AuthSession.lastNetworkErrorText(Texts.context(), Texts.get(R.string.sync_server_unreachable)));
             case OK:
                 break;
         }
@@ -300,7 +301,7 @@ public final class SyncRunner {
         } catch (IOException e) {
             // Сервер выключен/недоступен по сети между push и pull — обычное
             // дело для LAN-only стенда (план, п. 1.4).
-            return new Outcome(Status.NETWORK_ERROR, log, Texts.get(R.string.sync_server_unavailable, e.getMessage()));
+            return new Outcome(Status.NETWORK_ERROR, log, NetworkErrors.describe(e));
         } catch (JSONException e) {
             return new Outcome(Status.ERROR, log, Texts.get(R.string.sync_bad_response, e.getMessage()));
         } catch (SyncEngine.PushRejectedException e) {

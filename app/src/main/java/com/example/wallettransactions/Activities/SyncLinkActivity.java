@@ -24,6 +24,7 @@ import androidx.credentials.exceptions.GetCredentialException;
 import com.example.wallettransactions.AppSettings;
 import com.example.wallettransactions.R;
 import com.example.wallettransactions.TokenStore;
+import com.example.wallettransactions.sync.NetworkErrors;
 import com.example.wallettransactions.sync.HttpClients;
 import com.example.wallettransactions.sync.PasswordAuth;
 import com.example.wallettransactions.sync.PasswordAuthMessages;
@@ -137,7 +138,7 @@ public class SyncLinkActivity extends AppCompatActivity {
             public void onFailure(Call call, IOException e) {
                 Log.e(TAG, "GET /auth/methods failed", e);
                 runOnUiThread(() -> showResult(getString(R.string.link_server_unreachable,
-                        AppSettings.getServerBaseUrl(SyncLinkActivity.this), e.getMessage())));
+                        AppSettings.getServerBaseUrl(SyncLinkActivity.this), NetworkErrors.describe(SyncLinkActivity.this, e))));
             }
 
             @Override
@@ -222,7 +223,7 @@ public class SyncLinkActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     setBusy(false);
                     showResult(getString(R.string.link_server_unreachable,
-                            AppSettings.getServerBaseUrl(SyncLinkActivity.this), e.getMessage()));
+                            AppSettings.getServerBaseUrl(SyncLinkActivity.this), NetworkErrors.describe(SyncLinkActivity.this, e)));
                 });
             }
 
@@ -288,7 +289,7 @@ public class SyncLinkActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     setBusy(false);
                     showResult(getString(R.string.link_server_unreachable,
-                            AppSettings.getServerBaseUrl(SyncLinkActivity.this), e.getMessage()));
+                            AppSettings.getServerBaseUrl(SyncLinkActivity.this), NetworkErrors.describe(SyncLinkActivity.this, e)));
                 });
             }
 
@@ -335,7 +336,7 @@ public class SyncLinkActivity extends AppCompatActivity {
             public void onFailure(Call call, IOException e) {
                 Log.e(TAG, "POST /auth/nonce failed", e);
                 runOnUiThread(() -> showResult(getString(R.string.link_server_unreachable,
-                        AppSettings.getServerBaseUrl(SyncLinkActivity.this), e.getMessage())));
+                        AppSettings.getServerBaseUrl(SyncLinkActivity.this), NetworkErrors.describe(SyncLinkActivity.this, e))));
             }
 
             @Override
