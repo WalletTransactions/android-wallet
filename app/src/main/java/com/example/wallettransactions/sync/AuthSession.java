@@ -49,7 +49,26 @@ final class AuthSession {
     private static final int NOTIFICATION_ID = 1;
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
+    /**
+     * Последняя сетевая ошибка {@link #ensureFresh} (исход NETWORK_ERROR) — чтобы вызывающий
+     * показал причину ({@link NetworkErrors}), а не общее «сервер недоступен». {@code null} —
+     * ошибки не было или это был HTTP-код, а не сбой соединения.
+     */
+    private static volatile IOException lastNetworkError;
+
     private AuthSession() {}
+
+    /** Текст причины последнего NETWORK_ERROR или {@code fallback}, если причина неизвестна. */
+    static String lastNetworkErrorText(Context ctx, String fallback) {
+        IOException e = lastNetworkError;
+        return e != null ? NetworkErrors.describe(ctx, e) : fallback;
+    }
+
+    /** Короткий вариант {@link #lastNetworkErrorText} — для строки статуса. */
+    static String lastNetworkErrorShort(Context ctx, String fallback) {
+        IOException e = lastNetworkError;
+        return e != null ? NetworkErrors.shortText(ctx, e) : fallback;
+    }
 
     enum Outcome {
         /** Связки ещё не было (или её сняли) — синхронизировать нечего, это не ошибка. */
@@ -72,6 +91,7 @@ final class AuthSession {
     static synchronized Outcome ensureFresh(Context ctx) {
         String refreshToken = TokenStore.getRefreshToken(ctx);
         if (refreshToken == null) return Outcome.NO_SESSION;
+        lastNetworkError = null;
 
         JSONObject payload = new JSONObject();
         try {
@@ -106,7 +126,8 @@ final class AuthSession {
         } catch (IOException e) {
             // Сервер выключен/недоступен по сети — обычное дело для LAN-only
             // стенда (план, п. 1.4), не повод помечать связку разорванной.
-            Log.i(TAG, "сервер недоступен: " + e.getMessage());
+            Log.i(TAG, "сервер недоступен: " + e);
+            lastNetworkError = e;
             return Outcome.NETWORK_ERROR;
         } catch (JSONException e) {
             Log.w(TAG, "некорректный ответ /auth/refresh", e);

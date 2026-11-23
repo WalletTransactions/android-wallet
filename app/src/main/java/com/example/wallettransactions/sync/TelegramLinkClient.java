@@ -107,7 +107,8 @@ public final class TelegramLinkClient {
                 case OK:
                     break;
                 case NETWORK_ERROR:
-                    throw new TelegramException(ctx.getString(R.string.telegram_server_unavailable), false);
+                    throw new TelegramException(AuthSession.lastNetworkErrorShort(ctx,
+                            ctx.getString(R.string.telegram_server_unavailable)), false);
                 default:
                     throw new TelegramException(ctx.getString(R.string.telegram_session_expired), true);
             }
@@ -115,7 +116,7 @@ public final class TelegramLinkClient {
             if (body == null) throw new TelegramException(ctx.getString(R.string.telegram_session_expired), true);
             return body;
         } catch (IOException e) {
-            throw new TelegramException(ctx.getString(R.string.telegram_server_unavailable), false);
+            throw new TelegramException(NetworkErrors.shortText(ctx, e), false);
         } catch (JSONException e) {
             throw new TelegramException(ctx.getString(R.string.telegram_bad_response), false);
         }

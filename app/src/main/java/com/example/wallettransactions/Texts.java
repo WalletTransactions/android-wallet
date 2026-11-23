@@ -24,6 +24,11 @@ public final class Texts {
         return AppLanguage.localized(c);
     }
 
+    /** Контекст приложения на текущем языке — для помощников, принимающих {@code Context}. */
+    public static Context context() {
+        return ctx();
+    }
+
     public static String get(int resId) {
         return ctx().getString(resId);
     }

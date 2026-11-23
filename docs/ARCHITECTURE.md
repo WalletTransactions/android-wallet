@@ -915,6 +915,14 @@ ledger уходил дальше. Поэтому шаг БД v89 поднима�
 синка зовут `ensureFreshForRequest`: refresh только если access-токен истекает
 меньше чем через минуту.
 
+Причину сетевой ошибки объясняет `sync/NetworkErrors` (explain-network-errors). Она
+определяется по типу `IOException` и цепочке `getCause()`: сертификат не доверен,
+просрочен, на другое имя, прочий TLS, DNS, отказ соединения, таймаут. Для каждой
+причины есть полный текст с подсказкой (диалог синка, экран входа) и короткий (строка
+Telegram). Исход `ensureFresh` — enum без причины, поэтому последнее `IOException`
+обновления сессии хранится в `volatile` поле `AuthSession`. Его читают `SyncRunner` и
+`TelegramLinkClient` через `lastNetworkErrorText` / `lastNetworkErrorShort`.
+
 ### Вход на сервер: Google и по паролю (add-password-login)
 
 Экран входа — `SyncLinkActivity` («Ещё» → «Интеграции» → «Связь с Google аккаунтом»).
