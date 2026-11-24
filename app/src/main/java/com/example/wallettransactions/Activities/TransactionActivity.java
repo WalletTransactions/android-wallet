@@ -143,6 +143,7 @@ public class TransactionActivity extends AppCompatActivity {
     private EditText mAmount;
     /** Кнопка сохранения — значок дискеты в колонке действий, см. activity_transaction.xml. */
     private ImageButton mBtnSave;
+    private ImageButton mBtnSaveFloating;
     /** Кнопка удаления — значок в шапке, виден только при правке (mIsEdit). */
     private ImageButton mBtnDelete;
 
@@ -231,6 +232,7 @@ public class TransactionActivity extends AppCompatActivity {
         mComment = findViewById(R.id.editComment);
         mAmount  = findViewById(R.id.editAmount);
         mBtnSave = findViewById(R.id.buttonSave);
+        mBtnSaveFloating = findViewById(R.id.buttonSaveFloating);
         mBtnDelete = findViewById(R.id.btnDelete);
 
         mScreenTitle = findViewById(R.id.screenTitle);
@@ -305,9 +307,13 @@ public class TransactionActivity extends AppCompatActivity {
      */
     private void updateKeypadVisibility(WindowInsetsCompat insets) {
         boolean imeVisible = insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
-        int visibility = mComment.hasFocus() && imeVisible ? View.GONE : View.VISIBLE;
+        boolean typingComment = mComment.hasFocus() && imeVisible;
+        int visibility = typingComment ? View.GONE : View.VISIBLE;
         // Смена видимости сама вызывает перекладку — без проверки зациклились бы.
         if (mKeypad.getVisibility() != visibility) mKeypad.setVisibility(visibility);
+        // Пока калькулятора нет, «Сохранить» живёт поверх поля комментария.
+        int floating = typingComment ? View.VISIBLE : View.GONE;
+        if (mBtnSaveFloating.getVisibility() != floating) mBtnSaveFloating.setVisibility(floating);
     }
 
     /** Убирает системную клавиатуру из комментария — ввод уходит в калькулятор. */
@@ -1001,6 +1007,9 @@ public class TransactionActivity extends AppCompatActivity {
         }
         mBtnSave.setEnabled(enabled);
         mBtnSave.setAlpha(enabled ? 1f : 0.4f);
+        // Плавающая копия — слегка прозрачная даже когда доступна, чтобы не перекрывать текст.
+        mBtnSaveFloating.setEnabled(enabled);
+        mBtnSaveFloating.setAlpha(enabled ? 0.75f : 0.3f);
     }
 
     private void ShowCalendarDateTime() {
@@ -1742,11 +1751,37 @@ public class TransactionActivity extends AppCompatActivity {
      */
     private void updateAmountPreview() {
         String text = mAmount.getText().toString();
-        // Выражение длиннее числа, а поле по ширине не тянется — иначе обрежет (sp, как в разметке).
-        mAmount.setTextSize(hasOperator(text) ? 30 : 40);
+        fitAmountTextSize(text);
         mAmountHint.setText(hasOperator(text)
                 ? "= " + formatAmount(parseAmount(text), mCurrencyPrecision)
                 : mAmountHintText);
+    }
+
+    /**
+     * Крупный шрифт (40sp), пока текст помещается в строке суммы; мельчим шагами
+     * лишь когда места не хватает — иначе поле обрежет длинное выражение.
+     */
+    private void fitAmountTextSize(String text) {
+        View row = (View) mAmount.getParent();
+        View sign = findViewById(R.id.tvAmountSign);
+        View cur = findViewById(R.id.tvCurrencySymbol);
+        int available = row.getWidth() - row.getPaddingLeft() - row.getPaddingRight()
+                - (sign.getVisibility() == View.VISIBLE ? sign.getWidth() : 0)
+                - cur.getWidth() - ((ViewGroup.MarginLayoutParams) cur.getLayoutParams()).getMarginStart()
+                - mAmount.getPaddingLeft() - mAmount.getPaddingRight();
+        float sp = 40f;
+        if (available > 0 && !text.isEmpty()) {
+            float density = getResources().getDisplayMetrics().scaledDensity;
+            android.graphics.Paint paint = new android.graphics.Paint(mAmount.getPaint());
+            while (sp > 20f) {
+                paint.setTextSize(sp * density);
+                if (paint.measureText(text) <= available) break;
+                sp -= 2f;
+            }
+        }
+        if (mAmount.getTextSize() != sp * getResources().getDisplayMetrics().scaledDensity) {
+            mAmount.setTextSize(sp);
+        }
     }
 
     private String zeroHint(int precision) {
