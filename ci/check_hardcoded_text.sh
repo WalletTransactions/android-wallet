@@ -38,7 +38,7 @@ while IFS= read -r file; do
         | grep -vP '\bLog\.[vdiwe]\(' \
         | grep -vF '// not UI' || true)
     [ -n "$hits" ] && report "$file" "$hits"
-done < <(find "$MAIN/java" -name '*.java' | sort)
+done < <(find "$MAIN/java" \( -name '*.java' -o -name '*.kt' \) | sort)
 
 while IFS= read -r file; do
     hits=$(grep -nP "android:(text|hint|title|contentDescription)=\"[^@\"][^\"]*${CYR}" "$file" || true)
