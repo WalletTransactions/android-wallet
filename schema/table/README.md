@@ -206,6 +206,50 @@
 
 ---
 
+## `operation_template` (v94)
+
+Шаблон операций (openspec `operation-templates`) — только локальная таблица: колонок
+синка и dirty-триггера нет. Устройство и код — в
+[`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md), «Шаблоны операций и повторы».
+
+| Поле | Тип | Описание |
+| --- | --- | --- |
+| `_id` | INTEGER PK AUTOINCREMENT | |
+| `uuid` | TEXT NOT NULL, уникальный индекс | Заведён впрок под синк шаблонов |
+| `name` | TEXT NOT NULL | Название |
+| `comment` | TEXT NOT NULL DEFAULT '' | Комментарий проводок, у которых свой пуст |
+| `total_amount` | DECIMAL(15,2) | Общая сумма по умолчанию; обязательна при расписании |
+| `frequency` | INTEGER | `0` ежедневно, `1` еженедельно, `2` ежемесячно, `3` ежегодно; `NULL` — без расписания |
+| `interval` | INTEGER NOT NULL DEFAULT 1 | «Каждые N недель», у остальных частот 1 |
+| `week_days` | INTEGER NOT NULL DEFAULT 0 | Маска дней недели: пн=1 … вс=64 |
+| `start_date` | TEXT | `yyyy-MM-dd HH:mm`; обязательна при расписании |
+| `end_date` | TEXT | `yyyy-MM-dd` включительно; `NULL` — «всегда» |
+| `is_active` | INTEGER NOT NULL DEFAULT 1 | Повтор включён |
+| `last_date` | TEXT | Последний созданный повтор |
+
+`CHECK`: расписание «всё или ничего» — без `frequency` пусты `start_date`, `end_date`,
+`last_date`; с `frequency` обязательна `start_date`.
+
+## `operation_template_step` (v94)
+
+| Поле | Тип | Описание |
+| --- | --- | --- |
+| `_id` | INTEGER PK AUTOINCREMENT | |
+| `uuid` | TEXT NOT NULL, уникальный индекс | |
+| `template_id` | INTEGER NOT NULL, FK → `operation_template._id` ON DELETE CASCADE | |
+| `num` | INTEGER NOT NULL ≥ 1 | Порядок шага; `UNIQUE(template_id, num)` |
+| `acc_fr_id` / `acc_to_id` | INTEGER NOT NULL, FK → `account._id` ON DELETE CASCADE | Проводка «откуда → куда» |
+| `amount_mode` | INTEGER NOT NULL | `0` фикс, `1` % от общей суммы, `2` остаток (ровно один на шаблон) |
+| `amount_value` | DECIMAL(15,4) | Число для фикса и процента; у остатка `NULL` |
+| `comment` | TEXT NOT NULL DEFAULT '' | |
+| `commission_of_num` | INTEGER | Номер основного шага, если этот — комиссия к нему (`operation_link.type = 1`) |
+
+Физическое удаление счёта удаляет ссылающиеся шаблоны целиком — триггер
+`operation_template_account_delete` (BEFORE DELETE на `account`).
+
+Таблица `recurring_operation` (v79–v93, правила повторяющихся операций) удалена шагом
+миграции v94 после переноса правил в шаблоны.
+
 ## Черновики, не входящие в текущую схему
 
 Ниже — файлы, чьи `CREATE` не выполняются `WalletDbHelper` и на которые не

@@ -195,7 +195,7 @@ class DerivedRatesDbTest {
         helper = WalletDbHelper(context)
         db = helper.writableDatabase
 
-        assertEquals(93, db.version)
+        assertEquals(WalletDbHelper.DATABASE_VERSION, db.version)
         assertEquals(1L, queryLong("SELECT count(*) FROM sqlite_master WHERE name = 'currency_rate_derived'"))
         assertEquals(1L, queryLong("SELECT count(*) FROM sqlite_master WHERE name = 'trg_currency_pair_rate_derived_insert'"))
         assertRejected(btc, rub, 0, pair(btc, eur)) // CHECK вернулся

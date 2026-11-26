@@ -22,6 +22,8 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.example.wallettransactions.Activities.MainActivity
 import com.example.wallettransactions.AppSettings
+import com.example.wallettransactions.Data.OperationTemplatesDb
+import com.example.wallettransactions.DataItems.Operations.TemplateLayout
 import com.example.wallettransactions.R
 import com.example.wallettransactions.Singleton
 import java.time.Duration
@@ -136,26 +138,49 @@ class ReminderWorker(context: Context, params: WorkerParameters) : Worker(contex
         /**
          * Есть ли за `day` операция, внесённая человеком: не удалённая, не вторая нога
          * перевода и не комиссия (operation_link) и не похожая на периодическую — те же счета
-         * и сумма, что у какого-нибудь правила «Повторяющихся операций». Своего признака
-         * «заведено правилом» у операции нет, поэтому сравнение по счетам и сумме.
+         * и сумма (до 0,005), что у какого-нибудь шага раскладки **шаблона с расписанием** при
+         * его общей сумме (openspec operation-templates, design D7). Ручные шаблоны не
+         * считаются: операция, запущенная человеком, — внесённая. Своего признака «заведено
+         * по расписанию» у операции нет, поэтому сравнение по счетам и сумме — в Kotlin:
+         * операций за день единицы, шаблонов десятки.
          */
         @JvmStatic
         internal fun hasEnteredToday(db: SQLiteDatabase, day: LocalDate): Boolean {
-            val c = db.rawQuery(
-                "SELECT 1 FROM operation o" +
+            val scheduled = scheduledPostings(db)
+            db.rawQuery(
+                "SELECT o.acc_fr_id, o.acc_to_id, CAST(o.amount AS REAL) FROM operation o" +
                     " WHERE o.deleted_at IS NULL AND o.date >= ? AND o.date < ?" +
-                    " AND o._id NOT IN (SELECT link_id FROM operation_link WHERE deleted_at IS NULL)" +
-                    " AND NOT EXISTS (SELECT 1 FROM recurring_operation r" +
-                    "   WHERE r.acc_fr_id = o.acc_fr_id AND r.acc_to_id = o.acc_to_id" +
-                    "   AND ABS(CAST(r.amount AS REAL) - CAST(o.amount AS REAL)) < 0.005)" +
-                    " LIMIT 1",
+                    " AND o._id NOT IN (SELECT link_id FROM operation_link WHERE deleted_at IS NULL)",
                 arrayOf(day.toString(), day.plusDays(1).toString())
-            )
-            try {
-                return c.moveToFirst()
-            } finally {
-                c.close()
+            ).use { c ->
+                while (c.moveToNext()) {
+                    val from = c.getInt(0)
+                    val to = c.getInt(1)
+                    val amount = c.getDouble(2)
+                    val generated = scheduled.any {
+                        it.from == from && it.to == to && Math.abs(it.amount - amount) < 0.005
+                    }
+                    if (!generated) return true
+                }
             }
+            return false
+        }
+
+        private class Posting(val from: Int, val to: Int, val amount: Double)
+
+        /** Проводки, которые заводят шаблоны с расписанием, — по раскладке их общей суммы. */
+        private fun scheduledPostings(db: SQLiteDatabase): List<Posting> {
+            val result = ArrayList<Posting>()
+            for (t in OperationTemplatesDb.loadAll(db)) {
+                if (t.schedule == null) continue
+                val total = t.totalAmount ?: continue
+                val layout = TemplateLayout.expand(t.steps, total, OperationTemplatesDb.precisionOf(db, t))
+                if (layout !is TemplateLayout.Result.Ok) continue
+                for ((i, s) in t.steps.withIndex()) {
+                    result.add(Posting(s.accFromId, s.accToId, layout.amounts[i].toDouble()))
+                }
+            }
+            return result
         }
 
         private fun show(ctx: Context) {

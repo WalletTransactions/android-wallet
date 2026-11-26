@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Проводка на экране запуска шаблона: «Откуда → Куда» и сумма, которую можно поправить. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/bg_card_row"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingLeft="14dp"
+    android:paddingRight="14dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/runAccounts"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:textColor="@color/colorTextPrimary"
+        android:textSize="13.5sp"
+        android:textStyle="bold"/>
+
+    <EditText
+        android:id="@+id/runAmount"
+        android:layout_width="110dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:background="@null"
+        android:gravity="end"
+        android:hint="0.00"
+        android:inputType="numberDecimal"
+        android:singleLine="true"
+        android:textColor="@color/colorTextPrimary"
+        android:textColorHint="@color/colorTextHint"
+        android:textSize="14sp"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/runCurrency"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="14sp"
+        android:textStyle="bold"/>
+</LinearLayout>

@@ -45,6 +45,9 @@ class ResetDataActivity : AppCompatActivity() {
         val ALL_TABLES: Array<String> = arrayOf(
                 WalletContract.OperationEntry.TABLE_NAME,
                 WalletContract.OperationLinkEntry.TABLE_NAME,
+                // Шаги ссылаются на шаблон и на счета (v94, operation-templates) — до account.
+                WalletContract.OperationTemplateStepEntry.TABLE_NAME,
+                WalletContract.OperationTemplateEntry.TABLE_NAME,
                 WalletContract.AccountOperatingEntry.TABLE_NAME,
                 // account_asset ссылается на account по FK: без неё физическое удаление счетов
                 // падает на COMMIT и вся очистка откатывается (баг на P20, 2026-11-10).
@@ -59,7 +62,6 @@ class ResetDataActivity : AppCompatActivity() {
                 WalletContract.CurrencyPairEntry.TABLE_NAME,
                 WalletContract.CurrencyEntry.TABLE_NAME,
                 WalletContract.IconEntry.TABLE_NAME,
-                WalletContract.RecurringOperationEntry.TABLE_NAME,
                 // v93 (currency-conversion-routes): кэш составных курсов и его флаг. Без строки флага
                 // DerivedRates.ensureFresh считает кэш устаревшим и перестроит его после пересева.
                 "currency_rate_derived",

@@ -1,14 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Повторяющиеся операции и напоминания (openspec android-i18n, задача 2.5). -->
+<!-- Шаблоны операций (openspec operation-templates), их расписания и напоминания. -->
 <resources>
-    <string name="recurring_list_title">Повторяющиеся операции</string>
-    <string name="recurring_title_new">Новая повторяющаяся</string>
-    <string name="recurring_title_edit">Изменение повтора</string>
+    <string name="template_list_title">Шаблоны операций</string>
+    <string name="template_list_empty">Шаблонов пока нет.</string>
+    <string name="template_list_add">+ Добавить шаблон</string>
+    <string name="template_manual">Вручную</string>
+    <string name="template_action_edit">Изменить</string>
+    <string name="template_delete_question">Удалить шаблон?</string>
+    <string name="template_delete_message">Уже созданные операции останутся.</string>
+    <string name="template_title_new">Новый шаблон</string>
+    <string name="template_title_edit">Изменение шаблона</string>
+    <string name="template_field_name">Название</string>
+    <string name="template_field_total">Общая сумма</string>
+    <string name="template_field_total_hint">Необязательно</string>
+    <string name="template_repeat_none">Не повторять</string>
+    <string name="template_commission_fixed">Фикс</string>
+    <string name="template_commission_percent">% от суммы</string>
+    <string name="template_save_as">Сохранить как шаблон</string>
+    <string name="template_run_title">Запуск шаблона</string>
+    <string name="template_run_postings">Проводки</string>
+    <string name="template_run_date">Дата и время</string>
+    <string name="template_error_no_name">Введите название шаблона</string>
+    <string name="template_error_commission_amount">Размер комиссии должен быть больше нуля</string>
+    <string name="template_error_percent">Процент должен быть не больше 100</string>
+    <string name="template_error_currency">Все кошельки шаблона должны быть в одной валюте</string>
+    <string name="template_error_overflow">Фиксированные суммы и проценты больше общей суммы</string>
+    <string name="template_error_unsupported">Этот шаблон нельзя изменить в этой версии</string>
+    <string name="template_migrated_name">Повторяющаяся операция</string>
+
     <string name="recurring_choose">Выберите</string>
     <string name="recurring_off">Повтор выключен — операции создаваться не будут.</string>
     <string name="recurring_next">Следующая операция: %1$s, %2$s</string>
     <string name="recurring_ended">Повторов больше не будет — дата окончания уже прошла.</string>
-    <string name="recurring_account_deleted">Счёт удалён</string>
     <string name="recurring_until">" · до %1$s"</string>
     <string name="recurring_list_next">Следующая: %1$s</string>
     <string name="recurring_list_finished">Завершено</string>
@@ -37,7 +60,6 @@
 
     <string name="recurring_error_same_accounts">Счета списания и зачисления должны различаться</string>
     <string name="recurring_error_no_wallet">Хотя бы один счёт должен быть кошельком</string>
-    <string name="recurring_error_cross_currency">Перевод между кошельками в разных валютах повторять нельзя — сумма зачисления зависит от курса на дату</string>
     <string name="recurring_error_amount">Сумма должна быть больше нуля</string>
     <string name="recurring_error_no_days">Отметьте хотя бы один день недели</string>
     <string name="recurring_error_end_before_start">Дата окончания раньше даты начала</string>
@@ -45,15 +67,13 @@
     <string name="recurring_created">Создано операций: %1$d</string>
     <string name="recurring_missed_title">Пропущенные повторы</string>
     <plurals name="recurring_missed_message">
-        <item quantity="one">По этому правилу уже наступила %1$d операция (с %2$s). Создать её сейчас?</item>
-        <item quantity="few">По этому правилу уже наступило %1$d операции (с %2$s). Создать их сейчас?</item>
-        <item quantity="many">По этому правилу уже наступило %1$d операций (с %2$s). Создать их сейчас?</item>
-        <item quantity="other">По этому правилу уже наступило %1$d операций (с %2$s). Создать их сейчас?</item>
+        <item quantity="one">По этому шаблону уже наступила %1$d операция (с %2$s). Создать её сейчас?</item>
+        <item quantity="few">По этому шаблону уже наступило %1$d операции (с %2$s). Создать их сейчас?</item>
+        <item quantity="many">По этому шаблону уже наступило %1$d операций (с %2$s). Создать их сейчас?</item>
+        <item quantity="other">По этому шаблону уже наступило %1$d операций (с %2$s). Создать их сейчас?</item>
     </plurals>
     <string name="recurring_missed_create">Создать</string>
     <string name="recurring_missed_future_only">Только будущие</string>
-    <string name="recurring_delete_question">Удалить повтор?</string>
-    <string name="recurring_delete_message">Уже созданные операции останутся, новые создаваться не будут.</string>
 
     <string name="reminder_channel">Напоминания</string>
     <string name="reminder_title">Не забудьте внести операции</string>

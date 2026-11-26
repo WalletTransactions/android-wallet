@@ -44,12 +44,9 @@ object WalletContract {
     }
 
     /**
-     * v79 — правила повторяющихся операций (экран «Ещё» → «Повторяющиеся операции»).
-     * Сами по себе в ленту не попадают: по расписанию из них заводятся обычные строки
-     * [OperationEntry] (см. `RecurringOperationsDb.generateDue`).
-     *
-     * Только локальная таблица: колонок синка (uuid/dirty/deleted_at) нет, сервер о ней
-     * не знает — синхронизируются уже созданные по правилу операции.
+     * v79–v93 — правила повторяющихся операций. С v94 (openspec operation-templates)
+     * таблицы нет: миграция переносит каждое правило в [OperationTemplateEntry] с одним
+     * шагом и удаляет её. Константы остались только для шагов миграции v79 и v94.
      */
     object RecurringOperationEntry : BaseColumns {
         const val TABLE_NAME = "recurring_operation"
@@ -59,7 +56,36 @@ object WalletContract {
         const val COLUMN_TO = "acc_to_id"
         const val COLUMN_AMOUNT = "amount"
         const val COLUMN_COMMENT = "comment"
-        /** 0=ежедневно, 1=еженедельно, 2=ежемесячно, 3=ежегодно — см. `RecurringOperation.Frequency`. */
+        const val COLUMN_FREQUENCY = "frequency"
+        const val COLUMN_INTERVAL = "interval"
+        const val COLUMN_WEEK_DAYS = "week_days"
+        const val COLUMN_START_DATE = "start_date"
+        const val COLUMN_END_DATE = "end_date"
+        const val COLUMN_IS_ACTIVE = "is_active"
+        const val COLUMN_LAST_DATE = "last_date"
+    }
+
+    /**
+     * v94 — шаблон операций (openspec operation-templates): заголовок и необязательное
+     * расписание; шаги — [OperationTemplateStepEntry]. Сами шаблоны в ленту не попадают:
+     * по ним (вручную или по расписанию) заводятся обычные строки [OperationEntry]
+     * (см. `OperationTemplatesDb.apply`).
+     *
+     * Только локальная таблица: колонок синка dirty/deleted_at нет, сервер о ней не знает.
+     * `uuid` — впрок под будущий синк (design D1).
+     *
+     * Расписание есть тогда и только тогда, когда [COLUMN_FREQUENCY] не NULL (CHECK).
+     */
+    object OperationTemplateEntry : BaseColumns {
+        const val TABLE_NAME = "operation_template"
+
+        const val _ID = BaseColumns._ID
+        const val COLUMN_UUID = "uuid"
+        const val COLUMN_NAME = "name"
+        const val COLUMN_COMMENT = "comment"
+        /** Общая сумма по умолчанию; NULL — вводится при запуске. */
+        const val COLUMN_TOTAL_AMOUNT = "total_amount"
+        /** 0=ежедневно, 1=еженедельно, 2=ежемесячно, 3=ежегодно — см. `TemplateSchedule.Frequency`; NULL — без расписания. */
         const val COLUMN_FREQUENCY = "frequency"
         /** Шаг повтора: «каждые N недель». У остальных частот всегда 1. */
         const val COLUMN_INTERVAL = "interval"
@@ -70,8 +96,32 @@ object WalletContract {
         /** До какой даты включительно, "yyyy-MM-dd"; NULL — «всегда». */
         const val COLUMN_END_DATE = "end_date"
         const val COLUMN_IS_ACTIVE = "is_active"
-        /** Дата последней уже созданной операции, "yyyy-MM-dd HH:mm"; NULL — ещё ни одной. */
+        /** Дата последнего уже созданного повтора, "yyyy-MM-dd HH:mm"; NULL — ещё ни одного. */
         const val COLUMN_LAST_DATE = "last_date"
+    }
+
+    /**
+     * v94 — шаг шаблона: одна проводка «откуда → куда» со своим режимом суммы.
+     * ON DELETE CASCADE на шаблон и на счета: физически удалённый счёт уносит шаг, а
+     * шаблон, оставшийся без шагов, удаляет триггер `operation_template_empty`.
+     */
+    object OperationTemplateStepEntry : BaseColumns {
+        const val TABLE_NAME = "operation_template_step"
+
+        const val _ID = BaseColumns._ID
+        const val COLUMN_UUID = "uuid"
+        const val COLUMN_TEMPLATE_ID = "template_id"
+        /** Порядок шага, с 1; UNIQUE(template_id, num). */
+        const val COLUMN_NUM = "num"
+        const val COLUMN_FROM = "acc_fr_id"
+        const val COLUMN_TO = "acc_to_id"
+        /** 0 — фикс, 1 — % от общей суммы, 2 — остаток. См. `TemplateStep.AmountMode`. */
+        const val COLUMN_AMOUNT_MODE = "amount_mode"
+        /** Число для фикса и процента; у остатка NULL. */
+        const val COLUMN_AMOUNT_VALUE = "amount_value"
+        const val COLUMN_COMMENT = "comment"
+        /** Номер основного шага, если этот — комиссия к нему; NULL — не комиссия. */
+        const val COLUMN_COMMISSION_OF_NUM = "commission_of_num"
     }
 
     object AccountEntry : BaseColumns {

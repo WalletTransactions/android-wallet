@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Строка правила повторяющейся операции: иконка «другой стороны» (статья / откуда),
-  счета, расписание и ближайший повтор, сумма и переключатель «активно».
-  Выключенное правило приглушено (alpha) — см. RecurringOperationListActivity.
+  Строка шаблона операций: иконка «другой стороны» основного шага (статья / откуда),
+  название, счета основного шага, вторая строка («Вручную» или расписание и ближайший
+  повтор), общая сумма и — только у шаблона с расписанием — переключатель «включён».
+  Выключенный шаблон приглушён (alpha) — см. OperationTemplateListActivity.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -14,7 +15,7 @@
     android:layout_marginBottom="8dp">
 
     <FrameLayout
-        android:id="@+id/recContent"
+        android:id="@+id/tplContent"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1">
@@ -31,7 +32,7 @@
                 android:background="@drawable/bg_icon_circle">
 
                 <ImageView
-                    android:id="@+id/recIcon"
+                    android:id="@+id/tplIcon"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
                     android:layout_gravity="center"
@@ -47,7 +48,7 @@
                 android:paddingEnd="8dp">
 
                 <TextView
-                    android:id="@+id/recTitle"
+                    android:id="@+id/tplTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
@@ -57,7 +58,7 @@
                     android:textColor="@color/colorTextPrimary"/>
 
                 <TextView
-                    android:id="@+id/recAccounts"
+                    android:id="@+id/tplAccounts"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
@@ -66,7 +67,7 @@
                     android:textColor="@color/colorTextSecondary"/>
 
                 <TextView
-                    android:id="@+id/recSchedule"
+                    android:id="@+id/tplSchedule"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
@@ -77,7 +78,7 @@
             </LinearLayout>
 
             <TextView
-                android:id="@+id/recAmount"
+                android:id="@+id/tplAmount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="10dp"
@@ -88,7 +89,7 @@
     </FrameLayout>
 
     <FrameLayout
-        android:id="@+id/recSwitch"
+        android:id="@+id/tplSwitch"
         android:layout_width="46dp"
         android:layout_height="26dp"
         android:background="@drawable/bg_switch_off">

@@ -185,7 +185,7 @@ class StarterSetTest {
         db.beginTransaction()
         try {
             db.execSQL("PRAGMA defer_foreign_keys = ON")
-            for (t in arrayOf("operation_link", "operation", "recurring_operation", "account_operating",
+            for (t in arrayOf("operation_link", "operation", "operation_template_step", "operation_template", "account_operating",
                     "account", "currency_conversion", "currency_pair_rate", "currency_pair", "currency", "icon")) {
                 db.delete(t, null, null)
             }

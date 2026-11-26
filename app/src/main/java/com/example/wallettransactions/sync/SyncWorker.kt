@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.example.wallettransactions.Data.RecurringOperationsDb
+import com.example.wallettransactions.Data.OperationTemplatesDb
 import com.example.wallettransactions.PeriodFilterState
 import com.example.wallettransactions.Singleton
 import com.example.wallettransactions.WalletApplication
@@ -31,7 +31,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : Worker(context, p
         // генератор сдвигает last_date правила.
         val recurringIds = ArrayList<Long>()
         if (!WalletApplication.hadCrash(ctx)) {
-            RecurringOperationsDb.generateDue(
+            OperationTemplatesDb.generateDue(
                 Singleton.instance.getWritableDatabase(ctx),
                 LocalDateTime.now(), recurringIds
             )

@@ -39,7 +39,7 @@ class SyncEnginePullCurrencyCacheTest {
         private val ALL_TABLES = arrayOf(
             "operation", "operation_link", "account_operating", "account",
             "currency_conversion", "currency_pair_rate", "currency_pair", "currency", "icon",
-            "recurring_operation",
+            "operation_template_step", "operation_template",
         )
 
         private fun resetSingleton() {

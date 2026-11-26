@@ -771,9 +771,10 @@ object WalletFillData {
         db.update(WalletContract.AccountDebtEntry.TABLE_NAME, cv,
                 WalletContract.AccountDebtEntry.COLUMN_DELETED_AT + " IS NULL", null)
 
-        // Правила повторяющихся операций живут только локально (без deleted_at) и без
-        // своих счетов смысла не имеют — удаляем их физически вместе со счетами.
-        db.delete(WalletContract.RecurringOperationEntry.TABLE_NAME, null, null)
+        // Шаблоны операций (в том числе повторяющиеся) живут только локально (без deleted_at)
+        // и без своих счетов смысла не имеют — удаляем физически; шаги уходят каскадом.
+        db.delete(WalletContract.OperationTemplateStepEntry.TABLE_NAME, null, null)
+        db.delete(WalletContract.OperationTemplateEntry.TABLE_NAME, null, null)
 
         if (reseed) InsertSeedAccounts(db, context)
     }

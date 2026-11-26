@@ -39,7 +39,7 @@ class DebtAutoArchiveTest {
         helper = WalletDbHelper(context)
         db = helper.writableDatabase
         for (t in arrayOf(
-            "operation_link", "operation", "recurring_operation", "account_asset",
+            "operation_link", "operation", "operation_template_step", "operation_template", "account_asset",
             "account_debt", "counterparty", "account_operating", "account", "currency_conversion",
             "currency_pair_rate", "currency_pair", "currency", "icon"
         )) {
@@ -194,16 +194,20 @@ class DebtAutoArchiveTest {
     @Test
     fun recurringRepayment_archivesLoanWhenItClosesIt() {
         give(100.0)
-        val r = com.example.wallettransactions.DataItems.Operations.RecurringOperation()
-        r.accFromId = loan
-        r.accToId = cash
-        r.amount = 100.0
-        r.comment = ""
-        r.frequency = com.example.wallettransactions.DataItems.Operations.RecurringOperation.Frequency.MONTHLY
+        val t = com.example.wallettransactions.DataItems.Operations.OperationTemplate()
+        t.name = "Возврат"
+        t.totalAmount = java.math.BigDecimal("100")
+        val step = com.example.wallettransactions.DataItems.Operations.TemplateStep()
+        step.accFromId = loan
+        step.accToId = cash
+        t.steps.add(step)
+        val r = com.example.wallettransactions.DataItems.Operations.TemplateSchedule()
+        r.frequency = com.example.wallettransactions.DataItems.Operations.TemplateSchedule.Frequency.MONTHLY
         r.startDate = java.time.LocalDateTime.of(2026, 11, 5, 10, 0)
-        RecurringOperationsDb.insert(db, r)
+        t.schedule = r
+        OperationTemplatesDb.insert(db, t)
 
-        assertEquals(1, RecurringOperationsDb.generateDue(db, java.time.LocalDateTime.of(2026, 11, 20, 12, 0)))
+        assertEquals(1, OperationTemplatesDb.generateDue(db, java.time.LocalDateTime.of(2026, 11, 20, 12, 0)))
         assertTrue(isArchived(loan))
     }
 

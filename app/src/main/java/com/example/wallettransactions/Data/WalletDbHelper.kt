@@ -33,7 +33,7 @@ class WalletDbHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         CreateAccountAssetEntry(db)
         CreateDebtTables(db)
         CreateRate(db)
-        CreateRecurringOperation(db)
+        createOperationTemplateTables(db)
         createSyncReloadSeen(db)
 
         createPartialUniqueIndexes(db)
@@ -1082,6 +1082,7 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
             }
             if (oldVersion < 79) {
                 // v79: правила повторяющихся операций — новая таблица, существующие не трогаем.
+                // С v94 её содержимое переносится в шаблоны, а сама она удаляется.
                 CreateRecurringOperation(db)
             }
             if (oldVersion < 80) {
@@ -1167,6 +1168,11 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
                 CreateViews(db)
                 createDerivedRatesTriggers(db)
             }
+            if (oldVersion < 94) {
+                // v94 (openspec operation-templates): правила повторяющихся операций становятся
+                // шаблонами с расписанием и одним шагом «остаток»; recurring_operation удаляется.
+                migrateRecurringToTemplatesV94(db)
+            }
             return
         }
         // Full recreate for pre-68 databases
@@ -1214,10 +1220,8 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
     }
 
     /**
-     * Правила повторяющихся операций — см. [WalletContract.RecurringOperationEntry].
-     * ON DELETE CASCADE: счёт удалили физически — правило
-     * на него без него смысла не имеет. Мягко удалённый счёт правило не убирает, его
-     * просто пропускает генератор (`RecurringOperationsDb.generateDue`).
+     * v79 — правила повторяющихся операций. Только для цепочки миграций: на v94 строки
+     * переносятся в шаблоны ([migrateRecurringToTemplatesV94]) и таблица удаляется.
      */
     private fun CreateRecurringOperation(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE IF NOT EXISTS " + WalletContract.RecurringOperationEntry.TABLE_NAME + " (\n" +
@@ -1237,6 +1241,122 @@ amount_tc DECIMAL(15,2), comment TEXT NOT NULL);
                 WalletContract.RecurringOperationEntry.COLUMN_LAST_DATE + " TEXT);")
     }
 
+    /**
+     * v94 — шаблоны операций и их шаги (openspec operation-templates, design D1).
+     *
+     * Расписание «всё или ничего»: без частоты нет ни дат, ни отметки последнего повтора,
+     * с частотой обязательна дата начала (CHECK). Шаги — ON DELETE CASCADE на шаблон и
+     * на счета. Физическое удаление счёта уносит шаблон целиком (спека «Удаление
+     * шаблона») — триггер BEFORE DELETE на account: шаблон с одним оставшимся шагом
+     * (например, без комиссии) был бы уже другим шаблоном.
+     */
+    private fun createOperationTemplateTables(db: SQLiteDatabase) {
+        val t = WalletContract.OperationTemplateEntry
+        val s = WalletContract.OperationTemplateStepEntry
+        val account = WalletContract.AccountEntry.TABLE_NAME + " (" + WalletContract.AccountEntry._ID + ")"
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + t.TABLE_NAME + " (\n" +
+                t._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, \n" +
+                t.COLUMN_UUID + " TEXT NOT NULL, \n" +
+                t.COLUMN_NAME + " TEXT NOT NULL, \n" +
+                t.COLUMN_COMMENT + " TEXT NOT NULL DEFAULT '', \n" +
+                t.COLUMN_TOTAL_AMOUNT + " DECIMAL(15,2), \n" +
+                t.COLUMN_FREQUENCY + " INTEGER, \n" +
+                t.COLUMN_INTERVAL + " INTEGER NOT NULL DEFAULT 1, \n" +
+                t.COLUMN_WEEK_DAYS + " INTEGER NOT NULL DEFAULT 0, \n" +
+                t.COLUMN_START_DATE + " TEXT, \n" +
+                t.COLUMN_END_DATE + " TEXT, \n" +
+                t.COLUMN_IS_ACTIVE + " INTEGER NOT NULL DEFAULT 1, \n" +
+                t.COLUMN_LAST_DATE + " TEXT, \n" +
+                " CHECK ((" + t.COLUMN_FREQUENCY + " IS NULL AND " + t.COLUMN_START_DATE + " IS NULL AND " +
+                t.COLUMN_END_DATE + " IS NULL AND " + t.COLUMN_LAST_DATE + " IS NULL) OR (" +
+                t.COLUMN_FREQUENCY + " IS NOT NULL AND " + t.COLUMN_START_DATE + " IS NOT NULL)));")
+        db.execSQL("CREATE TABLE IF NOT EXISTS " + s.TABLE_NAME + " (\n" +
+                s._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, \n" +
+                s.COLUMN_UUID + " TEXT NOT NULL, \n" +
+                s.COLUMN_TEMPLATE_ID + " INTEGER NOT NULL REFERENCES " + t.TABLE_NAME +
+                " (" + t._ID + ") ON DELETE CASCADE, \n" +
+                s.COLUMN_NUM + " INTEGER NOT NULL CHECK (" + s.COLUMN_NUM + " >= 1), \n" +
+                s.COLUMN_FROM + " INTEGER NOT NULL REFERENCES " + account + " ON DELETE CASCADE, \n" +
+                s.COLUMN_TO + " INTEGER NOT NULL REFERENCES " + account + " ON DELETE CASCADE, \n" +
+                s.COLUMN_AMOUNT_MODE + " INTEGER NOT NULL CHECK (" + s.COLUMN_AMOUNT_MODE + " IN (0, 1, 2)), \n" +
+                s.COLUMN_AMOUNT_VALUE + " DECIMAL(15,4), \n" +
+                s.COLUMN_COMMENT + " TEXT NOT NULL DEFAULT '', \n" +
+                s.COLUMN_COMMISSION_OF_NUM + " INTEGER, \n" +
+                " UNIQUE (" + s.COLUMN_TEMPLATE_ID + ", " + s.COLUMN_NUM + "));")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS " + t.TABLE_NAME + "_uuid ON " +
+                t.TABLE_NAME + " (" + t.COLUMN_UUID + ")")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS " + s.TABLE_NAME + "_uuid ON " +
+                s.TABLE_NAME + " (" + s.COLUMN_UUID + ")")
+        db.execSQL("CREATE TRIGGER IF NOT EXISTS " + TRIGGER_TEMPLATE_ACCOUNT_DELETE +
+                " BEFORE DELETE ON " + WalletContract.AccountEntry.TABLE_NAME + " BEGIN " +
+                "DELETE FROM " + t.TABLE_NAME + " WHERE " + t._ID + " IN (SELECT " + s.COLUMN_TEMPLATE_ID +
+                " FROM " + s.TABLE_NAME + " WHERE " + s.COLUMN_FROM + " = OLD." + WalletContract.AccountEntry._ID +
+                " OR " + s.COLUMN_TO + " = OLD." + WalletContract.AccountEntry._ID + "); END")
+    }
+
+    /**
+     * v94: каждое правило `recurring_operation` (по `_id`) — шаблон с расписанием и одним
+     * шагом «остаток» (design D6). `last_date` и `is_active` дословно, поэтому генератор
+     * после обновления ничего не досоздаёт и не повторяет. Название — комментарий, иначе
+     * имя «другой стороны» (категория у расхода, источник у дохода и перевода), иначе
+     * «Повторяющаяся операция». Отката нет.
+     */
+    private fun migrateRecurringToTemplatesV94(db: SQLiteDatabase) {
+        createOperationTemplateTables(db)
+        val r = WalletContract.RecurringOperationEntry
+        if (tableExists(db, r.TABLE_NAME)) {
+            val fallbackName = mContext.getString(com.example.wallettransactions.R.string.template_migrated_name)
+            db.rawQuery("SELECT r.*, af.name AS fr_name, at.name AS to_name," +
+                    " EXISTS (SELECT 1 FROM account_operating o WHERE o._id = r.acc_fr_id) AS fr_wallet," +
+                    " EXISTS (SELECT 1 FROM account_operating o WHERE o._id = r.acc_to_id) AS to_wallet" +
+                    " FROM " + r.TABLE_NAME + " r" +
+                    " LEFT JOIN account af ON af._id = r.acc_fr_id" +
+                    " LEFT JOIN account at ON at._id = r.acc_to_id" +
+                    " ORDER BY r._id", null).use { c ->
+                while (c.moveToNext()) {
+                    val comment = c.getString(c.getColumnIndexOrThrow(r.COLUMN_COMMENT)) ?: ""
+                    val frWallet = c.getInt(c.getColumnIndexOrThrow("fr_wallet")) != 0
+                    val toWallet = c.getInt(c.getColumnIndexOrThrow("to_wallet")) != 0
+                    // «Другая сторона»: у расхода — категория-получатель, иначе — источник.
+                    val otherName = if (frWallet && !toWallet) c.getString(c.getColumnIndexOrThrow("to_name"))
+                            else c.getString(c.getColumnIndexOrThrow("fr_name"))
+                    val name = when {
+                        comment.isNotBlank() -> comment.trim()
+                        !otherName.isNullOrBlank() -> otherName
+                        else -> fallbackName
+                    }
+
+                    val t = WalletContract.OperationTemplateEntry
+                    val cv = ContentValues()
+                    cv.put(t.COLUMN_UUID, UUID.randomUUID().toString())
+                    cv.put(t.COLUMN_NAME, name)
+                    cv.put(t.COLUMN_COMMENT, "")
+                    cv.put(t.COLUMN_TOTAL_AMOUNT, c.getString(c.getColumnIndexOrThrow(r.COLUMN_AMOUNT)))
+                    for (col in arrayOf(r.COLUMN_FREQUENCY, r.COLUMN_INTERVAL, r.COLUMN_WEEK_DAYS,
+                            r.COLUMN_START_DATE, r.COLUMN_END_DATE, r.COLUMN_IS_ACTIVE, r.COLUMN_LAST_DATE)) {
+                        val i = c.getColumnIndexOrThrow(col)
+                        if (c.isNull(i)) cv.putNull(col) else cv.put(col, c.getString(i))
+                    }
+                    val templateId = db.insertOrThrow(t.TABLE_NAME, null, cv)
+
+                    val s = WalletContract.OperationTemplateStepEntry
+                    val sv = ContentValues()
+                    sv.put(s.COLUMN_UUID, UUID.randomUUID().toString())
+                    sv.put(s.COLUMN_TEMPLATE_ID, templateId)
+                    sv.put(s.COLUMN_NUM, 1)
+                    sv.put(s.COLUMN_FROM, c.getInt(c.getColumnIndexOrThrow(r.COLUMN_FROM)))
+                    sv.put(s.COLUMN_TO, c.getInt(c.getColumnIndexOrThrow(r.COLUMN_TO)))
+                    sv.put(s.COLUMN_AMOUNT_MODE, 2)
+                    sv.putNull(s.COLUMN_AMOUNT_VALUE)
+                    sv.put(s.COLUMN_COMMENT, comment)
+                    sv.putNull(s.COLUMN_COMMISSION_OF_NUM)
+                    db.insertOrThrow(s.TABLE_NAME, null, sv)
+                }
+            }
+        }
+        db.execSQL("DROP TABLE IF EXISTS " + r.TABLE_NAME)
+    }
+
     private fun CreateCategory_v_3(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE " + WalletContract.AccountEntry.TABLE_NAME + " (" + accountTableBody() + ");")
 
@@ -1253,7 +1373,10 @@ REFERENCES icons (_id));*/
         // Видны DbInit: он сверяет версию файла, не открывая базу через helper.
         const val DATABASE_NAME = "wallet.db"
 
-        const val DATABASE_VERSION = 93
+        const val DATABASE_VERSION = 94
+
+        /** v94: физически удалённый счёт уносит ссылающиеся на него шаблоны целиком. */
+        const val TRIGGER_TEMPLATE_ACCOUNT_DELETE = "operation_template_account_delete"
 
         // v72 (org/docs/TODO_mobile_sync.md, Фаза 3, п.1) — четыре колонки на каждой
         // синхронизируемой таблице, одинаковые везде: uuid (идентичность строки на

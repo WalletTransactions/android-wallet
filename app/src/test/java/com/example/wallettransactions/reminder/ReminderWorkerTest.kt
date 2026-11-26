@@ -33,9 +33,17 @@ class ReminderWorkerTest {
         )
         db.execSQL("CREATE TABLE operation_link (main_id INTEGER, link_id INTEGER, type INTEGER, deleted_at INTEGER)")
         db.execSQL(
-            "CREATE TABLE recurring_operation (_id INTEGER PRIMARY KEY, acc_fr_id INTEGER, " +
-                "acc_to_id INTEGER, amount REAL)"
+            "CREATE TABLE operation_template (_id INTEGER PRIMARY KEY, uuid TEXT, name TEXT, comment TEXT, " +
+                "total_amount REAL, frequency INTEGER, interval INTEGER DEFAULT 1, week_days INTEGER DEFAULT 0, " +
+                "start_date TEXT, end_date TEXT, is_active INTEGER DEFAULT 1, last_date TEXT)"
         )
+        db.execSQL(
+            "CREATE TABLE operation_template_step (_id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT, " +
+                "template_id INTEGER, num INTEGER, acc_fr_id INTEGER, acc_to_id INTEGER, amount_mode INTEGER, " +
+                "amount_value REAL, comment TEXT DEFAULT '', commission_of_num INTEGER)"
+        )
+        db.execSQL("CREATE TABLE account_operating (_id INTEGER PRIMARY KEY, currency_id INTEGER)")
+        db.execSQL("CREATE TABLE currency (_id INTEGER PRIMARY KEY, precision INTEGER)")
     }
 
     @After
@@ -83,12 +91,49 @@ class ReminderWorkerTest {
 
     @Test
     fun recurringLookalike_doesNotCount() {
-        db.execSQL("INSERT INTO recurring_operation VALUES (1, 1, 5, 1200.0)")
+        template(1, 1200.0, scheduled = true)
+        step(1, 1, 1, 5, mode = 2, value = null, commissionOf = null)
         insert(1, "2026-10-11 09:00", 1, 5, "1200", null)
         assertFalse(ReminderWorker.hasEnteredToday(db, DAY))
 
         insert(2, "2026-10-11 10:00", 1, 5, "300", null)
         assertTrue("та же пара счетов, другая сумма — внесено руками", ReminderWorker.hasEnteredToday(db, DAY))
+    }
+
+    /** Шаблон с комиссией по расписанию: обе проводки раскладки — «как у шаблона». */
+    @Test
+    fun scheduledTemplateSteps_doNotCount() {
+        template(1, 1550.0, scheduled = true)
+        step(1, 1, 1, 5, mode = 2, value = null, commissionOf = null)
+        step(1, 2, 1, 7, mode = 0, value = 50.0, commissionOf = 1)
+        insert(1, "2026-10-11 09:00", 1, 5, "1500", null)
+        insert(2, "2026-10-11 09:00", 1, 7, "50", null)
+        assertFalse(ReminderWorker.hasEnteredToday(db, DAY))
+    }
+
+    /** Та же операция, запущенная вручную шаблоном без расписания, — внесена человеком. */
+    @Test
+    fun manualTemplateRun_counts() {
+        template(1, 1200.0, scheduled = false)
+        step(1, 1, 1, 5, mode = 2, value = null, commissionOf = null)
+        insert(1, "2026-10-11 09:00", 1, 5, "1200", null)
+        assertTrue(ReminderWorker.hasEnteredToday(db, DAY))
+    }
+
+    private fun template(id: Int, total: Double, scheduled: Boolean) {
+        db.execSQL(
+            "INSERT INTO operation_template (_id, uuid, name, comment, total_amount, frequency, start_date) " +
+                "VALUES (?, ?, 'T', '', ?, ?, ?)",
+            arrayOf<Any?>(id, "t$id", total, if (scheduled) 2 else null, if (scheduled) "2026-01-11 09:00" else null)
+        )
+    }
+
+    private fun step(templateId: Int, num: Int, from: Int, to: Int, mode: Int, value: Double?, commissionOf: Int?) {
+        db.execSQL(
+            "INSERT INTO operation_template_step (uuid, template_id, num, acc_fr_id, acc_to_id, amount_mode, " +
+                "amount_value, commission_of_num) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            arrayOf<Any?>("s$templateId-$num", templateId, num, from, to, mode, value, commissionOf)
+        )
     }
 
     @Test

@@ -101,14 +101,6 @@ class TransactionActivity : AppCompatActivity() {
          */
         const val cOpUuid = "TransactionActivity.OpUuid"
 
-        /**
-         * Имя ПО УМОЛЧАНИЮ для категории комиссии за перевод — используется только если её
-         * приходится завести с нуля ([WalletDbCRUD.GetOrCreateSystemCategory]). Системность
-         * (запрет на удаление/переименование) с v75 определяет `system_kind`
-         * ([AccountItem.SystemKind.TRANSFER_COMMISSION]), а не это имя.
-         */
-        private val cCommissionCategoryName: String = AccountItem.SYSTEM_COMMISSION_NAME
-
         /** Столько же, сколько DEFAULT у currency_pair.precision — на случай, если пары нет. */
         private const val cDefaultRatePrecision = 5
 
@@ -216,18 +208,12 @@ class TransactionActivity : AppCompatActivity() {
     private var mUpdatingAmountToProgrammatically = false
 
     // ── Комиссия за перевод: только UI, в базу пока не пишем (TODO_transfers.md) ─
-    private lateinit var mRowCommissionToggle: View
-    private lateinit var mSwitchCommission: FrameLayout
-    private lateinit var mGroupCommissionDetails: View
-    private lateinit var mImgCommissionAccount: ImageView
-    private lateinit var mEditCommissionAccount: EditText
+    /** Блок комиссии — общий с формой шаблона (view_commission_block.xml). */
+    private lateinit var mCommission: CommissionBlock
     private lateinit var mEditCommissionAmount: EditText
-    private lateinit var mTvCurrencySymbolCommission: TextView
-    private lateinit var mRadioCommissionFromSource: RadioButton
     private lateinit var mRadioCommissionFromDest: RadioButton
-    private var mAccCommission: AccountItem? = null
-    private var mCommissionEnabled = false
-    private var mCommissionPrecision = 2
+    private val mAccCommission: AccountItem? get() = mCommission.account
+    private val mCommissionEnabled: Boolean get() = mCommission.enabled
 
     private lateinit var mCalDateTime: Calendar
 
@@ -279,21 +265,14 @@ class TransactionActivity : AppCompatActivity() {
         mTvCurrencySymbolTo = findViewById(R.id.tvCurrencySymbolTo)
         mTvRateInfo       = findViewById(R.id.tvRateInfo)
 
-        mRowCommissionToggle    = findViewById(R.id.rowCommissionToggle)
-        mSwitchCommission       = findViewById(R.id.switchCommission)
-        mGroupCommissionDetails = findViewById(R.id.groupCommissionDetails)
-        mImgCommissionAccount   = findViewById(R.id.imgCommissionAccount)
-        mEditCommissionAccount  = findViewById(R.id.editCommissionAccount)
-        mEditCommissionAmount   = findViewById(R.id.editCommissionAmount)
-        mTvCurrencySymbolCommission = findViewById(R.id.tvCurrencySymbolCommission)
-        mRadioCommissionFromSource  = findViewById(R.id.radioCommissionFromSource)
-        mRadioCommissionFromDest    = findViewById(R.id.radioCommissionFromDest)
+        mCommission = CommissionBlock(this)
+        mEditCommissionAmount    = mCommission.editAmount
+        mRadioCommissionFromDest = mCommission.radioFromDest
 
         mEditDate.isFocusable = false
         mEditTime.isFocusable = false
         mEditSlotTop.isFocusable = false
         mEditSlotBottom.isFocusable = false
-        mEditCommissionAccount.isFocusable = false
 
         // Все суммы набираются нашей клавиатурой. Крупная сумма — цель по умолчанию.
         bindKeypadTarget(mAmount)
@@ -388,7 +367,7 @@ class TransactionActivity : AppCompatActivity() {
 
     private fun precisionOf(field: EditText): Int {
         if (field === mEditAmountTo) return mCurrencyPrecisionTo
-        if (field === mEditCommissionAmount) return mCommissionPrecision
+        if (field === mEditCommissionAmount) return mCommission.precision
         return mCurrencyPrecision
     }
 
@@ -434,6 +413,8 @@ class TransactionActivity : AppCompatActivity() {
         mBtnDelete.visibility = if (mIsEdit) View.VISIBLE else View.GONE
         // Подобные ищем только у уже сохранённой операции (similar-search).
         findViewById<View>(R.id.btnSimilar).visibility = if (mIsEdit) View.VISIBLE else View.GONE
+        // Шаблон — из окна «Новая операция» (operation-templates).
+        findViewById<View>(R.id.btnSaveAsTemplate).visibility = if (mIsEdit) View.GONE else View.VISIBLE
 
         mCalDateTime = Calendar.getInstance()
         mCalDateTime.time = mDateTime
@@ -543,6 +524,29 @@ class TransactionActivity : AppCompatActivity() {
      * экране, — категория, кошелёк, непустой комментарий и вид (см.
      * [com.example.wallettransactions.DataItems.SimilarFilter]); затем поднимаются «Операции».
      */
+    /**
+     * «Сохранить как шаблон» (openspec operation-templates): форма «Новый шаблон», заполненная
+     * из окна — вид, счета, комментарий, сумма; у перевода с комиссией общая сумма — перевод
+     * плюс комиссия, комиссия — «Фикс». Операция не сохраняется, окно остаётся как было.
+     */
+    fun btnSaveAsTemplateClick(view: View) {
+        val amount = parseAmount(mAmount.text.toString())
+        val precision = mCurrencyPrecision
+        val commission = if (mKind == Kind.transfer && mCommissionEnabled)
+            parseAmount(mEditCommissionAmount.text.toString()) else 0.0
+        val total = if (amount > 0) formatAmount(amount + maxOf(0.0, commission), precision) else null
+        val kind = when (mKind) {
+            Kind.income -> "income"
+            Kind.transfer -> "transfer"
+            else -> "expense"
+        }
+        startActivity(OperationTemplateActivity.buildPrefillIntent(this, kind,
+                mAccFrom?.id ?: 0, mAccTo?.id ?: 0, mComment.text.toString(), total,
+                mAccCommission?.id ?: 0,
+                if (commission > 0) formatAmount(commission, mCommission.precision) else null,
+                mRadioCommissionFromDest.isChecked))
+    }
+
     fun btnSimilarClick(view: View) {
         val similar = com.example.wallettransactions.DataItems.SimilarFilter.of(
                 mAccFrom, mAccTo, mComment.text.toString())
@@ -694,17 +698,13 @@ class TransactionActivity : AppCompatActivity() {
 
             val child = e.value
             mCommissionId      = e.key
-            mCommissionEnabled = true
-            mAccCommission     = child.AccTo
+            mCommission.bindAccount(child.AccTo)
+            mCommission.setEnabled(true)
             mEditCommissionAmount.setText(formatAmount(child.Amount,
                     if (child.currency != null) child.currency!!.precision else 2))
 
             // Комиссию списывали с той стороны перевода, с которой ушла её проводка.
-            val fromDest = child.AccFrom.id == mAccTo!!.id
-            mRadioCommissionFromDest.isChecked = fromDest
-            mRadioCommissionFromSource.isChecked = !fromDest
-
-            bindSlot(mImgCommissionAccount, mEditCommissionAccount, mAccCommission)
+            mCommission.setFromDest(child.AccFrom.id == mAccTo!!.id)
             break
         }
     }
@@ -1281,7 +1281,7 @@ class TransactionActivity : AppCompatActivity() {
             commissionAcc.id
         else
             WalletDbCRUD.GetOrCreateSystemCategory(db, AccountItem.SystemKind.TRANSFER_COMMISSION.value,
-                    cCommissionCategoryName, AccountItem.SYSTEM_TRANSFER_NAME)
+                    AccountItem.SYSTEM_COMMISSION_NAME, AccountItem.SYSTEM_TRANSFER_NAME)
         if (categoryId <= 0) return false
 
         if (mCommissionId > 0) {
@@ -1314,7 +1314,7 @@ class TransactionActivity : AppCompatActivity() {
             commissionAcc.id
         else
             WalletDbCRUD.GetOrCreateSystemCategory(db, AccountItem.SystemKind.TRANSFER_COMMISSION.value,
-                    cCommissionCategoryName, AccountItem.SYSTEM_TRANSFER_NAME)
+                    AccountItem.SYSTEM_COMMISSION_NAME, AccountItem.SYSTEM_TRANSFER_NAME)
         if (categoryId <= 0) return -1
 
         val id = WalletDbCRUD.InsertOperation(db, dateStr, side.id, categoryId,
@@ -1405,8 +1405,7 @@ class TransactionActivity : AppCompatActivity() {
         }
 
         if (requestCode == AccountSelectCommission) {
-            mAccCommission = picked
-            bindSlot(mImgCommissionAccount, mEditCommissionAccount, mAccCommission)
+            mCommission.bindAccount(picked)
             return
         }
 
@@ -1486,42 +1485,13 @@ class TransactionActivity : AppCompatActivity() {
     // ── Комиссия за перевод ───────────────────────────────────────────────────
 
     fun onToggleCommission(view: View) {
-        mCommissionEnabled = !mCommissionEnabled
-        applySwitchState(mSwitchCommission, mCommissionEnabled)
-        mGroupCommissionDetails.visibility = if (mCommissionEnabled) View.VISIBLE else View.GONE
-
+        // Категорию подставляет сам блок, но менять её можно — см. onPickCommissionAccount.
+        mCommission.toggle()
         if (mCommissionEnabled) {
-            // Категорию подставляем сразу, но менять её можно — см. onPickCommissionAccount.
-            if (mAccCommission == null) {
-                mAccCommission = defaultCommissionAccount()
-                bindSlot(mImgCommissionAccount, mEditCommissionAccount, mAccCommission)
-            }
             updateCommissionCurrency()
         } else if (mKeypadTarget === mEditCommissionAmount) {
             setKeypadTarget(mAmount)
         }
-    }
-
-    /**
-     * Категория комиссии по умолчанию. В старых базах её может не быть — начальный
-     * справочник накатывался до того, как комиссия появилась, — поэтому заводим на месте
-     * и обновляем справочник в памяти, иначе строка осталась бы без имени и иконки.
-     */
-    private fun defaultCommissionAccount(): AccountItem? {
-        val accounts = Singleton.instance.getAccounts(this)
-
-        val existing = accounts.getAccountBySystemKind(AccountItem.SystemKind.TRANSFER_COMMISSION)
-        if (existing != null) return existing
-
-        val id = WalletDbCRUD.GetOrCreateSystemCategory(mDbHelper.writableDatabase,
-                AccountItem.SystemKind.TRANSFER_COMMISSION.value,
-                cCommissionCategoryName, AccountItem.SYSTEM_TRANSFER_NAME)
-        if (id <= 0) return null
-
-        WalletDbLoader.LoadAccounts(mDbHelper.readableDatabase, accounts,
-                Singleton.instance.getCurrencyList(this),
-                Singleton.instance.getIconList(this), null)
-        return accounts.getAccountById(id)
     }
 
     fun onPickCommissionAccount(view: View) {
@@ -1541,8 +1511,7 @@ class TransactionActivity : AppCompatActivity() {
      */
     private fun updateCommissionVisibility() {
         val isTransfer = mKind == Kind.transfer
-        mRowCommissionToggle.visibility = if (isTransfer) View.VISIBLE else View.GONE
-        mGroupCommissionDetails.visibility = if (isTransfer && mCommissionEnabled) View.VISIBLE else View.GONE
+        mCommission.setAvailable(isTransfer)
 
         // Поля спрятали — клавиатуре нужна другая цель, иначе цифры уходят в никуда.
         if (!isTransfer && mKeypadTarget === mEditCommissionAmount) setKeypadTarget(mAmount)
@@ -1550,23 +1519,8 @@ class TransactionActivity : AppCompatActivity() {
 
     /** Комиссия снимается с того же кошелька, что выбран как сторона списания. */
     private fun updateCommissionCurrency() {
-        val fromDest = mRadioCommissionFromDest.isChecked
-        val side = asWallet(if (fromDest) mAccTo else mAccFrom)
-        mTvCurrencySymbolCommission.text = if (side != null) side.currency!!.symbol else ""
-        if (side != null) {
-            mCommissionPrecision = side.currency!!.precision
-            applyDecimalFilter(mEditCommissionAmount, mCommissionPrecision)
-        }
-    }
-
-    /** Копия переключателя из SettingsActivity: двигает бегунок и красит фон пилюли. */
-    private fun applySwitchState(switchView: FrameLayout, on: Boolean) {
-        switchView.tag = on
-        switchView.setBackgroundResource(if (on) R.drawable.bg_switch_on else R.drawable.bg_switch_off)
-        val thumb = switchView.getChildAt(0) ?: return
-        val lp = thumb.layoutParams as FrameLayout.LayoutParams
-        lp.gravity = if (on) android.view.Gravity.END else android.view.Gravity.START
-        thumb.layoutParams = lp
+        val precision = mCommission.updateCurrency(mAccFrom, mAccTo) ?: return
+        applyDecimalFilter(mEditCommissionAmount, precision)
     }
 
     // ── Перевод между разновалютными счетами: сумма во второй валюте ───────────

@@ -158,8 +158,9 @@ class MoreActivity : BaseTabActivity() {
         startActivity(Intent(this, DebtsActivity::class.java))
     }
 
-    fun onMoreRecurring(view: View) {
-        startActivity(Intent(this, RecurringOperationListActivity::class.java))
+    /** Шаблоны операций, в том числе повторяющиеся (шаблон с расписанием). */
+    fun onMoreTemplates(view: View) {
+        startActivity(Intent(this, OperationTemplateListActivity::class.java))
     }
 
     fun onMoreIntegrations(view: View) {

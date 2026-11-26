@@ -63,7 +63,7 @@
                 </LinearLayout>
                 <View style="@style/MoreRowDivider"/>
 
-                <LinearLayout android:id="@+id/rowRecurring" style="@style/MoreRow" android:onClick="onMoreRecurring">
+                <LinearLayout android:id="@+id/rowTemplates" style="@style/MoreRow" android:onClick="onMoreTemplates">
                     <TextView style="@style/MoreRowGlyph" android:text="↻"/>
                     <TextView style="@style/MoreRowLabel" android:text="@string/activity_more_text_2"/>
                     <ImageView style="@style/MoreRowChevron"/>

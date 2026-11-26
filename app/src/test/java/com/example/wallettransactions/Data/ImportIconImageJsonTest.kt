@@ -33,7 +33,7 @@ class ImportIconImageJsonTest {
                 "operation", "operation_link", "account_debt", "counterparty_contact", "counterparty",
                 "account_operating", "account_asset", "account",
                 "currency_conversion", "currency_pair_rate", "currency_pair", "currency", "icon",
-                "recurring_operation"
+                "operation_template_step", "operation_template"
         )
 
         /** base64 PNG заданного размера. */

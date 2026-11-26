@@ -177,7 +177,7 @@
     <!-- activity_more -->
     <string name="activity_more_title_text">More</string>
     <string name="activity_more_text_1">Wallets and categories</string>
-    <string name="activity_more_text_2">Recurring operations</string>
+    <string name="activity_more_text_2">Operation templates</string>
     <string name="activity_more_text_3">AI</string>
     <string name="activity_more_row_ai_hint_text">An expense in your own words</string>
     <string name="activity_more_text_4">Integrations</string>
@@ -195,38 +195,34 @@
     <string name="activity_multi_picker_empty_state_text">Nothing found</string>
     <string name="activity_multi_picker_btn_done_text">Done</string>
 
-    <!-- activity_recurring_operation_list -->
-    <string name="activity_recurring_operation_list_empty_recurring_text">No recurring operations yet.</string>
-    <string name="activity_recurring_operation_list_text_1">+ Add a recurring operation</string>
-
-    <!-- activity_recurring_operation -->
-    <string name="activity_recurring_operation_btn_up_content_description">Back</string>
-    <string name="activity_recurring_operation_btn_delete_content_description">Delete</string>
-    <string name="activity_recurring_operation_text_1">Expense</string>
-    <string name="activity_recurring_operation_text_2">Income</string>
-    <string name="activity_recurring_operation_text_3">Transfer</string>
-    <string name="activity_recurring_operation_label_slot_top_text">Expense category</string>
-    <string name="activity_recurring_operation_label_slot_bottom_text">Wallet</string>
-    <string name="activity_recurring_operation_text_4">Amount</string>
-    <string name="activity_recurring_operation_text_5">Comment</string>
-    <string name="activity_recurring_operation_edit_comment_hint">Optional</string>
-    <string name="activity_recurring_operation_text_6">Repeat</string>
-    <string name="activity_recurring_operation_tv_frequency_text">Monthly</string>
-    <string name="activity_recurring_operation_text_7">Days of the week</string>
-    <string name="activity_recurring_operation_text_8">Mo</string>
-    <string name="activity_recurring_operation_text_9">Tu</string>
-    <string name="activity_recurring_operation_text_10">We</string>
-    <string name="activity_recurring_operation_text_11">Th</string>
-    <string name="activity_recurring_operation_text_12">Fr</string>
-    <string name="activity_recurring_operation_text_13">Sa</string>
-    <string name="activity_recurring_operation_text_14">Su</string>
-    <string name="activity_recurring_operation_text_15">Every how many weeks</string>
-    <string name="activity_recurring_operation_tv_interval_text">Every week</string>
-    <string name="activity_recurring_operation_text_16">Starting on</string>
-    <string name="activity_recurring_operation_text_17">Until</string>
-    <string name="activity_recurring_operation_text_18">Forever</string>
-    <string name="activity_recurring_operation_text_19">Repeat is on</string>
-    <string name="activity_recurring_operation_text_20">Save</string>
+    <!-- activity_operation_template -->
+    <string name="activity_operation_template_btn_up_content_description">Back</string>
+    <string name="activity_operation_template_btn_delete_content_description">Delete</string>
+    <string name="activity_operation_template_text_1">Expense</string>
+    <string name="activity_operation_template_text_2">Income</string>
+    <string name="activity_operation_template_text_3">Transfer</string>
+    <string name="activity_operation_template_label_slot_top_text">Expense category</string>
+    <string name="activity_operation_template_label_slot_bottom_text">Wallet</string>
+    <string name="activity_operation_template_text_4">Amount</string>
+    <string name="activity_operation_template_text_5">Comment</string>
+    <string name="activity_operation_template_edit_comment_hint">Optional</string>
+    <string name="activity_operation_template_text_6">Repeat</string>
+    <string name="activity_operation_template_tv_frequency_text">Monthly</string>
+    <string name="activity_operation_template_text_7">Days of the week</string>
+    <string name="activity_operation_template_text_8">Mo</string>
+    <string name="activity_operation_template_text_9">Tu</string>
+    <string name="activity_operation_template_text_10">We</string>
+    <string name="activity_operation_template_text_11">Th</string>
+    <string name="activity_operation_template_text_12">Fr</string>
+    <string name="activity_operation_template_text_13">Sa</string>
+    <string name="activity_operation_template_text_14">Su</string>
+    <string name="activity_operation_template_text_15">Every how many weeks</string>
+    <string name="activity_operation_template_tv_interval_text">Every week</string>
+    <string name="activity_operation_template_text_16">Starting on</string>
+    <string name="activity_operation_template_text_17">Until</string>
+    <string name="activity_operation_template_text_18">Forever</string>
+    <string name="activity_operation_template_text_19">Repeat is on</string>
+    <string name="activity_operation_template_text_20">Save</string>
 
     <!-- activity_report -->
     <string name="activity_report_caption_expanses_text">Expenses</string>

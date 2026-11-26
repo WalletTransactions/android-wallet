@@ -44,7 +44,7 @@ class SyncEngineDebtsTest {
             "operation", "operation_link", "account_asset", "account_debt", "counterparty",
             "counterparty_contact", "account_operating", "account",
             "currency_conversion", "currency_pair_rate", "currency_pair", "currency", "icon",
-            "recurring_operation", WalletDbHelper.SYNC_RELOAD_SEEN_TABLE,
+            "operation_template_step", "operation_template", WalletDbHelper.SYNC_RELOAD_SEEN_TABLE,
         )
 
         private fun resetSingleton() {

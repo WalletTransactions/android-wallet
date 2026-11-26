@@ -8,19 +8,17 @@ import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 
 /**
- * Правило повторяющейся операции (таблица `recurring_operation`): откуда, куда,
- * сколько и по какому расписанию заводить обычные операции.
- *
- * Счета здесь — только id: правило грузится и без справочника счетов (генератор в
- * `RecurringOperationsDb.generateDue`), а экраны берут сами счета из
- * `Singleton.getAccounts`.
+ * Расписание шаблона операций (openspec operation-templates, design D5): когда
+ * заводить операции по шагам шаблона. Шаблон без расписания запускается только
+ * вручную. Хранится в колонках `operation_template` (frequency … last_date).
  *
  * Расписание считается в [occurrencesBetween] без Android-зависимостей, поэтому
- * его проверяет обычный unit-тест.
+ * его проверяет обычный unit-тест. Логика перенесена из прежнего правила
+ * повторяющейся операции без изменений.
  */
-class RecurringOperation {
+class TemplateSchedule {
 
-    /** Значения хранятся в `recurring_operation.frequency` — код существующего менять нельзя. */
+    /** Значения хранятся в `operation_template.frequency` — код существующего менять нельзя. */
     enum class Frequency(
         val value: Int,
         /** Ресурс подписи (openspec android-i18n): TextView.setText(int) и Menu.add принимают его. */
@@ -40,21 +38,6 @@ class RecurringOperation {
             }
         }
     }
-
-    @JvmField
-    var id: Int = 0
-
-    @JvmField
-    var accFromId: Int = 0
-
-    @JvmField
-    var accToId: Int = 0
-
-    @JvmField
-    var amount: Double = 0.0
-
-    @JvmField
-    var comment: String? = ""
 
     @JvmField
     var frequency: Frequency = Frequency.MONTHLY
@@ -83,7 +66,7 @@ class RecurringOperation {
     var lastDate: LocalDateTime? = null
 
     /**
-     * Может ли правило заводить операции на момент `now`: оно включено и «дата по»
+     * Может ли расписание заводить операции на момент `now`: оно включено и «дата по»
      * (включительно) ещё не прошла либо до неё остались не созданные повторы. Активность
      * и дата окончания — два равноправных условия, одного включённого флага мало.
      */
@@ -93,6 +76,18 @@ class RecurringOperation {
         if (!now.toLocalDate().isAfter(end)) return true
         val last = lastDate
         return last == null || last.toLocalDate().isBefore(end)
+    }
+
+    fun copy(): TemplateSchedule {
+        val s = TemplateSchedule()
+        s.frequency = frequency
+        s.interval = interval
+        s.weekDays = weekDays
+        s.startDate = startDate
+        s.endDate = endDate
+        s.isActive = isActive
+        s.lastDate = lastDate
+        return s
     }
 
     fun hasDay(day: DayOfWeek): Boolean {

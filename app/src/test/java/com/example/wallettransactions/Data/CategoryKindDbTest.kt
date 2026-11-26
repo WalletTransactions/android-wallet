@@ -41,7 +41,7 @@ class CategoryKindDbTest {
         // Сид оставляем только справочником иконок — свои счета и валюта ниже.
         db.execSQL("DELETE FROM operation_link")
         db.execSQL("DELETE FROM operation")
-        db.execSQL("DELETE FROM recurring_operation")
+        db.execSQL("DELETE FROM operation_template")
         db.execSQL("DELETE FROM account_asset")
         db.execSQL("DELETE FROM account_operating")
         db.execSQL("DELETE FROM account")
