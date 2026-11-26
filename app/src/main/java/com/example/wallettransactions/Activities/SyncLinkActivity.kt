@@ -473,6 +473,8 @@ class SyncLinkActivity : AppCompatActivity() {
         TokenStore.saveTokens(this, accessToken, refreshToken)
         AppSettings.setLinkedEmail(this, email)
         AppSettings.setNeedsRelink(this, false)
+        // Вход прошёл — адрес точно рабочий, предлагаем его в диалоге «Адрес сервера».
+        AppSettings.rememberSuccessfulServerUrl(this, AppSettings.getServerBaseUrl(this))
         if (email != previousEmail) {
             AppSettings.resetSyncCursors(this)
         }

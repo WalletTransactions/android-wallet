@@ -88,6 +88,7 @@
 
     <!-- Интеграции и вход. -->
     <string name="integrations_server_url">Адрес сервера</string>
+    <string name="integrations_server_url_recent">Недавние адреса</string>
     <string name="integrations_no_browser">Не найден браузер, чтобы открыть %1$s</string>
     <string name="integrations_no_app">Не найдено приложение, чтобы открыть %1$s</string>
     <string name="integrations_session_expired">Сессия истекла</string>

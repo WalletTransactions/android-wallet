@@ -38,6 +38,7 @@ object AppSettings {
     private const val PREF_PICKER_CATEGORY_SORT = "pickerCategorySort"
     private const val PREF_THEME_MODE = "themeMode"
     private const val PREF_SERVER_BASE_URL = "serverBaseUrl"
+    private const val PREF_RECENT_SERVER_URLS = "recentServerUrls"
     private const val PREF_DEVICE_ID = "deviceId"
     private const val PREF_LINKED_EMAIL = "linkedEmail"
     private const val PREF_NEEDS_RELINK = "needsRelink"
@@ -289,6 +290,57 @@ object AppSettings {
     fun setServerBaseUrl(ctx: Context, url: String) {
         val normalized = if (url.endsWith("/")) url else "$url/"
         prefs(ctx).edit().putString(PREF_SERVER_BASE_URL, normalized).apply()
+    }
+
+    /** Сколько последних рабочих адресов сервера предлагать в диалоге «Адрес сервера». */
+    const val RECENT_SERVER_URLS_MAX = 3
+
+    /**
+     * Последние адреса сервера, на которых вход прошёл успешно, — новые первыми,
+     * не больше [RECENT_SERVER_URLS_MAX]. Хранятся JSON-массивом в тех же
+     * prefs: порядок важен, а `StringSet` его не держит. Это настройка устройства,
+     * не данные кошелька, поэтому не в БД и не в синке.
+     */
+    @JvmStatic
+    fun getRecentServerUrls(ctx: Context): MutableList<String> {
+        val urls = ArrayList<String>()
+        val raw = prefs(ctx).getString(PREF_RECENT_SERVER_URLS, null) ?: return urls
+        try {
+            val arr = org.json.JSONArray(raw)
+            var i = 0
+            while (i < arr.length() && urls.size < RECENT_SERVER_URLS_MAX) {
+                val url = arr.optString(i, "")
+                if (url.isNotEmpty()) urls.add(url)
+                i++
+            }
+        } catch (e: org.json.JSONException) {
+            // Испорченное значение — просто нет истории, следующий успешный вход перезапишет.
+        }
+        return urls
+    }
+
+    /**
+     * Запоминает адрес, на котором только что прошёл вход: ставит его первым, убирает
+     * прежнюю запись того же адреса и обрезает список до [RECENT_SERVER_URLS_MAX].
+     * Адрес нормализуется так же, как в [setServerBaseUrl], чтобы «host» и
+     * «host/» не занимали две строки.
+     */
+    @JvmStatic
+    fun rememberSuccessfulServerUrl(ctx: Context, url: String?) {
+        if (url == null) return
+        val trimmed = url.trim { it <= ' ' }
+        if (trimmed.isEmpty()) return
+        val normalized = if (trimmed.endsWith("/")) trimmed else "$trimmed/"
+        val urls = getRecentServerUrls(ctx)
+        urls.remove(normalized)
+        urls.add(0, normalized)
+        val arr = org.json.JSONArray()
+        var i = 0
+        while (i < urls.size && i < RECENT_SERVER_URLS_MAX) {
+            arr.put(urls[i])
+            i++
+        }
+        prefs(ctx).edit().putString(PREF_RECENT_SERVER_URLS, arr.toString()).apply()
     }
 
     /**
