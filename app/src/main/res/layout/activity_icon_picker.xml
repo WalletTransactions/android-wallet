@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Пикер иконки (прототип 2a, блок iconPickOpen) — сетка из 5 колонок.
-  Показывает иконки одного типа из IconList; тип приходит в extra.
+  Пикер иконки (прототип 2a, блок iconPickOpen) — сетка из 5 колонок с заголовками каталогов.
+  Показывает все иконки из IconList каталогами по типу; тип из extra — каталог, который идёт первым.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -42,19 +42,16 @@
             android:textSize="20sp"/>
     </LinearLayout>
 
-    <GridView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/gridIcons"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:horizontalSpacing="10dp"
-        android:numColumns="5"
         android:paddingLeft="18dp"
         android:paddingRight="18dp"
         android:paddingBottom="14dp"
-        android:scrollbars="none"
-        android:verticalSpacing="10dp"/>
+        android:scrollbars="none"/>
 
     <!-- Пунктирная пилюля «+ …», как «+ Добавить валютную пару» на курсах:
          своей картинки в сетке ещё нет — заводим её не выходя из выбора. -->
