@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Комиссия за перевод: переключатель, счёт списания комиссии, размер и сторона списания.
+  Общий блок окна операции (activity_transaction.xml) и формы шаблона
+  (activity_operation_template.xml); логика — CommissionBlock. Обработчики onClick
+  (onToggleCommission, onPickCommissionAccount, onCommissionSideChanged,
+  onCommissionModeClick) объявляет активность-хозяин.
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <LinearLayout
+        android:id="@+id/rowCommissionToggle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="18dp"
+        android:layout_marginRight="18dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_card_row"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp"
+        android:paddingTop="11dp"
+        android:paddingBottom="11dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/activity_transaction_text_4"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="14sp"
+            android:textStyle="bold"/>
+
+        <FrameLayout
+            android:id="@+id/switchCommission"
+            android:layout_width="46dp"
+            android:layout_height="26dp"
+            android:background="@drawable/bg_switch_off"
+            android:onClick="onToggleCommission">
+
+            <View
+                android:id="@+id/switchCommissionThumb"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_margin="2dp"
+                android:background="@drawable/bg_switch_thumb"/>
+        </FrameLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/groupCommissionDetails"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/rowCommissionAccount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="18dp"
+            android:layout_marginRight="18dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_card_row"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp"
+            android:paddingTop="11dp"
+            android:paddingBottom="11dp"
+            android:onClick="onPickCommissionAccount">
+
+            <ImageView
+                android:id="@+id/imgCommissionAccount"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:contentDescription="@null"/>
+
+            <EditText
+                android:id="@+id/editCommissionAccount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:background="@null"
+                android:clickable="false"
+                android:focusable="false"
+                android:hint="@string/activity_transaction_edit_commission_account_hint"
+                android:textColor="@color/colorTextPrimary"
+                android:textColorHint="@color/colorTextHint"
+                android:textSize="14sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="›"
+                android:textColor="@color/colorPrimaryDark"
+                android:textSize="15sp"/>
+        </LinearLayout>
+
+        <!-- Режим размера: «Фикс» / «% от суммы» — только в форме шаблона
+             (operation-templates); в окне операции скрыт, там комиссия всегда фиксированная. -->
+        <LinearLayout
+            android:id="@+id/rowCommissionMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="18dp"
+            android:layout_marginRight="18dp"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/commissionModeFixed"
+                style="@style/FilterChip"
+                android:onClick="onCommissionModeClick"
+                android:text="@string/template_commission_fixed"/>
+
+            <TextView
+                android:id="@+id/commissionModePercent"
+                style="@style/FilterChip"
+                android:layout_marginEnd="0dp"
+                android:onClick="onCommissionModeClick"
+                android:text="@string/template_commission_percent"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="18dp"
+            android:layout_marginRight="18dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_card_row"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp"
+            android:paddingTop="11dp"
+            android:paddingBottom="11dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/activity_transaction_text_5"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="13sp"/>
+
+            <EditText
+                android:id="@+id/editCommissionAmount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:background="@null"
+                android:gravity="end"
+                android:hint="0.00"
+                android:textColor="@color/colorTextPrimary"
+                android:textColorHint="@color/colorTextHint"
+                android:textSize="14sp"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/tvCurrencySymbolCommission"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="14sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="18dp"
+            android:layout_marginRight="18dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/activity_transaction_text_6"
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="12sp"
+            android:textStyle="bold"/>
+
+        <RadioGroup
+            android:id="@+id/radioGroupCommissionSide"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="18dp"
+            android:layout_marginRight="18dp"
+            android:layout_marginTop="6dp"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/radioCommissionFromSource"
+                style="@style/PillRadioRow"
+                android:checked="true"
+                android:text="@string/activity_transaction_radio_commission_from_source_text"
+                android:onClick="onCommissionSideChanged"/>
+
+            <RadioButton
+                android:id="@+id/radioCommissionFromDest"
+                style="@style/PillRadioRow"
+                android:text="@string/activity_transaction_radio_commission_from_dest_text"
+                android:onClick="onCommissionSideChanged"/>
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="18dp"
+            android:layout_marginRight="18dp"
+            android:text="@string/activity_transaction_text_7"
+            android:textColor="@color/colorTextHint"
+            android:textSize="11sp"/>
+    </LinearLayout>
+</merge>

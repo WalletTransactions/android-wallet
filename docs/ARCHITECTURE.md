@@ -107,7 +107,7 @@ openspec `android-i18n`, spec `ui-language`. Все тексты интерфе�
 `res/values/` — английский (базовый: любой язык телефона, кроме русского),
 `res/values-ru/` — русский. Файлы по экранам: `strings.xml` (тексты layout/menu),
 `strings_main.xml`, `strings_operation.xml`, `strings_accounts.xml`,
-`strings_currency.xml`, `strings_recurring.xml`, `strings_settings.xml`,
+`strings_currency.xml`, `strings_templates.xml`, `strings_settings.xml`,
 `strings_import.xml`, `strings_sync.xml`, `strings_ai.xml`. Числа — `<plurals>`.
 На Android 13+ язык приложения выбирается в системных настройках
 (`res/xml/locales_config.xml`, `android:localeConfig`).
@@ -356,7 +356,7 @@ erDiagram
 `0` расход, `1` доход, `2` оба (`AccountItem.CategoryKind`, `fromValue` приводит
 значение вне `0..2` к «Оба»). У кошелька и системной категории он всегда «Оба» и в
 интерфейсе не показывается. По нему окно операции делит «Статью расхода» и «Статью
-дохода»: `TransactionActivity` и `RecurringOperationActivity` кладут в intent пикера
+дохода»: `TransactionActivity` и `OperationTemplateActivity` кладут в intent пикера
 extra `AccountPickerActivity.cCategoryKind` (`0` расход, `1` доход), а
 `AccountPickerActivity.buildRows` отдаёт решение чистому классу `CategoryKindFilter`
 (категория видна, если её вид равен виду операции или «Оба»; уже выбранная в этой
@@ -417,6 +417,47 @@ extra `AccountPickerActivity.cCategoryKind` (`0` расход, `1` доход), 
 
 Признак читают `LoadAccounts` (`AccountOperatingItem.DebtInfo`, `null` — не заём) и
 `LoadCounterparties`.
+
+### Шаблоны операций и повторы (v94)
+
+Шаблон операций (openspec `operation-templates`) — заголовок `operation_template`
+(название, комментарий, необязательная общая сумма) и упорядоченные шаги
+`operation_template_step`: шаг — одна проводка «откуда → куда» с режимом суммы
+(`0` фикс, `1` % от общей суммы, `2` остаток; ровно один «остаток») и необязательной ролью
+`commission_of_num` — «комиссия к шагу N». Расписание — колонки заголовка
+(`frequency` … `last_date`), «всё или ничего» (`CHECK`): без частоты шаблон ручной, с
+частотой — это повторяющаяся операция. До v94 повтор был отдельной таблицей
+`recurring_operation` с одной проводкой; шаг миграции v94 переносит каждое правило в
+шаблон с одним шагом «остаток» (`last_date`, `is_active` дословно, название — комментарий,
+иначе имя «другой стороны») и удаляет таблицу.
+
+Таблицы локальные: колонок синка и dirty-триггеров нет, `uuid` у шаблона и шага заведён
+впрок. На сервер уходят только созданные по шаблону операции и их связки. Шаги ссылаются
+на счета `ON DELETE CASCADE`, а триггер `operation_template_account_delete` (BEFORE DELETE
+на `account`) убирает шаблон целиком: без одного шага (например, комиссии) это был бы уже
+другой шаблон. Мягкое удаление счёта шаблон не трогает — его пропускает генератор.
+
+Код:
+- `TemplateLayout.expand` (без Android, `BigDecimal`) раскладывает общую сумму по шагам:
+  фикс как есть, процент `HALF_UP` до точности валюты, остаток = общая − Σ и строго больше
+  нуля (иначе `Overflow`, «Фиксированные суммы и проценты больше общей суммы»). Одна функция
+  на экран запуска, генератор и `ReminderWorker`.
+- `OperationTemplatesDb.apply` — единая точка записи: в одной транзакции проводки по шагам
+  (дата запуска, новые uuid, комментарий шага или шаблона), затем связки комиссии
+  `LinkOperations(main, commission, COMMISSION)` (`operation_link.type = 1`, как у комиссии
+  в окне операции) и `DebtAutoArchive`.
+- `TemplateSchedule` — прежнее расписание правила без изменений логики
+  (`occurrencesBetween`, `nextOccurrence`, `describeSchedule`).
+- `OperationTemplatesDb.generateDue` — для каждого включённого шаблона с расписанием на
+  каждый наступивший повтор после `last_date` пишет все шаги с общей суммой шаблона тем же
+  кодом, что `apply`; шаблон с мягко удалённым счётом или ошибочной раскладкой пропускается
+  без сдвига `last_date`. Вызывают `RecurringWorker`, `SyncWorker`, открытие таба.
+- `ReminderWorker.hasEnteredToday`: операция «как у шаблона с расписанием» (счета и сумма
+  шага раскладки при его общей сумме) не считается внесённой; ручные шаблоны — считаются.
+- Экраны: `OperationTemplateListActivity` («Ещё» → «Шаблоны операций»),
+  `OperationTemplateRunActivity` (запуск), `OperationTemplateActivity` (форма; блок
+  комиссии — общий с окном операции `view_commission_block.xml` + `CommissionBlock`).
+  «Сохранить как шаблон» в окне «Новая операция» открывает форму заполненной.
 
 ### Представления
 
@@ -890,7 +931,7 @@ ledger уходил дальше. Поэтому шаг БД v89 поднима�
   удаляются физически, от листьев к корням (`PURGE_ORDER`), построчно. Строка,
   на которую ссылаются, остаётся: `NO ACTION`-ссылки ловит
   `SQLiteConstraintException`, а две каскадные (`operation_link → operation`,
-  `recurring_operation → account`) проверяются явно — иначе удаление унесло бы
+  `operation_template_step → account`) проверяются явно — иначе удаление унесло бы
   их молча. Ошибка загрузки — чистки нет; ошибка чистки исход не меняет.
 - **Удаление неизвестной строки** из pull не создаёт строку (`applyRow`) и не
   пишет «Удалено» в журнал; содержимое удалённой иконки не скачивается.
@@ -1005,7 +1046,7 @@ Telegram). Исход `ensureFresh` — enum без причины, поэтом
   операции, как `TransactionActivity.saveTransfer` (связка `LEG`); нет курса — операция
   пропускается и считается, пользователь видит «Не перенесено операций: N — нет курса
   на дату»; уже связанная разновалютная операция тоже пропускается;
-- правила повторяющихся операций с кошельком в валюте актива перенацеливаются на актив,
+- шаги шаблонов операций с кошельком в валюте актива перенацеливаются на актив,
   разновалютные остаются;
 - категория без оставшихся операций уходит в архив.
 
@@ -1080,7 +1121,7 @@ openspec `wallets-filter-and-debt-autoarchive`. Флаг `account.is_archived` �
 разархивирования нет. Флаг пишется обычным `UPDATE account` — dirty поднимает триггер, и
 правка уходит синком как любая другая. Вызывается внутри транзакции записи из
 `TransactionActivity` (сохранение, правка, удаление), `WalletDbCRUD.ForgiveDebt`,
-`RecurringOperationsDb.generateDue`, `StatementImportActivity` (пачка выписки). Не
+`OperationTemplatesDb.apply` и `generateDue`, `StatementImportActivity` (пачка выписки). Не
 вызывается из `WalletImportData` (восстановление из файла несёт свои флаги) и `SyncEngine`
 (флаг приходит с сервера). Забытый сценарий безопасен: заём остаётся неархивным и виден
 как «закрыт». Новая выдача тому же контрагенту всегда создаёт новый кошелёк

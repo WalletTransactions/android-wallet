@@ -95,11 +95,18 @@
         <activity android:name=".Activities.LockActivity"
                 android:theme="@style/AppTheme.NoActionBar"
                 android:exported="false"/>
-        <activity android:name=".Activities.RecurringOperationListActivity"
+        <!-- Шаблоны операций (openspec operation-templates): список, форма, запуск. -->
+        <activity android:name=".Activities.OperationTemplateListActivity"
                 android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
                 android:exported="false">
         </activity>
-        <activity android:name=".Activities.RecurringOperationActivity"
+        <activity android:name=".Activities.OperationTemplateActivity"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
+                android:exported="false">
+        </activity>
+        <activity android:name=".Activities.OperationTemplateRunActivity"
                 android:theme="@style/AppTheme.NoActionBar"
                 android:windowSoftInputMode="adjustResize"
                 android:exported="false">

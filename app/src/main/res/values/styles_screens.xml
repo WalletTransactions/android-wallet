@@ -75,7 +75,7 @@
         <item name="android:onClick">onLockKey</item>
     </style>
 
-    <!-- Экран правила повторяющейся операции (activity_recurring_operation.xml). -->
+    <!-- Форма шаблона операций (activity_operation_template.xml). -->
     <!-- Строка-выбор: счёт, частота, шаг — карточка с значением и шевроном. -->
     <style name="RecurringPickerRow">
         <item name="android:layout_width">match_parent</item>

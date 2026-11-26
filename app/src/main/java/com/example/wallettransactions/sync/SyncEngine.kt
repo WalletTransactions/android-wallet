@@ -2258,7 +2258,7 @@ internal object SyncEngine {
     /**
      * Ссылки с `ON DELETE CASCADE` ошибкой внешнего ключа не остановить —
      * удаление молча унесло бы ссылающиеся строки. Проверяем их явно: связка
-     * проводок на операцию и правило повторяющейся операции (локальная таблица
+     * проводок на операцию и шаг шаблона операций (локальная таблица
      * без синка) на счёт. Остальные ссылки — `NO ACTION`, их ловит
      * [SQLiteConstraintException] в [deleteRowByRow].
      */
@@ -2269,9 +2269,9 @@ internal object SyncEngine {
                     " WHERE l." + WalletContract.OperationLinkEntry.COLUMN_MAIN_ID + " = t._id" +
                     " OR l." + WalletContract.OperationLinkEntry.COLUMN_LINK_ID + " = t._id)"
             "account" ->
-                " AND NOT EXISTS (SELECT 1 FROM " + WalletContract.RecurringOperationEntry.TABLE_NAME + " r" +
-                    " WHERE r." + WalletContract.RecurringOperationEntry.COLUMN_FROM + " = t._id" +
-                    " OR r." + WalletContract.RecurringOperationEntry.COLUMN_TO + " = t._id)"
+                " AND NOT EXISTS (SELECT 1 FROM " + WalletContract.OperationTemplateStepEntry.TABLE_NAME + " r" +
+                    " WHERE r." + WalletContract.OperationTemplateStepEntry.COLUMN_FROM + " = t._id" +
+                    " OR r." + WalletContract.OperationTemplateStepEntry.COLUMN_TO + " = t._id)"
             else -> ""
         }
 

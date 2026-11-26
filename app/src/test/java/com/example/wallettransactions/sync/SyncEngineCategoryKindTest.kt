@@ -40,7 +40,7 @@ class SyncEngineCategoryKindTest {
         // Счета стартового набора заняли бы имена (uq_account_name) и попали бы в push.
         db.execSQL("DELETE FROM operation_link")
         db.execSQL("DELETE FROM operation")
-        db.execSQL("DELETE FROM recurring_operation")
+        db.execSQL("DELETE FROM operation_template")
         db.execSQL("DELETE FROM account_asset")
         db.execSQL("DELETE FROM account_debt")
         db.execSQL("DELETE FROM account_operating")

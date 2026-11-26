@@ -1183,17 +1183,17 @@ object WalletDbCRUD {
                 moved++
             }
 
-            // Правила повторяющихся операций: только одновалютные (кошелёк в валюте актива).
+            // Шаги шаблонов операций: только одновалютные (кошелёк в валюте актива).
             val sameCurrencyWallet = "SELECT _id FROM " + WalletContract.AccountOperatingEntry.TABLE_NAME +
                     " WHERE deleted_at IS NULL AND currency_id = " + assetCurrency + " AND _id <> " + assetId
-            val rt = WalletContract.RecurringOperationEntry.TABLE_NAME
-            db.execSQL("UPDATE " + rt + " SET " + WalletContract.RecurringOperationEntry.COLUMN_TO + " = ?" +
-                    " WHERE " + WalletContract.RecurringOperationEntry.COLUMN_TO + " = ? AND " +
-                    WalletContract.RecurringOperationEntry.COLUMN_FROM + " IN (" + sameCurrencyWallet + ")",
+            val st = WalletContract.OperationTemplateStepEntry
+            db.execSQL("UPDATE " + st.TABLE_NAME + " SET " + st.COLUMN_TO + " = ?" +
+                    " WHERE " + st.COLUMN_TO + " = ? AND " +
+                    st.COLUMN_FROM + " IN (" + sameCurrencyWallet + ")",
                     arrayOf<Any?>(assetId, categoryId))
-            db.execSQL("UPDATE " + rt + " SET " + WalletContract.RecurringOperationEntry.COLUMN_FROM + " = ?" +
-                    " WHERE " + WalletContract.RecurringOperationEntry.COLUMN_FROM + " = ? AND " +
-                    WalletContract.RecurringOperationEntry.COLUMN_TO + " IN (" + sameCurrencyWallet + ")",
+            db.execSQL("UPDATE " + st.TABLE_NAME + " SET " + st.COLUMN_FROM + " = ?" +
+                    " WHERE " + st.COLUMN_FROM + " = ? AND " +
+                    st.COLUMN_TO + " IN (" + sameCurrencyWallet + ")",
                     arrayOf<Any?>(assetId, categoryId))
 
             var archived = false

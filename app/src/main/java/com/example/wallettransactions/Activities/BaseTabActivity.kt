@@ -10,7 +10,7 @@ import androidx.appcompat.widget.PopupMenu
 import com.example.wallettransactions.Activities.Fragments.ChooseDatePeriodFragment
 import com.example.wallettransactions.AdapterUtils
 import com.example.wallettransactions.AppSettings
-import com.example.wallettransactions.Data.RecurringOperationsDb
+import com.example.wallettransactions.Data.OperationTemplatesDb
 import com.example.wallettransactions.Data.WalletDbCRUD
 import com.example.wallettransactions.Data.WalletDbLoader
 import com.example.wallettransactions.DataItems.Accounts.AccountItem
@@ -167,7 +167,7 @@ abstract class BaseTabActivity : AppCompatActivity() {
     }
 
     /**
-     * Заводит операции, которые по правилам «Повторяющихся операций» уже наступили. В фоне
+     * Заводит операции, которые по расписаниям шаблонов операций уже наступили. В фоне
      * их к сроку заводит [com.example.wallettransactions.sync.RecurringWorker], но
      * Doze может его придержать — открытый таб не ждёт. Создали что-то — поднимаем
      * ревизию, и проверка ниже перечитает экран.
@@ -177,7 +177,7 @@ abstract class BaseTabActivity : AppCompatActivity() {
      */
     private fun applyRecurringOperations() {
         if (WalletApplication.hadCrash(this)) return
-        val created = RecurringOperationsDb.generateDue(
+        val created = OperationTemplatesDb.generateDue(
             Singleton.instance.getWritableDatabase(this), LocalDateTime.now()
         )
         if (created > 0) state().markDataChanged()

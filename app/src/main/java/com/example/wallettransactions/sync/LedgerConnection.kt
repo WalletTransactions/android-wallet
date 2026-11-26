@@ -191,8 +191,8 @@ object LedgerConnection {
                     " AND system_kind = " + AccountItem.SystemKind.NONE.value + ")" +
                     " AND _id NOT IN (SELECT acc_fr_id FROM operation)" +
                     " AND _id NOT IN (SELECT acc_to_id FROM operation)" +
-                    " AND _id NOT IN (SELECT acc_fr_id FROM recurring_operation)" +
-                    " AND _id NOT IN (SELECT acc_to_id FROM recurring_operation)" +
+                    " AND _id NOT IN (SELECT acc_fr_id FROM operation_template_step)" +
+                    " AND _id NOT IN (SELECT acc_to_id FROM operation_template_step)" +
                     " AND _id NOT IN (SELECT _id FROM account_asset)" +
                     " AND _id NOT IN (SELECT _id FROM account_debt)", null
             )
@@ -201,8 +201,8 @@ object LedgerConnection {
                     AccountItem.SystemKind.NONE.value +
                     " AND _id NOT IN (SELECT acc_fr_id FROM operation)" +
                     " AND _id NOT IN (SELECT acc_to_id FROM operation)" +
-                    " AND _id NOT IN (SELECT acc_fr_id FROM recurring_operation)" +
-                    " AND _id NOT IN (SELECT acc_to_id FROM recurring_operation)" +
+                    " AND _id NOT IN (SELECT acc_fr_id FROM operation_template_step)" +
+                    " AND _id NOT IN (SELECT acc_to_id FROM operation_template_step)" +
                     " AND _id NOT IN (SELECT _id FROM account_operating)", null
             )
             deleted += db.delete(

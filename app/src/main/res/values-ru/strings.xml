@@ -180,7 +180,7 @@
     <!-- activity_more -->
     <string name="activity_more_title_text">Ещё</string>
     <string name="activity_more_text_1">Кошельки и категории</string>
-    <string name="activity_more_text_2">Повторяющиеся операции</string>
+    <string name="activity_more_text_2">Шаблоны операций</string>
     <string name="activity_more_text_3">ИИ</string>
     <string name="activity_more_row_ai_hint_text">Трата своими словами</string>
     <string name="activity_more_text_4">Интеграции</string>
@@ -198,38 +198,34 @@
     <string name="activity_multi_picker_empty_state_text">Ничего не найдено</string>
     <string name="activity_multi_picker_btn_done_text">Готово</string>
 
-    <!-- activity_recurring_operation_list -->
-    <string name="activity_recurring_operation_list_empty_recurring_text">Повторяющихся операций пока нет.</string>
-    <string name="activity_recurring_operation_list_text_1">+ Добавить повторяющуюся операцию</string>
-
-    <!-- activity_recurring_operation -->
-    <string name="activity_recurring_operation_btn_up_content_description">Назад</string>
-    <string name="activity_recurring_operation_btn_delete_content_description">Удалить</string>
-    <string name="activity_recurring_operation_text_1">Расход</string>
-    <string name="activity_recurring_operation_text_2">Доход</string>
-    <string name="activity_recurring_operation_text_3">Перевод</string>
-    <string name="activity_recurring_operation_label_slot_top_text">Статья расхода</string>
-    <string name="activity_recurring_operation_label_slot_bottom_text">Кошелёк</string>
-    <string name="activity_recurring_operation_text_4">Сумма</string>
-    <string name="activity_recurring_operation_text_5">Комментарий</string>
-    <string name="activity_recurring_operation_edit_comment_hint">Необязательно</string>
-    <string name="activity_recurring_operation_text_6">Повторять</string>
-    <string name="activity_recurring_operation_tv_frequency_text">Ежемесячно</string>
-    <string name="activity_recurring_operation_text_7">Дни недели</string>
-    <string name="activity_recurring_operation_text_8">Пн</string>
-    <string name="activity_recurring_operation_text_9">Вт</string>
-    <string name="activity_recurring_operation_text_10">Ср</string>
-    <string name="activity_recurring_operation_text_11">Чт</string>
-    <string name="activity_recurring_operation_text_12">Пт</string>
-    <string name="activity_recurring_operation_text_13">Сб</string>
-    <string name="activity_recurring_operation_text_14">Вс</string>
-    <string name="activity_recurring_operation_text_15">Через сколько недель</string>
-    <string name="activity_recurring_operation_tv_interval_text">Каждую неделю</string>
-    <string name="activity_recurring_operation_text_16">С какой даты</string>
-    <string name="activity_recurring_operation_text_17">До какой даты</string>
-    <string name="activity_recurring_operation_text_18">Всегда</string>
-    <string name="activity_recurring_operation_text_19">Повтор включён</string>
-    <string name="activity_recurring_operation_text_20">Сохранить</string>
+    <!-- activity_operation_template -->
+    <string name="activity_operation_template_btn_up_content_description">Назад</string>
+    <string name="activity_operation_template_btn_delete_content_description">Удалить</string>
+    <string name="activity_operation_template_text_1">Расход</string>
+    <string name="activity_operation_template_text_2">Доход</string>
+    <string name="activity_operation_template_text_3">Перевод</string>
+    <string name="activity_operation_template_label_slot_top_text">Статья расхода</string>
+    <string name="activity_operation_template_label_slot_bottom_text">Кошелёк</string>
+    <string name="activity_operation_template_text_4">Сумма</string>
+    <string name="activity_operation_template_text_5">Комментарий</string>
+    <string name="activity_operation_template_edit_comment_hint">Необязательно</string>
+    <string name="activity_operation_template_text_6">Повторять</string>
+    <string name="activity_operation_template_tv_frequency_text">Ежемесячно</string>
+    <string name="activity_operation_template_text_7">Дни недели</string>
+    <string name="activity_operation_template_text_8">Пн</string>
+    <string name="activity_operation_template_text_9">Вт</string>
+    <string name="activity_operation_template_text_10">Ср</string>
+    <string name="activity_operation_template_text_11">Чт</string>
+    <string name="activity_operation_template_text_12">Пт</string>
+    <string name="activity_operation_template_text_13">Сб</string>
+    <string name="activity_operation_template_text_14">Вс</string>
+    <string name="activity_operation_template_text_15">Через сколько недель</string>
+    <string name="activity_operation_template_tv_interval_text">Каждую неделю</string>
+    <string name="activity_operation_template_text_16">С какой даты</string>
+    <string name="activity_operation_template_text_17">До какой даты</string>
+    <string name="activity_operation_template_text_18">Всегда</string>
+    <string name="activity_operation_template_text_19">Повтор включён</string>
+    <string name="activity_operation_template_text_20">Сохранить</string>
 
     <!-- activity_report -->
     <string name="activity_report_caption_expanses_text">Расходы</string>

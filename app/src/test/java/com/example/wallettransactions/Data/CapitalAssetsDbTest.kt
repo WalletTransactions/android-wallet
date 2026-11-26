@@ -51,7 +51,7 @@ class CapitalAssetsDbTest {
         // Сид оставляем только справочником иконок — свои валюты, счета и курсы ниже.
         db.execSQL("DELETE FROM operation_link")
         db.execSQL("DELETE FROM operation")
-        db.execSQL("DELETE FROM recurring_operation")
+        db.execSQL("DELETE FROM operation_template")
         db.execSQL("DELETE FROM account_asset")
         db.execSQL("DELETE FROM account_operating")
         db.execSQL("DELETE FROM account")
@@ -443,7 +443,7 @@ class CapitalAssetsDbTest {
         assertEquals(flat, intQuery("SELECT acc_fr_id FROM operation WHERE _id = " + refund))
         assertEquals(1000.0, doubleQuery("SELECT amount FROM operation WHERE _id = " + pay), 0.001)
         assertEquals(1, intQuery("SELECT is_archived FROM account WHERE _id = " + category))
-        assertEquals(flat, intQuery("SELECT acc_to_id FROM recurring_operation"))
+        assertEquals(flat, intQuery("SELECT acc_to_id FROM operation_template_step"))
     }
 
     @Test
@@ -534,9 +534,13 @@ class CapitalAssetsDbTest {
     }
 
     private fun recurring(from: Int, to: Int) {
+        val template = insert(
+            "operation_template", "uuid", "tpl-$from-$to", "name", "Шаблон", "total_amount", 5,
+            "frequency", 1, "start_date", "2026-01-01 12:00"
+        )
         insert(
-            "recurring_operation", "acc_fr_id", from, "acc_to_id", to, "amount", 5,
-            "frequency", 1, "start_date", "2026-01-01"
+            "operation_template_step", "uuid", "step-$from-$to", "template_id", template, "num", 1,
+            "acc_fr_id", from, "acc_to_id", to, "amount_mode", 2
         )
     }
 

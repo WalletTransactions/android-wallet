@@ -7,8 +7,8 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.example.wallettransactions.Data.RecurringOperationsDb
-import com.example.wallettransactions.DataItems.Operations.RecurringOperation
+import com.example.wallettransactions.Data.OperationTemplatesDb
+import com.example.wallettransactions.DataItems.Operations.OperationTemplate
 import com.example.wallettransactions.PeriodFilterState
 import com.example.wallettransactions.Singleton
 import com.example.wallettransactions.WalletApplication
@@ -24,8 +24,8 @@ import java.util.concurrent.TimeUnit
  * без него операции молча появлялись лишь при открытии приложения.
  *
  * Цепочка одноразовых задач: каждая, отработав, ставит следующую на ближайший
- * повтор по всем правилам. Расчёт — только здесь, в фоне: остальные лишь
- * [kick] — на старте процесса и после правки правил.
+ * повтор по всем шаблонам с расписанием. Расчёт — только здесь, в фоне: остальные
+ * лишь [kick] — на старте процесса и после правки шаблонов.
  */
 class RecurringWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
 
@@ -38,13 +38,13 @@ class RecurringWorker(context: Context, params: WorkerParameters) : Worker(conte
         val db = Singleton.instance.getWritableDatabase(ctx)
         val now = LocalDateTime.now()
         val created = ArrayList<Long>()
-        RecurringOperationsDb.generateDue(db, now, created)
+        OperationTemplatesDb.generateDue(db, now, created)
         if (created.isNotEmpty()) {
             PeriodFilterState.get(ctx).markDataChanged()
             NewOperationsNotifier.notifyIfAny(ctx, null, created)
         }
 
-        val next = nextDue(RecurringOperationsDb.loadAll(db), now)
+        val next = nextDue(OperationTemplatesDb.loadAll(db), now)
         if (next == null) {
             Log.i(TAG, "повторов впереди нет")
             return Result.success()
@@ -69,9 +69,10 @@ class RecurringWorker(context: Context, params: WorkerParameters) : Worker(conte
             enqueue(ctx, ExistingWorkPolicy.KEEP, 0)
         }
 
-        /** После правки правил: стоящая задача ждёт по старому расписанию — пересчитать сейчас. */
+        /** После правки шаблонов: стоящая задача ждёт по старому расписанию — пересчитать сейчас. */
         @JvmStatic
         fun kick(ctx: Context) {
+            if (!WorkManager.isInitialized()) return
             enqueue(ctx, ExistingWorkPolicy.REPLACE, 0)
         }
 
@@ -82,11 +83,12 @@ class RecurringWorker(context: Context, params: WorkerParameters) : Worker(conte
             WorkManager.getInstance(ctx).enqueueUniqueWork(WORK_NAME, policy, request)
         }
 
-        /** Ближайший не созданный повтор по всем правилам; null — повторов больше не будет. */
+        /** Ближайший не созданный повтор по всем шаблонам с расписанием; null — повторов больше не будет. */
         @JvmStatic
-        internal fun nextDue(rules: List<RecurringOperation>, now: LocalDateTime): LocalDateTime? {
+        internal fun nextDue(templates: List<OperationTemplate>, now: LocalDateTime): LocalDateTime? {
             var best: LocalDateTime? = null
-            for (r in rules) {
+            for (t in templates) {
+                val r = t.schedule ?: continue
                 if (!r.isActive) continue
                 val next = r.nextOccurrence(now)
                 if (next != null && (best == null || next.isBefore(best))) best = next

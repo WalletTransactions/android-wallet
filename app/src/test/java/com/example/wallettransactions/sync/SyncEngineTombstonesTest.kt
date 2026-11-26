@@ -42,7 +42,7 @@ class SyncEngineTombstonesTest {
         private val ALL_TABLES = arrayOf(
             "operation", "operation_link", "account_operating", "account",
             "currency_conversion", "currency_pair_rate", "currency_pair", "currency", "icon",
-            "recurring_operation", WalletDbHelper.SYNC_RELOAD_SEEN_TABLE,
+            "operation_template_step", "operation_template", WalletDbHelper.SYNC_RELOAD_SEEN_TABLE,
         )
 
         private fun resetSingleton() {
@@ -155,14 +155,23 @@ class SyncEngineTombstonesTest {
         db.insertOrThrow("operation_link", null, cv)
     }
 
+    /** Шаблон с расписанием и одним шагом «остаток» (operation-templates) — ссылка шага на счета. */
     private fun recurring(from: Long, to: Long) {
+        val t = ContentValues()
+        t.put(WalletContract.OperationTemplateEntry.COLUMN_UUID, "tpl-$from-$to")
+        t.put(WalletContract.OperationTemplateEntry.COLUMN_NAME, "Шаблон")
+        t.put(WalletContract.OperationTemplateEntry.COLUMN_TOTAL_AMOUNT, 5)
+        t.put(WalletContract.OperationTemplateEntry.COLUMN_FREQUENCY, 1)
+        t.put(WalletContract.OperationTemplateEntry.COLUMN_START_DATE, "2026-11-01 12:00")
+        val templateId = db.insertOrThrow(WalletContract.OperationTemplateEntry.TABLE_NAME, null, t)
         val cv = ContentValues()
-        cv.put(WalletContract.RecurringOperationEntry.COLUMN_FROM, from)
-        cv.put(WalletContract.RecurringOperationEntry.COLUMN_TO, to)
-        cv.put(WalletContract.RecurringOperationEntry.COLUMN_AMOUNT, 5)
-        cv.put(WalletContract.RecurringOperationEntry.COLUMN_FREQUENCY, 1)
-        cv.put(WalletContract.RecurringOperationEntry.COLUMN_START_DATE, "2026-11-01")
-        db.insertOrThrow(WalletContract.RecurringOperationEntry.TABLE_NAME, null, cv)
+        cv.put(WalletContract.OperationTemplateStepEntry.COLUMN_UUID, "step-$from-$to")
+        cv.put(WalletContract.OperationTemplateStepEntry.COLUMN_TEMPLATE_ID, templateId)
+        cv.put(WalletContract.OperationTemplateStepEntry.COLUMN_NUM, 1)
+        cv.put(WalletContract.OperationTemplateStepEntry.COLUMN_FROM, from)
+        cv.put(WalletContract.OperationTemplateStepEntry.COLUMN_TO, to)
+        cv.put(WalletContract.OperationTemplateStepEntry.COLUMN_AMOUNT_MODE, 2)
+        db.insertOrThrow(WalletContract.OperationTemplateStepEntry.TABLE_NAME, null, cv)
     }
 
     private fun exists(table: String, uuid: String): Boolean {
@@ -218,7 +227,7 @@ class SyncEngineTombstonesTest {
         assertTrue("неотправленное удаление уйдёт следующим проходом", exists("operation", "op-unsent"))
         assertTrue("на счёт ссылается живая операция", exists("account", "acc-referenced"))
         assertTrue("на счёт ссылается правило (CASCADE не должен его унести)", exists("account", "acc-recurring"))
-        assertEquals(1, count(WalletContract.RecurringOperationEntry.TABLE_NAME))
+        assertEquals(1, count(WalletContract.OperationTemplateStepEntry.TABLE_NAME))
         // Удаление не поднимает dirty у других строк.
         assertEquals(0, dirtyOf("account", "a-live"))
         assertEquals(0, dirtyOf("operation", "op-live"))

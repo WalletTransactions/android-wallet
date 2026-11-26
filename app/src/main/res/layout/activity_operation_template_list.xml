@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  «Ещё» → «Шаблоны операций» (openspec operation-templates): все шаблоны, в том числе
+  повторяющиеся. Раскладка — стандарт list-screen-layout: шапка, поиск-«пилюля», список,
+  нижняя панель с «+ Добавить шаблон». Тап по строке — запуск, долгое нажатие — «Изменить» /
+  «Удалить», переключатель справа (только у шаблона с расписанием) — включить/выключить повтор.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="10dp">
+
+        <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:contentDescription="@string/activity_operation_template_btn_up_content_description"
+            android:src="@drawable/ic_nav_back"
+            android:onClick="btnUp"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/template_list_title"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/caprasimo"
+            android:textColor="@color/colorTextPrimary"/>
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/templatesSearch"
+        style="@style/ListSearchField"
+        android:layout_below="@id/toolbar"
+        android:hint="@string/search_by_name_hint"
+        android:inputType="text"
+        android:textColor="@color/colorTextPrimary"
+        android:textColorHint="@color/colorTextHint"/>
+
+    <TextView
+        android:id="@+id/templatesEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/templatesSearch"
+        android:layout_marginTop="24dp"
+        android:padding="16dp"
+        android:gravity="center"
+        android:text="@string/template_list_empty"
+        android:textColor="@color/colorTextHint"
+        android:textSize="13sp"
+        android:visibility="gone"/>
+
+    <!-- Прокручивается только список: поиск сверху и нижняя панель остаются на месте. -->
+    <ListView
+        android:id="@+id/listTemplates"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/templatesSearch"
+        android:layout_above="@id/bottomBar"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="4dp"
+        android:clipToPadding="false"
+        android:divider="@null"
+        android:dividerHeight="0dp"/>
+
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="18dp">
+
+        <TextView
+            android:id="@+id/btnAddTemplate"
+            style="@style/ListAddButton"
+            android:text="@string/template_list_add"
+            android:onClick="onAddTemplate"/>
+    </LinearLayout>
+</RelativeLayout>
