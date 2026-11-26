@@ -14,10 +14,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.text.InputType
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -128,7 +130,7 @@ class IntegrationsActivity : AppCompatActivity() {
 
         AlertDialog.Builder(this)
                 .setTitle(R.string.integrations_server_url)
-                .setView(input)
+                .setView(buildServerUrlDialogView(input))
                 .setPositiveButton(R.string.caption_btn_save) { _, _ ->
                     val url = input.text.toString().trim()
                     if (url.isEmpty()) return@setPositiveButton
@@ -138,6 +140,47 @@ class IntegrationsActivity : AppCompatActivity() {
                 .setNegativeButton(R.string.action_cancel, null)
                 .show()
     }
+
+    /**
+     * Поле адреса и под ним — последние адреса, на которых вход прошёл успешно
+     * ([AppSettings.getRecentServerUrls]). Нажатие на адрес подставляет его в поле,
+     * сохраняет по-прежнему кнопка «Сохранить»: выбор можно поправить перед сохранением.
+     */
+    private fun buildServerUrlDialogView(input: EditText): View {
+        val recent = AppSettings.getRecentServerUrls(this)
+        if (recent.isEmpty()) return input
+
+        val pad = dp(20)
+        val box = LinearLayout(this)
+        box.orientation = LinearLayout.VERTICAL
+        box.setPadding(pad, dp(8), pad, 0)
+        box.addView(input)
+
+        val caption = TextView(this)
+        caption.setText(R.string.integrations_server_url_recent)
+        caption.setTextColor(ContextCompat.getColor(this, R.color.colorTextSecondary))
+        caption.setPadding(0, dp(12), 0, dp(4))
+        box.addView(caption)
+
+        val ripple = TypedValue()
+        theme.resolveAttribute(android.R.attr.selectableItemBackground, ripple, true)
+        for (url in recent) {
+            val row = TextView(this)
+            row.text = url
+            row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            row.setPadding(0, dp(10), 0, dp(10))
+            row.setBackgroundResource(ripple.resourceId)
+            row.setOnClickListener {
+                input.setText(url)
+                input.setSelection(url.length)
+            }
+            box.addView(row)
+        }
+        return box
+    }
+
+    private fun dp(value: Int): Int =
+        Math.round(value * resources.displayMetrics.density)
 
     /** Открывает вход через Google (org/docs/TODO_mobile_sync.md, Фаза 1) —
      *  тот же экран обслуживает и первую связку, и повторную после того, как
