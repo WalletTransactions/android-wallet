@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 // Автоинкремент версии сборки: файл-счётчик version.properties хранит
 // VERSION_CODE и растёт на 1 при каждой настоящей сборке (assemble/bundle/
@@ -70,6 +71,9 @@ android {
         sourceCompatibility = 1.8
         targetCompatibility = 1.8
     }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
 
     // Нужно Robolectric-тестам (HardWipeCacheInvalidationTest) — без этого
     // ресурсы/assets модуля (в т.ч. assets/seed.json, который читает
@@ -84,6 +88,7 @@ android {
 
 
 dependencies {
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
     // Миграция на AndroidX (org/docs/TODO_mobile_sync.md, Фаза 0) — 1:1 замена
