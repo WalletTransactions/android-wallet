@@ -19,6 +19,10 @@
     <string name="settings_biometric_on">Fingerprint sign-in turned on</string>
     <string name="settings_sort_wallets">Wallet sorting</string>
     <string name="settings_sort_categories">Category sorting</string>
+    <string name="settings_catalog_section">CATALOG</string>
+    <string name="settings_catalog_panel_wallets">Filters panel: Wallets</string>
+    <string name="settings_catalog_panel_categories">Filters panel: Categories</string>
+    <string name="settings_catalog_panel_hint">expanded when the catalog opens</string>
     <string name="settings_remind_time">every day at %1$02d:%2$02d</string>
 
     <string name="lock_timeout_now">Immediately</string>

@@ -34,6 +34,8 @@ object AppSettings {
     private const val PREF_LAST_WALLET_ID = "lastWalletId"
     private const val PREF_PICKER_KEYBOARD = "pickerKeyboard"
     private const val PREF_SUMMARY_OTHER_EXPANDED = "summaryOtherExpanded"
+    private const val PREF_CATALOG_PANEL_WALLETS = "catalogPanelWallets"
+    private const val PREF_CATALOG_PANEL_CATEGORIES = "catalogPanelCategories"
     private const val PREF_PICKER_WALLET_SORT = "pickerWalletSort"
     private const val PREF_PICKER_CATEGORY_SORT = "pickerCategorySort"
     private const val PREF_THEME_MODE = "themeMode"
@@ -161,6 +163,23 @@ object AppSettings {
     @JvmStatic
     fun setSummaryOtherExpanded(ctx: Context, on: Boolean) {
         prefs(ctx).edit().putBoolean(PREF_SUMMARY_OTHER_EXPANDED, on).apply()
+    }
+
+    /**
+     * Исходное состояние панели «Фильтры» справочника «Кошельки и категории» на вкладке
+     * «Кошельки» (`wallets`) или «Категории» (openspec catalog-filters-panel): развёрнута при
+     * открытии справочника или свёрнута. По умолчанию свёрнута. Читается при открытии экрана;
+     * кнопка «Фильтры» на самом экране настройку не меняет.
+     */
+    @JvmStatic
+    fun isCatalogPanelOpen(ctx: Context, wallets: Boolean): Boolean =
+        prefs(ctx).getBoolean(if (wallets) PREF_CATALOG_PANEL_WALLETS else PREF_CATALOG_PANEL_CATEGORIES, false)
+
+    @JvmStatic
+    fun setCatalogPanelOpen(ctx: Context, wallets: Boolean, open: Boolean) {
+        prefs(ctx).edit().putBoolean(
+            if (wallets) PREF_CATALOG_PANEL_WALLETS else PREF_CATALOG_PANEL_CATEGORIES, open
+        ).apply()
     }
 
     /**

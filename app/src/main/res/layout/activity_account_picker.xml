@@ -91,43 +91,6 @@
             android:onClick="onKindFilterClick"/>
     </LinearLayout>
 
-    <!-- Тип кошелька: только в справочнике и только на вкладке «Кошельки» -->
-    <LinearLayout
-        android:id="@+id/rowWalletTypeFilter"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingLeft="18dp"
-        android:paddingRight="18dp"
-        android:paddingBottom="10dp"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/walletTypeAll"
-            style="@style/FilterChip"
-            android:text="@string/picker_wallet_type_all"
-            android:onClick="onWalletTypeClick"/>
-
-        <TextView
-            android:id="@+id/walletTypeRegular"
-            style="@style/FilterChip"
-            android:text="@string/picker_wallet_type_regular"
-            android:onClick="onWalletTypeClick"/>
-
-        <TextView
-            android:id="@+id/walletTypeAssets"
-            style="@style/FilterChip"
-            android:text="@string/picker_wallet_type_assets"
-            android:onClick="onWalletTypeClick"/>
-
-        <TextView
-            android:id="@+id/walletTypeDebts"
-            style="@style/FilterChip"
-            android:layout_marginEnd="0dp"
-            android:text="@string/picker_wallet_type_debts"
-            android:onClick="onWalletTypeClick"/>
-    </LinearLayout>
-
     <!-- Долги (debts): при выборе статьи расхода/дохода — «Дать в долг», «Взять в долг»,
          «Вернуть»; результат — перевод между кошельком и займом -->
     <LinearLayout
@@ -160,35 +123,138 @@
             android:onClick="onDebtActionClick"/>
     </LinearLayout>
 
-    <EditText
-        android:id="@+id/searchInput"
+    <!-- Строка поиска (openspec catalog-filters-panel): поле видно всегда; в справочнике справа от
+         него кнопка «Фильтры», при выборе счёта для операции кнопки нет и поле на всю ширину. -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="44dp"
         android:layout_marginLeft="18dp"
         android:layout_marginRight="18dp"
         android:layout_marginBottom="10dp"
-        android:background="@drawable/bg_input_pill"
-        android:hint="@string/activity_account_picker_search_input_hint"
-        android:inputType="text"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp"
-        android:singleLine="true"
-        android:textSize="13.5sp"/>
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-    <!-- Справочник «Кошельки и категории» (openspec wallets-filter-and-debt-autoarchive): архивные
-         скрыты, пока переключатель выключен; при вводе операции переключателя нет. -->
-    <CheckBox
-        android:id="@+id/pickerShowArchived"
+        <EditText
+            android:id="@+id/searchInput"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_input_pill"
+            android:hint="@string/activity_account_picker_search_input_hint"
+            android:inputType="text"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:singleLine="true"
+            android:textSize="13.5sp"/>
+
+        <!-- Раскрывает и сворачивает панель фильтров; подпись и число условий — в
+             AccountPickerActivity.paintFiltersButton. -->
+        <TextView
+            android:id="@+id/btnFilters"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_pill_secondary"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:maxLines="1"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="12.5sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            android:onClick="onToggleFiltersPanel"/>
+    </LinearLayout>
+
+    <!-- Панель фильтров справочника «Кошельки и категории»: только в справочнике, по умолчанию
+         свёрнута (исходное состояние — AppSettings.isCatalogPanelOpen). На «Кошельках» — типы
+         кошельков, на «Категориях» — виды; «Показывать архивные» общий. Вне прокрутки. -->
+    <LinearLayout
+        android:id="@+id/catalogFilterPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="14dp"
-        android:layout_marginRight="18dp"
-        android:layout_marginBottom="4dp"
-        android:text="@string/debts_show_archived"
-        android:textColor="@color/colorTextPrimary"
-        android:textSize="13sp"
-        android:buttonTint="@color/colorPrimary"
-        android:visibility="gone"/>
+        android:orientation="vertical"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/rowWalletTypeFilter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="10dp">
+
+            <TextView
+                android:id="@+id/walletTypeAll"
+                style="@style/FilterChip"
+                android:text="@string/picker_wallet_type_all"
+                android:onClick="onWalletTypeClick"/>
+
+            <TextView
+                android:id="@+id/walletTypeRegular"
+                style="@style/FilterChip"
+                android:text="@string/picker_wallet_type_regular"
+                android:onClick="onWalletTypeClick"/>
+
+            <TextView
+                android:id="@+id/walletTypeAssets"
+                style="@style/FilterChip"
+                android:text="@string/picker_wallet_type_assets"
+                android:onClick="onWalletTypeClick"/>
+
+            <TextView
+                android:id="@+id/walletTypeDebts"
+                style="@style/FilterChip"
+                android:layout_marginEnd="0dp"
+                android:text="@string/picker_wallet_type_debts"
+                android:onClick="onWalletTypeClick"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/rowCategoryKindFilter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="10dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/catalogKindExpense"
+                style="@style/FilterChip"
+                android:text="@string/category_kind_expense"
+                android:onClick="onCategoryKindClick"/>
+
+            <TextView
+                android:id="@+id/catalogKindIncome"
+                style="@style/FilterChip"
+                android:text="@string/category_kind_income"
+                android:onClick="onCategoryKindClick"/>
+
+            <TextView
+                android:id="@+id/catalogKindBoth"
+                style="@style/FilterChip"
+                android:layout_marginEnd="0dp"
+                android:text="@string/category_kind_both"
+                android:onClick="onCategoryKindClick"/>
+        </LinearLayout>
+
+        <!-- Переключатель, как «Показывать архивные» на «Долгах»: активный красится Chips.paint.
+             Действует на оба списка. -->
+        <TextView
+            android:id="@+id/pickerShowArchived"
+            style="@style/FilterChip"
+            android:layout_width="wrap_content"
+            android:layout_weight="0"
+            android:layout_marginEnd="0dp"
+            android:layout_marginBottom="10dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="@string/debts_show_archived"
+            android:onClick="onShowArchivedClick"/>
+    </LinearLayout>
 
     <TextView
         android:id="@+id/emptyState"

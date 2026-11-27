@@ -39,6 +39,10 @@
     <string name="picker_wallet_type_regular">Обычные</string>
     <string name="picker_wallet_type_assets">Активы</string>
     <string name="picker_wallet_type_debts">Займы</string>
+    <string name="picker_filters_closed">Фильтры ▾</string>
+    <string name="picker_filters_open">Фильтры ▴</string>
+    <string name="picker_filters_closed_count">Фильтры · %1$d ▾</string>
+    <string name="picker_filters_open_count">Фильтры · %1$d ▴</string>
     <string name="activity_account_picker_search_input_hint">Поиск по названию</string>
     <string name="activity_account_picker_empty_state_text">Ничего не найдено</string>
     <string name="activity_account_picker_text_1">+ Добавить кошелёк или категорию</string>
