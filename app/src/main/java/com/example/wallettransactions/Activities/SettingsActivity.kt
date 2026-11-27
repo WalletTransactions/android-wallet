@@ -83,6 +83,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var switchRemind: FrameLayout
     private lateinit var switchPickerKeyboard: FrameLayout
     private lateinit var switchSummaryOtherExpanded: FrameLayout
+    private lateinit var switchCatalogPanelWallets: FrameLayout
+    private lateinit var switchCatalogPanelCategories: FrameLayout
     private lateinit var switchIconUpload: FrameLayout
     private lateinit var rowIconUpload: View
     private lateinit var textIconUploadHint: TextView
@@ -114,6 +116,8 @@ class SettingsActivity : AppCompatActivity() {
         switchRemind = findViewById(R.id.switchRemind)
         switchPickerKeyboard = findViewById(R.id.switchPickerKeyboard)
         switchSummaryOtherExpanded = findViewById(R.id.switchSummaryOtherExpanded)
+        switchCatalogPanelWallets = findViewById(R.id.switchCatalogPanelWallets)
+        switchCatalogPanelCategories = findViewById(R.id.switchCatalogPanelCategories)
         switchIconUpload = findViewById(R.id.switchIconUpload)
         rowIconUpload = findViewById(R.id.rowIconUpload)
         textIconUploadHint = findViewById(R.id.textIconUploadHint)
@@ -145,6 +149,8 @@ class SettingsActivity : AppCompatActivity() {
         applySwitchState(switchRemind, AppSettings.isRemindOn(this))
         applySwitchState(switchPickerKeyboard, AppSettings.isPickerKeyboardOn(this))
         applySwitchState(switchSummaryOtherExpanded, AppSettings.isSummaryOtherExpanded(this))
+        applySwitchState(switchCatalogPanelWallets, AppSettings.isCatalogPanelOpen(this, true))
+        applySwitchState(switchCatalogPanelCategories, AppSettings.isCatalogPanelOpen(this, false))
         paintSortValues()
 
         paintRemindTime()
@@ -487,6 +493,16 @@ class SettingsActivity : AppCompatActivity() {
      *  карточку на открытых табах она не переворачивает (design D3). */
     fun onToggleSummaryOtherExpanded(view: View) {
         AppSettings.setSummaryOtherExpanded(this, toggleSwitch(switchSummaryOtherExpanded))
+    }
+
+    /** Исходное состояние панели «Фильтры» справочника: читается при его открытии
+     *  (openspec catalog-filters-panel); кнопка на самом экране сюда не пишет. */
+    fun onToggleCatalogPanelWallets(view: View) {
+        AppSettings.setCatalogPanelOpen(this, true, toggleSwitch(switchCatalogPanelWallets))
+    }
+
+    fun onToggleCatalogPanelCategories(view: View) {
+        AppSettings.setCatalogPanelOpen(this, false, toggleSwitch(switchCatalogPanelCategories))
     }
 
     fun onPickWalletSort(view: View) {

@@ -36,6 +36,10 @@
     <string name="picker_wallet_type_regular">Regular</string>
     <string name="picker_wallet_type_assets">Assets</string>
     <string name="picker_wallet_type_debts">Loans</string>
+    <string name="picker_filters_closed">Filters ▾</string>
+    <string name="picker_filters_open">Filters ▴</string>
+    <string name="picker_filters_closed_count">Filters · %1$d ▾</string>
+    <string name="picker_filters_open_count">Filters · %1$d ▴</string>
     <string name="activity_account_picker_search_input_hint">Search by name</string>
     <string name="activity_account_picker_empty_state_text">Nothing found</string>
     <string name="activity_account_picker_text_1">+ Add a wallet or category</string>

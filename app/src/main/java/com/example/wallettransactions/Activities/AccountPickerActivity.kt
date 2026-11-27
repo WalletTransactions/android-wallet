@@ -10,7 +10,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.ListView
@@ -24,6 +23,7 @@ import com.example.wallettransactions.Data.DebtDirection
 import com.example.wallettransactions.Data.WalletDbLoader
 import com.example.wallettransactions.DataItems.Accounts.AccountItem
 import com.example.wallettransactions.DataItems.Accounts.AccountOperatingItem
+import com.example.wallettransactions.DataItems.Accounts.CatalogFilter
 import com.example.wallettransactions.DataItems.Accounts.CategoryKindFilter
 import com.example.wallettransactions.DataItems.CurrencyConversion.Currency
 import com.example.wallettransactions.PeriodFilterState
@@ -81,14 +81,22 @@ class AccountPickerActivity : AppCompatActivity() {
 
     private var mShowWallets = false
 
-    /** Справочник, вкладка «Кошельки»: какие кошельки показывать. */
-    private enum class WalletType { ALL, REGULAR, ASSET, DEBT }
-
-    private var mWalletType = WalletType.ALL
     private var mCatalogMode = false
 
-    /** Справочник: переключатель «Показывать архивные»; по умолчанию выключен. */
-    private var mShowArchived = false
+    /**
+     * Фильтры справочника (openspec catalog-filters-panel): тип кошелька, виды категорий,
+     * «Показывать архивные». Живут, пока открыт экран; при каждом открытии — значения по умолчанию.
+     */
+    private val mFilter = CatalogFilter()
+
+    /**
+     * Состояние панели «Фильтры» на каждой вкладке свое. Исходное берётся из настроек
+     * ([AppSettings.isCatalogPanelOpen]); кнопка «Фильтры» меняет только эти поля и в настройки
+     * не пишет.
+     */
+    private var mWalletsPanelOpen = false
+    private var mCategoriesPanelOpen = false
+    private lateinit var mFiltersButton: TextView
     private var mCurrentAccountId = 0
 
     /** Только кошелёк: с категорией в паре частота ничего не говорит о выборе кошелька. */
@@ -129,15 +137,13 @@ class AccountPickerActivity : AppCompatActivity() {
         mCategorySort = AppSettings.getPickerSort(this, false)
 
         findViewById<View>(R.id.btnAddAccountRow).visibility = if (mCatalogMode) View.VISIBLE else View.GONE
-        // «Показывать архивные» — только в справочнике, выключен при каждом открытии; выбор счёта
-        // при вводе операции архивные по-прежнему скрывает (спека account-screens).
-        val showArchived = findViewById<CheckBox>(R.id.pickerShowArchived)
-        showArchived.visibility = if (mCatalogMode) View.VISIBLE else View.GONE
-        showArchived.setOnCheckedChangeListener { _, checked ->
-            mShowArchived = checked
-            buildRows()
-            applyFilters()
-        }
+        // Панель «Фильтры» (чипы типов и видов, «Показывать архивные») — только в справочнике; всё
+        // сброшено при каждом открытии. Выбор счёта при вводе операции архивные по-прежнему скрывает
+        // и панели не имеет (спека account-screens).
+        mFiltersButton = findViewById(R.id.btnFilters)
+        mFiltersButton.visibility = if (mCatalogMode) View.VISIBLE else View.GONE
+        mWalletsPanelOpen = mCatalogMode && AppSettings.isCatalogPanelOpen(this, true)
+        mCategoriesPanelOpen = mCatalogMode && AppSettings.isCatalogPanelOpen(this, false)
         val debtActions = !mCatalogMode && selectedType == cSelectedTypeChargeAccounts
                 && intent.getBooleanExtra(cDebtActions, false)
         findViewById<View>(R.id.rowDebtActions).visibility = if (debtActions) View.VISIBLE else View.GONE
@@ -287,37 +293,85 @@ class AccountPickerActivity : AppCompatActivity() {
 
     fun onWalletTypeClick(view: View) {
         val id = view.id
-        val picked = if (id == R.id.walletTypeRegular) WalletType.REGULAR
-        else if (id == R.id.walletTypeAssets) WalletType.ASSET
-        else if (id == R.id.walletTypeDebts) WalletType.DEBT else WalletType.ALL
-        if (picked == mWalletType) return
-        mWalletType = picked
+        val picked = if (id == R.id.walletTypeRegular) CatalogFilter.WalletType.REGULAR
+        else if (id == R.id.walletTypeAssets) CatalogFilter.WalletType.ASSET
+        else if (id == R.id.walletTypeDebts) CatalogFilter.WalletType.DEBT else CatalogFilter.WalletType.ALL
+        if (picked == mFilter.walletType) return
+        mFilter.walletType = picked
+        paintKindChips()
+        applyFilters()
+    }
+
+    /** Кнопка «Фильтры»: раскрывает или сворачивает панель текущей вкладки, настройку не трогает. */
+    fun onToggleFiltersPanel(view: View) {
+        if (mShowWallets) mWalletsPanelOpen = !mWalletsPanelOpen
+        else mCategoriesPanelOpen = !mCategoriesPanelOpen
+        paintKindChips()
+    }
+
+    /** Чип «Показывать архивные»: общий для обеих вкладок; архив отсекается при сборке списков. */
+    fun onShowArchivedClick(view: View) {
+        mFilter.showArchived = !mFilter.showArchived
+        paintKindChips()
+        buildRows()
+        applyFilters()
+    }
+
+    /** Чип вида на «Категориях»: мультивыбор, тап добавляет вид или убирает его. */
+    fun onCategoryKindClick(view: View) {
+        val kind = when (view.id) {
+            R.id.catalogKindExpense -> AccountItem.CategoryKind.EXPENSE
+            R.id.catalogKindIncome -> AccountItem.CategoryKind.INCOME
+            else -> AccountItem.CategoryKind.BOTH
+        }
+        mFilter.toggleKind(kind)
         paintKindChips()
         applyFilters()
     }
 
     private fun matchesWalletType(account: AccountItem): Boolean {
-        if (!mCatalogMode || mWalletType == WalletType.ALL) return true
+        if (!mCatalogMode) return true
         val asset = isAsset(account)
         val debt = account is AccountOperatingItem && account.isDebt
-        return when (mWalletType) {
-            WalletType.ASSET -> asset
-            WalletType.DEBT -> debt
-            else -> !asset && !debt
-        }
+        return mFilter.matchesWallet(asset, debt)
     }
+
+    /** Отбор по виду — только в справочнике; слот операции фильтрует [CategoryKindFilter] в buildRows. */
+    private fun matchesCategoryKind(account: AccountItem): Boolean =
+        !mCatalogMode || mFilter.matchesCategory(account.categoryKind, account.isSystem)
 
     private fun paintKindChips() {
         paintChip(mKindCategories, !mShowWallets)
         paintChip(mKindWallets, mShowWallets)
-        findViewById<View>(R.id.rowWalletTypeFilter).visibility =
-            if (mCatalogMode && mShowWallets) View.VISIBLE else View.GONE
-        paintChip(findViewById(R.id.walletTypeAll), mWalletType == WalletType.ALL)
-        paintChip(findViewById(R.id.walletTypeRegular), mWalletType == WalletType.REGULAR)
-        paintChip(findViewById(R.id.walletTypeAssets), mWalletType == WalletType.ASSET)
-        paintChip(findViewById(R.id.walletTypeDebts), mWalletType == WalletType.DEBT)
+
+        // Панель — только в справочнике; у каждой вкладки свой флаг, ряды чипов зависят от вкладки.
+        val panelOpen = mCatalogMode && (if (mShowWallets) mWalletsPanelOpen else mCategoriesPanelOpen)
+        findViewById<View>(R.id.catalogFilterPanel).visibility = if (panelOpen) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.rowWalletTypeFilter).visibility = if (mShowWallets) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.rowCategoryKindFilter).visibility = if (mShowWallets) View.GONE else View.VISIBLE
+        paintChip(findViewById(R.id.walletTypeAll), mFilter.walletType == CatalogFilter.WalletType.ALL)
+        paintChip(findViewById(R.id.walletTypeRegular), mFilter.walletType == CatalogFilter.WalletType.REGULAR)
+        paintChip(findViewById(R.id.walletTypeAssets), mFilter.walletType == CatalogFilter.WalletType.ASSET)
+        paintChip(findViewById(R.id.walletTypeDebts), mFilter.walletType == CatalogFilter.WalletType.DEBT)
+        paintChip(findViewById(R.id.catalogKindExpense), mFilter.hasKind(AccountItem.CategoryKind.EXPENSE))
+        paintChip(findViewById(R.id.catalogKindIncome), mFilter.hasKind(AccountItem.CategoryKind.INCOME))
+        paintChip(findViewById(R.id.catalogKindBoth), mFilter.hasKind(AccountItem.CategoryKind.BOTH))
+        paintChip(findViewById(R.id.pickerShowArchived), mFilter.showArchived)
+        paintFiltersButton(panelOpen)
         // У каждого списка свой порядок — кнопка показывает режим видимого.
         paintSortButton()
+    }
+
+    /** «Фильтры ▾/▴» и, если есть нестандартные условия текущей вкладки, их число. */
+    private fun paintFiltersButton(open: Boolean) {
+        if (!mCatalogMode) return
+        val count = mFilter.activeCount(mShowWallets)
+        val label = if (open) {
+            if (count > 0) R.string.picker_filters_open_count else R.string.picker_filters_open
+        } else {
+            if (count > 0) R.string.picker_filters_closed_count else R.string.picker_filters_closed
+        }
+        mFiltersButton.text = getString(label, count)
     }
 
     /** Тот же способ подсветки чипа, что на экране операции. */
@@ -340,7 +394,7 @@ class AccountPickerActivity : AppCompatActivity() {
         mVisibleRows.clear()
         for (row in (if (mShowWallets) mWalletRows else mCategoryRows)) {
             if (AccountNames.matchesSearch(row.account.displayName, query)
-                && (!mShowWallets || matchesWalletType(row.account))
+                && (if (mShowWallets) matchesWalletType(row.account) else matchesCategoryKind(row.account))
             )
                 mVisibleRows.add(row)
         }
@@ -385,7 +439,7 @@ class AccountPickerActivity : AppCompatActivity() {
             // он нужен, чтобы снять архив, — но за переключателем «Показывать архивные», по
             // умолчанию выключенным. Флаг — только для показа: в расчётах и отчётах счёт остаётся
             // (AccountItem.getIsArchived).
-            if ((!mCatalogMode || !mShowArchived) && account.isArchived == true) continue
+            if ((!mCatalogMode || !mFilter.showArchived) && account.isArchived == true) continue
             // «Переоценку» при вводе операции не предлагаем (capital-assets): её проводки
             // пишет диалог переоценки актива. В справочнике она видна.
             if (!mCatalogMode && account.isSystemRevaluation) continue

@@ -21,6 +21,10 @@
     <string name="settings_biometric_on">Вход по отпечатку включён</string>
     <string name="settings_sort_wallets">Сортировка кошельков</string>
     <string name="settings_sort_categories">Сортировка категорий</string>
+    <string name="settings_catalog_section">СПРАВОЧНИК</string>
+    <string name="settings_catalog_panel_wallets">Панель фильтров: Кошельки</string>
+    <string name="settings_catalog_panel_categories">Панель фильтров: Категории</string>
+    <string name="settings_catalog_panel_hint">развёрнута при открытии справочника</string>
     <string name="settings_remind_time">каждый день в %1$02d:%2$02d</string>
 
     <string name="lock_timeout_now">Сразу</string>
